@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>BassLayer v1.4 — Swipe Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;}
+
+/* ═══ ROOT ═══ */
+.bl-root{background:#000;color:#e5e5e5;width:100vw;height:100vh;overflow:hidden;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;position:relative;}
+.bl-grain{position:fixed;inset:0;pointer-events:none;z-index:9500;opacity:0.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:256px;}
+
+/* ═══ PRELOADER ═══ */
+.bl-preloader{position:fixed;inset:0;z-index:9800;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;transition:opacity .5s,visibility .5s;}
+.bl-preloader.done{opacity:0;visibility:hidden;pointer-events:none;}
+.bl-pre-count{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:6px;color:#3a3a3a;}
+.bl-pre-bar{width:100px;height:1px;background:#151515;overflow:hidden;}
+.bl-pre-bar-inner{height:100%;background:#444;transition:width .04s;width:0%;}
+
+/* ═══ CIRCLE WIPE ═══ */
+.bl-circle{position:fixed;inset:0;z-index:9600;pointer-events:none;}
+.bl-circle-inner{position:absolute;border-radius:50%;transform:translate(-50%,-50%) scale(0);transition:transform .65s cubic-bezier(.76,0,.24,1);}
+.bl-circle-inner.expand{transform:translate(-50%,-50%) scale(1);}
+
+/* ═══ VIEWS ═══ */
+.bl-view{position:fixed;inset:0;z-index:100;overflow:hidden;visibility:hidden;opacity:0;transition:opacity .15s;}
+.bl-view.active{visibility:visible;opacity:1;}
+.bl-home-view{z-index:200;}
+
+/* ═══ HOME ═══ */
+.bl-home{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.bl-home::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,0.5) 100%);pointer-events:none;z-index:5;}
+.bl-scanlines{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .4s;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.006) 2px,rgba(255,255,255,0.006) 4px);}
+.bl-home.layer-active .bl-scanlines{opacity:1;}
+.bl-canvas{position:absolute;inset:0;pointer-events:none;z-index:1;}
+.bl-word-wrap{position:relative;z-index:100;display:flex;align-items:baseline;}
+.bl-word-half{position:relative;cursor:pointer;display:inline-flex;}
+.bl-letter{display:inline-block;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(48px,10.5vw,155px);letter-spacing:-4px;line-height:1;color:#e5e5e5;will-change:transform,color,opacity,text-shadow;transition:none;}
+.bl-word-wrap.bass-hovered .bl-word-layer .bl-letter{color:#131313!important;opacity:0.08!important;}
+.bl-word-wrap.layer-hovered .bl-word-bass .bl-letter{color:#131313!important;}
+.bl-concepts{position:absolute;top:calc(100% + 34px);pointer-events:none;white-space:nowrap;}
+.bl-concepts-bass{left:0;}.bl-concepts-layer{right:0;}
+.bl-concept-text{font-family:'Plus Jakarta Sans',sans-serif;font-weight:300;font-size:clamp(11px,1.1vw,15px);letter-spacing:2.5px;text-transform:uppercase;color:#2a2a2a;opacity:0;transform:translateY(5px);transition:opacity .25s,transform .3s;}
+.bl-concept-text.show{opacity:1;transform:translateY(0);}
+.bl-info{position:absolute;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#1e1e1e;z-index:50;}
+.bl-info-tl{top:32px;left:40px;}.bl-info-tr{top:32px;right:40px;}
+.bl-info-bl{bottom:32px;left:40px;}.bl-info-br{bottom:32px;right:40px;}
+.bl-choose{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:50;text-align:center;}
+.bl-choose-text{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#252525;}
+.bl-choose-line{width:1px;height:20px;background:#151515;margin:10px auto 0;position:relative;overflow:hidden;}
+.bl-choose-line::after{content:'';position:absolute;left:0;top:-100%;width:100%;height:100%;background:#3a3a3a;animation:bl-drip 2s ease-in-out infinite;}
+@keyframes bl-drip{0%{top:-100%}35%{top:100%}100%{top:100%}}
+
+/* ═══ SWIPE LAYOUT ═══ */
+.bl-swipe-wrap{position:fixed;inset:0;z-index:100;overflow:hidden;visibility:hidden;opacity:0;display:flex;flex-direction:column;background:#1F1E1D;transition:opacity .15s;}
+.bl-swipe-wrap.active{visibility:visible;opacity:1;}
+.bl-swipe-container{display:flex;width:200%;flex:1;transition:transform .4s cubic-bezier(.25,.46,.45,.94);will-change:transform;min-height:0;}
+.bl-swipe-container.dragging{transition:none;}
+.bl-swipe-panel{width:50%;height:100%;overflow-x:hidden;background:#1F1E1D;-webkit-overflow-scrolling:touch;flex-shrink:0;overflow-y:auto;}
+.bl-swipe-panel-flex{display:flex;flex-direction:column;overflow-y:hidden;}
+
+/* ═══ TOPBAR ═══ */
+.bl-topbar{position:relative;z-index:900;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;background:rgba(31,30,29,0.92);backdrop-filter:blur(24px);border-bottom:1px solid #2a2926;flex-shrink:0;}
+.bl-topbar-left{display:flex;align-items:center;gap:6px;}
+.bl-topbar-back{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5854;cursor:pointer;background:none;border:none;padding:4px 8px;transition:color .2s;}
+.bl-topbar-back:hover{color:#a09a92;}
+.bl-topbar-sep{color:#2a2926;font-size:10px;padding:0 2px;user-select:none;}
+.bl-topbar-tabs{display:flex;align-items:center;gap:0;}
+.bl-topbar-tab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#3d3a36;cursor:pointer;background:none;border:none;padding:4px 12px;transition:color .2s;position:relative;}
+.bl-topbar-tab:hover{color:#6a665f;}
+.bl-topbar-tab.active{color:#e5e5e5;}
+.bl-topbar-tab.active::after{content:'';position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);width:16px;height:2px;background:#5a5854;border-radius:1px;}
+.bl-topbar-tab-sep{color:#2a2926;font-size:12px;padding:0 2px;user-select:none;}
+.bl-topbar-right{display:flex;align-items:center;gap:16px;}
+.bl-swipe-dots{display:flex;gap:6px;align-items:center;}
+.bl-swipe-dot{width:6px;height:6px;border-radius:50%;background:#2a2926;transition:all .3s;}
+.bl-swipe-dot.active{background:#5a5854;width:16px;border-radius:3px;}
+.bl-topbar-meta{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:#3d3a36;}
+
+/* ═══ FILTERS ═══ */
+.bl-filters{position:sticky;top:0;z-index:898;display:flex;gap:6px;padding:10px 32px;overflow-x:auto;border-bottom:1px solid #2a2926;background:rgba(27,26,25,0.95);backdrop-filter:blur(12px);scrollbar-width:none;}
+.bl-filters::-webkit-scrollbar{display:none;}
+.bl-filter-chip{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5a5854;padding:5px 12px;border:1px solid #2a2926;border-radius:20px;cursor:pointer;background:transparent;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.bl-filter-chip:hover{color:#a09a92;border-color:#3d3a36;}
+.bl-filter-chip.active{color:#e5e5e5;border-color:#5a5854;background:rgba(255,255,255,0.04);}
+
+/* ═══ PRICE TICKER ═══ */
+.bl-price-bar{position:sticky;top:0;z-index:899;overflow:hidden;border-bottom:1px solid #2a2926;background:rgba(23,22,21,0.95);backdrop-filter:blur(24px);white-space:nowrap;flex-shrink:0;}
+.bl-price-track{display:inline-flex;animation:bl-scroll 35s linear infinite;}
+.bl-price-track:hover{animation-play-state:paused;}
+@keyframes bl-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.bl-price-item{display:inline-flex;align-items:center;gap:12px;padding:16px 32px;border-right:1px solid #2a2926;flex-shrink:0;}
+.bl-price-sym{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:2px;color:#666;font-weight:700;}
+.bl-price-val{font-family:'Space Mono',monospace;font-size:15px;color:#ccc;font-weight:700;}
+.bl-price-chg{font-family:'Space Mono',monospace;font-size:11px;}
+.bl-price-up{color:#2d6b3f;}.bl-price-down{color:#6b2d2d;}
+
+/* ═══ NEWS FEED ═══ */
+.bl-feed{padding:0 32px;}
+.bl-feed-item{display:flex;align-items:baseline;gap:16px;padding:18px 0;border-bottom:1px solid #282724;transition:background .12s;}
+.bl-feed-item:hover{background:#171615;margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:3px;}
+.bl-feed-time{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:#3d3a36;min-width:48px;flex-shrink:0;}
+.bl-feed-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;font-size:15px;color:#999;letter-spacing:-0.2px;line-height:1.4;flex:1;transition:color .15s;}
+.bl-feed-item:hover .bl-feed-title{color:#e5e5e5;}
+.bl-feed-src{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#4a4740;flex-shrink:0;}
+.bl-feed-tag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#5a5854;padding:2px 7px;border:1px solid #2e2c28;border-radius:2px;flex-shrink:0;}
+
+/* ═══ EVENT LIST ═══ */
+.bl-ev-list{padding:0 32px;}
+.bl-ev-item{display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid #282724;cursor:pointer;transition:background .12s;}
+.bl-ev-item:hover{background:#171615;margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:3px;}
+.bl-ev-date{min-width:56px;text-align:center;flex-shrink:0;}
+.bl-ev-date-d{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:24px;letter-spacing:-1px;color:#ccc;line-height:1;}
+.bl-ev-date-m{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#4a4740;margin-top:3px;}
+.bl-ev-sep{width:1px;height:32px;background:#2e2c28;flex-shrink:0;}
+.bl-ev-body{flex:1;min-width:0;}
+.bl-ev-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:15px;color:#bbb;letter-spacing:-0.2px;margin-bottom:3px;transition:color .15s;}
+.bl-ev-item:hover .bl-ev-name{color:#fff;}
+.bl-ev-detail{font-family:'DM Sans',sans-serif;font-size:13px;color:#5a5854;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bl-ev-right{flex-shrink:0;text-align:right;}
+.bl-ev-time{font-family:'Space Mono',monospace;font-size:11px;color:#6a665f;}
+.bl-ev-venue{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#3d3a36;margin-top:2px;}
+.bl-ev-genre{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#5a5854;padding:2px 7px;border:1px solid #2e2c28;border-radius:2px;flex-shrink:0;}
+
+/* ═══ MODAL ═══ */
+.bl-modal-overlay{position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;backdrop-filter:blur(6px);}
+.bl-modal-overlay.open{opacity:1;visibility:visible;}
+.bl-modal{background:#1a1918;border:1px solid #2a2926;border-radius:6px;width:100%;max-width:440px;position:relative;transform:translateY(16px) scale(0.97);transition:transform .3s cubic-bezier(.16,1,.3,1);overflow:hidden;}
+.bl-modal-overlay.open .bl-modal{transform:translateY(0) scale(1);}
+.bl-modal-header{display:flex;align-items:flex-start;gap:20px;padding:28px 28px 0;}
+.bl-modal-date{min-width:56px;text-align:center;flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid #2a2926;border-radius:4px;padding:10px 8px;}
+.bl-modal-date-d{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:28px;letter-spacing:-1px;color:#e5e5e5;line-height:1;}
+.bl-modal-date-m{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a665f;margin-top:4px;}
+.bl-modal-title-area{flex:1;min-width:0;}
+.bl-modal-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:20px;color:#e5e5e5;letter-spacing:-0.5px;line-height:1.25;margin-bottom:6px;}
+.bl-modal-genre{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a8580;padding:3px 9px;border:1px solid #2e2c28;border-radius:20px;}
+.bl-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#4a4740;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;transition:color .15s;font-family:'Space Mono',monospace;}
+.bl-modal-close:hover{color:#a09a92;}
+.bl-modal-body{padding:24px 28px;}
+.bl-modal-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #232220;}
+.bl-modal-row:last-child{border-bottom:none;}
+.bl-modal-icon{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.025);border-radius:4px;font-size:14px;}
+.bl-modal-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#4a4740;margin-bottom:2px;}
+.bl-modal-value{font-family:'DM Sans',sans-serif;font-size:14px;color:#bbb;line-height:1.35;}
+.bl-modal-actions{padding:0 28px 28px;display:flex;gap:10px;}
+.bl-modal-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:12px 16px;border-radius:4px;cursor:pointer;transition:all .15s;text-decoration:none;text-align:center;background:rgba(255,255,255,0.06);border:1px solid #3d3a36;color:#e5e5e5;}
+.bl-modal-btn:hover{background:rgba(255,255,255,0.1);border-color:#5a5854;}
+
+.bl-section-end{height:80px;}
+
+/* ═══ LAYER SPLIT LAYOUT ═══ */
+.bl-layer-split{display:flex;flex:1;min-height:0;height:calc(100% - 52px);}
+.bl-layer-col{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.bl-layer-col-news{border-right:1px solid #2a2926;}
+.bl-layer-col-header{position:sticky;top:0;z-index:10;padding:14px 24px 10px;background:rgba(27,26,25,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #2a2926;display:flex;align-items:center;justify-content:space-between;}
+.bl-layer-col-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#5a5854;}
+.bl-layer-col-count{font-family:'Space Mono',monospace;font-size:8px;color:#3d3a36;}
+
+/* Layer mobile sub-tabs */
+.bl-layer-tabs{display:none;position:sticky;top:0;z-index:899;background:rgba(27,26,25,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #2a2926;flex-shrink:0;}
+.bl-layer-tabs-inner{display:flex;}
+.bl-layer-tab{flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#3d3a36;padding:12px 8px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;transition:all .2s;}
+.bl-layer-tab:hover{color:#6a665f;}
+.bl-layer-tab.active{color:#e5e5e5;border-bottom-color:#5a5854;}
+
+/* Crypto event cards */
+.bl-crypto-list{padding:0 20px;}
+.bl-crypto-item{padding:16px 0;border-bottom:1px solid #282724;transition:background .12s;}
+.bl-crypto-item:hover{background:#171615;margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:3px;}
+.bl-crypto-top{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+.bl-crypto-date{min-width:44px;text-align:center;flex-shrink:0;}
+.bl-crypto-date-d{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;letter-spacing:-1px;color:#ccc;line-height:1;}
+.bl-crypto-date-m{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#4a4740;margin-top:2px;}
+.bl-crypto-info{flex:1;min-width:0;}
+.bl-crypto-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:14px;color:#bbb;letter-spacing:-0.2px;margin-bottom:2px;transition:color .15s;}
+.bl-crypto-item:hover .bl-crypto-name{color:#fff;}
+.bl-crypto-detail{font-family:'DM Sans',sans-serif;font-size:12px;color:#5a5854;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bl-crypto-type{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;border-radius:2px;flex-shrink:0;}
+.bl-crypto-type[data-t="Meetup"]{color:#4a7c5a;border:1px solid #2d4a35;}
+.bl-crypto-type[data-t="Workshop"]{color:#7c6b4a;border:1px solid #4a3d2d;}
+.bl-crypto-type[data-t="Conference"]{color:#4a5a7c;border:1px solid #2d354a;}
+.bl-crypto-type[data-t="Hackathon"]{color:#7c4a6b;border:1px solid #4a2d3d;}
+.bl-crypto-type[data-t="Social"]{color:#6b6b6b;border:1px solid #3a3a3a;}
+.bl-crypto-type[data-t="Exhibition"]{color:#7c5a4a;border:1px solid #4a352d;}
+.bl-crypto-type[data-t="Panel"]{color:#5a7c6b;border:1px solid #2d4a3d;}
+.bl-crypto-desc{font-family:'DM Sans',sans-serif;font-size:11px;color:#4a4740;line-height:1.4;padding-left:58px;}
+.bl-crypto-meta{display:flex;gap:16px;padding-left:58px;margin-top:6px;}
+.bl-crypto-meta-item{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:#3d3a36;}
+
+/* Layer news feed inside split */
+.bl-layer-feed{padding:0 20px;}
+.bl-layer-feed .bl-feed-item{gap:10px;}
+.bl-layer-feed .bl-feed-time{min-width:40px;font-size:8px;}
+.bl-layer-feed .bl-feed-src{font-size:7px;}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  .bl-letter{font-size:clamp(38px,14vw,64px)!important;letter-spacing:-2px!important;}
+  .bl-info{display:none;}
+  .bl-concept-text{font-size:10px!important;letter-spacing:1.5px!important;}
+  .bl-topbar{padding:12px 16px;}
+  .bl-topbar-tab::after{bottom:-13px;}
+  .bl-filters{padding:8px 16px;gap:5px;}
+  .bl-filter-chip{font-size:8px;padding:4px 10px;}
+  .bl-feed,.bl-ev-list{padding:0 16px;}
+  .bl-feed-src{display:none;}
+  .bl-feed-item{gap:10px;}
+  .bl-feed-time{min-width:40px;font-size:8px;}
+  .bl-ev-item{gap:12px;}
+  .bl-ev-right{display:none;}
+  .bl-ev-date{min-width:44px;}
+  .bl-choose-text{font-size:8px;letter-spacing:3px;}
+  .bl-topbar-meta{display:none;}
+  .bl-price-item{padding:12px 20px;gap:8px;}
+  .bl-price-sym{font-size:10px;}.bl-price-val{font-size:13px;}
+  .bl-modal{max-width:100%;border-radius:0;}
+  .bl-modal-header{padding:24px 20px 0;gap:14px;}
+  .bl-modal-body{padding:20px;}
+  .bl-modal-actions{padding:0 20px 24px;flex-direction:column;}
+  .bl-modal-name{font-size:18px;}
+  /* Layer split → stacked with tabs */
+  .bl-layer-tabs{display:block;}
+  .bl-layer-split{flex-direction:column;height:auto;overflow-y:auto;flex:1;}
+  .bl-layer-col{flex:none;height:auto;overflow-y:visible;}
+  .bl-layer-col-news{border-right:none;}
+  .bl-layer-col.hidden{display:none;}
+  .bl-layer-col-header{display:none;}
+  .bl-layer-feed,.bl-crypto-list{padding:0 16px;}
+  .bl-crypto-desc{padding-left:58px;}
+  .bl-crypto-meta{padding-left:58px;}
+}
+
+/* ═══ FAB — Sumar Evento ═══ */
+.bl-fab{position:fixed;bottom:28px;right:28px;z-index:960;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid #3d3a36;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .25s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.bl-fab.visible{display:flex;}
+.bl-fab:hover{background:rgba(255,255,255,0.1);border-color:#5a5854;transform:scale(1.06);}
+.bl-fab:active{transform:scale(0.95);}
+.bl-fab-icon{font-family:'Space Mono',monospace;font-size:22px;color:#e5e5e5;line-height:1;font-weight:400;}
+.bl-fab-tooltip{position:absolute;right:calc(100% + 12px);top:50%;transform:translateY(-50%);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#5a5854;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;}
+.bl-fab:hover .bl-fab-tooltip{opacity:1;}
+
+/* ═══ CTA — End of Feed ═══ */
+.bl-cta-block{padding:0 32px 20px;text-align:center;}
+.bl-cta-inner{border:1px dashed #2a2926;border-radius:6px;padding:28px 20px;cursor:pointer;transition:all .2s;}
+.bl-cta-inner:hover{border-color:#3d3a36;background:rgba(255,255,255,0.015);}
+.bl-cta-icon{font-size:20px;margin-bottom:8px;opacity:0.5;}
+.bl-cta-text{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5a5854;margin-bottom:4px;}
+.bl-cta-sub{font-family:'DM Sans',sans-serif;font-size:12px;color:#3d3a36;}
+
+/* ═══ SUBMIT FORM MODAL ═══ */
+.bl-form-overlay{position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.bl-form-overlay.open{opacity:1;visibility:visible;}
+.bl-form-modal{background:#1a1918;border:1px solid #2a2926;border-radius:6px;width:100%;max-width:480px;position:relative;transform:translateY(16px) scale(0.97);transition:transform .3s cubic-bezier(.16,1,.3,1);overflow:hidden;max-height:90vh;overflow-y:auto;}
+.bl-form-overlay.open .bl-form-modal{transform:translateY(0) scale(1);}
+.bl-form-modal::-webkit-scrollbar{width:3px;}.bl-form-modal::-webkit-scrollbar-thumb{background:#2a2926;border-radius:3px;}
+
+.bl-form-header{padding:28px 28px 0;display:flex;align-items:center;justify-content:space-between;}
+.bl-form-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:20px;color:#e5e5e5;letter-spacing:-0.5px;}
+.bl-form-close{background:none;border:none;color:#4a4740;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;transition:color .15s;font-family:'Space Mono',monospace;}
+.bl-form-close:hover{color:#a09a92;}
+
+.bl-form-body{padding:24px 28px;}
+.bl-form-group{margin-bottom:18px;}
+.bl-form-label{display:block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#4a4740;margin-bottom:6px;}
+.bl-form-input{width:100%;background:rgba(255,255,255,0.03);border:1px solid #2a2926;border-radius:4px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:#e5e5e5;outline:none;transition:border-color .2s;}
+.bl-form-input:focus{border-color:#5a5854;}
+.bl-form-input::placeholder{color:#3d3a36;}
+.bl-form-input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);cursor:pointer;}
+.bl-form-input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(0.5);cursor:pointer;}
+
+.bl-form-row{display:flex;gap:12px;}
+.bl-form-row .bl-form-group{flex:1;}
+
+.bl-form-select{width:100%;background:rgba(255,255,255,0.03);border:1px solid #2a2926;border-radius:4px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:#e5e5e5;outline:none;transition:border-color .2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a4740'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer;}
+.bl-form-select:focus{border-color:#5a5854;}
+.bl-form-select option{background:#1a1918;color:#e5e5e5;}
+
+.bl-form-hint{font-family:'DM Sans',sans-serif;font-size:11px;color:#3d3a36;margin-top:4px;}
+
+.bl-form-actions{padding:0 28px 28px;display:flex;gap:10px;}
+.bl-form-submit{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:13px 16px;border-radius:4px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,0.08);border:1px solid #5a5854;color:#e5e5e5;}
+.bl-form-submit:hover{background:rgba(255,255,255,0.14);border-color:#8a8580;}
+.bl-form-cancel{flex:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:13px 20px;border-radius:4px;cursor:pointer;transition:all .15s;background:transparent;border:1px solid #2a2926;color:#5a5854;}
+.bl-form-cancel:hover{color:#a09a92;border-color:#3d3a36;}
+
+/* Success toast */
+.bl-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9800;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#e5e5e5;background:rgba(45,107,63,0.9);border:1px solid rgba(45,107,63,0.5);padding:12px 24px;border-radius:4px;opacity:0;transition:all .3s;pointer-events:none;backdrop-filter:blur(12px);}
+.bl-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:768px){
+  .bl-fab{bottom:20px;right:20px;width:46px;height:46px;}
+  .bl-fab-tooltip{display:none;}
+  .bl-cta-block{padding:0 16px 20px;}
+  .bl-form-modal{max-width:100%;border-radius:0;}
+  .bl-form-header{padding:24px 20px 0;}
+  .bl-form-body{padding:20px;}
+  .bl-form-actions{padding:0 20px 24px;flex-direction:column;}
+  .bl-form-row{flex-direction:column;gap:0;}
+}
+
+/* ═══ SWIPE HINT ═══ */
+.bl-swipe-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:950;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#3d3a36;opacity:0;transition:opacity .6s;pointer-events:none;}
+.bl-swipe-hint.show{opacity:1;animation:bl-hint-pulse 2s ease-in-out infinite;}
+@keyframes bl-hint-pulse{0%,100%{opacity:.4;}50%{opacity:.8;}}
+</style>
+</head>
+<body>
+<div class="bl-root" id="app">
+  <div class="bl-grain"></div>
+
+  <!-- PRELOADER -->
+  <div class="bl-preloader" id="preloader">
+    <div class="bl-pre-count" id="pre-count">000</div>
+    <div class="bl-pre-bar"><div class="bl-pre-bar-inner" id="pre-bar"></div></div>
+  </div>
+
+  <!-- CIRCLE WIPE -->
+  <div class="bl-circle"><div class="bl-circle-inner" id="circle"></div></div>
+
+  <!-- HOME -->
+  <div class="bl-view bl-home-view active" id="view-home">
+    <div class="bl-home" id="home">
+      <div class="bl-scanlines"></div>
+      <canvas class="bl-canvas" id="canvas"></canvas>
+      <div class="bl-info bl-info-tl">BassLayer</div>
+      <div class="bl-info bl-info-tr">—— 2026</div>
+      <div class="bl-info bl-info-bl">Buenos Aires</div>
+      <div class="bl-info bl-info-br">Elegí tu lado</div>
+
+      <div class="bl-word-wrap" id="word-wrap">
+        <div class="bl-word-half bl-word-bass" id="word-bass">
+          <span class="bl-letter">B</span><span class="bl-letter">a</span><span class="bl-letter">s</span><span class="bl-letter">s</span>
+        </div>
+        <div class="bl-word-half bl-word-layer" id="word-layer">
+          <span class="bl-letter">L</span><span class="bl-letter">a</span><span class="bl-letter">y</span><span class="bl-letter">e</span><span class="bl-letter">r</span>
+        </div>
+        <div class="bl-concepts bl-concepts-bass"><div class="bl-concept-text" id="concept-bass">Electronic music · Events · Clubs</div></div>
+        <div class="bl-concepts bl-concepts-layer"><div class="bl-concept-text" id="concept-layer">Blockchain · Crypto · Markets</div></div>
+      </div>
+
+      <div class="bl-choose">
+        <div class="bl-choose-text" id="choose-text">Hover to explore</div>
+        <div class="bl-choose-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTIONS (SWIPE) -->
+  <div class="bl-swipe-wrap" id="view-sections">
+    <div class="bl-topbar">
+      <div class="bl-topbar-left">
+        <button class="bl-topbar-back" id="btn-home">← Home</button>
+        <span class="bl-topbar-sep">|</span>
+        <div class="bl-topbar-tabs">
+          <button class="bl-topbar-tab active" id="tab-bass">Bass</button>
+          <span class="bl-topbar-tab-sep">/</span>
+          <button class="bl-topbar-tab" id="tab-layer">Layer</button>
+        </div>
+      </div>
+      <div class="bl-topbar-right">
+        <div class="bl-swipe-dots">
+          <div class="bl-swipe-dot active" id="dot-0"></div>
+          <div class="bl-swipe-dot" id="dot-1"></div>
+        </div>
+        <span class="bl-topbar-meta" id="topbar-meta">Updated 2m ago</span>
+      </div>
+    </div>
+
+    <div class="bl-swipe-container" id="swipe-container">
+      <!-- PANEL: BASS -->
+      <div class="bl-swipe-panel" id="panel-bass"></div>
+      <!-- PANEL: LAYER -->
+      <div class="bl-swipe-panel bl-swipe-panel-flex" id="panel-layer"></div>
+    </div>
+  </div>
+
+  <!-- SWIPE HINT -->
+  <div class="bl-swipe-hint" id="swipe-hint">← Swipe or use arrow keys →</div>
+
+  <!-- FAB — Sumar Evento -->
+  <div class="bl-fab" id="fab" title="Sumar evento">
+    <span class="bl-fab-tooltip">Sumar evento</span>
+    <span class="bl-fab-icon">+</span>
+  </div>
+
+  <!-- MODAL — Event Detail -->
+  <div class="bl-modal-overlay" id="modal-overlay">
+    <div class="bl-modal" id="modal"></div>
+  </div>
+
+  <!-- MODAL — Submit Event Form -->
+  <div class="bl-form-overlay" id="form-overlay">
+    <div class="bl-form-modal">
+      <div class="bl-form-header">
+        <div class="bl-form-title">Sumar evento</div>
+        <button class="bl-form-close" id="form-close">✕</button>
+      </div>
+      <div class="bl-form-body">
+        <div class="bl-form-group">
+          <label class="bl-form-label">Nombre del evento *</label>
+          <input class="bl-form-input" type="text" id="f-name" placeholder="ej: Afterlife Buenos Aires">
+        </div>
+        <div class="bl-form-row">
+          <div class="bl-form-group">
+            <label class="bl-form-label">Fecha *</label>
+            <input class="bl-form-input" type="date" id="f-date">
+          </div>
+          <div class="bl-form-group">
+            <label class="bl-form-label">Hora</label>
+            <input class="bl-form-input" type="time" id="f-time" value="23:00">
+          </div>
+        </div>
+        <div class="bl-form-group">
+          <label class="bl-form-label">Venue *</label>
+          <input class="bl-form-input" type="text" id="f-venue" placeholder="ej: Mandarine Park, Costanera">
+        </div>
+        <div class="bl-form-group">
+          <label class="bl-form-label">Género</label>
+          <select class="bl-form-select" id="f-genre">
+            <option value="Techno">Techno</option>
+            <option value="House">House</option>
+            <option value="Electronic" selected>Electronic</option>
+            <option value="Progressive">Progressive</option>
+            <option value="Melodic">Melodic</option>
+            <option value="Minimal">Minimal</option>
+            <option value="Tech House">Tech House</option>
+            <option value="Deep House">Deep House</option>
+            <option value="Festival">Festival</option>
+          </select>
+        </div>
+        <div class="bl-form-group">
+          <label class="bl-form-label">Artistas / Line-up</label>
+          <input class="bl-form-input" type="text" id="f-artists" placeholder="ej: Tale Of Us, Recondite, Âme">
+          <div class="bl-form-hint">Separar con comas</div>
+        </div>
+        <div class="bl-form-group">
+          <label class="bl-form-label">Link de entradas</label>
+          <input class="bl-form-input" type="url" id="f-url" placeholder="https://...">
+          <div class="bl-form-hint">Opcional — Passline, RA, etc.</div>
+        </div>
+      </div>
+      <div class="bl-form-actions">
+        <button class="bl-form-cancel" id="form-cancel">Cancelar</button>
+        <button class="bl-form-submit" id="form-submit">Enviar evento →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="bl-toast" id="toast">✓ Evento enviado — pendiente de revisión</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  BassLayer v1.4 — Vanilla JS Preview
+// ═══════════════════════════════════════════
+
+// ── DATA ──
+const PRICES = [
+  { sym:"BTC", usd:96842, change:2.3 },
+  { sym:"ETH", usd:3421, change:-1.1 },
+  { sym:"SOL", usd:187.5, change:5.7 },
+  { sym:"ARB", usd:1.82, change:0.4 },
+  { sym:"LINK", usd:19.3, change:3.2 },
+  { sym:"AAVE", usd:285, change:-0.8 },
+];
+const NEWS = [
+  { time:"5m", tag:"BTC", title:"Bitcoin surges past $96K as institutional demand reaches new highs", source:"CoinDesk" },
+  { time:"12m", tag:"ETH", title:"Ethereum Pectra upgrade scheduled for Q2, Vitalik confirms roadmap", source:"Decrypt" },
+  { time:"25m", tag:"Reg", title:"SEC commissioner signals openness to spot crypto ETF approvals", source:"The Block" },
+  { time:"38m", tag:"DeFi", title:"Aave v4 launches with unified liquidity layer across 12 chains", source:"The Defiant" },
+  { time:"1h", tag:"SOL", title:"Solana DEX volume surpasses Ethereum for third consecutive week", source:"Blockworks" },
+  { time:"1h", tag:"AI", title:"Fetch.ai merges with SingularityNET, creating $7.5B AI token alliance", source:"Cointelegraph" },
+  { time:"2h", tag:"L2", title:"Arbitrum Stylus goes live, enabling Rust and C++ smart contracts", source:"CoinDesk" },
+  { time:"2h", tag:"BTC", title:"MicroStrategy acquires additional 12,000 BTC worth $1.1 billion", source:"The Block" },
+  { time:"3h", tag:"Stable", title:"Circle files for IPO as USDC market cap crosses $45 billion", source:"Decrypt" },
+  { time:"4h", tag:"NFT", title:"Pudgy Penguins physical toys outsell projections by 300%", source:"The Defiant" },
+  { time:"5h", tag:"DeFi", title:"Uniswap v4 hooks ecosystem surpasses 500 custom implementations", source:"Blockworks" },
+  { time:"6h", tag:"Crypto", title:"Brazil becomes first country to approve crypto for tax payments", source:"Cointelegraph" },
+];
+const EVENTS = [
+  { day:"28",month:"Feb",name:"Obscure Shape @ Blow",detail:"Techno · Obscure Shape, fidelos90s",genre:"Techno",time:"23:59",venue:"Blow, Palermo",artists:["Obscure Shape","fidelos90s","West Code"] },
+  { day:"28",month:"Feb",name:"TH;EN + Mila Journée",detail:"Electronic · TH;EN, Mila Journée",genre:"Electronic",time:"23:00",venue:"Oasis",artists:["TH;EN","Mila Journée","Gueva"] },
+  { day:"28",month:"Feb",name:"Budakid @ La Biblioteca",detail:"House · Budakid, Diego Colombo",genre:"House",time:"23:00",venue:"La Biblioteca",artists:["Budakid","Diego Colombo","Franco Camiolo"] },
+  { day:"28",month:"Feb",name:"Magda + Morgan",detail:"Electronic · Magda, Morgan",genre:"Electronic",time:"22:00",venue:"Casa Futuro",artists:["Magda","Morgan","Gulp","Lakeman"] },
+  { day:"01",month:"Mar",name:"Danny Howells @ Crobar",detail:"House · Danny Howells",genre:"House",time:"23:00",venue:"Crobar",artists:["Danny Howells"] },
+  { day:"07",month:"Mar",name:"PAWSA + Hot Since 82",detail:"House · PAWSA, Hot Since 82",genre:"House",time:"23:00",venue:"La Biblioteca",artists:["PAWSA","Hot Since 82","Rossi"] },
+  { day:"13",month:"Mar",name:"Lollapalooza BA — Day 1",detail:"Festival · Charlotte de Witte, BLOND:ISH",genre:"Festival",time:"12:00",venue:"Hipódromo San Isidro",artists:["Charlotte de Witte","BLOND:ISH","Barry Can't Swim"] },
+  { day:"14",month:"Mar",name:"Lollapalooza BA — Day 2",detail:"Festival · DJ Zedd",genre:"Festival",time:"12:00",venue:"Hipódromo San Isidro",artists:["DJ Zedd","Teddy Swims"] },
+  { day:"21",month:"Mar",name:"Sasha & John Digweed",detail:"Progressive · Sasha, John Digweed",genre:"Progressive",time:"22:00",venue:"Autódromo de BA",artists:["Sasha","John Digweed","Marcelo Vasami"] },
+  { day:"29",month:"Mar",name:"Hernán Cattáneo",detail:"Progressive · Sunset session",genre:"Progressive",time:"18:00",venue:"TBA",artists:["Hernán Cattáneo"] },
+];
+
+const CRYPTO_EVENTS = [
+  { day:"01",month:"Mar",name:"ETH Buenos Aires Meetup",detail:"Meetup · Ethereum Argentina community",type:"Meetup",time:"18:30",venue:"AreaTres, Palermo",desc:"Monthly Ethereum dev meetup. Lightning talks + networking." },
+  { day:"04",month:"Mar",name:"Solana Hacker House BA",detail:"Workshop · Solana Foundation",type:"Workshop",time:"10:00",venue:"Nuñez Cowork",desc:"3-day hacker house. Build on Solana with mentors." },
+  { day:"08",month:"Mar",name:"DeFi Latam Conference",detail:"Conferencia · DeFi protocols panel",type:"Conference",time:"09:00",venue:"Centro de Convenciones BA",desc:"Full-day conference. Aave, Uniswap, Maker teams." },
+  { day:"12",month:"Mar",name:"Bitcoin Pizza Day BA",detail:"Social · Bitcoin community",type:"Social",time:"19:00",venue:"La Mazzetta, San Telmo",desc:"Casual meetup celebrating Bitcoin pizza day. Pay with sats." },
+  { day:"15",month:"Mar",name:"Arbitrum Builders Night",detail:"Meetup · L2 builders community",type:"Meetup",time:"19:00",venue:"Café San Juan, San Telmo",desc:"Demo night for Arbitrum projects built in Argentina." },
+  { day:"20",month:"Mar",name:"Crypto Art Buenos Aires",detail:"Exhibition · NFT artists showcase",type:"Exhibition",time:"17:00",venue:"MAMBA, San Telmo",desc:"NFT art exhibition featuring Argentine digital artists." },
+  { day:"25",month:"Mar",name:"Stablecoin Roundtable",detail:"Panel · USDC, DAI, cUSD",type:"Panel",time:"18:00",venue:"Espacios Clic, Microcentro",desc:"Panel on stablecoins in Argentina. Real use cases." },
+  { day:"29",month:"Mar",name:"Web3 Weekend BA",detail:"Hackathon · 48h build sprint",type:"Hackathon",time:"09:00",venue:"Universidad de Palermo",desc:"48-hour hackathon. $10K in prizes. All chains welcome." },
+];
+
+const GENRES = ["All","Techno","House","Progressive","Melodic","Festival","Electronic"];
+const TAGS = ["All","BTC","ETH","SOL","DeFi","L2","Reg","AI","Stable","NFT","Crypto"];
+
+// ── HELPERS ──
+function fmtPrice(p) {
+  if (p >= 1000) return "$" + p.toLocaleString("en-US", { maximumFractionDigits:0 });
+  if (p >= 1) return "$" + p.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+  return "$" + p.toLocaleString("en-US", { minimumFractionDigits:4, maximumFractionDigits:4 });
+}
+const isMobile = window.innerWidth <= 768 || "ontouchstart" in window;
+const $ = id => document.getElementById(id);
+
+// ── STATE ──
+let currentView = "home"; // home | sections
+let activePanel = 0; // 0=bass, 1=layer
+let bassFilter = "All";
+let layerFilter = "All";
+let layerSubTab = "news"; // news | events (mobile only)
+
+// ── PRELOADER ──
+let preProgress = 0;
+const preIv = setInterval(() => {
+  preProgress += Math.random() * 15 + 8;
+  if (preProgress >= 100) { preProgress = 100; clearInterval(preIv); setTimeout(() => $("preloader").classList.add("done"), 150); }
+  $("pre-count").textContent = String(Math.floor(preProgress)).padStart(3, "0");
+  $("pre-bar").style.width = preProgress + "%";
+}, 25);
+
+// ── CANVAS ──
+const canvas = $("canvas"), ctx = canvas.getContext("2d");
+let cT = 0, bassI = 0, layerI = 0;
+function resizeCanvas() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resizeCanvas(); window.addEventListener("resize", resizeCanvas);
+function drawCanvas() {
+  cT++;
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (bassI > 0.005) {
+    const bars = 60, bw = 2, gap = (w * 0.4) / bars, sx = w * 0.05, cy = h / 2;
+    for (let i = 0; i < bars; i++) {
+      const x = sx + i * gap, env = Math.sin((i / bars) * Math.PI);
+      const amp = env * (Math.sin(cT * 0.13 + i * 0.22) + Math.sin(cT * 0.09 + i * 0.35) * 0.5) * (h * 0.25) * bassI;
+      ctx.fillStyle = `rgba(255,255,255,${(0.035 + env * 0.07) * bassI})`;
+      ctx.fillRect(x, cy - Math.abs(amp) / 2, bw, Math.max(1, Math.abs(amp)));
+    }
+  }
+  if (layerI > 0.005) {
+    const gs = 50, ox = w * 0.55;
+    ctx.strokeStyle = `rgba(255,255,255,${0.018 * layerI})`; ctx.lineWidth = 0.5;
+    for (let x = ox; x < w; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += gs) { ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.fillStyle = `rgba(255,255,255,${0.05 * layerI})`;
+    ctx.font = '9px "Space Mono",monospace';
+    const ch = "01$₿ΞΔ#><".split("");
+    for (let i = 0; i < 20; i++) {
+      ctx.fillText(ch[i % ch.length], ox + ((i * 73 + cT * 0.3) % (w - ox)), ((cT * (0.4 + (i % 5) * 0.18) + i * 137) % (h + 40)) - 20);
+    }
+  }
+  requestAnimationFrame(drawCanvas);
+}
+drawCanvas();
+
+// ── HOME HOVER + LETTER ANIMATIONS ──
+let bassHov = false, layerHov = false, wasLayerHov = false;
+const wordWrap = $("word-wrap"), wordBass = $("word-bass"), wordLayer = $("word-layer");
+const bassLetters = wordBass.querySelectorAll(".bl-letter");
+const layerLetters = wordLayer.querySelectorAll(".bl-letter");
+const glyphs = "01#$₿ΞΔ>|_⟨⟩∞≈".split("");
+const glitchTimers = [0, 0, 0, 0, 0];
+const LAYER_ORIG = "Layer";
+
+function animateLetters() {
+  // Interpolate intensities
+  bassI += ((bassHov ? 1 : 0) - bassI) * (bassHov ? 0.22 : 0.12);
+  layerI += ((layerHov ? 1 : 0) - layerI) * (layerHov ? 0.22 : 0.12);
+
+  // Reset glitch timers on fresh hover
+  if (layerHov && !wasLayerHov) glitchTimers.fill(0);
+  wasLayerHov = layerHov;
+
+  // Update class state
+  wordWrap.className = "bl-word-wrap" + (bassHov ? " bass-hovered" : "") + (layerHov ? " layer-hovered" : "");
+  $("home").className = "bl-home" + (layerHov ? " layer-active" : "");
+  $("concept-bass").className = "bl-concept-text" + (bassHov || isMobile ? " show" : "");
+  $("concept-layer").className = "bl-concept-text" + (layerHov || isMobile ? " show" : "");
+
+  // ── Bass letters: wave animation ──
+  bassLetters.forEach((el, i) => {
+    const bi = bassI;
+    if (bi > 0.01) {
+      const w = Math.sin(cT * 0.1 + i * 1.2), y = w * 10 * bi, b = Math.round(229 + w * 26 * bi);
+      el.style.transform = `translateY(${y}px) scaleY(${1 + w * 0.025 * bi})`;
+      el.style.color = `rgb(${b},${b},${b})`;
+      el.style.textShadow = `0 ${Math.abs(y) * 0.4}px ${8 * bi}px rgba(255,255,255,${0.04 * bi})`;
+    } else {
+      el.style.transform = ""; el.style.color = ""; el.style.textShadow = "";
+    }
+  });
+
+  // ── Layer letters: fast glitch with RGB split ──
+  layerLetters.forEach((el, i) => {
+    const li = layerI;
+    if (li > 0.01) {
+      glitchTimers[i]++;
+      const gt = glitchTimers[i];
+      const burstLen = 8 + i * 2; // staggered burst per letter
+
+      if (gt < burstLen) {
+        // Active glitch burst — fast, impactful
+        const intensity = 1 - (gt / burstLen);
+        if (gt % 2 === 0) el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+        const ox = (Math.random() - 0.5) * 6 * intensity;
+        const oy = (Math.random() - 0.5) * 3 * intensity;
+        el.style.transform = `translate(${ox}px, ${oy}px)`;
+        el.style.opacity = 0.6 + Math.random() * 0.4;
+        const sp = 2.5 * intensity * li;
+        el.style.color = "#fff";
+        el.style.textShadow = `${-sp}px 0 rgba(255,50,50,${0.7*li}), ${sp}px 0 rgba(50,150,255,${0.7*li})`;
+      } else {
+        // Resolved — subtle ambient RGB pulse
+        el.textContent = LAYER_ORIG[i];
+        el.style.opacity = 1;
+        el.style.transform = "";
+        const pulse = Math.sin(cT * 0.06 + i * 1.5) * 0.5 + 0.5;
+        const sp2 = 0.8 * pulse * li;
+        el.style.color = "#fff";
+        el.style.textShadow = `${-sp2}px 0 rgba(255,50,50,${0.25*li}), ${sp2}px 0 rgba(50,150,255,${0.25*li}), 0 0 ${6*li}px rgba(255,255,255,${0.03*li})`;
+        // Random micro-glitch
+        if (Math.random() < 0.008) {
+          el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+          el.style.opacity = 0.7;
+          el.style.transform = `translateX(${(Math.random()-0.5)*3}px)`;
+          el.style.textShadow = `${-2}px 0 rgba(255,50,50,${0.8*li}), ${2}px 0 rgba(50,150,255,${0.8*li})`;
+        }
+      }
+    } else {
+      el.style.transform = ""; el.style.color = ""; el.style.opacity = ""; el.style.textShadow = "";
+      el.textContent = LAYER_ORIG[i];
+      glitchTimers[i] = 0;
+    }
+  });
+
+  if (currentView === "home") requestAnimationFrame(animateLetters);
+}
+
+if (!isMobile) {
+  wordBass.addEventListener("mouseenter", () => { bassHov = true; });
+  wordBass.addEventListener("mouseleave", () => { bassHov = false; });
+  wordLayer.addEventListener("mouseenter", () => { layerHov = true; });
+  wordLayer.addEventListener("mouseleave", () => { layerHov = false; });
+}
+if (isMobile) $("choose-text").textContent = "Tap to enter";
+animateLetters();
+
+// ── CIRCLE WIPE ──
+const circle = $("circle");
+function circleWipe(cx, cy, bg, cb) {
+  const sz = Math.max(innerWidth, innerHeight) * 2.5;
+  circle.style.width = sz + "px"; circle.style.height = sz + "px";
+  circle.style.left = cx + "px"; circle.style.top = cy + "px";
+  circle.style.background = bg;
+  circle.classList.remove("expand");
+  requestAnimationFrame(() => requestAnimationFrame(() => circle.classList.add("expand")));
+  setTimeout(() => { cb(); setTimeout(() => circle.classList.remove("expand"), 100); }, 500);
+}
+
+// ── NAVIGATION ──
+function showView(v) {
+  currentView = v;
+  $("view-home").classList.toggle("active", v === "home");
+  $("view-sections").classList.toggle("active", v === "sections");
+  if (v === "home") animateLetters();
+  if (typeof updateFab === "function") updateFab();
+}
+
+function goToSections(e, panel) {
+  if (currentView !== "home") return;
+  activePanel = panel;
+  updateSwipe();
+  const cx = e?.clientX || innerWidth / 2, cy = e?.clientY || innerHeight / 2;
+  circleWipe(cx, cy, "#1F1E1D", () => showView("sections"));
+  // Show hint briefly
+  const hint = $("swipe-hint");
+  hint.classList.add("show");
+  setTimeout(() => hint.classList.remove("show"), 3500);
+}
+
+function goHome(e) {
+  if (currentView !== "sections") return;
+  const cx = e?.clientX || innerWidth / 2, cy = e?.clientY || innerHeight / 2;
+  circleWipe(cx, cy, "#000", () => showView("home"));
+}
+
+wordBass.addEventListener("click", e => goToSections(e, 0));
+wordLayer.addEventListener("click", e => goToSections(e, 1));
+$("btn-home").addEventListener("click", goHome);
+$("tab-bass").addEventListener("click", () => swipeTo(0));
+$("tab-layer").addEventListener("click", () => swipeTo(1));
+
+// ── SWIPE ──
+const swipeContainer = $("swipe-container");
+let touchStartX = 0, touchStartY = 0, touchDx = 0, dragging = false;
+
+function swipeTo(panel) {
+  activePanel = panel;
+  swipeContainer.classList.remove("dragging");
+  swipeContainer.style.transform = "";
+  updateSwipe();
+}
+
+function updateSwipe() {
+  swipeContainer.style.transform = `translateX(${-(activePanel * 50)}%)`;
+  $("tab-bass").classList.toggle("active", activePanel === 0);
+  $("tab-layer").classList.toggle("active", activePanel === 1);
+  $("dot-0").classList.toggle("active", activePanel === 0);
+  $("dot-1").classList.toggle("active", activePanel === 1);
+  $("topbar-meta").textContent = activePanel === 0 ? "Updated 2m ago" : "Updated just now";
+  if (typeof updateFab === "function") updateFab();
+}
+
+swipeContainer.addEventListener("touchstart", e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchDx = 0; dragging = false;
+}, { passive: true });
+
+swipeContainer.addEventListener("touchmove", e => {
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  if (!dragging) {
+    if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      dragging = true;
+      swipeContainer.classList.add("dragging");
+    } else return;
+  }
+  e.preventDefault();
+  touchDx = dx;
+  const base = -(activePanel * 50);
+  const pct = (dx / innerWidth) * 50;
+  swipeContainer.style.transform = `translateX(${Math.max(-50, Math.min(0, base + pct))}%)`;
+}, { passive: false });
+
+swipeContainer.addEventListener("touchend", () => {
+  if (!dragging) return;
+  dragging = false;
+  const threshold = innerWidth * 0.2;
+  if (touchDx > threshold && activePanel === 1) swipeTo(0);
+  else if (touchDx < -threshold && activePanel === 0) swipeTo(1);
+  else swipeTo(activePanel);
+});
+
+// Keyboard
+document.addEventListener("keydown", e => {
+  if (currentView !== "sections") return;
+  if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
+  if (e.key === "ArrowRight" && activePanel === 0) swipeTo(1);
+});
+
+// ── RENDER BASS PANEL ──
+function renderBass() {
+  const filtered = bassFilter === "All" ? EVENTS : EVENTS.filter(e => e.genre === bassFilter);
+  let html = '<div class="bl-filters">';
+  GENRES.forEach(g => { html += `<button class="bl-filter-chip${bassFilter === g ? " active" : ""}" data-bass-filter="${g}">${g}</button>`; });
+  html += '</div><div class="bl-ev-list">';
+  filtered.forEach((ev, i) => {
+    html += `<div class="bl-ev-item" data-ev-idx="${i}" data-ev-genre="${ev.genre}">
+      <div class="bl-ev-date"><div class="bl-ev-date-d">${ev.day}</div><div class="bl-ev-date-m">${ev.month}</div></div>
+      <div class="bl-ev-sep"></div>
+      <div class="bl-ev-body"><div class="bl-ev-name">${ev.name}</div><div class="bl-ev-detail">${ev.detail}</div></div>
+      <span class="bl-ev-genre">${ev.genre}</span>
+      <div class="bl-ev-right"><div class="bl-ev-time">${ev.time}</div><div class="bl-ev-venue">${ev.venue}</div></div>
+    </div>`;
+  });
+  html += '</div>';
+  // CTA at end of feed
+  html += `<div class="bl-cta-block"><div class="bl-cta-inner" id="cta-submit">
+    <div class="bl-cta-icon">+</div>
+    <div class="bl-cta-text">¿Falta un evento?</div>
+    <div class="bl-cta-sub">Sumalo para que todos lo vean</div>
+  </div></div>`;
+  html += '<div class="bl-section-end"></div>';
+  $("panel-bass").innerHTML = html;
+
+  // Filter clicks
+  $("panel-bass").querySelectorAll("[data-bass-filter]").forEach(btn => {
+    btn.addEventListener("click", () => { bassFilter = btn.dataset.bassFilter; renderBass(); });
+  });
+  // Event clicks → modal
+  $("panel-bass").querySelectorAll("[data-ev-idx]").forEach(el => {
+    el.addEventListener("click", () => {
+      const filt = bassFilter === "All" ? EVENTS : EVENTS.filter(e => e.genre === bassFilter);
+      openModal(filt[+el.dataset.evIdx]);
+    });
+  });
+  // CTA click → open form
+  const cta = $("cta-submit");
+  if (cta) cta.addEventListener("click", openSubmitForm);
+}
+
+// ── RENDER LAYER PANEL ──
+function renderLayer() {
+  const filtered = layerFilter === "All" ? NEWS : NEWS.filter(n => n.tag === layerFilter);
+
+  // Price ticker (full width)
+  let phtml = '<div class="bl-price-bar"><div class="bl-price-track">';
+  const pItems = PRICES.map(p =>
+    `<div class="bl-price-item"><span class="bl-price-sym">${p.sym}</span><span class="bl-price-val">${fmtPrice(p.usd)}</span><span class="bl-price-chg ${p.change >= 0 ? "bl-price-up" : "bl-price-down"}">${p.change >= 0 ? "+" : ""}${p.change}%</span></div>`
+  ).join("");
+  phtml += pItems + pItems + '</div></div>';
+
+  // Mobile sub-tabs
+  let tabsHtml = `<div class="bl-layer-tabs"><div class="bl-layer-tabs-inner">
+    <button class="bl-layer-tab${layerSubTab === "news" ? " active" : ""}" data-ltab="news">Noticias</button>
+    <button class="bl-layer-tab${layerSubTab === "events" ? " active" : ""}" data-ltab="events">Eventos Crypto</button>
+  </div></div>`;
+
+  // News column
+  let newsHtml = `<div class="bl-layer-col bl-layer-col-news${isMobile && layerSubTab !== "news" ? " hidden" : ""}" id="layer-col-news">`;
+  newsHtml += `<div class="bl-layer-col-header"><span class="bl-layer-col-title">Noticias</span><span class="bl-layer-col-count">${filtered.length} items</span></div>`;
+  newsHtml += '<div class="bl-filters">';
+  TAGS.forEach(t => { newsHtml += `<button class="bl-filter-chip${layerFilter === t ? " active" : ""}" data-layer-filter="${t}">${t}</button>`; });
+  newsHtml += '</div><div class="bl-layer-feed">';
+  filtered.forEach(n => {
+    newsHtml += `<div class="bl-feed-item">
+      <span class="bl-feed-time">${n.time}</span>
+      <span class="bl-feed-tag">${n.tag}</span>
+      <span class="bl-feed-title">${n.title}</span>
+      <span class="bl-feed-src">${n.source}</span>
+    </div>`;
+  });
+  newsHtml += '</div><div class="bl-section-end"></div></div>';
+
+  // Crypto events column
+  let evHtml = `<div class="bl-layer-col bl-layer-col-events${isMobile && layerSubTab !== "events" ? " hidden" : ""}" id="layer-col-events">`;
+  evHtml += `<div class="bl-layer-col-header"><span class="bl-layer-col-title">Crypto BA</span><span class="bl-layer-col-count">${CRYPTO_EVENTS.length} eventos</span></div>`;
+  evHtml += '<div class="bl-crypto-list">';
+  CRYPTO_EVENTS.forEach(ev => {
+    evHtml += `<div class="bl-crypto-item">
+      <div class="bl-crypto-top">
+        <div class="bl-crypto-date"><div class="bl-crypto-date-d">${ev.day}</div><div class="bl-crypto-date-m">${ev.month}</div></div>
+        <div class="bl-crypto-info"><div class="bl-crypto-name">${ev.name}</div><div class="bl-crypto-detail">${ev.detail}</div></div>
+        <span class="bl-crypto-type" data-t="${ev.type}">${ev.type}</span>
+      </div>
+      <div class="bl-crypto-desc">${ev.desc}</div>
+      <div class="bl-crypto-meta">
+        <span class="bl-crypto-meta-item">🕐 ${ev.time}</span>
+        <span class="bl-crypto-meta-item">📍 ${ev.venue}</span>
+      </div>
+    </div>`;
+  });
+  // CTA at end
+  evHtml += '</div>';
+  evHtml += `<div class="bl-cta-block" style="padding:20px 20px 0"><div class="bl-cta-inner" id="cta-crypto-submit">
+    <div class="bl-cta-icon">+</div>
+    <div class="bl-cta-text">¿Conocés un evento crypto?</div>
+    <div class="bl-cta-sub">Sumalo a la comunidad BA</div>
+  </div></div>`;
+  evHtml += '<div class="bl-section-end"></div></div>';
+
+  // Assemble
+  $("panel-layer").innerHTML = phtml + tabsHtml + '<div class="bl-layer-split">' + newsHtml + evHtml + '</div>';
+
+  // Filter clicks
+  $("panel-layer").querySelectorAll("[data-layer-filter]").forEach(btn => {
+    btn.addEventListener("click", () => { layerFilter = btn.dataset.layerFilter; renderLayer(); });
+  });
+
+  // Mobile sub-tab clicks
+  $("panel-layer").querySelectorAll("[data-ltab]").forEach(btn => {
+    btn.addEventListener("click", () => { layerSubTab = btn.dataset.ltab; renderLayer(); });
+  });
+
+  // CTA click
+  const ctaCrypto = $("cta-crypto-submit");
+  if (ctaCrypto) ctaCrypto.addEventListener("click", openSubmitForm);
+}
+
+// ── MODAL ──
+function openModal(ev) {
+  const overlay = $("modal-overlay");
+  const artists = ev.artists ? ev.artists.join(", ") : "";
+  $("modal").innerHTML = `
+    <button class="bl-modal-close" id="modal-close">✕</button>
+    <div class="bl-modal-header">
+      <div class="bl-modal-date"><div class="bl-modal-date-d">${ev.day}</div><div class="bl-modal-date-m">${ev.month}</div></div>
+      <div class="bl-modal-title-area"><div class="bl-modal-name">${ev.name}</div><span class="bl-modal-genre">${ev.genre}</span></div>
+    </div>
+    <div class="bl-modal-body">
+      <div class="bl-modal-row"><div class="bl-modal-icon">🕐</div><div><div class="bl-modal-label">Hora</div><div class="bl-modal-value">${ev.time} hs</div></div></div>
+      <div class="bl-modal-row"><div class="bl-modal-icon">📍</div><div><div class="bl-modal-label">Venue</div><div class="bl-modal-value">${ev.venue}</div></div></div>
+      ${artists ? `<div class="bl-modal-row"><div class="bl-modal-icon">🎧</div><div><div class="bl-modal-label">Line-up</div><div class="bl-modal-value">${artists}</div></div></div>` : ""}
+    </div>
+    <div class="bl-modal-actions"><a class="bl-modal-btn" href="#" onclick="event.preventDefault()">Buscar entradas →</a></div>`;
+  overlay.classList.add("open");
+  $("modal-close").addEventListener("click", closeModal);
+  overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+}
+
+function closeModal() { $("modal-overlay").classList.remove("open"); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeSubmitForm(); } });
+
+// ── FAB VISIBILITY ──
+const fab = $("fab");
+function updateFab() {
+  fab.classList.toggle("visible", currentView === "sections" && activePanel === 0);
+}
+
+fab.addEventListener("click", openSubmitForm);
+
+// ── SUBMIT FORM ──
+function openSubmitForm() {
+  $("form-overlay").classList.add("open");
+  // Set default date to next Saturday
+  const now = new Date();
+  const daysUntilSat = (6 - now.getDay() + 7) % 7 || 7;
+  const nextSat = new Date(now);
+  nextSat.setDate(now.getDate() + daysUntilSat);
+  $("f-date").value = nextSat.toISOString().split("T")[0];
+  setTimeout(() => $("f-name").focus(), 300);
+}
+
+function closeSubmitForm() {
+  $("form-overlay").classList.remove("open");
+  // Reset form
+  $("f-name").value = "";
+  $("f-venue").value = "";
+  $("f-artists").value = "";
+  $("f-url").value = "";
+  $("f-time").value = "23:00";
+  $("f-genre").value = "Electronic";
+}
+
+function submitEvent() {
+  const name = $("f-name").value.trim();
+  const date = $("f-date").value;
+  const time = $("f-time").value || "23:00";
+  const venue = $("f-venue").value.trim();
+  const genre = $("f-genre").value;
+  const artistsRaw = $("f-artists").value.trim();
+  const url = $("f-url").value.trim();
+
+  // Validate required fields
+  if (!name) { $("f-name").focus(); $("f-name").style.borderColor = "#6b2d2d"; setTimeout(() => $("f-name").style.borderColor = "", 2000); return; }
+  if (!date) { $("f-date").focus(); $("f-date").style.borderColor = "#6b2d2d"; setTimeout(() => $("f-date").style.borderColor = "", 2000); return; }
+  if (!venue) { $("f-venue").focus(); $("f-venue").style.borderColor = "#6b2d2d"; setTimeout(() => $("f-venue").style.borderColor = "", 2000); return; }
+
+  // Parse date
+  const d = new Date(date + "T12:00:00");
+  const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = months[d.getMonth()];
+  const artists = artistsRaw ? artistsRaw.split(",").map(a => a.trim()).filter(Boolean) : [];
+  const detail = genre + (artists.length ? " · " + artists.join(", ") : "");
+
+  // Add to events
+  const newEvent = { day, month, name, detail, genre, time, venue, artists, url: url || "" };
+  EVENTS.unshift(newEvent);
+
+  // Close form & re-render
+  closeSubmitForm();
+  renderBass();
+
+  // Show toast
+  const toast = $("toast");
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
+
+  // Scroll Bass panel to top
+  $("panel-bass").scrollTop = 0;
+}
+
+$("form-close").addEventListener("click", closeSubmitForm);
+$("form-cancel").addEventListener("click", closeSubmitForm);
+$("form-submit").addEventListener("click", submitEvent);
+$("form-overlay").addEventListener("click", e => { if (e.target === $("form-overlay")) closeSubmitForm(); });
+
+// Enter key on last field submits
+$("f-url").addEventListener("keydown", e => { if (e.key === "Enter") submitEvent(); });
+
+// ── INIT PANELS ──
+renderBass();
+renderLayer();
+updateSwipe();
+updateFab();
+</script>
+</body>
+</html>
