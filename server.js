@@ -6,6 +6,8 @@
 
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
 import fetch from "node-fetch";
 import { XMLParser } from "fast-xml-parser";
 import { fileURLToPath } from "url";
@@ -15,7 +17,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
+app.use(cors({
+  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
+}));
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(join(__dirname, "dist")));
 }
@@ -70,12 +76,13 @@ app.get("/api/prices", async (req, res) => {
   const hit = cached("prices");
   if (hit) return res.json(hit);
   try {
-    const r = await fetchSafe(`https://api.coingecko.com/api/v3/simple/price?ids=${COIN_IDS}&vs_currencies=usd&include_24hr_change=true`);
+    const r = await fetchSafe(`https://api.coingecko.com/api/v3/simple/price?ids=${COIN_IDS}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`);
     if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
     const raw = await r.json();
     const prices = Object.entries(raw).map(([id, d]) => ({
-      id, sym: SYM_MAP[id] || id.toUpperCase(), usd: d.usd,
+      id, sym: SYM_MAP[id] || id.toUpperCase(), name: id, usd: d.usd,
       change: Math.round((d.usd_24h_change || 0) * 10) / 10,
+      marketCap: d.usd_market_cap || null,
     }));
     setCache("prices", prices);
     res.json(prices);
@@ -310,7 +317,8 @@ async function fetchBuenosAliens() {
         time,
         venue: venue || "TBA",
         artists,
-        url: "",  // Buenos Aliens doesn't have individual event URLs easily
+        url: "",
+        image: null,
         source: "buenosaliens",
       });
     }
@@ -328,7 +336,7 @@ async function fetchBuenosAliens() {
 
 const RA_GRAPHQL = "https://ra.co/graphql";
 const RA_AREAS = [218, 13];
-const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int){eventListings(filters:$filters,pageSize:$pageSize,page:1,sortOrder:ASCENDING,sortField:DATE){data{event{id title date startTime endTime contentUrl venue{name area{name}}artists{name}}}totalResults}}`;
+const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int){eventListings(filters:$filters,pageSize:$pageSize,page:1,sortOrder:ASCENDING,sortField:DATE){data{event{id title date startTime endTime contentUrl flyerFront venue{name area{name}}artists{name}}}totalResults}}`;
 
 function formatRAEvent(ev) {
   const date = new Date(ev.date);
@@ -343,6 +351,7 @@ function formatRAEvent(ev) {
     venue: (ev.venue?.name || "TBA").slice(0, 25),
     artists,
     url: ev.contentUrl ? `https://ra.co${ev.contentUrl}` : "",
+    image: ev.flyerFront || null,
     source: "ra",
   };
 }
@@ -388,18 +397,30 @@ async function fetchRAHtml() {
 // ── Strategy 4: Curated fallback ──
 
 const FALLBACK_EVENTS = [
-  { day:"28", month:"Feb", name:"Obscure Shape @ Blow",         detail:"Techno · Obscure Shape, fidelos90s", genre:"Techno",      time:"23:59", venue:"Blow, Palermo",         artists:["Obscure Shape","fidelos90s","West Code"], url:"", source:"fallback" },
-  { day:"28", month:"Feb", name:"TH;EN + Mila Journée",        detail:"Electronic · TH;EN, Mila Journée",   genre:"Electronic",  time:"23:00", venue:"Oasis",                artists:["TH;EN","Mila Journée","Gueva"], url:"", source:"fallback" },
-  { day:"28", month:"Feb", name:"Budakid @ La Biblioteca",     detail:"House · Budakid, Diego Colombo",     genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["Budakid","Diego Colombo","Franco Camiolo"], url:"", source:"fallback" },
-  { day:"01", month:"Mar", name:"Danny Howells @ Crobar",      detail:"House · Danny Howells",              genre:"House",        time:"23:00", venue:"Crobar",                artists:["Danny Howells"], url:"", source:"fallback" },
-  { day:"07", month:"Mar", name:"PAWSA + Hot Since 82",        detail:"House · PAWSA, Hot Since 82, Rossi", genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["PAWSA","Hot Since 82","Rossi"], url:"", source:"fallback" },
-  { day:"13", month:"Mar", name:"Lollapalooza BA — Day 1",     detail:"Festival · Charlotte de Witte, BLOND:ISH", genre:"Festival", time:"12:00", venue:"Hipódromo San Isidro",  artists:["Charlotte de Witte","BLOND:ISH","Barry Can't Swim"], url:"https://www.lollapaloozaar.com", source:"fallback" },
-  { day:"14", month:"Mar", name:"Lollapalooza BA — Day 2",     detail:"Festival · DJ Zedd",                  genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["DJ Zedd","Teddy Swims"], url:"https://www.lollapaloozaar.com", source:"fallback" },
-  { day:"15", month:"Mar", name:"Lollapalooza BA — Day 3",     detail:"Festival · Rüfüs Du Sol, James Hype",genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["Rüfüs Du Sol","James Hype","Caribou"], url:"https://www.lollapaloozaar.com", source:"fallback" },
-  { day:"21", month:"Mar", name:"Sasha & John Digweed",        detail:"Progressive · Sasha, John Digweed",  genre:"Progressive", time:"22:00", venue:"Autódromo de BA",       artists:["Sasha","John Digweed","Marcelo Vasami"], url:"", source:"fallback" },
-  { day:"28", month:"Mar", name:"Club de Pescadores",          detail:"Techno · Open air",                  genre:"Techno",      time:"22:00", venue:"Club de Pescadores",    artists:[], url:"", source:"fallback" },
-  { day:"29", month:"Mar", name:"Hernán Cattáneo",             detail:"Progressive · Sunset session",       genre:"Progressive", time:"18:00", venue:"TBA",                   artists:["Hernán Cattáneo"], url:"", source:"fallback" },
+  { day:"28", month:"Feb", name:"Obscure Shape @ Blow",         detail:"Techno · Obscure Shape, fidelos90s", genre:"Techno",      time:"23:59", venue:"Blow, Palermo",         artists:["Obscure Shape","fidelos90s","West Code"], url:"", source:"fallback", image:null },
+  { day:"28", month:"Feb", name:"TH;EN + Mila Journée",        detail:"Electronic · TH;EN, Mila Journée",   genre:"Electronic",  time:"23:00", venue:"Oasis",                artists:["TH;EN","Mila Journée","Gueva"], url:"", source:"fallback", image:null },
+  { day:"28", month:"Feb", name:"Budakid @ La Biblioteca",     detail:"House · Budakid, Diego Colombo",     genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["Budakid","Diego Colombo","Franco Camiolo"], url:"", source:"fallback", image:null },
+  { day:"01", month:"Mar", name:"Danny Howells @ Crobar",      detail:"House · Danny Howells",              genre:"House",        time:"23:00", venue:"Crobar",                artists:["Danny Howells"], url:"", source:"fallback", image:null },
+  { day:"07", month:"Mar", name:"PAWSA + Hot Since 82",        detail:"House · PAWSA, Hot Since 82, Rossi", genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["PAWSA","Hot Since 82","Rossi"], url:"", source:"fallback", image:null },
+  { day:"13", month:"Mar", name:"Lollapalooza BA — Day 1",     detail:"Festival · Charlotte de Witte, BLOND:ISH", genre:"Festival", time:"12:00", venue:"Hipódromo San Isidro",  artists:["Charlotte de Witte","BLOND:ISH","Barry Can't Swim"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
+  { day:"14", month:"Mar", name:"Lollapalooza BA — Day 2",     detail:"Festival · DJ Zedd",                  genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["DJ Zedd","Teddy Swims"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
+  { day:"15", month:"Mar", name:"Lollapalooza BA — Day 3",     detail:"Festival · Rüfüs Du Sol, James Hype",genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["Rüfüs Du Sol","James Hype","Caribou"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
+  { day:"21", month:"Mar", name:"Sasha & John Digweed",        detail:"Progressive · Sasha, John Digweed",  genre:"Progressive", time:"22:00", venue:"Autódromo de BA",       artists:["Sasha","John Digweed","Marcelo Vasami"], url:"", source:"fallback", image:null },
+  { day:"28", month:"Mar", name:"Club de Pescadores",          detail:"Techno · Open air",                  genre:"Techno",      time:"22:00", venue:"Club de Pescadores",    artists:[], url:"", source:"fallback", image:null },
+  { day:"29", month:"Mar", name:"Hernán Cattáneo",             detail:"Progressive · Sunset session",       genre:"Progressive", time:"18:00", venue:"TBA",                   artists:["Hernán Cattáneo"], url:"", source:"fallback", image:null },
 ];
+
+// ── Featured detection ──
+
+const FEATURED_NAMES = ["lollapalooza","ultra","creamfields","sasha","cattáneo","cattaneo","digweed"];
+
+function markFeatured(ev) {
+  const n = ev.name.toLowerCase();
+  ev.featured = ev.genre === "Festival"
+    || (ev.artists && ev.artists.length >= 4)
+    || FEATURED_NAMES.some(f => n.includes(f));
+  return ev;
+}
 
 // ── Merge & dedup ──
 
@@ -457,6 +478,9 @@ app.get("/api/events", async (req, res) => {
   // Deduplicate (same day+venue = same event)
   const events = deduplicateEvents(allEvents);
 
+  // Mark featured events
+  events.forEach(markFeatured);
+
   // Sort by date
   events.sort((a, b) => {
     const ma = MONTH_MAP[a.month.toLowerCase()] ?? 99;
@@ -467,6 +491,30 @@ app.get("/api/events", async (req, res) => {
 
   setCache("events", events);
   res.json(applyFilter(events));
+});
+
+// ─────────────────────────────────────────────
+//  Price Chart (7-day sparkline)
+// ─────────────────────────────────────────────
+
+const chartCache = {};
+
+app.get("/api/prices/:id/chart", async (req, res) => {
+  const { id } = req.params;
+  const hit = chartCache[id];
+  if (hit && Date.now() - hit.ts < 5 * 60_000) return res.json(hit.data);
+
+  try {
+    const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=7`, {}, 10000);
+    if (!r.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
+    const data = await r.json();
+    const result = { prices: data.prices || [] };
+    chartCache[id] = { data: result, ts: Date.now() };
+    res.json(result);
+  } catch (e) {
+    console.error("[chart]", e.message);
+    res.status(500).json({ error: "Chart data unavailable" });
+  }
 });
 
 // ─────────────────────────────────────────────
