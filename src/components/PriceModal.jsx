@@ -35,7 +35,7 @@ export function PriceModal({ price, onClose }) {
     ctx.scale(dpr, dpr);
 
     if (chartData.length < 2) {
-      ctx.fillStyle = "#6a665f";
+      ctx.fillStyle = "#666666";
       ctx.font = "11px 'Space Mono', monospace";
       ctx.textAlign = "center";
       ctx.fillText("Sin datos", w / 2, h / 2);
@@ -49,7 +49,7 @@ export function PriceModal({ price, onClose }) {
     const pad = 8;
 
     const isUp = prices[prices.length - 1] >= prices[0];
-    const color = isUp ? "#2d6b3f" : "#6b2d2d";
+    const color = isUp ? "#2D6B3F" : "#6B2D2D";
 
     ctx.clearRect(0, 0, w, h);
 

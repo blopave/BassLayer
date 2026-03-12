@@ -71,7 +71,7 @@ export default function App() {
 
   // Letter animation
   useEffect(() => {
-    const glyphs = "01#$\u20BF\u039E\u0394>|_\u27E8\u27E9\u221E\u2248".split("");
+    const glyphs = "01#$\u20BF\u039E\u0394>|_\u27E8\u27E9\u221E\u2248\u00D7\u2261".split("");
     let raf;
     function animate() {
       tRef.current++;
@@ -100,14 +100,14 @@ export default function App() {
           decodeTimers.current[i]++;
           const dt = decodeTimers.current[i];
           if (dt < sf) {
-            el.textContent = orig; el.style.opacity = 0.12 * li; el.style.color = "#444"; el.style.textShadow = "none"; el.style.transform = "";
+            el.textContent = orig; el.style.opacity = 0.12 * li; el.style.color = "#3A3A3A"; el.style.textShadow = "none"; el.style.transform = "";
           } else if (dt < sf + 35) {
             if ((dt - sf) % 4 === 0) el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
-            el.style.opacity = (0.35 + Math.random() * 0.25) * li; el.style.color = "#777";
+            el.style.opacity = (0.35 + Math.random() * 0.25) * li; el.style.color = "#666666";
             el.style.transform = `translateY(${(Math.random() - 0.5) * 1.5}px)`;
             el.style.textShadow = `0 0 ${10 * li}px rgba(255,255,255,${0.05 * li})`;
           } else {
-            el.textContent = orig; el.style.opacity = 1; el.style.color = "#fff"; el.style.transform = "";
+            el.textContent = orig; el.style.opacity = 1; el.style.color = "#E5E5E5"; el.style.transform = "";
             el.style.textShadow = `0 0 ${8 * li}px rgba(255,255,255,${0.04 * li})`;
             if (Math.random() < 0.006) { el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)]; el.style.opacity = 0.6; }
           }
@@ -180,7 +180,7 @@ export default function App() {
     const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
     const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#1F1E1D" });
+    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#0A0A0A" });
     setCircleExpand(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
     setTimeout(() => {
@@ -196,7 +196,7 @@ export default function App() {
     const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
     const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#000" });
+    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#000000" });
     setCircleExpand(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
     setTimeout(() => {
@@ -301,7 +301,7 @@ export default function App() {
 
       <div className="bl-circle" aria-hidden="true">
         <div className={`bl-circle-inner${circleExpand ? " expand" : ""}`}
-          style={{ width: circleStyle.width || 0, height: circleStyle.height || 0, left: circleStyle.left || 0, top: circleStyle.top || 0, background: circleStyle.background || "#1F1E1D" }} />
+          style={{ width: circleStyle.width || 0, height: circleStyle.height || 0, left: circleStyle.left || 0, top: circleStyle.top || 0, background: circleStyle.background || "#0A0A0A" }} />
       </div>
 
       {/* HOME */}
@@ -316,39 +316,41 @@ export default function App() {
 
           <div className={`bl-word-wrap${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
             <h1 className="bl-sr-only">BassLayer</h1>
-            <div className="bl-word-half bl-word-bass"
-              onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
-              onMouseLeave={isMobile ? undefined : () => setBassHov(false)}
-              onClick={(e) => navigateToSections(e, 0)}
-              onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 0)}
-              onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 0); } : undefined}
-              role="button"
-              tabIndex={0}
-              aria-label="Ir a Bass - Eventos de m&uacute;sica electr&oacute;nica">
-              {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
-            </div>
-            <div className="bl-word-half bl-word-layer"
-              onMouseEnter={isMobile ? undefined : () => setLayerHov(true)}
-              onMouseLeave={isMobile ? undefined : () => setLayerHov(false)}
-              onClick={(e) => navigateToSections(e, 1)}
-              onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 1)}
-              onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 1); } : undefined}
-              role="button"
-              tabIndex={0}
-              aria-label="Ir a Layer - Crypto y noticias">
-              {"Layer".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (layerLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
+            <div className="bl-word-row">
+              <div className="bl-word-half bl-word-bass"
+                onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
+                onMouseLeave={isMobile ? undefined : () => setBassHov(false)}
+                onClick={(e) => navigateToSections(e, 0)}
+                onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 0)}
+                onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 0); } : undefined}
+                role="button"
+                tabIndex={0}
+                aria-label="Ir a Bass - Eventos de música electrónica">
+                {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
+              </div>
+              <div className="bl-word-half bl-word-layer"
+                onMouseEnter={isMobile ? undefined : () => setLayerHov(true)}
+                onMouseLeave={isMobile ? undefined : () => setLayerHov(false)}
+                onClick={(e) => navigateToSections(e, 1)}
+                onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 1)}
+                onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 1); } : undefined}
+                role="button"
+                tabIndex={0}
+                aria-label="Ir a Layer - Crypto y noticias">
+                {"Layer".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (layerLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
+              </div>
             </div>
             <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>Electronic music &middot; Events &middot; Clubs</div>
+              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>Electronic music · Events · Clubs</div>
             </div>
             <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
-              <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>Blockchain &middot; Crypto &middot; Markets</div>
+              <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>Blockchain · Crypto · Markets</div>
             </div>
           </div>
 
-          <div className="bl-choose" aria-hidden="true">
-            <div className="bl-choose-text">{isMobile ? "Tap to enter" : "Hover to explore"}</div>
-            <div className="bl-choose-line" />
+          <div className="bl-home-sub" aria-hidden="true">
+            <div className="bl-home-sub-text">Buenos Aires · Electrónica · Crypto</div>
+            <div className="bl-home-sub-line" />
           </div>
         </main>
       </div>

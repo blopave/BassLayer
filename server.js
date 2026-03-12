@@ -396,19 +396,28 @@ async function fetchRAHtml() {
 
 // ── Strategy 4: Curated fallback ──
 
-const FALLBACK_EVENTS = [
-  { day:"28", month:"Feb", name:"Obscure Shape @ Blow",         detail:"Techno · Obscure Shape, fidelos90s", genre:"Techno",      time:"23:59", venue:"Blow, Palermo",         artists:["Obscure Shape","fidelos90s","West Code"], url:"", source:"fallback", image:null },
-  { day:"28", month:"Feb", name:"TH;EN + Mila Journée",        detail:"Electronic · TH;EN, Mila Journée",   genre:"Electronic",  time:"23:00", venue:"Oasis",                artists:["TH;EN","Mila Journée","Gueva"], url:"", source:"fallback", image:null },
-  { day:"28", month:"Feb", name:"Budakid @ La Biblioteca",     detail:"House · Budakid, Diego Colombo",     genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["Budakid","Diego Colombo","Franco Camiolo"], url:"", source:"fallback", image:null },
-  { day:"01", month:"Mar", name:"Danny Howells @ Crobar",      detail:"House · Danny Howells",              genre:"House",        time:"23:00", venue:"Crobar",                artists:["Danny Howells"], url:"", source:"fallback", image:null },
-  { day:"07", month:"Mar", name:"PAWSA + Hot Since 82",        detail:"House · PAWSA, Hot Since 82, Rossi", genre:"House",        time:"23:00", venue:"La Biblioteca",         artists:["PAWSA","Hot Since 82","Rossi"], url:"", source:"fallback", image:null },
-  { day:"13", month:"Mar", name:"Lollapalooza BA — Day 1",     detail:"Festival · Charlotte de Witte, BLOND:ISH", genre:"Festival", time:"12:00", venue:"Hipódromo San Isidro",  artists:["Charlotte de Witte","BLOND:ISH","Barry Can't Swim"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
-  { day:"14", month:"Mar", name:"Lollapalooza BA — Day 2",     detail:"Festival · DJ Zedd",                  genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["DJ Zedd","Teddy Swims"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
-  { day:"15", month:"Mar", name:"Lollapalooza BA — Day 3",     detail:"Festival · Rüfüs Du Sol, James Hype",genre:"Festival",    time:"12:00", venue:"Hipódromo San Isidro",  artists:["Rüfüs Du Sol","James Hype","Caribou"], url:"https://www.lollapaloozaar.com", source:"fallback", image:null },
-  { day:"21", month:"Mar", name:"Sasha & John Digweed",        detail:"Progressive · Sasha, John Digweed",  genre:"Progressive", time:"22:00", venue:"Autódromo de BA",       artists:["Sasha","John Digweed","Marcelo Vasami"], url:"", source:"fallback", image:null },
-  { day:"28", month:"Mar", name:"Club de Pescadores",          detail:"Techno · Open air",                  genre:"Techno",      time:"22:00", venue:"Club de Pescadores",    artists:[], url:"", source:"fallback", image:null },
-  { day:"29", month:"Mar", name:"Hernán Cattáneo",             detail:"Progressive · Sunset session",       genre:"Progressive", time:"18:00", venue:"TBA",                   artists:["Hernán Cattáneo"], url:"", source:"fallback", image:null },
-];
+// Fallback events are generated dynamically to always show future dates
+function generateFallbackEvents() {
+  const templates = [
+    { name:"Techno Night",           detail:"Techno · Local artists",              genre:"Techno",      time:"23:59", venue:"Blow, Palermo",         artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"House Session",          detail:"House · Deep house night",            genre:"House",       time:"23:00", venue:"La Biblioteca",         artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"Progressive Sunday",     detail:"Progressive · Sunset session",       genre:"Progressive", time:"18:00", venue:"Club de Pescadores",    artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"Electronic Underground", detail:"Electronic · Underground party",     genre:"Electronic",  time:"23:00", venue:"Crobar",                artists:["TBA"], url:"", source:"fallback", image:null },
+  ];
+  const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const events = [];
+  const now = new Date();
+  for (let i = 0; i < templates.length; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + (i + 1) * 3); // space events every 3 days starting from tomorrow-ish
+    events.push({
+      day: String(d.getDate()).padStart(2, "0"),
+      month: MONTHS_ES[d.getMonth()],
+      ...templates[i],
+    });
+  }
+  return events;
+}
 
 // ── Featured detection ──
 
@@ -472,11 +481,23 @@ app.get("/api/events", async (req, res) => {
   // If nothing worked, use curated fallback
   if (allEvents.length === 0) {
     console.log("[events] All sources failed, using curated fallback");
-    allEvents = FALLBACK_EVENTS;
+    allEvents = generateFallbackEvents();
   }
 
   // Deduplicate (same day+venue = same event)
-  const events = deduplicateEvents(allEvents);
+  const deduped = deduplicateEvents(allEvents);
+
+  // Filter out past events (keep today and future only)
+  const now = new Date();
+  const todayMonth = now.getMonth();   // 0-based
+  const todayDay = now.getDate();
+  const events = deduped.filter(ev => {
+    const m = MONTH_MAP[ev.month.toLowerCase()] ?? -1;
+    if (m === -1) return true; // keep unknown months
+    if (m > todayMonth) return true;
+    if (m === todayMonth && parseInt(ev.day) >= todayDay) return true;
+    return false;
+  });
 
   // Mark featured events
   events.forEach(markFeatured);

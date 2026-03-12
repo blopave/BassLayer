@@ -1,6 +1,28 @@
+import { useEffect, useRef } from "react";
 import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton } from "./SkeletonLoader";
+
+function useScrollReveal(deps) {
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll(".bl-reveal");
+    if (!items.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, deps);
+  return containerRef;
+}
 
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, isFavorite }) {
   const genres = ["All", "\u2605 Saved", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Festival", "Electronic"];
@@ -22,6 +44,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     );
   }
 
+  const listRef = useScrollReveal([filtered, loading]);
+
   function emptyMessage() {
     if (filter === "\u2605 Saved") {
       return <><span className="bl-empty-icon">{"\u2606"}</span>Todav\u00eda no guardaste eventos. Toc\u00e1 {"\u2606"} en cualquier evento.</>;
@@ -39,14 +63,14 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
-        : <div className="bl-ev-list" role="feed" aria-label="Eventos de m\u00fasica electr\u00f3nica">
-            {filtered.map((item) => (
+        : <div className="bl-ev-list" role="feed" aria-label="Eventos de m\u00fasica electr\u00f3nica" ref={listRef}>
+            {filtered.map((item, idx) => (
               <article
-                className={`bl-ev-item${item.featured ? " bl-ev-item-featured" : ""}`}
+                className={`bl-ev-item bl-reveal${item.featured ? " bl-ev-item-featured" : ""}`}
                 key={`${item.day}-${item.month}-${item.venue}-${item.name}`}
                 onClick={() => onSelect(item)}
                 onKeyDown={(e) => e.key === "Enter" && onSelect(item)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
                 tabIndex={0}
                 role="button"
                 aria-label={`${item.name} - ${item.day} ${item.month} en ${item.venue}`}
