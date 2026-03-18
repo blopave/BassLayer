@@ -3,6 +3,7 @@ import { api, timeAgo } from "./utils/api";
 import { isMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { useFavorites } from "./hooks/useFavorites";
+import { useSound } from "./hooks/useSound";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { EventModal } from "./components/EventModal";
@@ -36,8 +37,9 @@ export default function App() {
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
-  // Favorites
+  // Favorites & Sound
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { playBass, playLayer } = useSound();
 
   // Share
   function shareEvent(ev) {
@@ -50,6 +52,85 @@ export default function App() {
       window.open(waUrl, "_blank");
     }
   }
+
+  // Day/Night mode
+  const [dayMode, setDayMode] = useState(() => localStorage.getItem("bl-mode") === "day");
+  const toggleMode = useCallback(() => {
+    const root = document.querySelector(".bl-root");
+    if (root) {
+      root.classList.add("theme-transitioning");
+      setTimeout(() => root.classList.remove("theme-transitioning"), 700);
+    }
+    setDayMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("bl-mode", next ? "day" : "night");
+      return next;
+    });
+  }, []);
+
+  // BA Clock
+  const [clock, setClock] = useState("");
+  useEffect(() => {
+    const update = () => setClock(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Hero entrance / exit
+  const [heroEntered, setHeroEntered] = useState(false);
+  const [heroExiting, setHeroExiting] = useState(false);
+  useEffect(() => { if (loaded) { const t = setTimeout(() => setHeroEntered(true), 200); return () => clearTimeout(t); } }, [loaded]);
+
+  // Custom cursor + parallax mouse tracking
+  const cursorRef = useRef(null);
+  const cursorPos = useRef({ x: -100, y: -100 });
+  const cursorTarget = useRef({ x: -100, y: -100 });
+  const mouseNorm = useRef({ x: 0, y: 0 }); // -1 to 1 normalized
+  const parallaxRefs = useRef({ tl: null, tr: null, bl: null, br: null, canvas: null });
+
+  useEffect(() => {
+    if (isMobile) return;
+    const isInteractive = (el) => {
+      if (!el) return false;
+      const tag = el.tagName;
+      if (tag === "A" || tag === "BUTTON" || tag === "INPUT" || tag === "SELECT") return true;
+      if (el.getAttribute("role") === "button" || el.getAttribute("tabindex") !== null) return true;
+      return el.closest("a, button, [role='button'], [tabindex]") !== null;
+    };
+    const onMove = (e) => {
+      cursorTarget.current = { x: e.clientX, y: e.clientY };
+      mouseNorm.current = { x: (e.clientX / innerWidth - 0.5) * 2, y: (e.clientY / innerHeight - 0.5) * 2 };
+      if (cursorRef.current) {
+        if (isInteractive(e.target)) cursorRef.current.classList.add("active");
+        else cursorRef.current.classList.remove("active");
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    const smooth = { x: 0, y: 0 };
+    let raf;
+    function animate() {
+      // Cursor
+      const p = cursorPos.current, t = cursorTarget.current;
+      p.x += (t.x - p.x) * 0.15;
+      p.y += (t.y - p.y) * 0.15;
+      if (cursorRef.current) cursorRef.current.style.transform = `translate(${p.x}px, ${p.y}px)`;
+
+      // Parallax
+      smooth.x += (mouseNorm.current.x - smooth.x) * 0.05;
+      smooth.y += (mouseNorm.current.y - smooth.y) * 0.05;
+      const pr = parallaxRefs.current;
+      if (pr.tl) pr.tl.style.transform = `translate(${smooth.x * -8}px, ${smooth.y * -8}px)`;
+      if (pr.tr) pr.tr.style.transform = `translate(${smooth.x * -6}px, ${smooth.y * -6}px)`;
+      if (pr.bl) pr.bl.style.transform = `translate(${smooth.x * -10}px, ${smooth.y * -10}px)`;
+      if (pr.br) pr.br.style.transform = `translate(${smooth.x * -5}px, ${smooth.y * -5}px)`;
+      if (pr.canvas) pr.canvas.style.transform = `translate(${smooth.x * 12}px, ${smooth.y * 8}px)`;
+
+      raf = requestAnimationFrame(animate);
+    }
+    animate();
+    return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
+  }, []);
 
   // Home hover
   const [bassHov, setBassHov] = useState(false);
@@ -72,10 +153,12 @@ export default function App() {
   // Letter animation
   useEffect(() => {
     const glyphs = "01#$\u20BF\u039E\u0394>|_\u27E8\u27E9\u221E\u2248\u00D7\u2261".split("");
+    const isDay = () => document.querySelector(".bl-root")?.classList.contains("day-mode");
     let raf;
     function animate() {
       tRef.current++;
       const t = tRef.current;
+      const day = isDay();
       bassI.current += ((bassHov ? 1 : 0) - bassI.current) * (bassHov ? 0.12 : 0.06);
       layerI.current += ((layerHov ? 1 : 0) - layerI.current) * (layerHov ? 0.12 : 0.06);
       if (layerHov && !wasLayerHov.current) decodeTimers.current.fill(0);
@@ -85,30 +168,65 @@ export default function App() {
         if (!el) return;
         const bi = bassI.current;
         if (bi > 0.01) {
-          const w = Math.sin(t * 0.1 + i * 1.2), y = w * 10 * bi, b = Math.round(229 + w * 26 * bi);
-          el.style.transform = `translateY(${y}px) scaleY(${1 + w * 0.025 * bi})`;
-          el.style.color = `rgb(${b},${b},${b})`;
-          el.style.textShadow = `0 ${Math.abs(y) * 0.4}px ${8 * bi}px rgba(255,255,255,${0.04 * bi})`;
-        } else { el.style.transform = ""; el.style.color = ""; el.style.textShadow = ""; }
+          const kick = Math.sin(t * 0.06) * 0.5 + 0.5;
+          const tremor = (Math.random() - 0.5) * 3 * bi;
+          const wave = Math.sin(t * 0.1 + i * 1.2);
+          const y = wave * 8 * bi + tremor * kick;
+          const x = tremor * kick * 0.4;
+          const skew = wave * 2 * bi * kick;
+          const scale = 1 + kick * 0.04 * bi;
+
+          el.style.transform = `translate(${x}px, ${y}px) skewX(${skew}deg) scaleY(${scale})`;
+
+          if (day) {
+            const r = Math.round(30 + wave * 20 * bi);
+            const g = Math.round(28 + wave * 12 * bi);
+            const b2 = Math.round(25 + wave * 8 * bi);
+            el.style.color = `rgb(${r},${g},${b2})`;
+            const glowStr = (0.06 + kick * 0.08) * bi;
+            el.style.textShadow = `0 0 ${10 * bi}px rgba(60,40,20,${glowStr})`;
+          } else {
+            const r = Math.round(230 + wave * 25 * bi);
+            const g = Math.round(225 + wave * 15 * bi);
+            const b2 = Math.round(220 - wave * 10 * bi);
+            el.style.color = `rgb(${r},${g},${b2})`;
+            const glowStr = (0.08 + kick * 0.12) * bi;
+            const outerGlow = (0.03 + kick * 0.05) * bi;
+            el.style.textShadow = [
+              `0 0 ${10 * bi}px rgba(255,240,220,${glowStr})`,
+              `0 0 ${40 * bi}px rgba(255,220,180,${outerGlow})`,
+              `0 ${Math.abs(y) * 0.5}px ${12 * bi}px rgba(255,255,255,${0.03 * bi})`,
+              `${-x * 0.5}px 0 ${2 * bi}px rgba(255,200,150,${0.06 * bi})`
+            ].join(",");
+          }
+        } else {
+          const breath = Math.sin(t * 0.02 + i * 0.8) * 1.2;
+          el.style.transform = `translateY(${breath}px)`;
+          el.style.color = ""; el.style.textShadow = "";
+        }
       });
 
       layerLetters.current.forEach((el, i) => {
         if (!el) return;
         const li = layerI.current, orig = "Layer"[i];
+        const dimColor = day ? "#BBBBBB" : "#3A3A3A";
+        const midColor = day ? "#888888" : "#666666";
+        const fullColor = day ? "#1A1A1A" : "#E5E5E5";
+        const glowRgba = day ? "rgba(0,0,0," : "rgba(255,255,255,";
         if (li > 0.01) {
           const sf = i * 14;
           decodeTimers.current[i]++;
           const dt = decodeTimers.current[i];
           if (dt < sf) {
-            el.textContent = orig; el.style.opacity = 0.12 * li; el.style.color = "#3A3A3A"; el.style.textShadow = "none"; el.style.transform = "";
+            el.textContent = orig; el.style.opacity = 0.12 * li; el.style.color = dimColor; el.style.textShadow = "none"; el.style.transform = "";
           } else if (dt < sf + 35) {
             if ((dt - sf) % 4 === 0) el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
-            el.style.opacity = (0.35 + Math.random() * 0.25) * li; el.style.color = "#666666";
+            el.style.opacity = (0.35 + Math.random() * 0.25) * li; el.style.color = midColor;
             el.style.transform = `translateY(${(Math.random() - 0.5) * 1.5}px)`;
-            el.style.textShadow = `0 0 ${10 * li}px rgba(255,255,255,${0.05 * li})`;
+            el.style.textShadow = `0 0 ${10 * li}px ${glowRgba}${0.05 * li})`;
           } else {
-            el.textContent = orig; el.style.opacity = 1; el.style.color = "#E5E5E5"; el.style.transform = "";
-            el.style.textShadow = `0 0 ${8 * li}px rgba(255,255,255,${0.04 * li})`;
+            el.textContent = orig; el.style.opacity = 1; el.style.color = fullColor; el.style.transform = "";
+            el.style.textShadow = `0 0 ${8 * li}px ${glowRgba}${0.04 * li})`;
             if (Math.random() < 0.006) { el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)]; el.style.opacity = 0.6; }
           }
         } else {
@@ -121,6 +239,23 @@ export default function App() {
     animate();
     return () => cancelAnimationFrame(raf);
   }, [bassHov, layerHov]);
+
+  // Navigation
+  const [activePanel, setActivePanel] = useState(0);
+
+  // Scroll progress
+  const [scrollProgress, setScrollProgress] = useState(0);
+  useEffect(() => {
+    if (view !== "sections") return;
+    const panel = activePanel === 0 ? bassPanelRef.current : document.querySelectorAll(".bl-swipe-panel")[1];
+    if (!panel) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = panel;
+      setScrollProgress(scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0);
+    };
+    panel.addEventListener("scroll", onScroll, { passive: true });
+    return () => panel.removeEventListener("scroll", onScroll);
+  }, [view, activePanel]);
 
   // Prices
   useEffect(() => {
@@ -167,36 +302,55 @@ export default function App() {
     }
   }, []);
 
-  // Navigation
-  const [activePanel, setActivePanel] = useState(0);
+  // Dynamic favicon
+  useEffect(() => {
+    const setFavicon = (text, bg, fg) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="${bg}"/><text x="32" y="44" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="28" fill="${fg}">${text}</text></svg>`;
+      const link = document.querySelector("link[rel='icon']");
+      if (link) link.href = "data:image/svg+xml," + encodeURIComponent(svg);
+    };
+    if (view === "home") {
+      setFavicon("BL", dayMode ? "#F5F5F0" : "#000", dayMode ? "#1A1A1A" : "#e5e5e5");
+    } else if (activePanel === 0) {
+      setFavicon("B", dayMode ? "#F5F5F0" : "#000", dayMode ? "#1A1A1A" : "#e5e5e5");
+    } else {
+      setFavicon("L", dayMode ? "#F5F5F0" : "#000", dayMode ? "#1A1A1A" : "#e5e5e5");
+    }
+  }, [view, activePanel, dayMode]);
+
   const touchStart = useRef({ x: 0, y: 0 });
   const touchDelta = useRef(0);
   const isDragging = useRef(false);
   const containerRef = useRef(null);
 
   const navigateToSections = useCallback((e, startPanel = 0) => {
-    if (view !== "home") return;
+    if (view !== "home" || heroExiting) return;
     setActivePanel(startPanel);
+    setHeroExiting(true);
     const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
     const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#0A0A0A" });
-    setCircleExpand(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
+    // Letters exit first, then circle wipe
     setTimeout(() => {
-      setView("sections");
-      setTimeout(() => setCircleExpand(false), 100);
-      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-    }, 500);
-  }, [view]);
+      setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? "#EAEAE5" : "#161616" });
+      setCircleExpand(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
+      setTimeout(() => {
+        setView("sections");
+        setHeroExiting(false);
+        setTimeout(() => setCircleExpand(false), 100);
+        if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
+        if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      }, 500);
+    }, 350); // wait for letters to exit
+  }, [view, heroExiting, dayMode]);
 
   const navigateHome = useCallback((e) => {
     if (view !== "sections") return;
     const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
     const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: "#000000" });
+    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? "#F5F5F0" : "#000000" });
     setCircleExpand(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
     setTimeout(() => {
@@ -249,16 +403,24 @@ export default function App() {
     }
   }, [activePanel, swipeTo]);
 
-  // Keyboard navigation
+  // Keyboard navigation + shortcuts
   useEffect(() => {
-    if (view !== "sections") return;
     const handler = (e) => {
-      if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
-      if (e.key === "ArrowRight" && activePanel === 0) swipeTo(1);
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      const key = e.key.toLowerCase();
+      if (view === "sections") {
+        if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
+        if (e.key === "ArrowRight" && activePanel === 0) swipeTo(1);
+        if (key === "h") navigateHome(e);
+        if (key === "b") swipeTo(0);
+        if (key === "l") swipeTo(1);
+      }
+      if (key === "d") toggleMode();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode]);
 
   // Feed loaders
   async function loadNews() {
@@ -276,10 +438,11 @@ export default function App() {
     try {
       const items = await api.events();
       if (items.length > 0) { setEvents(items); setEventsUpdated(Date.now()); }
-      else setEventsError("Sin eventos. Toc\u00e1 para reintentar.");
-    } catch { setEventsError("Error cargando eventos. \u00bfEst\u00e1 corriendo el backend?"); }
+      else setEventsError("Sin eventos. Tocá para reintentar.");
+    } catch { setEventsError("Error cargando eventos. ¿Está corriendo el backend?"); }
     finally { setEventsLoading(false); }
   }
+
 
   // Auto-refresh
   useEffect(() => {
@@ -295,7 +458,8 @@ export default function App() {
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
 
   return (
-    <div className="bl-root">
+    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`}>
+      {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
       {!loaded && <Preloader done={() => { setLoaded(true); if (!localStorage.getItem("bl-onboarded")) setShowOnboarding(true); }} />}
 
@@ -306,19 +470,18 @@ export default function App() {
 
       {/* HOME */}
       <div className={`bl-view bl-home-view${view === "home" ? " active" : ""}`}>
-        <main className={`bl-home${layerHov ? " layer-active" : ""}`}>
+        <main className={`bl-home${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${layerHov ? " layer-active" : ""}`}>
           <div className="bl-scanlines" aria-hidden="true" />
-          <canvas className="bl-canvas" ref={canvasRef} aria-hidden="true" />
-          <div className="bl-info bl-info-tl" aria-hidden="true">BassLayer</div>
-          <div className="bl-info bl-info-tr" aria-hidden="true">&mdash;&mdash; 2026</div>
-          <div className="bl-info bl-info-bl" aria-hidden="true">Buenos Aires</div>
-          <div className="bl-info bl-info-br" aria-hidden="true">Eleg&iacute; tu lado</div>
+          <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />
+          <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
+          <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; 2026</div>
+          <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">Buenos Aires — {clock}</div>
 
-          <div className={`bl-word-wrap${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
+          <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
             <h1 className="bl-sr-only">BassLayer</h1>
             <div className="bl-word-row">
               <div className="bl-word-half bl-word-bass"
-                onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
+                onMouseEnter={isMobile ? undefined : () => { setBassHov(true); playBass(); }}
                 onMouseLeave={isMobile ? undefined : () => setBassHov(false)}
                 onClick={(e) => navigateToSections(e, 0)}
                 onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 0)}
@@ -329,7 +492,7 @@ export default function App() {
                 {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
               </div>
               <div className="bl-word-half bl-word-layer"
-                onMouseEnter={isMobile ? undefined : () => setLayerHov(true)}
+                onMouseEnter={isMobile ? undefined : () => { setLayerHov(true); playLayer(); }}
                 onMouseLeave={isMobile ? undefined : () => setLayerHov(false)}
                 onClick={(e) => navigateToSections(e, 1)}
                 onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 1)}
@@ -341,30 +504,27 @@ export default function App() {
               </div>
             </div>
             <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>Electronic music · Events · Clubs</div>
+              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>Electronic music scene</div>
             </div>
             <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
               <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>Blockchain · Crypto · Markets</div>
             </div>
           </div>
 
-          <div className="bl-home-sub" aria-hidden="true">
-            <div className="bl-home-sub-text">Buenos Aires · Electrónica · Crypto</div>
-            <div className="bl-home-sub-line" />
-          </div>
         </main>
       </div>
 
       {/* SECTIONS */}
       <div className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`}>
         <nav className="bl-topbar" aria-label="Navegaci&oacute;n principal">
+          <div className="bl-scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           <div className="bl-topbar-left">
             <button className="bl-topbar-back" onClick={navigateHome} aria-label="Volver al inicio">&larr; Home</button>
             <span className="bl-topbar-sep" aria-hidden="true">|</span>
             <div className="bl-topbar-tabs" role="tablist">
-              <button className={`bl-topbar-tab${activePanel === 0 ? " active" : ""}`} onClick={() => swipeTo(0)} role="tab" aria-selected={activePanel === 0}>Bass</button>
+              <button className={`bl-topbar-tab bl-topbar-tab-bass${activePanel === 0 ? " active" : ""}`} onClick={() => swipeTo(0)} role="tab" aria-selected={activePanel === 0}>Bass</button>
               <span className="bl-topbar-tab-sep" aria-hidden="true">/</span>
-              <button className={`bl-topbar-tab${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer</button>
+              <button className={`bl-topbar-tab bl-topbar-tab-layer${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer</button>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -434,6 +594,15 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* MODE TOGGLE */}
+      <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? "Modo nocturno" : "Modo diurno"}>
+        {dayMode ? (
+          <svg viewBox="0 0 24 24"><path className="bl-mode-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+        ) : (
+          <svg viewBox="0 0 24 24"><circle className="bl-mode-icon" cx="12" cy="12" r="5" /><path className="bl-mode-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+        )}
+      </button>
 
       {/* TOAST */}
       <div className={`bl-toast${toast ? " show" : ""}`} aria-live="polite">{toast}</div>

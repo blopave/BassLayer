@@ -1,7 +1,8 @@
 export const api = {
-  prices: () => fetch("/api/prices").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  news:   () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  events: () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  prices:    () => fetch("/api/prices").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  news:      () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  musicNews: () => fetch("/api/music-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
 };
 
 export function formatPrice(p) {

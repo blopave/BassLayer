@@ -31,9 +31,10 @@ if (process.env.NODE_ENV === "production") {
 // ─────────────────────────────────────────────
 
 const cache = {
-  prices: { data: null, ts: 0, ttl: 30_000 },
-  news:   { data: null, ts: 0, ttl: 5 * 60_000 },
-  events: { data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — events don't change fast
+  prices:    { data: null, ts: 0, ttl: 30_000 },
+  news:      { data: null, ts: 0, ttl: 5 * 60_000 },
+  events:    { data: null, ts: 0, ttl: 60 * 60_000 },
+  musicNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — music news
 };
 
 function cached(key) {
@@ -76,13 +77,14 @@ app.get("/api/prices", async (req, res) => {
   const hit = cached("prices");
   if (hit) return res.json(hit);
   try {
-    const r = await fetchSafe(`https://api.coingecko.com/api/v3/simple/price?ids=${COIN_IDS}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`);
+    const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COIN_IDS}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
     if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
     const raw = await r.json();
-    const prices = Object.entries(raw).map(([id, d]) => ({
-      id, sym: SYM_MAP[id] || id.toUpperCase(), name: id, usd: d.usd,
-      change: Math.round((d.usd_24h_change || 0) * 10) / 10,
-      marketCap: d.usd_market_cap || null,
+    const prices = raw.map((d) => ({
+      id: d.id, sym: SYM_MAP[d.id] || d.id.toUpperCase(), name: d.id, usd: d.current_price,
+      change: Math.round((d.price_change_percentage_24h || 0) * 10) / 10,
+      marketCap: d.market_cap || null,
+      sparkline: d.sparkline_in_7d?.price || [],
     }));
     setCache("prices", prices);
     res.json(prices);
@@ -98,12 +100,24 @@ app.get("/api/prices", async (req, res) => {
 // ─────────────────────────────────────────────
 
 const RSS_FEEDS = [
+  // English
   { url: "https://www.coindesk.com/arc/outboundfeeds/rss/", source: "CoinDesk" },
   { url: "https://cointelegraph.com/rss", source: "Cointelegraph" },
   { url: "https://decrypt.co/feed", source: "Decrypt" },
   { url: "https://thedefiant.io/feed", source: "The Defiant" },
   { url: "https://www.theblock.co/rss.xml", source: "The Block" },
   { url: "https://blockworks.co/feed", source: "Blockworks" },
+  { url: "https://bitcoinmagazine.com/feed", source: "Bitcoin Mag" },
+  { url: "https://unchainedcrypto.com/feed/", source: "Unchained" },
+  { url: "https://cryptoslate.com/feed/", source: "CryptoSlate" },
+  { url: "https://cryptobriefing.com/feed/", source: "CryptoBriefing" },
+  { url: "https://u.today/rss", source: "U.Today" },
+  { url: "https://dailyhodl.com/feed/", source: "Daily Hodl" },
+  // Español / Latam
+  { url: "https://es.cointelegraph.com/rss", source: "CT Español" },
+  { url: "https://www.criptonoticias.com/feed/", source: "CriptoNoticias" },
+  { url: "https://diariobitcoin.com/feed/", source: "DiarioBitcoin" },
+  { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia" },
 ];
 
 const xmlParser = new XMLParser({ ignoreAttributes: false });
@@ -178,7 +192,7 @@ app.get("/api/news", async (req, res) => {
       .filter((r) => r.status === "fulfilled").flatMap((r) => r.value)
       .filter((item) => item.title)
       .sort((a, b) => a._mins - b._mins)
-      .slice(0, 30)
+      .slice(0, 50)
       .map(({ _mins, ...rest }) => rest);
     setCache("news", news);
     res.json(applyFilter(news));
@@ -186,6 +200,96 @@ app.get("/api/news", async (req, res) => {
     console.error("[news]", e.message);
     if (cache.news.data) return res.json(cache.news.data);
     res.status(502).json({ error: "News unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/music-news — Electronic music RSS
+// ─────────────────────────────────────────────
+
+const MUSIC_RSS_FEEDS = [
+  // Argentina / Latam
+  { url: "https://indiehoy.com/feed/", source: "Indie Hoy" },
+  { url: "https://www.clarin.com/rss/espectaculos/", source: "Clarín" },
+  // International — electronic music
+  { url: "https://djmag.com/feed", source: "DJ Mag" },
+  { url: "https://magneticmag.com/feed/", source: "Magnetic" },
+  { url: "https://daily.bandcamp.com/feed", source: "Bandcamp" },
+  { url: "https://crackmagazine.net/feed/", source: "Crack" },
+  { url: "https://dancingastronaut.com/feed/", source: "Dancing Astro" },
+  { url: "https://datatransmission.co/feed/", source: "Data Trans" },
+  { url: "https://clubbingtv.com/feed/", source: "Clubbing TV" },
+];
+
+function detectMusicTag(title) {
+  const t = title.toLowerCase();
+  if (t.includes("interview") || t.includes("entrevista") || t.includes("speaks") || t.includes("talks") || t.includes("habla") || t.includes("charla")) return "Interview";
+  if (t.includes("review") || t.includes("album") || t.includes("álbum") || t.includes("release") || t.includes("lanzamiento") || t.includes("estreno") || t.includes("track") || t.includes("remix") || t.includes("ep ") || t.includes("lp ") || t.includes("disco")) return "Music";
+  if (t.includes("festival") || t.includes("lineup") || t.includes("line-up") || t.includes("announces") || t.includes("grilla") || t.includes("lollapalooza") || t.includes("creamfields")) return "Festival";
+  if (t.includes("techno")) return "Techno";
+  if (t.includes("house")) return "House";
+  if (t.includes("club") || t.includes("venue") || t.includes("boliche") || t.includes("closing") || t.includes("opening") || t.includes("fiesta")) return "Clubs";
+  if (t.includes("tour") || t.includes("gira") || t.includes("dates") || t.includes("show") || t.includes("recital") || t.includes("concierto")) return "Tour";
+  if (t.includes("mix") || t.includes("set") || t.includes("podcast") || t.includes("sesión") || t.includes("sesion")) return "Mix";
+  if (t.includes("buenos aires") || t.includes("argentina") || t.includes("córdoba") || t.includes("rosario") || t.includes("mendoza")) return "Local";
+  return "Scene";
+}
+
+async function fetchMusicRSSFeed(feed) {
+  try {
+    const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    const parsed = xmlParser.parse(xml);
+    let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
+    if (!Array.isArray(items)) items = [items];
+    return items.slice(0, 12).map((item) => {
+      const title = item.title?.["#text"] || item.title || "";
+      const rawLink = item.link?.["@_href"] || item.link || "";
+      const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
+      const date = item.pubDate || item.published || item.updated || "";
+      const rel = relativeTime(date);
+      // Clean title: remove source prefix, trim whitespace, remove " - " prefixes
+      let cleanTitle = String(title).replace(/^(Mixmag|DJ Mag|RA|EDM\.com)\s*[:–—\-|]\s*/i, "").trim();
+      cleanTitle = cleanTitle.replace(/\s{2,}/g, " ").slice(0, 120);
+      return { time: rel, _mins: timeToMins(rel), tag: detectMusicTag(String(title)), title: cleanTitle, source: feed.source, url: link };
+    });
+  } catch (e) {
+    console.error(`[music-news] ${feed.source}:`, e.message);
+    return [];
+  }
+}
+
+app.get("/api/music-news", async (req, res) => {
+  const tagFilter = req.query.tag;
+  const applyFilter = (arr) => tagFilter && tagFilter.toLowerCase() !== "all"
+    ? arr.filter((n) => n.tag.toLowerCase() === tagFilter.toLowerCase()) : arr;
+
+  const hit = cached("musicNews");
+  if (hit) return res.json(applyFilter(hit));
+
+  try {
+    const results = await Promise.allSettled(MUSIC_RSS_FEEDS.map(fetchMusicRSSFeed));
+    // Filter general sources to only music/electronic related content
+    const MUSIC_KEYWORDS = /electr[oó]ni|techno|house|dj\b|club|fiesta|rave|festival|remix|beat|synth|dance|boliche|recital|disco|vinyl|vinilo|producer|productor|bass|bpm|after|underground/i;
+    const news = results
+      .filter((r) => r.status === "fulfilled").flatMap((r) => r.value)
+      .filter((item) => {
+        if (!item.title) return false;
+        // Music-specific sources: keep all
+        if (["DJ Mag", "Magnetic", "Bandcamp", "Crack", "Dancing Astro", "Data Trans", "Clubbing TV"].includes(item.source)) return true;
+        // General sources: only keep music/electronic related
+        return MUSIC_KEYWORDS.test(item.title);
+      })
+      .sort((a, b) => a._mins - b._mins)
+      .slice(0, 40)
+      .map(({ _mins, ...rest }) => rest);
+    setCache("musicNews", news);
+    res.json(applyFilter(news));
+  } catch (e) {
+    console.error("[music-news]", e.message);
+    if (cache.musicNews.data) return res.json(cache.musicNews.data);
+    res.status(502).json({ error: "Music news unavailable" });
   }
 });
 
@@ -558,18 +662,20 @@ if (process.env.NODE_ENV === "production") {
 
 app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────┐
-  │  BassLayer API v1.3                  │
+  │  BassLayer API v1.4                  │
   │  http://localhost:${PORT}              │
   │                                      │
-  │  /api/prices    30s cache            │
-  │  /api/news      5min (?tag=BTC)      │
-  │  /api/events    1h (?genre=Techno)   │
-  │  /api/meta      filter options       │
+  │  /api/prices      30s cache          │
+  │  /api/news        5min (?tag=BTC)    │
+  │  /api/music-news  10min (?tag=...)   │
+  │  /api/events      1h (?genre=...)    │
+  │  /api/meta        filter options     │
   │  /api/health                         │
   │                                      │
   │  Sources:                            │
-  │   Events: Buenos Aliens → RA → fb    │
-  │   News: 6 RSS feeds                  │
-  │   Prices: CoinGecko                  │
+  │   Events: Buenos Aliens → RA → fb   │
+  │   Crypto: 16 RSS feeds (EN+ES)      │
+  │   Music: 9 feeds (AR+intl)          │
+  │   Prices: CoinGecko                 │
   └──────────────────────────────────────┘
 `));
