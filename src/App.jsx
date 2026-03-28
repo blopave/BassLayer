@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { api, timeAgo } from "./utils/api";
 import { isMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
-import { useFavorites } from "./hooks/useFavorites";
-import { useSound } from "./hooks/useSound";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { EventModal } from "./components/EventModal";
@@ -37,9 +35,6 @@ export default function App() {
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
-  // Favorites & Sound
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const { playBass, playLayer } = useSound();
 
   // Share
   function shareEvent(ev) {
@@ -481,7 +476,7 @@ export default function App() {
             <h1 className="bl-sr-only">BassLayer</h1>
             <div className="bl-word-row">
               <div className="bl-word-half bl-word-bass"
-                onMouseEnter={isMobile ? undefined : () => { setBassHov(true); playBass(); }}
+                onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
                 onMouseLeave={isMobile ? undefined : () => setBassHov(false)}
                 onClick={(e) => navigateToSections(e, 0)}
                 onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 0)}
@@ -492,7 +487,7 @@ export default function App() {
                 {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
               </div>
               <div className="bl-word-half bl-word-layer"
-                onMouseEnter={isMobile ? undefined : () => { setLayerHov(true); playLayer(); }}
+                onMouseEnter={isMobile ? undefined : () => setLayerHov(true)}
                 onMouseLeave={isMobile ? undefined : () => setLayerHov(false)}
                 onClick={(e) => navigateToSections(e, 1)}
                 onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 1)}
@@ -550,7 +545,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={onPanelTouchStart} onTouchMove={onPanelTouchMove} onTouchEnd={onPanelTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} isFavorite={isFavorite} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} />
             <div className="bl-section-end" />
           </div>
 
@@ -564,7 +559,7 @@ export default function App() {
       </div>
 
       {/* EVENT MODAL */}
-      <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} onShare={shareEvent} />
+      <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} onShare={shareEvent} />
 
       {/* PRICE MODAL */}
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />

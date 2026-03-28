@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
+import { CryptoDashboard } from "./CryptoDashboard";
 
 function useScrollReveal(deps) {
   const containerRef = useRef(null);
@@ -30,6 +31,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
 
   return (
     <>
+      <CryptoDashboard />
       <FilterBar items={tags} active={filter} onChange={onFilter} className="layer-filters" />
       {loading ? <NewsSkeleton />
         : error ? <div className="bl-feed"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>

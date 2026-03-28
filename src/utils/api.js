@@ -3,6 +3,7 @@ export const api = {
   news:      () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   musicNews: () => fetch("/api/music-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  dashboard: () => fetch("/api/dashboard").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
 };
 
 export function formatPrice(p) {

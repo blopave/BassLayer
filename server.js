@@ -34,7 +34,8 @@ const cache = {
   prices:    { data: null, ts: 0, ttl: 30_000 },
   news:      { data: null, ts: 0, ttl: 5 * 60_000 },
   events:    { data: null, ts: 0, ttl: 60 * 60_000 },
-  musicNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — music news
+  musicNews: { data: null, ts: 0, ttl: 10 * 60_000 },
+  dashboard: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
 };
 
 function cached(key) {
@@ -62,6 +63,26 @@ const BROWSER_HEADERS = {
 
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTH_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
+
+// ─── City detection ──────────────────────────
+const CITY_PATTERNS = [
+  { city: "CABA",     rx: /\b(palermo|recoleta|san telmo|microcentro|belgrano|almagro|caballito|flores|villa crespo|villa urquiza|nuñez|colegiales|barracas|la boca|congreso|abasto|chacarita|constitución|monserrat|retiro|tribunales|costanera|puerto madero)\b/i },
+  { city: "CABA",     rx: /\bbuen(?:os\s)?aires\b(?!.*\bprovincia\b)/i },
+  { city: "Córdoba",  rx: /\bc[oó]rdoba\b/i },
+  { city: "Rosario",  rx: /\brosario\b/i },
+  { city: "Mendoza",  rx: /\bmendoza\b/i },
+  { city: "La Plata", rx: /\bla plata\b/i },
+  { city: "Mar del Plata", rx: /\bmar del plata\b/i },
+  { city: "Bariloche", rx: /\bbariloche\b/i },
+];
+
+function detectCity(venue, address) {
+  const text = `${venue || ""} ${address || ""}`;
+  for (const { city, rx } of CITY_PATTERNS) {
+    if (rx.test(text)) return city;
+  }
+  return "CABA"; // default for Buenos Aliens / RA Buenos Aires data
+}
 
 // ─────────────────────────────────────────────
 //  GET /api/prices — CoinGecko
@@ -324,28 +345,9 @@ async function fetchBuenosAliens() {
     }, 15000);
     if (!r.ok) { console.error(`[events] Buenos Aliens ${r.status}`); return []; }
     const html = await r.text();
-
-    // Parse event blocks — each event starts with a headline + date + venue pattern
-    // The page has structured text blocks per event
     const events = [];
-    const currentYear = new Date().getFullYear();
 
-    // Match pattern: "Title\nDAY_WEEKDAY DD MONTH\nVenue" with line-up info
-    // Buenos Aliens uses this format: "Artists y más\nDIA DD MES\nVenue"
-    // We'll extract from the agenda section
-
-    // Find agenda section
-    const agendaStart = html.indexOf("# Agenda");
-    if (agendaStart === -1) {
-      // Try alternate: look for event blocks with date patterns
-    }
-
-    // Strategy: extract all text blocks that contain event data
-    // Each event block has: title line, date line (VIE/SAB/DOM DD MES), venue, lineup
-    const eventPattern = /([^<\n]+(?:y más|y otros)?)\s*\n?\s*(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(?:SAB\s+\d{1,2}\s+)?(\w{3})\s*\n?\s*([^\n<]+?)(?:\n|<)/gi;
-
-    // Simpler approach: parse the raw text content
-    // Remove HTML tags to get clean text
+    // Strip to clean text
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -355,80 +357,151 @@ async function fetchBuenosAliens() {
       .replace(/&#x27;/g, "'")
       .replace(/\n{3,}/g, "\n\n");
 
-    // Find event blocks: look for "Line up" sections which indicate event details
+    // Split on "Line up" to get event blocks
     const blocks = text.split(/Line up\s*/i);
 
     for (let i = 1; i < blocks.length; i++) {
-      const block = blocks[i];
-      const prevBlock = blocks[i - 1];
+      const afterLineup = blocks[i];
+      const beforeLineup = blocks[i - 1];
+      const prevLines = beforeLineup.trim().split("\n").filter(l => l.trim()).slice(-8);
 
-      // Get venue and date from previous block (it's the header before "Line up")
-      const lines = prevBlock.trim().split("\n").filter(l => l.trim()).slice(-6);
-
-      // Find date: pattern like "VIE 27 FEB" or "SAB 28 FEB"
+      // --- Extract date ---
       let day = "", month = "";
-      let venue = "";
-      let eventTitle = "";
-
-      for (const line of lines) {
-        const dateMatch = line.match(/(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(\w{3})/i);
+      let dateLineIdx = -1;
+      for (let j = 0; j < prevLines.length; j++) {
+        const dateMatch = prevLines[j].match(/(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(\w{3})/i);
         if (dateMatch) {
           day = dateMatch[1].padStart(2, "0");
           month = dateMatch[2].charAt(0).toUpperCase() + dateMatch[2].slice(1).toLowerCase();
+          dateLineIdx = j;
+        }
+      }
+      if (!day || !month) continue;
+
+      // --- Determine format ---
+      // "Destacados" format: date line contains " - " suffix, next line is "Artists y más en VENUE"
+      // "Agenda" format: title line → date line → venue line → Line up
+      const dateLine = prevLines[dateLineIdx] || "";
+      const isDestacado = dateLine.includes(" - ") || dateLine.match(/^(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+\d{1,2}\s+\w{3}\s*-/i);
+
+      let eventName = "";
+      let venue = "";
+      let address = "";
+
+      if (isDestacado) {
+        // Destacados: line after date is "Artists y más en VENUE, City"
+        const titleLine = (dateLineIdx + 1 < prevLines.length) ? prevLines[dateLineIdx + 1].trim() : "";
+        // Extract venue from "Artists y más en VENUE_NAME" or just the full title
+        const enMatch = titleLine.match(/^(.+?)\s+en\s+(.+)$/i);
+        if (enMatch) {
+          eventName = enMatch[1].trim();
+          venue = enMatch[2].trim();
+        } else {
+          eventName = titleLine;
+        }
+      } else {
+        // Agenda: lines before date are title, line after date is venue
+        // Pattern: ... Title → SAB 28 MAR → Venue → Line up
+        if (dateLineIdx > 0) {
+          eventName = prevLines[dateLineIdx - 1].trim();
+        }
+        if (dateLineIdx + 1 < prevLines.length) {
+          const nextLine = prevLines[dateLineIdx + 1].trim();
+          // Make sure it's not another date line or "Line up"
+          if (!nextLine.match(/^(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s/i) && !nextLine.match(/^Line up/i)) {
+            venue = nextLine;
+          }
         }
       }
 
-      // Venue is typically the last meaningful line before "Line up"
-      const venueLines = lines.filter(l => !l.match(/^(VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s/i) && l.trim().length > 2);
-      if (venueLines.length > 0) {
-        venue = venueLines[venueLines.length - 1].trim().slice(0, 30);
-        if (venueLines.length > 1) {
-          eventTitle = venueLines[venueLines.length - 2].trim();
-        }
-      }
-
-      // Extract artists from lineup block
-      const artistLines = block.split("\n").filter(l => l.trim()).slice(0, 10);
+      // --- Extract artists ---
+      const postLines = afterLineup.split("\n").filter(l => l.trim());
       const artists = [];
-      for (const line of artistLines) {
-        const clean = line.trim()
-          .replace(/\(.*?\)/g, "").replace(/b2b/gi, " b2b ").trim();
-        if (clean.length > 1 && clean.length < 50 &&
-            !clean.match(/^(Desde|Estilo|queda en|Line up|Edad|https?)/i)) {
-          artists.push(clean);
-        }
-        if (clean.match(/^Desde las/i) || clean.match(/queda en/i)) break;
+      for (const line of postLines) {
+        const clean = line.trim().replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
+        // Stop at metadata lines
+        if (clean.match(/^(Desde las|Estilo:|queda en|será en)/i)) break;
+        if (clean.match(/^https?:/i)) break;
+        // Stop at date lines (e.g. "VIE 10 ABR -") — means we've leaked into next event
+        if (clean.match(/^(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+\d{1,2}\s+\w{3}/i)) break;
+        // Stop at venue address patterns
+        if (clean.match(/\bqueda en\b/i) || clean.match(/\bserá en\b/i)) break;
+        // Skip empty/short or metadata
+        if (clean.length < 2 || clean.length > 50) continue;
+        if (clean.match(/^(Line up|Edad|Precio)/i)) continue;
+        // Clean "b2b" formatting
+        const artistClean = clean.replace(/\bb2b\b/gi, "b2b").trim();
+        if (artistClean.length > 1) artists.push(artistClean);
+        if (artists.length >= 10) break;
       }
 
-      if (!day || !month || artists.length === 0) continue;
+      if (artists.length === 0) continue;
 
-      // Find time
-      const timeMatch = block.match(/Desde las (\d{1,2}(?::\d{2})?)\s*hs/i);
+      // --- Extract venue address for Maps ---
+      // Patterns: "X queda en ADDRESS", "X será en ADDRESS", "X es ADDRESS"
+      const addressMatch = afterLineup.match(/(?:queda en|será en)\s*([^\n]+)/i)
+        || afterLineup.match(/\b(?:es)\s+([A-Z][^\n]{10,})/m); // "Crobar es Marcelino Freyre..."
+      if (addressMatch) {
+        address = addressMatch[1]
+          .replace(/\.\s*$/, "")
+          .replace(/\bqueda en\b.*/i, "") // clean nested "queda en" within address
+          .trim();
+      }
+
+      // If venue wasn't found, try to extract from the "y más en" pattern or address
+      if (!venue && address) {
+        venue = address.split(",")[0].trim();
+      }
+      if (!venue) venue = "TBA";
+
+      // Clean venue: remove trailing truncation, limit length
+      venue = venue.replace(/,\s*$/, "").slice(0, 50);
+
+      // --- Extract time ---
+      const timeMatch = afterLineup.match(/Desde las (\d{1,2}(?::\d{2})?)\s*hs/i);
       const time = timeMatch ? timeMatch[1] + (timeMatch[1].includes(":") ? "" : ":00") : "23:00";
 
-      // Find style/genre
-      const styleMatch = block.match(/Estilo:\s*([^\n.]+)/i);
-      const genre = styleMatch ? detectGenre(styleMatch[1]) : detectGenre(artists.join(" ") + " " + (eventTitle || ""));
+      // --- Extract genre ---
+      const styleMatch = afterLineup.match(/Estilo:\s*([^\n.]+)/i);
+      const genre = styleMatch ? detectGenre(styleMatch[1]) : detectGenre(artists.join(" ") + " " + eventName);
 
-      const name = eventTitle || artists[0] || "Event";
-      const artistStr = artists.slice(0, 3).join(", ");
+      // --- Build clean event name ---
+      // Clean up any address fragments that leaked in
+      eventName = eventName
+        .replace(/\s*queda en\s.*/i, "")
+        .replace(/\s*será en\s.*/i, "")
+        .trim()
+        .slice(0, 60);
 
+      if (!eventName) eventName = artists.slice(0, 2).join(", ");
+
+      const fullAddress = address || venue;
       events.push({
         day, month,
-        name: name.slice(0, 50),
-        detail: artistStr ? `${genre} · ${artistStr}` : genre,
-        genre,
-        time,
-        venue: venue || "TBA",
+        name: eventName,
+        venue,
+        address: fullAddress,
+        city: detectCity(venue, fullAddress),
         artists,
+        time,
+        genre,
         url: "",
         image: null,
         source: "buenosaliens",
       });
     }
 
-    console.log(`[events] Buenos Aliens: parsed ${events.length} events`);
-    return events;
+    // Deduplicate within BA results (page sometimes repeats events)
+    const seen = new Set();
+    const unique = events.filter(ev => {
+      const key = `${ev.day}-${ev.month}-${ev.name}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`[events] Buenos Aliens: parsed ${unique.length} events (${events.length - unique.length} dupes removed)`);
+    return unique;
 
   } catch (e) {
     console.error("[events] Buenos Aliens error:", e.message);
@@ -445,15 +518,20 @@ const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,
 function formatRAEvent(ev) {
   const date = new Date(ev.date);
   const artists = (ev.artists || []).map(a => a.name);
+  const venueName = (ev.venue?.name || "TBA").slice(0, 50);
+  const areaName = ev.venue?.area?.name || "";
   const genre = detectGenre((ev.title || "") + " " + artists.join(" "));
+  const fullAddress = areaName ? `${venueName}, ${areaName}` : venueName;
   return {
     day: String(date.getDate()).padStart(2, "0"),
     month: MONTHS_ES[date.getMonth()],
-    name: (ev.title || "Event").slice(0, 50),
-    detail: artists.length ? `${genre} · ${artists.slice(0,3).join(", ")}` : genre,
-    genre, time: ev.startTime || "23:00",
-    venue: (ev.venue?.name || "TBA").slice(0, 25),
+    name: (ev.title || "Event").slice(0, 60),
+    venue: venueName,
+    address: fullAddress,
+    city: detectCity(venueName, fullAddress),
     artists,
+    time: ev.startTime || "23:00",
+    genre,
     url: ev.contentUrl ? `https://ra.co${ev.contentUrl}` : "",
     image: ev.flyerFront || null,
     source: "ra",
@@ -503,10 +581,10 @@ async function fetchRAHtml() {
 // Fallback events are generated dynamically to always show future dates
 function generateFallbackEvents() {
   const templates = [
-    { name:"Techno Night",           detail:"Techno · Local artists",              genre:"Techno",      time:"23:59", venue:"Blow, Palermo",         artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"House Session",          detail:"House · Deep house night",            genre:"House",       time:"23:00", venue:"La Biblioteca",         artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"Progressive Sunday",     detail:"Progressive · Sunset session",       genre:"Progressive", time:"18:00", venue:"Club de Pescadores",    artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"Electronic Underground", detail:"Electronic · Underground party",     genre:"Electronic",  time:"23:00", venue:"Crobar",                artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"Techno Night",           genre:"Techno",      time:"23:59", venue:"Blow",              address:"Blow, Palermo, Buenos Aires",              city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"House Session",          genre:"House",       time:"23:00", venue:"La Biblioteca",     address:"La Biblioteca, Buenos Aires",              city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"Progressive Sunday",     genre:"Progressive", time:"18:00", venue:"Club de Pescadores", address:"Club de Pescadores, Costanera Norte, Buenos Aires", city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
+    { name:"Electronic Underground", genre:"Electronic",  time:"23:00", venue:"Crobar",            address:"Crobar, Palermo, Buenos Aires",            city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
   ];
   const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const events = [];
@@ -643,6 +721,53 @@ app.get("/api/prices/:id/chart", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  GET /api/dashboard — BTC dominance, Fear & Greed, ETH gas
+// ─────────────────────────────────────────────
+
+app.get("/api/dashboard", async (req, res) => {
+  const hit = cached("dashboard");
+  if (hit) return res.json(hit);
+
+  const results = await Promise.allSettled([
+    // BTC dominance + total market cap from CoinGecko global
+    fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? r.json() : null),
+    // Fear & Greed index
+    fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? r.json() : null),
+    // ETH gas from Etherscan (free tier, no key needed for gas oracle)
+    fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? r.json() : null),
+  ]);
+
+  const globalData = results[0].status === "fulfilled" ? results[0].value : null;
+  const fngData = results[1].status === "fulfilled" ? results[1].value : null;
+  const gasData = results[2].status === "fulfilled" ? results[2].value : null;
+
+  const dashboard = {
+    btcDominance: globalData?.data?.market_cap_percentage?.btc
+      ? Math.round(globalData.data.market_cap_percentage.btc * 10) / 10
+      : null,
+    ethDominance: globalData?.data?.market_cap_percentage?.eth
+      ? Math.round(globalData.data.market_cap_percentage.eth * 10) / 10
+      : null,
+    totalMarketCap: globalData?.data?.total_market_cap?.usd || null,
+    marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd
+      ? Math.round(globalData.data.market_cap_change_percentage_24h_usd * 10) / 10
+      : null,
+    fearGreed: fngData?.data?.[0] ? {
+      value: parseInt(fngData.data[0].value),
+      label: fngData.data[0].value_classification,
+    } : null,
+    ethGas: gasData?.result?.ProposeGasPrice ? {
+      low: parseInt(gasData.result.SafeGasPrice) || null,
+      avg: parseInt(gasData.result.ProposeGasPrice) || null,
+      high: parseInt(gasData.result.FastGasPrice) || null,
+    } : null,
+  };
+
+  setCache("dashboard", dashboard);
+  res.json(dashboard);
+});
+
+// ─────────────────────────────────────────────
 //  Meta + Health
 // ─────────────────────────────────────────────
 
@@ -669,6 +794,7 @@ app.listen(PORT, () => console.log(`
   │  /api/news        5min (?tag=BTC)    │
   │  /api/music-news  10min (?tag=...)   │
   │  /api/events      1h (?genre=...)    │
+  │  /api/dashboard   5min (market)     │
   │  /api/meta        filter options     │
   │  /api/health                         │
   │                                      │
