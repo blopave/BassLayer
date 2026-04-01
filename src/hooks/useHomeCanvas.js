@@ -1,8 +1,9 @@
 import { useRef, useEffect } from "react";
 
-export function useHomeCanvas(canvasRef, bassI, layerI) {
+export function useHomeCanvas(canvasRef, bassI, layerI, view) {
   const tRef = useRef(0);
   useEffect(() => {
+    if (view !== "home") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -61,5 +62,5 @@ export function useHomeCanvas(canvasRef, bassI, layerI) {
     }
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
-  }, []);
+  }, [view]);
 }

@@ -1,33 +1,12 @@
-import { useEffect, useRef } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoDashboard } from "./CryptoDashboard";
-
-function useScrollReveal(deps) {
-  const containerRef = useRef(null);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const items = container.querySelectorAll(".bl-reveal");
-    if (!items.length) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
-    items.forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
-  }, deps);
-  return containerRef;
-}
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
-  const listRef = useScrollReveal([filtered, loading]);
+  const listRef = useScrollReveal(loading);
 
   return (
     <>
@@ -38,14 +17,14 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
         : filtered.length === 0 ? (
           <div className="bl-feed">
             <div className="bl-empty">
-              <span className="bl-empty-icon">&#x1F4E1;</span>
+              <span className="bl-empty-icon" aria-hidden="true">&#x1F4E1;</span>
               Sin noticias para &ldquo;{filter}&rdquo;. El mercado est&aacute; tranquilo.
             </div>
           </div>
         )
         : <div className="bl-feed" role="feed" aria-label="Noticias crypto" ref={listRef}>
             {filtered.map((item, idx) => (
-              <article className="bl-feed-item bl-reveal" key={`${item.source}-${item.title.slice(0,40)}`} style={{ transitionDelay: `${Math.min(idx * 0.03, 0.25)}s` }}>
+              <article className="bl-feed-item bl-reveal" key={`${item.source}-${(item.title || "").slice(0,40)}`} style={{ transitionDelay: `${Math.min(idx * 0.03, 0.25)}s` }}>
                 <span className="bl-feed-time">{item.time}</span>
                 <span className="bl-feed-tag">{item.tag}</span>
                 {item.url ? <a className="bl-feed-title" href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>

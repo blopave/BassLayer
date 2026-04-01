@@ -14,10 +14,11 @@
   <meta property="og:title" content="BassLayer" />
   <meta property="og:description" content="Eventos electrónicos & Crypto en Buenos Aires" />
   <meta property="og:url" content="https://basslayer.app" />
-  <meta property="og:image" content="/og-image.svg" />
+  <meta property="og:image" content="https://basslayer.app/og-image.png" />
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://basslayer.app/og-image.png" />
   <meta name="twitter:title" content="BassLayer" />
   <meta name="twitter:description" content="Eventos electrónicos & Crypto en Buenos Aires" />
 
@@ -26,12 +27,37 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-  <!-- Google Fonts: preconnect + stylesheet -->
+  <!-- Google Fonts: preconnect + async load -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" /></noscript>
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "BassLayer",
+        "url": "https://basslayer.app",
+        "description": "Hub de eventos de música electrónica y noticias crypto en Buenos Aires",
+        "inLanguage": ["es", "en"]
+      },
+      {
+        "@type": "Organization",
+        "name": "BassLayer",
+        "url": "https://basslayer.app",
+        "logo": "https://basslayer.app/icon-512.png",
+        "sameAs": []
+      }
+    ]
+  }
+  </script>
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -40,6 +66,11 @@
 </head>
 <body>
   <div id="root"></div>
+  <noscript>
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#e5e5e5;font-family:sans-serif;text-align:center;padding:2rem">
+      <p>BassLayer necesita JavaScript para funcionar. Por favor habilitalo en tu navegador.</p>
+    </div>
+  </noscript>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

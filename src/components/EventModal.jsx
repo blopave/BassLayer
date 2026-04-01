@@ -14,7 +14,15 @@ function buildICS(event) {
   if (start < now - 30 * 86400000) start.setFullYear(year + 1);
   const end = new Date(start.getTime() + 5 * 3600000); // 5 hour duration
 
-  const fmt = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const fmtLocal = (d) => {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `${y}${mo}${dd}T${hh}${mm}${ss}`;
+  };
   const artistStr = event.artists?.filter(a => a && a !== "TBA").join(", ") || "";
   const location = event.address || event.venue || "";
   const description = [
@@ -29,8 +37,8 @@ function buildICS(event) {
     "PRODID:-//BassLayer//Events//ES",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
+    `DTSTART;TZID=America/Argentina/Buenos_Aires:${fmtLocal(start)}`,
+    `DTEND;TZID=America/Argentina/Buenos_Aires:${fmtLocal(end)}`,
     `SUMMARY:${event.name}`,
     `LOCATION:${location}`,
     `DESCRIPTION:${description}`,
@@ -58,9 +66,10 @@ function downloadICS(event) {
 export function EventModal({ event, onClose, onShare }) {
   useEffect(() => {
     if (!event) return;
+    document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
   }, [event, onClose]);
 
   if (!event) return null;

@@ -8,9 +8,10 @@ export function PriceModal({ price, onClose }) {
 
   useEffect(() => {
     if (!price) return;
+    document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
   }, [price, onClose]);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export function PriceModal({ price, onClose }) {
     setLoading(true);
     setChartData(null);
     fetch(`/api/prices/${price.id}/chart`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then((d) => { setChartData(d.prices || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [price]);

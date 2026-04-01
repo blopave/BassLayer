@@ -9,7 +9,7 @@ export function Preloader({ done }) {
     return () => clearInterval(iv);
   }, []);
 
-  useEffect(() => { if (p >= 100) { const t = setTimeout(done, 300); return () => clearTimeout(t); } }, [p]);
+  useEffect(() => { if (p >= 100) { const t = setTimeout(done, 300); return () => clearTimeout(t); } }, [p, done]);
 
   // Generative pattern
   useEffect(() => {

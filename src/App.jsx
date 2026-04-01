@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api, timeAgo } from "./utils/api";
-import { isMobile } from "./utils/constants";
+import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
@@ -10,6 +10,7 @@ import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState("home");
   const [circleStyle, setCircleStyle] = useState({});
@@ -29,16 +30,38 @@ export default function App() {
   const [eventsUpdated, setEventsUpdated] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventsSearch, setEventsSearch] = useState("");
-  const [toast, setToast] = useState("");
+  // toast removed — was unused
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
+  // Feed loaders — defined early since PTR, navigateToSections, and auto-refresh depend on them
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true); setNewsError(null);
+    try {
+      const items = await api.news();
+      if (items.length > 0) { setNews(items); setNewsUpdated(Date.now()); }
+      else setNewsError("Sin noticias. Tocá para reintentar.");
+    } catch { setNewsError("Error cargando noticias. ¿Está corriendo el backend?"); }
+    finally { setNewsLoading(false); }
+  }, []);
+
+  const loadEvents = useCallback(async () => {
+    setEventsLoading(true); setEventsError(null);
+    try {
+      const items = await api.events();
+      if (items.length > 0) { setEvents(items); setEventsUpdated(Date.now()); }
+      else setEventsError("Sin eventos. Tocá para reintentar.");
+    } catch { setEventsError("Error cargando eventos. ¿Está corriendo el backend?"); }
+    finally { setEventsLoading(false); }
+  }, []);
+
 
   // Share
   function shareEvent(ev) {
-    const text = `${ev.name} \u2014 ${ev.day} ${ev.month} @ ${ev.venue}\n${ev.detail}`;
+    const artists = (ev.artists || []).filter(a => a && a !== "TBA").slice(0, 3).join(", ");
+    const text = `${ev.name} \u2014 ${ev.day} ${ev.month} @ ${ev.venue}${artists ? "\n" + artists : ""}`;
     const url = ev.url || `https://www.google.com/search?q=${encodeURIComponent(ev.name + " " + ev.venue + " Buenos Aires")}`;
     if (navigator.share) {
       navigator.share({ title: ev.name, text, url }).catch(() => {});
@@ -84,6 +107,9 @@ export default function App() {
   const mouseNorm = useRef({ x: 0, y: 0 }); // -1 to 1 normalized
   const parallaxRefs = useRef({ tl: null, tr: null, bl: null, br: null, canvas: null });
 
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
   useEffect(() => {
     if (isMobile) return;
     const isInteractive = (el) => {
@@ -111,21 +137,23 @@ export default function App() {
       p.y += (t.y - p.y) * 0.15;
       if (cursorRef.current) cursorRef.current.style.transform = `translate(${p.x}px, ${p.y}px)`;
 
-      // Parallax
-      smooth.x += (mouseNorm.current.x - smooth.x) * 0.05;
-      smooth.y += (mouseNorm.current.y - smooth.y) * 0.05;
-      const pr = parallaxRefs.current;
-      if (pr.tl) pr.tl.style.transform = `translate(${smooth.x * -8}px, ${smooth.y * -8}px)`;
-      if (pr.tr) pr.tr.style.transform = `translate(${smooth.x * -6}px, ${smooth.y * -6}px)`;
-      if (pr.bl) pr.bl.style.transform = `translate(${smooth.x * -10}px, ${smooth.y * -10}px)`;
-      if (pr.br) pr.br.style.transform = `translate(${smooth.x * -5}px, ${smooth.y * -5}px)`;
-      if (pr.canvas) pr.canvas.style.transform = `translate(${smooth.x * 12}px, ${smooth.y * 8}px)`;
+      // Parallax — only compute on home view
+      if (viewRef.current === "home") {
+        smooth.x += (mouseNorm.current.x - smooth.x) * 0.05;
+        smooth.y += (mouseNorm.current.y - smooth.y) * 0.05;
+        const pr = parallaxRefs.current;
+        if (pr.tl) pr.tl.style.transform = `translate(${smooth.x * -8}px, ${smooth.y * -8}px)`;
+        if (pr.tr) pr.tr.style.transform = `translate(${smooth.x * -6}px, ${smooth.y * -6}px)`;
+        if (pr.bl) pr.bl.style.transform = `translate(${smooth.x * -10}px, ${smooth.y * -10}px)`;
+        if (pr.br) pr.br.style.transform = `translate(${smooth.x * -5}px, ${smooth.y * -5}px)`;
+        if (pr.canvas) pr.canvas.style.transform = `translate(${smooth.x * 12}px, ${smooth.y * 8}px)`;
+      }
 
       raf = requestAnimationFrame(animate);
     }
     animate();
     return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
-  }, []);
+  }, [isMobile]);
 
   // Home hover
   const [bassHov, setBassHov] = useState(false);
@@ -143,10 +171,11 @@ export default function App() {
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick((n) => n + 1), 30_000); return () => clearInterval(iv); }, []);
 
-  useHomeCanvas(canvasRef, bassI, layerI);
+  useHomeCanvas(canvasRef, bassI, layerI, view);
 
-  // Letter animation
+  // Letter animation — only run on home view
   useEffect(() => {
+    if (view !== "home") return;
     const glyphs = "01#$\u20BF\u039E\u0394>|_\u27E8\u27E9\u221E\u2248\u00D7\u2261".split("");
     const isDay = () => document.querySelector(".bl-root")?.classList.contains("day-mode");
     let raf;
@@ -233,7 +262,7 @@ export default function App() {
     }
     animate();
     return () => cancelAnimationFrame(raf);
-  }, [bassHov, layerHov]);
+  }, [bassHov, layerHov, view]);
 
   // Navigation
   const [activePanel, setActivePanel] = useState(0);
@@ -242,7 +271,7 @@ export default function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
   useEffect(() => {
     if (view !== "sections") return;
-    const panel = activePanel === 0 ? bassPanelRef.current : document.querySelectorAll(".bl-swipe-panel")[1];
+    const panel = activePanel === 0 ? bassPanelRef.current : layerPanelRef.current;
     if (!panel) return;
     const onScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = panel;
@@ -260,42 +289,47 @@ export default function App() {
     return () => clearInterval(iv);
   }, []);
 
-  // Pull-to-refresh (mobile)
+  // Pull-to-refresh (mobile) — works on both panels
   const bassPanelRef = useRef(null);
+  const layerPanelRef = useRef(null);
   const bassPtrRef = useRef(null);
-  const ptrState = useRef({ startY: 0, triggered: false });
+  const layerPtrRef = useRef(null);
+  const ptrState = useRef({ startY: 0, triggered: false, panel: null, ptrEl: null });
 
-  const onPanelTouchStart = useCallback((e) => {
-    if (!isMobile || !bassPanelRef.current) return;
-    if (bassPanelRef.current.scrollTop <= 0) {
-      ptrState.current = { startY: e.touches[0].clientY, triggered: false };
-    }
-  }, []);
-
-  const onPanelTouchMove = useCallback((e) => {
-    if (!isMobile || !bassPanelRef.current || !bassPtrRef.current) return;
-    if (bassPanelRef.current.scrollTop > 0) return;
-    const dy = e.touches[0].clientY - ptrState.current.startY;
-    if (dy > 10) {
-      const h = Math.min(dy * 0.5, 60);
-      bassPtrRef.current.style.height = h + "px";
-      if (dy > 120 && !ptrState.current.triggered) {
-        ptrState.current.triggered = true;
-        bassPtrRef.current.querySelector(".bl-ptr-inner").textContent = "Soltar para actualizar";
+  const makePtrHandlers = useCallback((panelRef, ptrRef, onRefresh) => ({
+    onTouchStart: (e) => {
+      if (!isMobile || !panelRef.current) return;
+      if (panelRef.current.scrollTop <= 0) {
+        ptrState.current = { startY: e.touches[0].clientY, triggered: false, panel: panelRef, ptrEl: ptrRef };
       }
-    }
-  }, []);
+    },
+    onTouchMove: (e) => {
+      if (!isMobile || !panelRef.current || !ptrRef.current) return;
+      if (panelRef.current.scrollTop > 0) return;
+      const dy = e.touches[0].clientY - ptrState.current.startY;
+      if (dy > 10) {
+        const h = Math.min(dy * 0.5, 60);
+        ptrRef.current.style.height = h + "px";
+        if (dy > 120 && !ptrState.current.triggered) {
+          ptrState.current.triggered = true;
+          ptrRef.current.querySelector(".bl-ptr-inner").textContent = "Soltar para actualizar";
+        }
+      }
+    },
+    onTouchEnd: () => {
+      if (!ptrRef.current) return;
+      if (ptrState.current.triggered) {
+        ptrRef.current.querySelector(".bl-ptr-inner").textContent = "\u21BB Actualizando";
+        onRefresh();
+        setTimeout(() => { if (ptrRef.current) ptrRef.current.style.height = "0"; }, 1200);
+      } else {
+        ptrRef.current.style.height = "0";
+      }
+    },
+  }), [isMobile]);
 
-  const onPanelTouchEnd = useCallback(() => {
-    if (!bassPtrRef.current) return;
-    if (ptrState.current.triggered) {
-      bassPtrRef.current.querySelector(".bl-ptr-inner").innerHTML = '<span class="bl-ptr-spinner">\u21BB</span> Actualizando';
-      loadEvents();
-      setTimeout(() => { if (bassPtrRef.current) bassPtrRef.current.style.height = "0"; }, 1200);
-    } else {
-      bassPtrRef.current.style.height = "0";
-    }
-  }, []);
+  const bassPtr = makePtrHandlers(bassPanelRef, bassPtrRef, loadEvents);
+  const layerPtr = makePtrHandlers(layerPanelRef, layerPtrRef, loadNews);
 
   // Dynamic favicon
   useEffect(() => {
@@ -322,8 +356,8 @@ export default function App() {
     if (view !== "home" || heroExiting) return;
     setActivePanel(startPanel);
     setHeroExiting(true);
-    const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
-    const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
+    const cx = e?.clientX || e?.changedTouches?.[0]?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
+    const cy = e?.clientY || e?.changedTouches?.[0]?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
     // Letters exit first, then circle wipe
     setTimeout(() => {
@@ -338,12 +372,12 @@ export default function App() {
         if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
       }, 500);
     }, 350); // wait for letters to exit
-  }, [view, heroExiting, dayMode]);
+  }, [view, heroExiting, dayMode, loadNews, loadEvents]);
 
   const navigateHome = useCallback((e) => {
     if (view !== "sections") return;
-    const cx = e?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
-    const cy = e?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
+    const cx = e?.clientX || e?.changedTouches?.[0]?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
+    const cy = e?.clientY || e?.changedTouches?.[0]?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
     setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? "#F5F5F0" : "#000000" });
     setCircleExpand(false);
@@ -352,7 +386,7 @@ export default function App() {
       setView("home");
       setTimeout(() => setCircleExpand(false), 100);
     }, 500);
-  }, [view]);
+  }, [view, dayMode]);
 
   const swipeTo = useCallback((panel) => {
     setActivePanel(panel);
@@ -366,7 +400,8 @@ export default function App() {
     isDragging.current = false;
   }, []);
 
-  const onTouchMove = useCallback((e) => {
+  const onTouchMoveRef = useRef(null);
+  onTouchMoveRef.current = (e) => {
     const dx = e.touches[0].clientX - touchStart.current.x;
     const dy = e.touches[0].clientY - touchStart.current.y;
     if (!isDragging.current) {
@@ -383,7 +418,16 @@ export default function App() {
       const clamped = Math.max(-50, Math.min(0, base + pct));
       containerRef.current.style.transform = `translateX(${clamped}%)`;
     }
-  }, [activePanel]);
+  };
+
+  // Attach touchmove as non-passive so preventDefault works for swipe
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e) => onTouchMoveRef.current?.(e);
+    el.addEventListener("touchmove", handler, { passive: false });
+    return () => el.removeEventListener("touchmove", handler);
+  }, []);
 
   const onTouchEnd = useCallback(() => {
     if (!isDragging.current) return;
@@ -411,33 +455,13 @@ export default function App() {
         if (key === "b") swipeTo(0);
         if (key === "l") swipeTo(1);
       }
-      if (key === "d") toggleMode();
+      if (key === "d" && view === "sections") toggleMode();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [view, activePanel, swipeTo, navigateHome, toggleMode]);
 
-  // Feed loaders
-  async function loadNews() {
-    setNewsLoading(true); setNewsError(null);
-    try {
-      const items = await api.news();
-      if (items.length > 0) { setNews(items); setNewsUpdated(Date.now()); }
-      else setNewsError("Sin noticias. Toc\u00e1 para reintentar.");
-    } catch { setNewsError("Error cargando noticias. \u00bfEst\u00e1 corriendo el backend?"); }
-    finally { setNewsLoading(false); }
-  }
-
-  async function loadEvents() {
-    setEventsLoading(true); setEventsError(null);
-    try {
-      const items = await api.events();
-      if (items.length > 0) { setEvents(items); setEventsUpdated(Date.now()); }
-      else setEventsError("Sin eventos. Tocá para reintentar.");
-    } catch { setEventsError("Error cargando eventos. ¿Está corriendo el backend?"); }
-    finally { setEventsLoading(false); }
-  }
-
+  // Feed loaders (defined early — used by PTR, navigateToSections, auto-refresh)
 
   // Auto-refresh
   useEffect(() => {
@@ -447,7 +471,7 @@ export default function App() {
       if (eventsLoadedRef.current) loadEvents();
     }, 5 * 60_000);
     return () => clearInterval(iv);
-  }, [view]);
+  }, [view, loadNews, loadEvents]);
 
   // Render
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
@@ -510,7 +534,7 @@ export default function App() {
       </div>
 
       {/* SECTIONS */}
-      <div className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`}>
+      <section className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`} aria-label="Contenido principal">
         <nav className="bl-topbar" aria-label="Navegaci&oacute;n principal">
           <div className="bl-scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           <div className="bl-topbar-left">
@@ -539,24 +563,24 @@ export default function App() {
           className="bl-swipe-container"
           style={{ transform: swipeTransform }}
           onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
           {/* Panel 0: BASS */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={onPanelTouchStart} onTouchMove={onPanelTouchMove} onTouchEnd={onPanelTouchEnd}>
+          <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} />
             <div className="bl-section-end" />
           </div>
 
           {/* Panel 1: LAYER */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto">
+          <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
+            <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
             <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
             <div className="bl-section-end" />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* EVENT MODAL */}
       <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} onShare={shareEvent} />
@@ -599,8 +623,8 @@ export default function App() {
         )}
       </button>
 
-      {/* TOAST */}
-      <div className={`bl-toast${toast ? " show" : ""}`} aria-live="polite">{toast}</div>
+      {/* TOAST (placeholder for future use) */}
+      <div className="bl-toast" aria-live="polite" />
     </div>
   );
 }

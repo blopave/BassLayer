@@ -7,6 +7,7 @@ export const api = {
 };
 
 export function formatPrice(p) {
+  if (p == null || isNaN(p)) return "$—";
   if (p >= 1000) return "$" + p.toLocaleString("en-US", { maximumFractionDigits: 0 });
   if (p >= 1) return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 });

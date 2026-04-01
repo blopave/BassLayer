@@ -1,28 +1,8 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton } from "./SkeletonLoader";
-
-function useScrollReveal(deps) {
-  const containerRef = useRef(null);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const items = container.querySelectorAll(".bl-reveal");
-    if (!items.length) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
-    items.forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
-  }, deps);
-  return containerRef;
-}
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -131,9 +111,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter((e) =>
-      e.name.toLowerCase().includes(q) ||
-      e.venue.toLowerCase().includes(q) ||
-      (e.artists || []).some((a) => a.toLowerCase().includes(q))
+      (e.name || "").toLowerCase().includes(q) ||
+      (e.venue || "").toLowerCase().includes(q) ||
+      (e.artists || []).some((a) => (a || "").toLowerCase().includes(q))
     );
   }
 
@@ -152,16 +132,16 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return groups;
   }, [filtered]);
 
-  const listRef = useScrollReveal([filtered, loading]);
+  const listRef = useScrollReveal(loading);
 
   function emptyMessage() {
     if (search) {
-      return <><span className="bl-empty-icon">{"\uD83D\uDD0D"}</span>No encontramos nada para &ldquo;{search}&rdquo;. Prob&aacute; con otro t&eacute;rmino.</>;
+      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83D\uDD0D"}</span>No encontramos nada para &ldquo;{search}&rdquo;. Prob&aacute; con otro t&eacute;rmino.</>;
     }
     if (esteFinde) {
-      return <><span className="bl-empty-icon">{"\uD83C\uDF1F"}</span>Sin eventos este finde. Prob&aacute; quitando el filtro.</>;
+      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDF1F"}</span>Sin eventos este finde. Prob&aacute; quitando el filtro.</>;
     }
-    return <><span className="bl-empty-icon">{"\uD83C\uDFB6"}</span>Sin eventos para este filtro. Prob&aacute; con otro o volv&eacute; pronto.</>;
+    return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDFB6"}</span>Sin eventos para este filtro. Prob&aacute; con otro o volv&eacute; pronto.</>;
   }
 
   let itemIdx = 0;

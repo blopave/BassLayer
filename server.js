@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════
-//  BassLayer API — v1.3
+//  BassLayer API — v1.5
 //  Bass: BA electronic events (Buenos Aliens + RA + fallback)
-//  Layer: Crypto news (6 RSS feeds) + prices (CoinGecko)
+//  Layer: Crypto news (16 RSS feeds) + prices (CoinGecko)
 // ═══════════════════════════════════════════════════════
 
 import express from "express";
@@ -15,15 +15,74 @@ import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3001;
+const IS_PROD = process.env.NODE_ENV === "production";
+const PROD_ORIGIN = process.env.ORIGIN || "https://basslayer.app";
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://ra.co", "https://*.ra.co", "https://images.ra.co"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
 app.use(compression());
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
+  origin: IS_PROD
+    ? [PROD_ORIGIN]
+    : ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
 }));
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(join(__dirname, "dist")));
+
+// Rate limiter — sliding window, per IP, bounded map size
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_MAP_MAX = 10_000; // Max tracked IPs to prevent memory exhaustion
+
+// Sweep expired rate limit entries every 2 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap) {
+    if (now - entry.start > RATE_LIMIT_WINDOW) rateLimitMap.delete(ip);
+  }
+}, 120_000);
+
+app.use("/api", (req, res, next) => {
+  const now = Date.now();
+  const ip = req.ip || req.socket?.remoteAddress || "unknown";
+  const entry = rateLimitMap.get(ip);
+
+  if (entry) {
+    // Slide the window: reset if window has passed
+    if (now - entry.start > RATE_LIMIT_WINDOW) {
+      entry.count = 1;
+      entry.start = now;
+    } else {
+      entry.count++;
+    }
+    if (entry.count > RATE_LIMIT_MAX) {
+      res.set("Retry-After", String(Math.ceil((entry.start + RATE_LIMIT_WINDOW - now) / 1000)));
+      return res.status(429).json({ error: "Too many requests" });
+    }
+  } else {
+    // Evict oldest entries if map is too large
+    if (rateLimitMap.size >= RATE_LIMIT_MAP_MAX) {
+      const firstKey = rateLimitMap.keys().next().value;
+      rateLimitMap.delete(firstKey);
+    }
+    rateLimitMap.set(ip, { count: 1, start: now });
+  }
+  next();
+});
+
+if (IS_PROD) {
+  app.use(express.static(join(__dirname, "dist"), { index: false }));
 }
 
 // ─────────────────────────────────────────────
@@ -46,14 +105,62 @@ function setCache(key, data) {
   cache[key] = { ...cache[key], data, ts: Date.now() };
 }
 
+const MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB max response
+
 async function fetchSafe(url, options = {}, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    // Check Content-Length if available
+    const contentLength = parseInt(response.headers.get("content-length") || "0", 10);
+    if (contentLength > MAX_RESPONSE_SIZE) {
+      controller.abort();
+      throw new Error(`Response too large: ${contentLength} bytes`);
+    }
+    return response;
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Safe text reader with size limit
+async function safeText(response, maxBytes = MAX_RESPONSE_SIZE) {
+  const reader = response.body?.getReader?.();
+  if (!reader) {
+    // node-fetch: consume body via async iteration with size limit
+    const chunks = [];
+    let totalSize = 0;
+    for await (const chunk of response.body) {
+      totalSize += chunk.length;
+      if (totalSize > maxBytes) {
+        response.body.destroy?.();
+        throw new Error(`Response exceeded ${maxBytes} byte limit`);
+      }
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks).toString("utf-8");
+  }
+  const chunks = [];
+  let totalSize = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalSize += value.length;
+    if (totalSize > maxBytes) {
+      reader.cancel();
+      throw new Error(`Response exceeded ${maxBytes} byte limit`);
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+// Sanitize URLs from external sources — only allow http/https
+function sanitizeUrl(url) {
+  const str = String(url || "").trim();
+  if (str.startsWith("https://") || str.startsWith("http://")) return str;
+  return "";
 }
 
 const BROWSER_HEADERS = {
@@ -88,7 +195,8 @@ function detectCity(venue, address) {
 //  GET /api/prices — CoinGecko
 // ─────────────────────────────────────────────
 
-const COIN_IDS = "bitcoin,ethereum,solana,arbitrum,chainlink,aave,uniswap,optimism";
+const COIN_IDS_STR = "bitcoin,ethereum,solana,arbitrum,chainlink,aave,uniswap,optimism";
+const COIN_IDS = new Set(COIN_IDS_STR.split(","));
 const SYM_MAP = {
   bitcoin:"BTC", ethereum:"ETH", solana:"SOL", arbitrum:"ARB",
   chainlink:"LINK", aave:"AAVE", uniswap:"UNI", optimism:"OP",
@@ -98,9 +206,9 @@ app.get("/api/prices", async (req, res) => {
   const hit = cached("prices");
   if (hit) return res.json(hit);
   try {
-    const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COIN_IDS}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
+    const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COIN_IDS_STR}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
     if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
-    const raw = await r.json();
+    const raw = JSON.parse(await safeText(r));
     const prices = raw.map((d) => ({
       id: d.id, sym: SYM_MAP[d.id] || d.id.toUpperCase(), name: d.id, usd: d.current_price,
       change: Math.round((d.price_change_percentage_24h || 0) * 10) / 10,
@@ -141,7 +249,11 @@ const RSS_FEEDS = [
   { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia" },
 ];
 
-const xmlParser = new XMLParser({ ignoreAttributes: false });
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  processEntities: false,       // Disable entity expansion entirely — prevents XXE/entity DoS
+  htmlEntities: true,           // Still decode standard HTML entities (amp, lt, etc.)
+});
 
 function detectTag(title) {
   const t = title.toLowerCase();
@@ -182,7 +294,7 @@ async function fetchRSSFeed(feed) {
   try {
     const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
     if (!r.ok) return [];
-    const xml = await r.text();
+    const xml = await safeText(r, 2 * 1024 * 1024); // 2MB max for RSS
     const parsed = xmlParser.parse(xml);
     let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
     if (!Array.isArray(items)) items = [items];
@@ -190,9 +302,10 @@ async function fetchRSSFeed(feed) {
       const title = item.title?.["#text"] || item.title || "";
       const rawLink = item.link?.["@_href"] || item.link || "";
       const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
+      const url = sanitizeUrl(link);
       const date = item.pubDate || item.published || item.updated || "";
       const rel = relativeTime(date);
-      return { time: rel, _mins: timeToMins(rel), tag: detectTag(String(title)), title: String(title).slice(0, 120), source: feed.source, url: link };
+      return { time: rel, _mins: timeToMins(rel), tag: detectTag(String(title)), title: String(title).slice(0, 120), source: feed.source, url };
     });
   } catch (e) {
     console.error(`[news] ${feed.source}:`, e.message);
@@ -260,7 +373,7 @@ async function fetchMusicRSSFeed(feed) {
   try {
     const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
     if (!r.ok) return [];
-    const xml = await r.text();
+    const xml = await safeText(r, 2 * 1024 * 1024);
     const parsed = xmlParser.parse(xml);
     let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
     if (!Array.isArray(items)) items = [items];
@@ -268,12 +381,12 @@ async function fetchMusicRSSFeed(feed) {
       const title = item.title?.["#text"] || item.title || "";
       const rawLink = item.link?.["@_href"] || item.link || "";
       const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
+      const url = sanitizeUrl(link);
       const date = item.pubDate || item.published || item.updated || "";
       const rel = relativeTime(date);
-      // Clean title: remove source prefix, trim whitespace, remove " - " prefixes
       let cleanTitle = String(title).replace(/^(Mixmag|DJ Mag|RA|EDM\.com)\s*[:–—\-|]\s*/i, "").trim();
       cleanTitle = cleanTitle.replace(/\s{2,}/g, " ").slice(0, 120);
-      return { time: rel, _mins: timeToMins(rel), tag: detectMusicTag(String(title)), title: cleanTitle, source: feed.source, url: link };
+      return { time: rel, _mins: timeToMins(rel), tag: detectMusicTag(String(title)), title: cleanTitle, source: feed.source, url };
     });
   } catch (e) {
     console.error(`[music-news] ${feed.source}:`, e.message);
@@ -344,7 +457,7 @@ async function fetchBuenosAliens() {
       headers: { ...BROWSER_HEADERS, Accept: "text/html,application/xhtml+xml" },
     }, 15000);
     if (!r.ok) { console.error(`[events] Buenos Aliens ${r.status}`); return []; }
-    const html = await r.text();
+    const html = await safeText(r, 3 * 1024 * 1024); // 3MB max for HTML pages
     const events = [];
 
     // Strip to clean text
@@ -548,7 +661,7 @@ async function fetchRAGraphQL(areaId) {
       body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{eq:areaId}, listingDate:{gte:today,lte:nextMonth} }, pageSize:20 } }),
     }, 12000);
     if (!r.ok) return [];
-    const json = await r.json();
+    const json = JSON.parse(await safeText(r));
     return (json?.data?.eventListings?.data || []).map(l => formatRAEvent(l.event));
   } catch (e) {
     console.error(`[events] RA GraphQL (${areaId}):`, e.message);
@@ -564,7 +677,7 @@ async function fetchRAHtml() {
       headers: { ...BROWSER_HEADERS, Accept:"text/html" },
     }, 12000);
     if (!r.ok) return [];
-    const html = await r.text();
+    const html = await safeText(r, 3 * 1024 * 1024);
     const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
     if (!match) return [];
     const nd = JSON.parse(match[1]);
@@ -641,12 +754,12 @@ app.get("/api/events", async (req, res) => {
     allEvents.push(...baEvents);
   }
 
-  // Try RA as supplement
-  for (const areaId of RA_AREAS) {
-    const raEvents = await fetchRAGraphQL(areaId);
-    if (raEvents.length > 0) {
-      console.log(`[events] RA GraphQL: ${raEvents.length} events loaded`);
-      allEvents.push(...raEvents);
+  // Try RA as supplement (parallel)
+  const raResults = await Promise.allSettled(RA_AREAS.map(fetchRAGraphQL));
+  for (const r of raResults) {
+    if (r.status === "fulfilled" && r.value.length > 0) {
+      console.log(`[events] RA GraphQL: ${r.value.length} events loaded`);
+      allEvents.push(...r.value);
       break;
     }
   }
@@ -669,27 +782,37 @@ app.get("/api/events", async (req, res) => {
   // Deduplicate (same day+venue = same event)
   const deduped = deduplicateEvents(allEvents);
 
-  // Filter out past events (keep today and future only)
+  // Filter out past events and sort by actual date (handles year boundaries)
   const now = new Date();
-  const todayMonth = now.getMonth();   // 0-based
-  const todayDay = now.getDate();
-  const events = deduped.filter(ev => {
+  const year = now.getFullYear();
+
+  function getEventFullDate(ev) {
     const m = MONTH_MAP[ev.month.toLowerCase()] ?? -1;
-    if (m === -1) return true; // keep unknown months
-    if (m > todayMonth) return true;
-    if (m === todayMonth && parseInt(ev.day) >= todayDay) return true;
-    return false;
+    if (m === -1) return null;
+    const d = new Date(year, m, parseInt(ev.day));
+    // If the date is more than 30 days in the past, assume it's next year
+    if (d < now - 30 * 86400000) d.setFullYear(year + 1);
+    return d;
+  }
+
+  const events = deduped.filter(ev => {
+    const evDate = getEventFullDate(ev);
+    if (!evDate) return true; // keep unknown months
+    // Keep events from today onward (allow same-day events)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return evDate >= today;
   });
 
   // Mark featured events
   events.forEach(markFeatured);
 
-  // Sort by date
+  // Sort by actual date
   events.sort((a, b) => {
-    const ma = MONTH_MAP[a.month.toLowerCase()] ?? 99;
-    const mb = MONTH_MAP[b.month.toLowerCase()] ?? 99;
-    if (ma !== mb) return ma - mb;
-    return parseInt(a.day) - parseInt(b.day);
+    const da = getEventFullDate(a);
+    const db = getEventFullDate(b);
+    if (!da) return 1;
+    if (!db) return -1;
+    return da - db;
   });
 
   setCache("events", events);
@@ -700,19 +823,26 @@ app.get("/api/events", async (req, res) => {
 //  Price Chart (7-day sparkline)
 // ─────────────────────────────────────────────
 
-const chartCache = {};
+// Bounded chart cache — max 50 entries, evicts oldest on overflow
+const chartCache = new Map();
+const CHART_CACHE_MAX = 50;
 
 app.get("/api/prices/:id/chart", async (req, res) => {
   const { id } = req.params;
-  const hit = chartCache[id];
+  if (!COIN_IDS.has(id)) return res.status(400).json({ error: "Invalid coin ID" });
+  const hit = chartCache.get(id);
   if (hit && Date.now() - hit.ts < 5 * 60_000) return res.json(hit.data);
 
   try {
     const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=7`, {}, 10000);
     if (!r.ok) return res.status(502).json({ error: "CoinGecko unavailable" });
-    const data = await r.json();
+    const data = JSON.parse(await safeText(r));
     const result = { prices: data.prices || [] };
-    chartCache[id] = { data: result, ts: Date.now() };
+    if (chartCache.size >= CHART_CACHE_MAX) {
+      const oldest = chartCache.keys().next().value;
+      chartCache.delete(oldest);
+    }
+    chartCache.set(id, { data: result, ts: Date.now() });
     res.json(result);
   } catch (e) {
     console.error("[chart]", e.message);
@@ -730,11 +860,11 @@ app.get("/api/dashboard", async (req, res) => {
 
   const results = await Promise.allSettled([
     // BTC dominance + total market cap from CoinGecko global
-    fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? r.json() : null),
+    fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     // Fear & Greed index
-    fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? r.json() : null),
+    fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     // ETH gas from Etherscan (free tier, no key needed for gas oracle)
-    fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? r.json() : null),
+    fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
   ]);
 
   const globalData = results[0].status === "fulfilled" ? results[0].value : null;
@@ -776,18 +906,95 @@ app.get("/api/meta", (req, res) => res.json({
   eventGenres: ["All","Techno","House","Deep House","Tech House","Progressive","Melodic","Minimal","DnB","Trance","Disco","Ambient","Festival","Electronic"],
 }));
 
-app.get("/api/health", (req, res) => res.json({
-  status: "ok", version: "1.3", uptime: Math.floor(process.uptime()),
-  cache: Object.fromEntries(Object.entries(cache).map(([k]) => [k, cached(k) ? "fresh" : "stale"])),
-}));
+app.get("/api/health", (req, res) => {
+  const data = { status: "ok", version: "1.5" };
+  // Only expose internals in development
+  if (!IS_PROD) {
+    data.uptime = Math.floor(process.uptime());
+    data.cache = Object.fromEntries(Object.entries(cache).map(([k]) => [k, cached(k) ? "fresh" : "stale"]));
+  }
+  res.json(data);
+});
 
-if (process.env.NODE_ENV === "production") {
-  app.get("*", (req, res) => res.sendFile(join(__dirname, "dist", "index.html")));
+// API 404 — return JSON instead of falling through to SPA
+app.all("/api/*", (req, res) => res.status(404).json({ error: "Endpoint not found" }));
+
+if (IS_PROD) {
+  const { readFileSync } = await import("node:fs");
+  const indexHtml = readFileSync(join(__dirname, "dist", "index.html"), "utf-8");
+
+  // SEO: inject prerendered content for crawlers
+  function escHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function buildSeoHtml() {
+    const events = cached("events") || [];
+    const news = cached("news") || [];
+
+    if (events.length === 0 && news.length === 0) return "";
+
+    const lines = ['<div id="seo-content" style="position:absolute;left:-9999px;overflow:hidden">'];
+    lines.push("<h1>BassLayer — Eventos de musica electronica y Crypto en Buenos Aires</h1>");
+
+    if (events.length > 0) {
+      lines.push("<h2>Proximos eventos de musica electronica</h2><ul>");
+      for (const ev of events.slice(0, 15)) {
+        const artists = (ev.artists || []).slice(0, 3).map(a => escHtml(a)).join(", ");
+        lines.push(`<li>${escHtml(ev.name)} — ${escHtml(ev.day)} ${escHtml(ev.month)} en ${escHtml(ev.venue)}. ${escHtml(ev.genre)}. ${artists}</li>`);
+      }
+      lines.push("</ul>");
+    }
+
+    if (news.length > 0) {
+      lines.push("<h2>Ultimas noticias crypto</h2><ul>");
+      for (const n of news.slice(0, 10)) {
+        lines.push(`<li>${escHtml(n.title)} (${escHtml(n.source)})</li>`);
+      }
+      lines.push("</ul>");
+    }
+
+    // JSON-LD for individual events
+    const eventSchemas = events.slice(0, 10).map(ev => {
+      const m = MONTH_MAP[ev.month?.toLowerCase()] ?? 0;
+      const year = new Date().getFullYear();
+      const date = new Date(year, m, parseInt(ev.day));
+      if (date < new Date() - 30 * 86400000) date.setFullYear(year + 1);
+      return {
+        "@type": "MusicEvent",
+        "name": ev.name,
+        "startDate": date.toISOString().split("T")[0],
+        "location": {
+          "@type": "Place",
+          "name": ev.venue,
+          "address": { "@type": "PostalAddress", "addressLocality": ev.city || "Buenos Aires", "addressCountry": "AR" }
+        },
+        "performer": (ev.artists || []).slice(0, 5).map(a => ({ "@type": "Person", "name": a })),
+        ...(ev.url ? { "url": ev.url } : {}),
+      };
+    });
+
+    if (eventSchemas.length > 0) {
+      const jsonLd = JSON.stringify({"@context":"https://schema.org","@graph":eventSchemas}).replace(/<\//g, "<\\/");
+      lines.push(`<script type="application/ld+json">${jsonLd}</script>`);
+    }
+
+    lines.push("</div>");
+    return lines.join("");
+  }
+
+  app.get("*", (req, res) => {
+    const seoBlock = buildSeoHtml();
+    const html = seoBlock
+      ? indexHtml.replace('<div id="root"></div>', `<div id="root"></div>${seoBlock}`)
+      : indexHtml;
+    res.set("Content-Type", "text/html");
+    res.send(html);
+  });
 }
 
-app.listen(PORT, () => console.log(`
+const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────┐
-  │  BassLayer API v1.4                  │
+  │  BassLayer API v1.5                  │
   │  http://localhost:${PORT}              │
   │                                      │
   │  /api/prices      30s cache          │
@@ -805,3 +1012,16 @@ app.listen(PORT, () => console.log(`
   │   Prices: CoinGecko                 │
   └──────────────────────────────────────┘
 `));
+
+// Graceful shutdown
+function shutdown(signal) {
+  console.log(`\n[${signal}] Shutting down gracefully...`);
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 5000);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("unhandledRejection", (err) => console.error("[unhandledRejection]", err));
