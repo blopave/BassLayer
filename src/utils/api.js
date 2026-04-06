@@ -4,6 +4,13 @@ export const api = {
   events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   musicNews: () => fetch("/api/music-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   dashboard: () => fetch("/api/dashboard").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  submitCryptoIrl: (data) => fetch("/api/crypto-irl", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).then((r) => (r.ok ? r.json() : r.json().then(e => Promise.reject(e.error)))),
 };
 
 export function formatPrice(p) {

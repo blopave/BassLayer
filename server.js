@@ -12,6 +12,7 @@ import fetch from "node-fetch";
 import { XMLParser } from "fast-xml-parser";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,6 +39,8 @@ app.use(cors({
     ? [PROD_ORIGIN]
     : ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
 }));
+
+app.use(express.json({ limit: "10kb" }));
 
 // Rate limiter — sliding window, per IP, bounded map size
 const rateLimitMap = new Map();
@@ -90,11 +93,12 @@ if (IS_PROD) {
 // ─────────────────────────────────────────────
 
 const cache = {
-  prices:    { data: null, ts: 0, ttl: 30_000 },
-  news:      { data: null, ts: 0, ttl: 5 * 60_000 },
-  events:    { data: null, ts: 0, ttl: 60 * 60_000 },
-  musicNews: { data: null, ts: 0, ttl: 10 * 60_000 },
-  dashboard: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
+  prices:      { data: null, ts: 0, ttl: 30_000 },
+  news:        { data: null, ts: 0, ttl: 5 * 60_000 },
+  events:      { data: null, ts: 0, ttl: 60 * 60_000 },
+  musicNews:   { data: null, ts: 0, ttl: 10 * 60_000 },
+  dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
+  cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
 };
 
 function cached(key) {
@@ -914,6 +918,177 @@ app.get("/api/health", (req, res) => {
     data.cache = Object.fromEntries(Object.entries(cache).map(([k]) => [k, cached(k) ? "fresh" : "stale"]));
   }
   res.json(data);
+});
+
+// ═══════════════════════════════════════════════════════
+//  Crypto Events — scraped from Eventbrite + Meetup
+// ═══════════════════════════════════════════════════════
+
+const LUMA_CATEGORIES = ["crypto", "blockchain", "web3"];
+
+async function fetchLumaEvents() {
+  const events = [];
+  for (const category of LUMA_CATEGORIES) {
+    try {
+      const url = `https://api.lu.ma/discover/get-paginated-events?pagination_limit=50&category=${category}`;
+      const res = await fetchSafe(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; BassLayer/1.5)" }
+      }, 12000);
+      if (!res || !res.ok) continue;
+      const text = await safeText(res);
+      const data = JSON.parse(text);
+      const entries = data.entries || [];
+
+      for (const entry of entries) {
+        const ev = entry.event || {};
+        const cal = entry.calendar || {};
+        if (!ev.name) continue;
+
+        const startDate = ev.start_at ? new Date(ev.start_at) : null;
+        if (startDate && startDate < Date.now()) continue;
+
+        // Get location info
+        let location = "";
+        if (ev.geo_address_info) {
+          location = ev.geo_address_info.city || ev.geo_address_info.full_address || "";
+        } else if (ev.location_type === "online") {
+          location = "Online";
+        }
+
+        // Determine if free
+        const ticketInfo = entry.ticket_info || {};
+        const isFree = ticketInfo.is_free !== false && !ticketInfo.min_price;
+
+        events.push({
+          title: String(ev.name).slice(0, 200),
+          organizer: cal.name || (entry.hosts || []).map(h => h.name).filter(Boolean).join(", ") || "Luma",
+          date: startDate ? startDate.toISOString().split("T")[0] : "",
+          time: startDate ? startDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: ev.timezone || "America/Buenos_Aires" }) : "",
+          location,
+          url: ev.url ? `https://lu.ma/${ev.url}` : "",
+          description: String(ev.description_short || "").slice(0, 300),
+          free: isFree,
+          source: "luma",
+          guests: entry.guest_count || 0,
+        });
+      }
+    } catch (err) {
+      console.error(`[crypto-events] Luma ${category}:`, err.message);
+    }
+  }
+  return events;
+}
+
+async function fetchCryptoEvents() {
+  const hit = cached("cryptoEvents");
+  if (hit) return hit;
+
+  console.log("[crypto-events] Fetching from Luma...");
+  const lumaEvents = await fetchLumaEvents().catch(() => []);
+
+  // Deduplicate by title similarity
+  const seen = new Set();
+  const unique = [];
+  for (const ev of lumaEvents) {
+    const key = ev.title.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(ev);
+  }
+
+  // Sort by date
+  unique.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
+
+  console.log(`[crypto-events] Luma: ${lumaEvents.length}, Total unique: ${unique.length}`);
+  setCache("cryptoEvents", unique);
+  return unique;
+}
+
+app.get("/api/crypto-events", async (req, res) => {
+  try {
+    const scraped = await fetchCryptoEvents();
+    // Merge with manually submitted events
+    const manual = loadCryptoIrl();
+    const manualEvents = (manual.events || [])
+      .filter(e => e.status === "approved")
+      .map(e => ({ ...e, source: "community" }));
+
+    const all = [...manualEvents, ...scraped];
+    // Sort by date
+    all.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
+
+    res.json(all);
+  } catch (err) {
+    console.error("[crypto-events] Error:", err.message);
+    // Return at least manual events
+    const manual = loadCryptoIrl();
+    res.json((manual.events || []).filter(e => e.status === "approved"));
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  Crypto IRL — community events & courses
+// ═══════════════════════════════════════════════════════
+
+const CRYPTO_IRL_FILE = join(__dirname, "data", "crypto-irl.json");
+
+function loadCryptoIrl() {
+  try {
+    if (existsSync(CRYPTO_IRL_FILE)) {
+      return JSON.parse(readFileSync(CRYPTO_IRL_FILE, "utf-8"));
+    }
+  } catch { /* ignore */ }
+  return { events: [], courses: [] };
+}
+
+function saveCryptoIrl(data) {
+  const dir = join(__dirname, "data");
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(CRYPTO_IRL_FILE, JSON.stringify(data, null, 2));
+}
+
+app.get("/api/crypto-irl", (req, res) => {
+  const data = loadCryptoIrl();
+  // Only return approved items
+  res.json({
+    events: data.events.filter(e => e.status === "approved"),
+    courses: data.courses.filter(c => c.status === "approved"),
+  });
+});
+
+app.post("/api/crypto-irl", (req, res) => {
+  const { type, title, organizer, date, time, location, url, description, free } = req.body;
+
+  if (!type || !title || !organizer) {
+    return res.status(400).json({ error: "title, organizer y type son requeridos" });
+  }
+  if (!["event", "course"].includes(type)) {
+    return res.status(400).json({ error: "type debe ser 'event' o 'course'" });
+  }
+  // Basic sanitization
+  const sanitize = (s) => String(s || "").slice(0, 200).replace(/[<>]/g, "");
+
+  const item = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    type,
+    title: sanitize(title),
+    organizer: sanitize(organizer),
+    date: sanitize(date),
+    time: sanitize(time),
+    location: sanitize(location),
+    url: sanitize(url),
+    description: sanitize(description).slice(0, 500),
+    free: Boolean(free),
+    status: "approved", // auto-approve for now, add moderation later
+    createdAt: new Date().toISOString(),
+  };
+
+  const data = loadCryptoIrl();
+  if (type === "event") data.events.push(item);
+  else data.courses.push(item);
+  saveCryptoIrl(data);
+
+  res.status(201).json(item);
 });
 
 // API 404 — return JSON instead of falling through to SPA

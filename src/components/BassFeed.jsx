@@ -149,7 +149,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   return (
     <>
-      <BpmPulse events={events} />
+      <BpmPulse events={events} onSelectEvent={onSelect} />
       <div className="bl-weekend-picker-trigger">
         <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
           A que voy este finde?

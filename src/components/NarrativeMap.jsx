@@ -1,7 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
-// Keywords use word-boundary regex to avoid false positives (e.g. "ai" matching "said")
-// Multi-word phrases and partial stems (like "tokeniz", "regulat") use plain includes
 const NARRATIVES = [
   { id: "defi",    label: "DeFi",        keywords: ["defi","\\bdex\\b","lending","\\byield\\b","liquidity","\\bswap\\b","\\bamm\\b","aave","uniswap","compound","\\bcurve\\b","\\blido\\b","staking","restaking","eigenlayer"] },
   { id: "ai",      label: "AI",          keywords: ["\\bai\\b","artificial intelligence","machine learning","\\bgpt\\b","openai","nvidia","\\brender\\b","singularity","ai token","ai agent"] },
@@ -17,103 +15,127 @@ const NARRATIVES = [
   { id: "privacy", label: "Privacy",     keywords: ["privacy","zero knowledge","\\bzk\\b","\\bzkp\\b","tornado","monero","zcash","aztec"] },
 ];
 
-// Pre-compile regex patterns for keywords with \b, use includes() for the rest
-const NARRATIVE_MATCHERS = NARRATIVES.map(n => ({
+const MATCHERS = NARRATIVES.map(n => ({
   ...n,
-  matchers: n.keywords.map(kw =>
+  compiled: n.keywords.map(kw =>
     kw.includes("\\b") ? new RegExp(kw, "i") : null
   ),
 }));
 
-function scoreNarratives(news) {
-  if (!news || news.length === 0) return [];
-  const counts = {};
-  NARRATIVE_MATCHERS.forEach(n => { counts[n.id] = { ...n, count: 0, recent: [] }; });
+function matchesNarrative(text, narr) {
+  for (let i = 0; i < narr.keywords.length; i++) {
+    const regex = narr.compiled[i];
+    if (regex ? regex.test(text) : text.includes(narr.keywords[i])) return true;
+  }
+  return false;
+}
 
-  for (const item of news) {
-    const text = (item.title || "").toLowerCase();
-    for (const narr of NARRATIVE_MATCHERS) {
-      let matched = false;
-      for (let i = 0; i < narr.keywords.length; i++) {
-        const regex = narr.matchers[i];
-        if (regex ? regex.test(text) : text.includes(narr.keywords[i])) {
-          matched = true;
-          break;
-        }
-      }
-      if (matched) {
-        counts[narr.id].count++;
-        if (counts[narr.id].recent.length < 2) {
-          counts[narr.id].recent.push(item.title);
-        }
+export function matchesAnyNarrative(title, narrativeId) {
+  const narr = MATCHERS.find(n => n.id === narrativeId);
+  if (!narr) return false;
+  return matchesNarrative((title || "").toLowerCase(), narr);
+}
+
+function analyzeTrending(news) {
+  if (!news || news.length === 0) return [];
+
+  const mid = Math.floor(news.length / 2);
+  // news comes sorted newest-first from API, so first half = recent, second half = older
+  const recent = news.slice(0, mid);
+  const older = news.slice(mid);
+
+  const results = [];
+
+  for (const narr of MATCHERS) {
+    let total = 0, recentCount = 0, olderCount = 0;
+    const headlines = [];
+
+    for (const item of news) {
+      const text = (item.title || "").toLowerCase();
+      if (matchesNarrative(text, narr)) {
+        total++;
+        if (headlines.length < 3) headlines.push(item);
       }
     }
+    for (const item of recent) {
+      if (matchesNarrative((item.title || "").toLowerCase(), narr)) recentCount++;
+    }
+    for (const item of older) {
+      if (matchesNarrative((item.title || "").toLowerCase(), narr)) olderCount++;
+    }
+
+    if (total === 0) continue;
+
+    // Trend: compare recent vs older halves
+    let trend = "stable";
+    if (older.length > 0 && recent.length > 0) {
+      const recentRate = recentCount / recent.length;
+      const olderRate = olderCount / older.length;
+      const diff = recentRate - olderRate;
+      if (diff > 0.02) trend = "up";
+      else if (diff < -0.02) trend = "down";
+    }
+
+    results.push({ ...narr, count: total, trend, headlines });
   }
 
-  return Object.values(counts)
-    .filter(n => n.count > 0)
-    .sort((a, b) => b.count - a.count);
+  return results.sort((a, b) => b.count - a.count).slice(0, 6);
 }
 
-function intensityClass(count, max) {
-  const ratio = count / max;
-  if (ratio > 0.7) return "hot";
-  if (ratio > 0.4) return "warm";
-  return "cool";
-}
+const TREND_ARROWS = { up: "\u2197", down: "\u2198", stable: "\u2192" };
 
-export function NarrativeMap({ news }) {
-  const [expanded, setExpanded] = useState(null);
+export function NarrativeMap({ news, activeNarrative, onSelectNarrative }) {
+  const trending = useMemo(() => analyzeTrending(news), [news]);
 
-  const narratives = useMemo(() => scoreNarratives(news), [news]);
-
-  if (narratives.length === 0) return null;
-
-  const maxCount = narratives[0]?.count || 1;
+  if (trending.length === 0) return null;
 
   return (
-    <div className="bl-narr">
-      <div className="bl-narr-header">
-        <div className="bl-narr-title">Mapa de narrativas</div>
-        <div className="bl-narr-subtitle">Tendencias por volumen de conversacion</div>
+    <div className="bl-trend">
+      <div className="bl-trend-header">
+        <div className="bl-trend-title">Trending</div>
+        {activeNarrative && (
+          <button className="bl-trend-clear" onClick={() => onSelectNarrative(null)}>
+            Limpiar filtro
+          </button>
+        )}
       </div>
 
-      <div className="bl-narr-grid">
-        {narratives.map((n) => {
-          const intensity = intensityClass(n.count, maxCount);
-          const isExpanded = expanded === n.id;
-          const barWidth = Math.max((n.count / maxCount) * 100, 8);
-
+      <div className="bl-trend-list">
+        {trending.map((n) => {
+          const isActive = activeNarrative === n.id;
           return (
-            <div
+            <button
               key={n.id}
-              className={`bl-narr-item bl-narr-${intensity}${isExpanded ? " expanded" : ""}`}
-              onClick={() => setExpanded(isExpanded ? null : n.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && setExpanded(isExpanded ? null : n.id)}
+              className={`bl-trend-chip${isActive ? " active" : ""} bl-trend-${n.trend}`}
+              onClick={() => onSelectNarrative(isActive ? null : n.id)}
             >
-              <div className="bl-narr-item-top">
-                <span className="bl-narr-label">{n.label}</span>
-                <span className="bl-narr-count">{n.count}</span>
-              </div>
-              <div className="bl-narr-bar-bg">
-                <div
-                  className={`bl-narr-bar bl-narr-bar-${intensity}`}
-                  style={{ width: `${barWidth}%` }}
-                />
-              </div>
-              {isExpanded && n.recent.length > 0 && (
-                <div className="bl-narr-recent">
-                  {n.recent.map((title, i) => (
-                    <div key={i} className="bl-narr-recent-item">{title}</div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <span className="bl-trend-chip-label">{n.label}</span>
+              <span className="bl-trend-chip-count">{n.count}</span>
+              <span className="bl-trend-chip-arrow">{TREND_ARROWS[n.trend]}</span>
+            </button>
           );
         })}
       </div>
+
+      {/* Show headlines when a narrative is selected */}
+      {activeNarrative && (() => {
+        const selected = trending.find(n => n.id === activeNarrative);
+        if (!selected || selected.headlines.length === 0) return null;
+        return (
+          <div className="bl-trend-preview">
+            {selected.headlines.map((item, i) => (
+              <div key={i} className="bl-trend-preview-item">
+                <span className="bl-trend-preview-time">{item.time}</span>
+                {item.url ? (
+                  <a className="bl-trend-preview-title" href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
+                ) : (
+                  <span className="bl-trend-preview-title">{item.title}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

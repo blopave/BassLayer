@@ -35,6 +35,7 @@ export default function App() {
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
@@ -557,6 +558,7 @@ export default function App() {
               {activePanel === 0 && eventsUpdated ? `Updated ${timeAgo(eventsUpdated)}` : ""}
               {activePanel === 1 && newsUpdated ? `Updated ${timeAgo(newsUpdated)}` : ""}
             </span>
+            <button className="bl-about-btn" onClick={() => setShowAbout(true)} aria-label="Sobre BassLayer">?</button>
           </div>
         </nav>
 
@@ -633,6 +635,35 @@ export default function App() {
           <svg viewBox="0 0 24 24"><circle className="bl-mode-icon" cx="12" cy="12" r="5" /><path className="bl-mode-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
         )}
       </button>
+
+      {/* ABOUT MODAL */}
+      {showAbout && (
+        <div className="bl-about-overlay" onClick={() => setShowAbout(false)}>
+          <div className="bl-about-card" onClick={(e) => e.stopPropagation()}>
+            <button className="bl-modal-close" onClick={() => setShowAbout(false)} aria-label="Cerrar">&times;</button>
+            <div className="bl-about-logo">
+              <span className="bl-about-bass">Bass</span>
+              <span className="bl-about-layer">Layer</span>
+            </div>
+            <p className="bl-about-desc">
+              Tu radar en tiempo real para la escena de <strong>musica electronica</strong> y el mundo <strong>crypto</strong> en Buenos Aires.
+            </p>
+            <div className="bl-about-sections">
+              <div className="bl-about-section">
+                <div className="bl-about-section-title">Bass</div>
+                <div className="bl-about-section-text">Eventos, fiestas, DJs y venues de la escena electronica porteña. Filtra por genero, busca por nombre o descubri que hay este finde.</div>
+              </div>
+              <div className="bl-about-section">
+                <div className="bl-about-section-title">Layer</div>
+                <div className="bl-about-section-text">Precios crypto en vivo, noticias del mercado, eventos y cursos crypto IRL en Buenos Aires. Todo en un solo lugar.</div>
+              </div>
+            </div>
+            <div className="bl-about-footer">
+              <span className="bl-about-built">Buenos Aires — 2026</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TOAST (placeholder for future use) */}
       <div className="bl-toast" aria-live="polite" />
