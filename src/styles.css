@@ -429,7 +429,7 @@
 }
 .bl-feed-item:hover .bl-feed-title { color:var(--bl-white); }
 .bl-feed-src { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-indicator); flex-shrink:0; }
-.bl-feed-tag { font-family:var(--font-mono); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-text-sec); padding:2px 7px; border:1px solid var(--bl-border); border-radius:2px; flex-shrink:0; transition:border-color var(--duration-fast); }
+.bl-feed-tag { font-family:var(--font-mono); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-text-sec); padding:2px 7px; border:1px solid var(--bl-border); border-radius:2px; flex-shrink:0; transition:border-color var(--duration-fast); width:52px; text-align:center; box-sizing:border-box; }
 .bl-feed-item:hover .bl-feed-tag { border-color:var(--bl-450); }
 
 /* ── Event List ─────────────────────────── */
@@ -910,122 +910,67 @@
   margin-top:2px;
 }
 
-.bl-bpm-canvas-wrap {
-  position:relative;
-  height:48px;
-  margin-bottom:16px;
-}
-.bl-bpm-canvas {
-  width:100%;
-  height:100%;
-  display:block;
-}
-.bl-bpm-value {
-  position:absolute;
-  right:0;
-  top:50%;
-  transform:translateY(-50%);
+.bl-venues-ranking {
   display:flex;
-  align-items:baseline;
-  gap:4px;
+  flex-direction:column;
+  gap:10px;
 }
-.bl-bpm-number {
-  font-family:var(--font-display);
-  font-weight:800;
-  font-size:28px;
-  letter-spacing:-2px;
-  color:var(--bl-text);
-  line-height:1;
-}
-.bl-bpm-unit {
-  font-family:var(--font-mono);
-  font-size:8px;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:var(--bl-text-sec);
-}
-
-.bl-bpm-stats {
+.bl-venue-row {
   display:flex;
   align-items:center;
-  gap:16px;
-  margin-bottom:16px;
-  padding:12px 0;
-  border-top:1px solid var(--bl-border-sub);
-  border-bottom:1px solid var(--bl-border-sub);
+  gap:10px;
 }
-.bl-bpm-stat { flex:1; text-align:center; }
-.bl-bpm-stat-sep {
-  width:1px;
-  height:28px;
-  background:var(--bl-border);
+.bl-venue-rank {
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:1px;
+  color:var(--bl-text-ter);
+  width:16px;
+  text-align:center;
   flex-shrink:0;
 }
-.bl-bpm-stat-value {
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:20px;
-  letter-spacing:-1px;
-  color:var(--bl-text);
-  line-height:1.2;
+.bl-venue-info {
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
 }
-.bl-bpm-stat-venue {
+.bl-venue-name {
+  font-family:var(--font-heading);
+  font-weight:600;
   font-size:13px;
-  letter-spacing:-0.3px;
+  letter-spacing:-0.2px;
+  color:var(--bl-text);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.bl-bpm-stat-label {
-  font-family:var(--font-mono);
-  font-size:8px;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:var(--bl-text-ter);
-  margin-top:4px;
-}
-
-.bl-bpm-genres { display:flex; flex-direction:column; gap:6px; }
-.bl-bpm-genre-row {
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.bl-bpm-genre-name {
-  font-family:var(--font-mono);
-  font-size:9px;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  color:var(--bl-text-sec);
-  width:80px;
-  flex-shrink:0;
-  text-align:right;
-}
-.bl-bpm-genre-bar-bg {
-  flex:1;
-  height:4px;
+.bl-venue-bar-bg {
+  height:3px;
   background:var(--bl-border-sub);
   border-radius:2px;
   overflow:hidden;
 }
-.bl-bpm-genre-bar {
+.bl-venue-bar {
   height:100%;
   background:var(--bl-text-sec);
   border-radius:2px;
   transition:width 1s var(--ease-out-expo);
 }
-.bl-bpm-genre-count {
+.bl-venue-count {
   font-family:var(--font-mono);
-  font-size:9px;
+  font-size:8px;
+  letter-spacing:1px;
+  text-transform:uppercase;
   color:var(--bl-text-ter);
-  width:20px;
-  text-align:left;
+  flex-shrink:0;
+  white-space:nowrap;
 }
 
 @media (max-width:768px) {
   .bl-bpm-pulse { margin:12px 16px 8px; padding:16px; }
-  .bl-bpm-number { font-size:22px; }
-  .bl-bpm-genre-name { width:60px; font-size:8px; }
+  .bl-venue-name { font-size:12px; }
 }
 
 /* ═══════════════════════════════════════════
