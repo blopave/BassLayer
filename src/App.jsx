@@ -8,6 +8,7 @@ import { EventModal } from "./components/EventModal";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
+import { WeekendPicker } from "./components/WeekendPicker";
 
 export default function App() {
   const isMobile = useIsMobile();
@@ -33,6 +34,7 @@ export default function App() {
   // toast removed — was unused
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
@@ -568,7 +570,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} />
             <div className="bl-section-end" />
           </div>
 
@@ -587,6 +589,15 @@ export default function App() {
 
       {/* PRICE MODAL */}
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />
+
+      {/* WEEKEND PICKER */}
+      {showWeekendPicker && (
+        <WeekendPicker
+          events={events}
+          onClose={() => setShowWeekendPicker(false)}
+          onSelect={setSelectedEvent}
+        />
+      )}
 
       {/* ONBOARDING */}
       {showOnboarding && (

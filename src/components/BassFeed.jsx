@@ -3,6 +3,7 @@ import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton } from "./SkeletonLoader";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { BpmPulse } from "./BpmPulse";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -87,7 +88,7 @@ function isThisWeekend(eventDate) {
   return evDay >= friday && evDay < monday;
 }
 
-export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch }) {
+export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker }) {
   const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
   const [cityFilter, setCityFilter] = useState("Todas");
   const [esteFinde, setEsteFinde] = useState(false);
@@ -148,6 +149,13 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   return (
     <>
+      <BpmPulse events={events} />
+      <div className="bl-weekend-picker-trigger">
+        <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
+          A que voy este finde?
+          <span className="bl-wp-trigger-arrow">&rarr;</span>
+        </button>
+      </div>
       <FilterBar items={genres} active={filter} onChange={onFilter} className="bass-filters" />
       <div className="bl-sub-filters">
         {cities.length > 2 && (
