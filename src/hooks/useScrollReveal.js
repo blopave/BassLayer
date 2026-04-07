@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 
-export function useScrollReveal(loading) {
+export function useScrollReveal(loading, ...deps) {
   const containerRef = useRef(null);
   const observerRef = useRef(null);
 
@@ -29,7 +29,7 @@ export function useScrollReveal(loading) {
     if (loading) return;
     observe();
     return () => { if (observerRef.current) observerRef.current.disconnect(); };
-  }, [loading, observe]);
+  }, [loading, observe, ...deps]);
 
   // MutationObserver to catch DOM changes from filter/search updates
   useEffect(() => {

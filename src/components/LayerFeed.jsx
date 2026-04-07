@@ -12,7 +12,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
 
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
-  const listRef = useScrollReveal(loading);
+  const listRef = useScrollReveal(loading, section);
 
   return (
     <>
