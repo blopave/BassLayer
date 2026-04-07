@@ -489,9 +489,21 @@ async function fetchBuenosAliens() {
       // --- Extract date ---
       let day = "", month = "";
       let dateLineIdx = -1;
+      const DAY_NAMES = /^(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)$/i;
       for (let j = 0; j < prevLines.length; j++) {
+        // Handle multi-day events: "SAB 11 DOM 12 ABR" → take first day, last month
+        const multiDayMatch = prevLines[j].match(
+          /(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+\d{1,2}\s+(\w{3})/i
+        );
+        if (multiDayMatch) {
+          day = multiDayMatch[1].padStart(2, "0");
+          month = multiDayMatch[2].charAt(0).toUpperCase() + multiDayMatch[2].slice(1).toLowerCase();
+          dateLineIdx = j;
+          continue;
+        }
+        // Standard single-day: "SAB 11 ABR"
         const dateMatch = prevLines[j].match(/(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(\w{3})/i);
-        if (dateMatch) {
+        if (dateMatch && !DAY_NAMES.test(dateMatch[2])) {
           day = dateMatch[1].padStart(2, "0");
           month = dateMatch[2].charAt(0).toUpperCase() + dateMatch[2].slice(1).toLowerCase();
           dateLineIdx = j;
@@ -550,6 +562,8 @@ async function fetchBuenosAliens() {
         // Skip empty/short or metadata
         if (clean.length < 2 || clean.length > 50) continue;
         if (clean.match(/^(Line up|Edad|Precio)/i)) continue;
+        // Skip day-of-week headers in multi-day events (e.g. "sábado", "Domingo")
+        if (clean.match(/^(?:lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)$/i)) continue;
         // Clean "b2b" formatting
         const artistClean = clean.replace(/\bb2b\b/gi, "b2b").trim();
         if (artistClean.length > 1) artists.push(artistClean);
