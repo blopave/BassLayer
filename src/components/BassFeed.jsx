@@ -152,7 +152,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       <BpmPulse events={events} onSelectEvent={onSelect} />
       <div className="bl-weekend-picker-trigger">
         <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
-          A que voy este finde?
+          Eventos del fin de semana
           <span className="bl-wp-trigger-arrow">&rarr;</span>
         </button>
       </div>
@@ -165,9 +165,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
             ))}
           </div>
         )}
-        <button className={`bl-finde-btn${esteFinde ? " active" : ""}`} onClick={() => setEsteFinde(!esteFinde)}>
-          Este finde
-        </button>
       </div>
       <SearchBar value={search} onChange={onSearch} />
       {loading ? <EventSkeleton />
