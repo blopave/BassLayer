@@ -731,7 +731,7 @@
 .bl-modal-btn-secondary:hover { color:var(--bl-white); border-color:var(--bl-400); }
 
 /* ── Search Bar ─────────────────────────── */
-.bl-search-wrap { position:sticky; z-index:897; padding:8px 32px; background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--bl-border); }
+.bl-search-wrap { position:sticky; top:0; z-index:897; padding:8px 32px; background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--bl-border); }
 .bl-search-inner { position:relative; }
 .bl-search-input { width:100%; background:var(--bl-subtle-03); border:1px solid var(--bl-border); border-radius:4px; padding:8px 36px 8px 32px; font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--bl-text); outline:none; transition:border-color .25s var(--ease-out-expo); }
 .bl-search-input::placeholder { color:var(--bl-text-sec); }
@@ -787,7 +787,7 @@
   .bl-topbar-meta { display:none; }
   .bl-price-item { padding:12px 20px; gap:8px; }
   .bl-price-sym { font-size:10px; } .bl-price-val { font-size:13px; }
-  .bl-modal { max-width:100%; border-radius:0; max-height:100vh; }
+  .bl-modal { max-width:100%; border-radius:0; max-height:100vh; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
   .bl-modal-header { padding:20px 48px 16px 20px; gap:12px; }
   .bl-modal-body { padding:0 20px 20px; }
   .bl-modal-actions { padding:0 20px 24px; flex-direction:column; }
@@ -1768,11 +1768,6 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   -webkit-box-orient:vertical;
 }
 
-.bl-cirl-item-right {
-  flex-shrink:0;
-  display:flex;
-  align-items:flex-start;
-}
 .bl-cirl-badge-free {
   font-family:var(--font-mono);
   font-size:8px;
@@ -1815,9 +1810,9 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   font-size:10px;
   letter-spacing:1px;
   text-transform:uppercase;
-  color:var(--bl-accent);
+  color:var(--bl-up);
   padding:6px 12px;
-  border:1px solid var(--bl-accent);
+  border:1px solid var(--bl-up);
   border-radius:6px;
   display:inline-block;
   margin-top:8px;

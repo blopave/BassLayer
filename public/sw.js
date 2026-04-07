@@ -1,5 +1,5 @@
-const CACHE_VERSION = "basslayer-v4";
-const STATIC_ASSETS = ["/favicon.svg", "/icon-192.png"];
+const CACHE_VERSION = "basslayer-v5";
+const STATIC_ASSETS = ["/", "/favicon.svg", "/icon-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

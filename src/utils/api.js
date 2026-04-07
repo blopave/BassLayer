@@ -2,7 +2,6 @@ export const api = {
   prices:    () => fetch("/api/prices").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   news:      () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  musicNews: () => fetch("/api/music-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   dashboard: () => fetch("/api/dashboard").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),

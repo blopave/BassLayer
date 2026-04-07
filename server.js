@@ -13,6 +13,7 @@ import { XMLParser } from "fast-xml-parser";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import crypto from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -49,7 +50,7 @@ const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_MAP_MAX = 10_000; // Max tracked IPs to prevent memory exhaustion
 
 // Sweep expired rate limit entries every 2 minutes
-setInterval(() => {
+const rateLimitSweep = setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitMap) {
     if (now - entry.start > RATE_LIMIT_WINDOW) rateLimitMap.delete(ip);
@@ -278,7 +279,9 @@ function detectTag(title) {
 
 function relativeTime(dateStr) {
   if (!dateStr) return "";
-  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  const ms = new Date(dateStr).getTime();
+  if (isNaN(ms)) return "";
+  const mins = Math.floor((Date.now() - ms) / 60000);
   if (mins < 0) return "now";
   if (mins < 60) return mins + "m";
   if (mins < 1440) return Math.floor(mins / 60) + "h";
@@ -318,7 +321,8 @@ async function fetchRSSFeed(feed) {
 }
 
 app.get("/api/news", async (req, res) => {
-  const tagFilter = req.query.tag?.toUpperCase();
+  const rawTag = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
+  const tagFilter = rawTag?.toUpperCase();
   const applyFilter = (arr) => tagFilter && tagFilter !== "ALL" ? arr.filter((n) => n.tag === tagFilter) : arr;
 
   const hit = cached("news");
@@ -399,7 +403,7 @@ async function fetchMusicRSSFeed(feed) {
 }
 
 app.get("/api/music-news", async (req, res) => {
-  const tagFilter = req.query.tag;
+  const tagFilter = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
   const applyFilter = (arr) => tagFilter && tagFilter.toLowerCase() !== "all"
     ? arr.filter((n) => n.tag.toLowerCase() === tagFilter.toLowerCase()) : arr;
 
@@ -703,7 +707,6 @@ function generateFallbackEvents() {
     { name:"Progressive Sunday",     genre:"Progressive", time:"18:00", venue:"Club de Pescadores", address:"Club de Pescadores, Costanera Norte, Buenos Aires", city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
     { name:"Electronic Underground", genre:"Electronic",  time:"23:00", venue:"Crobar",            address:"Crobar, Palermo, Buenos Aires",            city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
   ];
-  const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const events = [];
   const now = new Date();
   for (let i = 0; i < templates.length; i++) {
@@ -742,7 +745,7 @@ function deduplicateEvents(events) {
 }
 
 app.get("/api/events", async (req, res) => {
-  const genreFilter = req.query.genre;
+  const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
   const applyFilter = (arr) => genreFilter && genreFilter.toLowerCase() !== "all"
     ? arr.filter(e => e.genre.toLowerCase() === genreFilter.toLowerCase()) : arr;
 
@@ -862,43 +865,46 @@ app.get("/api/dashboard", async (req, res) => {
   const hit = cached("dashboard");
   if (hit) return res.json(hit);
 
-  const results = await Promise.allSettled([
-    // BTC dominance + total market cap from CoinGecko global
-    fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-    // Fear & Greed index
-    fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-    // ETH gas from Etherscan (free tier, no key needed for gas oracle)
-    fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-  ]);
+  try {
+    const results = await Promise.allSettled([
+      fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+    ]);
 
-  const globalData = results[0].status === "fulfilled" ? results[0].value : null;
-  const fngData = results[1].status === "fulfilled" ? results[1].value : null;
-  const gasData = results[2].status === "fulfilled" ? results[2].value : null;
+    const globalData = results[0].status === "fulfilled" ? results[0].value : null;
+    const fngData = results[1].status === "fulfilled" ? results[1].value : null;
+    const gasData = results[2].status === "fulfilled" ? results[2].value : null;
 
-  const dashboard = {
-    btcDominance: globalData?.data?.market_cap_percentage?.btc
-      ? Math.round(globalData.data.market_cap_percentage.btc * 10) / 10
-      : null,
-    ethDominance: globalData?.data?.market_cap_percentage?.eth
-      ? Math.round(globalData.data.market_cap_percentage.eth * 10) / 10
-      : null,
-    totalMarketCap: globalData?.data?.total_market_cap?.usd || null,
-    marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd
-      ? Math.round(globalData.data.market_cap_change_percentage_24h_usd * 10) / 10
-      : null,
-    fearGreed: fngData?.data?.[0] ? {
-      value: parseInt(fngData.data[0].value),
-      label: fngData.data[0].value_classification,
-    } : null,
-    ethGas: gasData?.result?.ProposeGasPrice ? {
-      low: parseInt(gasData.result.SafeGasPrice) || null,
-      avg: parseInt(gasData.result.ProposeGasPrice) || null,
-      high: parseInt(gasData.result.FastGasPrice) || null,
-    } : null,
-  };
+    const dashboard = {
+      btcDominance: globalData?.data?.market_cap_percentage?.btc
+        ? Math.round(globalData.data.market_cap_percentage.btc * 10) / 10
+        : null,
+      ethDominance: globalData?.data?.market_cap_percentage?.eth
+        ? Math.round(globalData.data.market_cap_percentage.eth * 10) / 10
+        : null,
+      totalMarketCap: globalData?.data?.total_market_cap?.usd || null,
+      marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd
+        ? Math.round(globalData.data.market_cap_change_percentage_24h_usd * 10) / 10
+        : null,
+      fearGreed: fngData?.data?.[0] ? {
+        value: parseInt(fngData.data[0].value),
+        label: fngData.data[0].value_classification,
+      } : null,
+      ethGas: gasData?.result?.ProposeGasPrice ? {
+        low: parseInt(gasData.result.SafeGasPrice) || null,
+        avg: parseInt(gasData.result.ProposeGasPrice) || null,
+        high: parseInt(gasData.result.FastGasPrice) || null,
+      } : null,
+    };
 
-  setCache("dashboard", dashboard);
-  res.json(dashboard);
+    setCache("dashboard", dashboard);
+    res.json(dashboard);
+  } catch (e) {
+    console.error("[dashboard]", e.message);
+    if (cache.dashboard?.data) return res.json(cache.dashboard.data);
+    res.status(500).json({ error: "Dashboard data unavailable" });
+  }
 });
 
 // ─────────────────────────────────────────────
@@ -1031,11 +1037,14 @@ app.get("/api/crypto-events", async (req, res) => {
 // ═══════════════════════════════════════════════════════
 
 const CRYPTO_IRL_FILE = join(__dirname, "data", "crypto-irl.json");
+let cryptoIrlCache = null;
 
 function loadCryptoIrl() {
+  if (cryptoIrlCache) return cryptoIrlCache;
   try {
     if (existsSync(CRYPTO_IRL_FILE)) {
-      return JSON.parse(readFileSync(CRYPTO_IRL_FILE, "utf-8"));
+      cryptoIrlCache = JSON.parse(readFileSync(CRYPTO_IRL_FILE, "utf-8"));
+      return cryptoIrlCache;
     }
   } catch { /* ignore */ }
   return { events: [], courses: [] };
@@ -1045,16 +1054,25 @@ function saveCryptoIrl(data) {
   const dir = join(__dirname, "data");
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(CRYPTO_IRL_FILE, JSON.stringify(data, null, 2));
+  cryptoIrlCache = data;
 }
 
 app.get("/api/crypto-irl", (req, res) => {
-  const data = loadCryptoIrl();
-  // Only return approved items
-  res.json({
-    events: data.events.filter(e => e.status === "approved"),
-    courses: data.courses.filter(c => c.status === "approved"),
-  });
+  try {
+    const data = loadCryptoIrl();
+    res.json({
+      events: (data.events || []).filter(e => e.status === "approved"),
+      courses: (data.courses || []).filter(c => c.status === "approved"),
+    });
+  } catch (e) {
+    console.error("[crypto-irl GET]", e.message);
+    res.status(500).json({ error: "Error loading crypto IRL data" });
+  }
 });
+
+// Write lock to prevent TOCTOU race conditions on crypto-irl.json
+let irlWriteLock = false;
+const MAX_IRL_ENTRIES = 200;
 
 app.post("/api/crypto-irl", (req, res) => {
   const { type, title, organizer, date, time, location, url, description, free } = req.body;
@@ -1065,38 +1083,56 @@ app.post("/api/crypto-irl", (req, res) => {
   if (!["event", "course"].includes(type)) {
     return res.status(400).json({ error: "type debe ser 'event' o 'course'" });
   }
-  // Basic sanitization
-  const sanitize = (s) => String(s || "").slice(0, 200).replace(/[<>]/g, "");
+
+  if (irlWriteLock) {
+    return res.status(503).json({ error: "Servidor ocupado, intentá de nuevo" });
+  }
+
+  const sanitizeField = (s) => String(s || "").slice(0, 200).replace(/[<>"'`]/g, "");
 
   const item = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: crypto.randomUUID(),
     type,
-    title: sanitize(title),
-    organizer: sanitize(organizer),
-    date: sanitize(date),
-    time: sanitize(time),
-    location: sanitize(location),
-    url: sanitize(url),
-    description: sanitize(description).slice(0, 500),
+    title: sanitizeField(title),
+    organizer: sanitizeField(organizer),
+    date: sanitizeField(date),
+    time: sanitizeField(time),
+    location: sanitizeField(location),
+    url: sanitizeUrl(url),
+    description: sanitizeField(description).slice(0, 500),
     free: Boolean(free),
-    status: "approved", // auto-approve for now, add moderation later
+    status: "pending",
     createdAt: new Date().toISOString(),
   };
 
-  const data = loadCryptoIrl();
-  if (type === "event") data.events.push(item);
-  else data.courses.push(item);
-  saveCryptoIrl(data);
-
-  res.status(201).json(item);
+  try {
+    irlWriteLock = true;
+    const data = loadCryptoIrl();
+    const target = type === "event" ? data.events : data.courses;
+    if (target.length >= MAX_IRL_ENTRIES) {
+      return res.status(400).json({ error: "Límite de eventos alcanzado" });
+    }
+    target.push(item);
+    saveCryptoIrl(data);
+    res.status(201).json(item);
+  } catch (e) {
+    console.error("[crypto-irl POST]", e.message);
+    res.status(500).json({ error: "Error al guardar" });
+  } finally {
+    irlWriteLock = false;
+  }
 });
 
 // API 404 — return JSON instead of falling through to SPA
 app.all("/api/*", (req, res) => res.status(404).json({ error: "Endpoint not found" }));
 
 if (IS_PROD) {
-  const { readFileSync } = await import("node:fs");
-  const indexHtml = readFileSync(join(__dirname, "dist", "index.html"), "utf-8");
+  const distIndex = join(__dirname, "dist", "index.html");
+  if (!existsSync(distIndex)) {
+    console.error("[FATAL] dist/index.html not found — run 'npm run build' before starting in production");
+    process.exit(1);
+  }
+  const indexHtml = readFileSync(distIndex, "utf-8");
 
   // SEO: inject prerendered content for crawlers
   function escHtml(s) {
@@ -1191,6 +1227,7 @@ const server = app.listen(PORT, () => console.log(`
 // Graceful shutdown
 function shutdown(signal) {
   console.log(`\n[${signal}] Shutting down gracefully...`);
+  clearInterval(rateLimitSweep);
   server.close(() => {
     console.log("Server closed.");
     process.exit(0);

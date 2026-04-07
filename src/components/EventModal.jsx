@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 
@@ -64,6 +65,8 @@ function downloadICS(event) {
 }
 
 export function EventModal({ event, onClose, onShare }) {
+  const trapRef = useFocusTrap(!!event);
+
   useEffect(() => {
     if (!event) return;
     document.body.style.overflow = "hidden";
@@ -92,7 +95,7 @@ export function EventModal({ event, onClose, onShare }) {
   const artists = event.artists?.filter(a => a && a !== "TBA" && !a.match(/^(b2b|más a confirmar)/i));
 
   return (
-    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name}>
+    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name} ref={trapRef}>
       <div className="bl-modal">
         <button className="bl-modal-close" onClick={onClose} aria-label="Cerrar">&times;</button>
 

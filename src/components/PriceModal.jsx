@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "../utils/api";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export function PriceModal({ price, onClose }) {
+  const trapRef = useFocusTrap(!!price);
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chartError, setChartError] = useState(false);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -18,10 +21,11 @@ export function PriceModal({ price, onClose }) {
     if (!price) return;
     setLoading(true);
     setChartData(null);
+    setChartError(false);
     fetch(`/api/prices/${price.id}/chart`)
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then((d) => { setChartData(d.prices || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setChartError(true); setLoading(false); });
   }, [price]);
 
   useEffect(() => {
@@ -97,7 +101,7 @@ export function PriceModal({ price, onClose }) {
   if (!price) return null;
 
   return (
-    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={price.sym}>
+    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={price.sym} ref={trapRef}>
       <div className="bl-modal bl-price-modal">
         <button className="bl-modal-close" onClick={onClose} aria-label="Cerrar">&#x2715;</button>
 
@@ -116,6 +120,8 @@ export function PriceModal({ price, onClose }) {
         <div className="bl-price-modal-chart">
           {loading ? (
             <div className="bl-price-modal-loading">Cargando chart...</div>
+          ) : chartError ? (
+            <div className="bl-price-modal-loading" style={{ color: "var(--bl-text-ter)" }}>Chart no disponible</div>
           ) : (
             <canvas ref={canvasRef} className="bl-price-canvas" />
           )}

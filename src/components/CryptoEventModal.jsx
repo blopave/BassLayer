@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const DAYS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -64,6 +65,8 @@ function mapsUrl(item) {
 }
 
 export function CryptoEventModal({ item, onClose }) {
+  const trapRef = useFocusTrap(!!item);
+
   useEffect(() => {
     if (!item) return;
     document.body.style.overflow = "hidden";
@@ -79,7 +82,7 @@ export function CryptoEventModal({ item, onClose }) {
   const month = d ? MONTHS[d.getMonth()] : "";
 
   return createPortal(
-    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={item.title}>
+    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={item.title} ref={trapRef}>
       <div className="bl-modal">
         <button className="bl-modal-close" onClick={onClose} aria-label="Cerrar">&times;</button>
 

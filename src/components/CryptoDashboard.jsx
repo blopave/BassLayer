@@ -27,20 +27,24 @@ function FearGreedGauge({ value, label }) {
 export function CryptoDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     api.dashboard()
-      .then((d) => { if (mounted) setData(d); })
-      .catch(() => {})
+      .then((d) => { if (mounted) { setData(d); setError(false); } })
+      .catch(() => { if (mounted) setError(true); })
       .finally(() => { if (mounted) setLoading(false); });
     const iv = setInterval(() => {
-      api.dashboard().then((d) => { if (mounted) setData(d); }).catch(() => {});
+      api.dashboard()
+        .then((d) => { if (mounted) { setData(d); setError(false); } })
+        .catch(() => {});
     }, 5 * 60_000);
     return () => { mounted = false; clearInterval(iv); };
   }, []);
 
-  if (loading || !data) return null;
+  if (loading || (!data && !error)) return null;
+  if (error && !data) return null;
 
   return (
     <div className="bl-dashboard">
