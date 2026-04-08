@@ -36,6 +36,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
@@ -75,7 +76,13 @@ export default function App() {
   }
 
   // Day/Night mode
-  const [dayMode, setDayMode] = useState(() => localStorage.getItem("bl-mode") === "day");
+  const [dayMode, setDayMode] = useState(() => {
+    const saved = localStorage.getItem("bl-mode");
+    if (saved) return saved === "day";
+    // Auto: day between 7am-8pm Buenos Aires time
+    const hour = new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires", hour: "numeric", hour12: false });
+    return +hour >= 7 && +hour < 20;
+  });
   const toggleMode = useCallback(() => {
     const root = document.querySelector(".bl-root");
     if (root) {
@@ -126,8 +133,7 @@ export default function App() {
       cursorTarget.current = { x: e.clientX, y: e.clientY };
       mouseNorm.current = { x: (e.clientX / innerWidth - 0.5) * 2, y: (e.clientY / innerHeight - 0.5) * 2 };
       if (cursorRef.current) {
-        if (isInteractive(e.target)) cursorRef.current.classList.add("active");
-        else cursorRef.current.classList.remove("active");
+        cursorRef.current.classList.toggle("hovering", isInteractive(e.target));
       }
     };
     window.addEventListener("mousemove", onMove);
@@ -451,6 +457,7 @@ export default function App() {
       // Don't trigger shortcuts when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       const key = e.key.toLowerCase();
+      if (key === "escape" && showMenu) { setShowMenu(false); return; }
       if (view === "sections") {
         if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
         if (e.key === "ArrowRight" && activePanel === 0) swipeTo(1);
@@ -462,7 +469,17 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo, navigateHome, toggleMode]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e) => {
+      if (!e.target.closest(".bl-menu-btn") && !e.target.closest(".bl-menu-dropdown")) setShowMenu(false);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showMenu]);
 
   // Feed loaders (defined early — used by PTR, navigateToSections, auto-refresh)
 
@@ -558,8 +575,16 @@ export default function App() {
               {activePanel === 0 && eventsUpdated ? `Updated ${timeAgo(eventsUpdated)}` : ""}
               {activePanel === 1 && newsUpdated ? `Updated ${timeAgo(newsUpdated)}` : ""}
             </span>
-            <button className="bl-about-btn" onClick={() => setShowAbout(true)} aria-label="Sobre BassLayer">?</button>
+            <button className={`bl-menu-btn${showMenu ? " active" : ""}`} onClick={() => setShowMenu(!showMenu)} aria-label="Menú" aria-expanded={showMenu}>
+              <span /><span /><span />
+            </button>
           </div>
+          {showMenu && (
+            <div className="bl-menu-dropdown">
+              <button className="bl-terminal-link" onClick={() => { setShowAbout(true); setShowMenu(false); }}>&gt; about_basslayer</button>
+              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io" onClick={() => setShowMenu(false)}>&gt; contacto</a>
+            </div>
+          )}
         </nav>
 
         <div
@@ -573,7 +598,10 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} />
-            <div className="bl-section-end" />
+            <footer className="bl-terminal-footer">
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
+              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
+            </footer>
           </div>
 
           {/* Panel 1: LAYER */}
@@ -581,7 +609,10 @@ export default function App() {
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
             <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
-            <div className="bl-section-end" />
+            <footer className="bl-terminal-footer">
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
+              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
+            </footer>
           </div>
         </div>
       </section>

@@ -45,6 +45,7 @@
   --bl-down:        #6B2D2D;
   --bl-saved:       #D4A017;
 
+
   /* Surfaces with alpha */
   --bl-glass:       rgba(22, 22, 22, 0.92);
   --bl-glass-light: rgba(22, 22, 22, 0.95);
@@ -123,17 +124,6 @@
 .bl-mode-toggle:hover svg { transform:rotate(30deg); }
 .bl-mode-icon { fill:none; stroke:var(--bl-text); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
 
-/* ── About Button (topbar) ─────────────── */
-.bl-about-btn {
-  width:28px; height:28px; border-radius:50%;
-  background:transparent; border:1px solid var(--bl-border);
-  color:var(--bl-text-sec); font-family:var(--font-mono);
-  font-size:12px; font-weight:600; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all var(--duration-fast);
-  flex-shrink:0;
-}
-.bl-about-btn:hover { color:var(--bl-text); border-color:var(--bl-text-sec); background:var(--bl-800); }
 
 /* ── About Modal ───────────────────────── */
 .bl-about-overlay {
@@ -211,24 +201,7 @@
 /* ── Screen Reader Only ─────────────────── */
 .bl-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
-/* ── Custom Cursor ──────────────────────── */
-.bl-cursor {
-  position:fixed; top:-6px; left:-6px; width:12px; height:12px;
-  border-radius:50%; border:1.5px solid var(--bl-350);
-  pointer-events:none; z-index:9999;
-  transition:width .4s cubic-bezier(0.16,1,0.3,1), height .4s cubic-bezier(0.16,1,0.3,1),
-             top .4s cubic-bezier(0.16,1,0.3,1), left .4s cubic-bezier(0.16,1,0.3,1),
-             background .3s, border-color .3s, opacity .3s;
-  mix-blend-mode:difference;
-  will-change:transform;
-}
-.bl-cursor.active {
-  width:32px; height:32px; top:-16px; left:-16px;
-  background:rgba(255,255,255,0.05); border-color:var(--bl-200);
-}
-.bl-root.day-mode .bl-cursor.active {
-  background:rgba(0,0,0,0.05); border-color:var(--bl-text-sec);
-}
+/* ── Custom Cursor — see Design Enhancements section ── */
 /* Hide native cursor only on non-touch devices with fine pointer (mouse) */
 @media (pointer: fine) {
   .bl-root, .bl-root *, .bl-root a, .bl-root button,
@@ -274,28 +247,51 @@
 .bl-swipe-panel { width:50%; height:100%; overflow-y:auto; overflow-x:hidden; background:var(--bl-section-bg); -webkit-overflow-scrolling:touch; flex-shrink:0; }
 
 /* ── Topbar & Tabs ──────────────────────── */
-.bl-topbar { position:sticky; top:0; z-index:900; display:flex; align-items:center; justify-content:space-between; padding:16px 32px; background:var(--bl-glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid var(--bl-border); overflow:hidden; }
+.bl-topbar { position:sticky; top:0; z-index:900; display:flex; align-items:center; justify-content:space-between; padding:20px 32px; background:var(--bl-glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid var(--bl-border); overflow:visible; }
 .bl-scroll-progress {
   position:absolute; bottom:0; left:0; width:100%; height:2px;
   background:var(--bl-white); transform-origin:left; transform:scaleX(0);
   transition:transform 0.1s linear; opacity:0.4;
 }
 .bl-topbar-left { display:flex; align-items:center; gap:6px; }
-.bl-topbar-back { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:4px 8px; transition:color var(--duration-med); position:relative; }
+.bl-topbar-back { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:6px 10px; transition:color var(--duration-med); position:relative; }
 .bl-topbar-back::after { content:''; position:absolute; bottom:0; left:8px; right:8px; height:1px; background:var(--bl-text); transform:scaleX(0); transform-origin:right; transition:transform .4s var(--ease-out-expo); }
 .bl-topbar-back:hover { color:var(--bl-text); }
 .bl-topbar-back:hover::after { transform:scaleX(1); transform-origin:left; }
-.bl-topbar-sep { color:var(--bl-border); font-size:10px; padding:0 2px; user-select:none; }
+.bl-topbar-sep { color:var(--bl-border); font-size:12px; padding:0 4px; user-select:none; }
 .bl-topbar-title { font-family:var(--font-display); font-weight:800; font-size:18px; letter-spacing:-0.5px; color:var(--bl-text); padding:0 8px; }
 .bl-topbar-meta { font-family:var(--font-mono); font-size:8px; letter-spacing:1px; color:var(--bl-text-sec); }
 .bl-topbar-tabs { display:flex; align-items:center; gap:0; }
-.bl-topbar-tab { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:4px 12px; transition:color var(--duration-med); position:relative; }
+.bl-topbar-tab { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:6px 14px; transition:color var(--duration-med); position:relative; }
 .bl-topbar-tab:hover { color:var(--bl-hover); }
 .bl-topbar-tab.active { color:var(--bl-text); }
-.bl-topbar-tab.active::after { content:''; position:absolute; bottom:-17px; left:50%; transform:translateX(-50%); width:16px; height:2px; background:var(--bl-white); border-radius:1px; }
-.bl-topbar-tab-bass { font-family:var(--font-bass); font-style:italic; font-weight:900; font-size:13px; letter-spacing:0; text-transform:none; }
-.bl-topbar-tab-layer { font-family:var(--font-layer); font-weight:300; font-size:10px; letter-spacing:3px; }
+.bl-topbar-tab.active::after { content:''; position:absolute; bottom:-21px; left:50%; transform:translateX(-50%); width:18px; height:2px; border-radius:1px; }
+.bl-topbar-tab.active::after { background:var(--bl-white); }
+.bl-topbar-tab-bass { font-family:var(--font-bass); font-style:italic; font-weight:900; font-size:16px; letter-spacing:0; text-transform:none; }
+.bl-topbar-tab-layer { font-family:var(--font-layer); font-weight:300; font-size:12px; letter-spacing:4px; }
 .bl-topbar-tab-sep { color:var(--bl-border); font-size:12px; padding:0 2px; user-select:none; }
+
+/* ── Menu Button & Dropdown ───────────── */
+.bl-menu-btn {
+  display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center;
+  width:28px; height:28px; background:none; border:1px solid var(--bl-border);
+  border-radius:50%; cursor:pointer; padding:0; transition:all .2s ease;
+}
+.bl-menu-btn span {
+  display:block; width:3px; height:3px; border-radius:50%;
+  background:var(--bl-text-sec); transition:background .2s;
+}
+.bl-menu-btn:hover, .bl-menu-btn.active { border-color:var(--bl-text-sec); }
+.bl-menu-btn:hover span, .bl-menu-btn.active span { background:var(--bl-text); }
+.bl-menu-dropdown {
+  position:absolute; top:100%; right:16px;
+  display:flex; flex-direction:column; gap:2px;
+  padding:8px; background:var(--bl-750); border:1px solid var(--bl-border);
+  border-radius:8px; border-top-right-radius:0;
+  animation:bl-menu-in .2s var(--ease-out-expo);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+@keyframes bl-menu-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 
 /* ── Swipe Dots ─────────────────────────── */
 .bl-swipe-dots { display:flex; gap:6px; align-items:center; }
@@ -455,10 +451,9 @@
 @keyframes bl-drip { 0%{top:-100%} 35%{top:100%} 100%{top:100%} }
 
 /* ── Filters ────────────────────────────── */
-.bl-filters { position:sticky; z-index:898; display:flex; gap:6px; padding:10px 32px; overflow-x:auto; border-bottom:1px solid var(--bl-border); background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); scrollbar-width:none; }
+.bl-filters { position:sticky; z-index:898; display:flex; gap:6px; padding:10px 32px; overflow-x:auto; border-bottom:none; background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); scrollbar-width:none; }
 .bl-filters::-webkit-scrollbar { display:none; }
-.bl-filters.layer-filters { top:0; position:sticky; z-index:898; }
-.bl-filters.bass-filters { top:0; position:sticky; z-index:898; }
+.bl-filters.layer-filters, .bl-filters.bass-filters { top:0; }
 .bl-filter-chip { font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-text-sec); padding:5px 12px; border:1px solid var(--bl-border); border-radius:20px; cursor:pointer; background:transparent; white-space:nowrap; transition:all .25s var(--ease-out-expo); flex-shrink:0; }
 .bl-filter-chip:hover { color:var(--bl-text); border-color:var(--bl-400); }
 .bl-filter-chip.active { color:var(--bl-white); border-color:var(--bl-300); background:var(--bl-subtle-hover); }
@@ -534,14 +529,7 @@
 .bl-ev-genre-badge { font-family:var(--font-mono); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-text-sec); padding:2px 7px; border:1px solid var(--bl-border); border-radius:2px; flex-shrink:0; transition:all var(--duration-fast); white-space:nowrap; }
 .bl-ev-item:hover .bl-ev-genre-badge { border-color:var(--bl-450); color:var(--bl-250); }
 
-/* ── Scroll Reveal Animation ──────────── */
-.bl-reveal {
-  opacity:0; transform:translateY(24px) scale(0.98);
-  transition:opacity .7s cubic-bezier(0.16, 1, 0.3, 1),
-             transform .7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change:opacity, transform;
-}
-.bl-reveal.visible { opacity:1; transform:translateY(0) scale(1); }
+/* ── Scroll Reveal Animation — see Design Enhancements section ── */
 
 /* ── Status / Loading ───────────────────── */
 @keyframes bl-pulse { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
@@ -581,6 +569,8 @@
   color:var(--bl-text-sec); white-space:nowrap; flex-shrink:0;
 }
 .bl-day-line { flex:1; height:1px; background:var(--bl-border); }
+/* Avoid double-line between last event of a group and next day header */
+.bl-ev-item:has(+ .bl-day-header) { border-bottom-color:transparent; }
 
 /* ── Crypto Dashboard ──────────────── */
 .bl-dashboard { padding:16px 32px 8px; }
@@ -625,7 +615,21 @@
 .bl-dash-gas-val { font-family:var(--font-display); font-size:16px; font-weight:600; color:var(--bl-text); }
 .bl-dash-gas-unit { font-family:var(--font-mono); font-size:8px; letter-spacing:1.5px; color:var(--bl-text-ter); text-align:center; margin-top:4px; text-transform:uppercase; }
 
-.bl-section-end { height:80px; }
+/* ── Terminal Footer ───────────────────── */
+.bl-terminal-footer {
+  display:flex; align-items:center; justify-content:center; gap:24px;
+  padding:32px 16px 48px; margin-top:8px;
+  border-top:1px solid var(--bl-border);
+}
+.bl-terminal-link {
+  font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
+  color:var(--bl-text-ter); text-decoration:none; background:none; border:none;
+  cursor:pointer; padding:6px 10px; border-radius:4px;
+  transition:color .2s, background .2s;
+}
+.bl-terminal-link:hover {
+  color:var(--bl-text); background:var(--bl-800);
+}
 
 /* ── Skeleton Loaders ───────────────────── */
 @keyframes bl-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -768,8 +772,8 @@
   .bl-concept-text { font-size:10px!important; letter-spacing:1.5px!important; }
   .bl-home-sub-text { font-size:8px!important; letter-spacing:2px!important; }
   .bl-home-sub { top:calc(50% + 50px)!important; }
-  .bl-topbar { padding:12px 16px; }
-  .bl-topbar-tab::after { bottom:-13px; }
+  .bl-topbar { padding:16px 16px; }
+  .bl-topbar-tab::after { bottom:-16px; }
   .bl-price-bar { top:0; }
   .bl-filters { padding:8px 16px; gap:5px; }
   .bl-filters.layer-filters { top:0; }
@@ -2055,3 +2059,36 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   .bl-timeline-event-title { font-size:12px; }
   .bl-timeline-event-desc { font-size:10px; }
 }
+
+/* ═══════════════════════════════════════════
+   Design Enhancements
+   ═══════════════════════════════════════════ */
+
+
+/* ── 2. Custom Cursor (desktop) ──────────── */
+.bl-cursor {
+  position:fixed; top:-6px; left:-6px; z-index:99999; pointer-events:none;
+  width:10px; height:10px; border-radius:50%;
+  border:1.5px solid var(--bl-350);
+  background:none;
+  transition:width .4s var(--ease-out-expo), height .4s var(--ease-out-expo),
+             top .4s var(--ease-out-expo), left .4s var(--ease-out-expo),
+             opacity .3s, background .2s, border-color .3s;
+  mix-blend-mode:difference;
+  will-change:transform;
+}
+.bl-cursor.hovering {
+  width:32px; height:32px; top:-16px; left:-16px;
+  background:rgba(255,255,255,0.05); border-color:var(--bl-200);
+}
+@media (max-width:768px) { .bl-cursor { display:none; } }
+@media (pointer:coarse) { .bl-cursor { display:none; } }
+
+/* ── 3. Enhanced Reveal Animation ────────── */
+.bl-reveal {
+  opacity:0; transform:translateY(28px) scale(0.97);
+  transition:opacity .8s cubic-bezier(0.16, 1, 0.3, 1),
+             transform .8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change:opacity, transform;
+}
+.bl-reveal.visible { opacity:1; transform:translateY(0) scale(1); }
