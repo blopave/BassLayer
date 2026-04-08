@@ -565,6 +565,11 @@ export default function App() {
               <span className="bl-topbar-tab-sep" aria-hidden="true">/</span>
               <button className={`bl-topbar-tab bl-topbar-tab-layer${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer</button>
             </div>
+            <span className="bl-topbar-sep" aria-hidden="true">|</span>
+            <div className="bl-topbar-nav-links">
+              <button className="bl-topbar-nav-link" onClick={() => setShowAbout(true)}>about</button>
+              <a className="bl-topbar-nav-link" href="mailto:contacto@basslayer.io">contacto</a>
+            </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div className="bl-swipe-dots" aria-hidden="true">
@@ -575,16 +580,7 @@ export default function App() {
               {activePanel === 0 && eventsUpdated ? `Updated ${timeAgo(eventsUpdated)}` : ""}
               {activePanel === 1 && newsUpdated ? `Updated ${timeAgo(newsUpdated)}` : ""}
             </span>
-            <button className={`bl-menu-btn${showMenu ? " active" : ""}`} onClick={() => setShowMenu(!showMenu)} aria-label="Menú" aria-expanded={showMenu}>
-              <span /><span /><span />
-            </button>
           </div>
-          {showMenu && (
-            <div className="bl-menu-dropdown">
-              <button className="bl-terminal-link" onClick={() => { setShowAbout(true); setShowMenu(false); }}>&gt; about_basslayer</button>
-              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io" onClick={() => setShowMenu(false)}>&gt; contacto</a>
-            </div>
-          )}
         </nav>
 
         <div

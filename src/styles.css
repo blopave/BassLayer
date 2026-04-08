@@ -271,6 +271,15 @@
 .bl-topbar-tab-layer { font-family:var(--font-layer); font-weight:300; font-size:12px; letter-spacing:4px; }
 .bl-topbar-tab-sep { color:var(--bl-border); font-size:12px; padding:0 2px; user-select:none; }
 
+/* ── Topbar Nav Links ─────────────────── */
+.bl-topbar-nav-links { display:flex; align-items:center; gap:8px; }
+.bl-topbar-nav-link {
+  font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:4px 6px;
+  transition:color var(--duration-med); text-decoration:none;
+}
+.bl-topbar-nav-link:hover { color:var(--bl-text); }
+
 /* ── Menu Button & Dropdown ───────────── */
 .bl-menu-btn {
   display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center;
