@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { api, timeAgo } from "./utils/api";
+import { api } from "./utils/api";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
+import { supabase } from "./utils/supabase";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { EventModal } from "./components/EventModal";
@@ -9,6 +10,11 @@ import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
+import { VenueAuth } from "./components/VenueAuth";
+import { VenueDashboard } from "./components/VenueDashboard";
+import { AdminPanel } from "./components/AdminPanel";
+import { ProjectAuth } from "./components/ProjectAuth";
+import { ProjectDashboard } from "./components/ProjectDashboard";
 
 export default function App() {
   const isMobile = useIsMobile();
@@ -37,8 +43,31 @@ export default function App() {
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [venueUser, setVenueUser] = useState(null);
+  const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
+  const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
+
+  // Restore auth session on load
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setVenueUser(session.user);
+        localStorage.setItem("bl-token", session.access_token);
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setVenueUser(session.user);
+        localStorage.setItem("bl-token", session.access_token);
+      } else {
+        setVenueUser(null);
+        localStorage.removeItem("bl-token");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Feed loaders — defined early since PTR, navigateToSections, and auto-refresh depend on them
   const loadNews = useCallback(async () => {
@@ -457,6 +486,8 @@ export default function App() {
       // Don't trigger shortcuts when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       const key = e.key.toLowerCase();
+      if (key === "escape" && projectView) { setProjectView(null); return; }
+      if (key === "escape" && venueView) { setVenueView(null); return; }
       if (key === "escape" && showMenu) { setShowMenu(false); return; }
       if (view === "sections") {
         if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
@@ -558,28 +589,19 @@ export default function App() {
         <nav className="bl-topbar" aria-label="Navegaci&oacute;n principal">
           <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           <div className="bl-topbar-left">
-            <button className="bl-topbar-back" onClick={navigateHome} aria-label="Volver al inicio">&larr; Home</button>
+            <button className="bl-topbar-back" onClick={navigateHome} aria-label="Volver al inicio">&larr;</button>
             <span className="bl-topbar-sep" aria-hidden="true">|</span>
             <div className="bl-topbar-tabs" role="tablist">
               <button className={`bl-topbar-tab bl-topbar-tab-bass${activePanel === 0 ? " active" : ""}`} onClick={() => swipeTo(0)} role="tab" aria-selected={activePanel === 0}>Bass<span className="bl-tab-eq" aria-hidden="true"><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /></span></button>
               <span className="bl-topbar-tab-sep" aria-hidden="true" style={{ display:"inline-block", transform: activePanel === 1 ? "rotate(180deg)" : "rotate(0deg)" }}>/</span>
               <button className={`bl-topbar-tab bl-topbar-tab-layer${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer<span className="bl-tab-cursor" aria-hidden="true" /></button>
             </div>
-            <span className="bl-topbar-sep" aria-hidden="true">|</span>
-            <div className="bl-topbar-nav-links">
-              <button className="bl-topbar-nav-link" onClick={() => setShowAbout(true)}>about</button>
-              <a className="bl-topbar-nav-link" href="mailto:contacto@basslayer.io">contacto</a>
-            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div className="bl-swipe-dots" aria-hidden="true">
-              <div className={`bl-swipe-dot dot-bass${activePanel === 0 ? " active" : ""}`} />
-              <div className={`bl-swipe-dot dot-layer${activePanel === 1 ? " active" : ""}`} />
-            </div>
-            <span className="bl-topbar-meta">
-              {activePanel === 0 && eventsUpdated ? `Updated ${timeAgo(eventsUpdated)}` : ""}
-              {activePanel === 1 && newsUpdated ? `Updated ${timeAgo(newsUpdated)}` : ""}
-            </span>
+          <div className="bl-topbar-links">
+            <button className="bl-topbar-link" onClick={() => setShowAbout(true)}>about</button>
+            <a className="bl-topbar-link" href="mailto:contacto@basslayer.io">contacto</a>
+            {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>venues</button>}
+            {activePanel === 1 && <button className="bl-topbar-link bl-topbar-link-layer" onClick={() => setProjectView(venueUser ? "dashboard" : "auth")}>exchanges</button>}
           </div>
         </nav>
 
@@ -597,6 +619,7 @@ export default function App() {
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
               <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
+              <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; para_venues</button>
             </footer>
           </div>
 
@@ -604,10 +627,11 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
+            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onOpenExchanges={() => setProjectView(venueUser ? "dashboard" : "auth")} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
               <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
+              <button className="bl-terminal-link" onClick={() => setProjectView(venueUser ? "dashboard" : "auth")}>&gt; para_exchanges</button>
             </footer>
           </div>
         </div>
@@ -688,6 +712,53 @@ export default function App() {
             <div className="bl-about-footer">
               <span className="bl-about-built">Buenos Aires — 2026</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* VENUE OVERLAY */}
+      {venueView && (
+        <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setVenueView(null); }}>
+          <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
+            <button className="bl-modal-close" onClick={() => setVenueView(null)} aria-label="Cerrar">&times;</button>
+            {venueView === "auth" && (
+              <VenueAuth
+                onAuth={(user) => { setVenueUser(user); setVenueView("dashboard"); }}
+                onBack={() => setVenueView(null)}
+              />
+            )}
+            {venueView === "dashboard" && (
+              <VenueDashboard
+                user={venueUser}
+                onLogout={() => { setVenueUser(null); setVenueView(null); }}
+                onBack={() => setVenueView(null)}
+              />
+            )}
+            {venueView === "admin" && (
+              <AdminPanel onBack={() => setVenueView(null)} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PROJECT OVERLAY */}
+      {projectView && (
+        <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setProjectView(null); }}>
+          <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
+            <button className="bl-modal-close" onClick={() => setProjectView(null)} aria-label="Cerrar">&times;</button>
+            {projectView === "auth" && (
+              <ProjectAuth
+                onAuth={(user) => { setVenueUser(user); setProjectView("dashboard"); }}
+                onBack={() => setProjectView(null)}
+              />
+            )}
+            {projectView === "dashboard" && (
+              <ProjectDashboard
+                user={venueUser}
+                onLogout={() => { setVenueUser(null); setProjectView(null); }}
+                onBack={() => setProjectView(null)}
+              />
+            )}
           </div>
         </div>
       )}

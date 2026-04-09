@@ -3,7 +3,6 @@ import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton } from "./SkeletonLoader";
 import { useScrollReveal } from "../hooks/useScrollReveal";
-import { BpmPulse } from "./BpmPulse";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -149,7 +148,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   return (
     <>
-      <BpmPulse events={events} onSelectEvent={onSelect} />
       <div className="bl-weekend-picker-trigger">
         <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
           Eventos del fin de semana
@@ -204,13 +202,14 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                     {artistStr && <div className="bl-ev-artists">{artistStr}</div>}
                     <div className="bl-ev-meta-row">
                       <span className="bl-ev-venue-inline">{ev.venue}</span>
+                      {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
+                      {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
                       <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
                       <span className="bl-ev-time-inline">{ev.time} hs</span>
                     </div>
                   </div>
                   <div className="bl-ev-end">
                     <span className="bl-ev-genre-badge">{ev.genre}</span>
-                    <EventCountdown event={ev} />
                   </div>
                 </article>
               );
