@@ -590,10 +590,8 @@ export default function App() {
           <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           <div className="bl-topbar-left">
             <button className="bl-topbar-back" onClick={navigateHome} aria-label="Volver al inicio">&larr;</button>
-            <span className="bl-topbar-sep" aria-hidden="true">|</span>
             <div className="bl-topbar-tabs" role="tablist">
               <button className={`bl-topbar-tab bl-topbar-tab-bass${activePanel === 0 ? " active" : ""}`} onClick={() => swipeTo(0)} role="tab" aria-selected={activePanel === 0}>Bass<span className="bl-tab-eq" aria-hidden="true"><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /></span></button>
-              <span className="bl-topbar-tab-sep" aria-hidden="true" style={{ display:"inline-block", transform: activePanel === 1 ? "rotate(180deg)" : "rotate(0deg)" }}>/</span>
               <button className={`bl-topbar-tab bl-topbar-tab-layer${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer<span className="bl-tab-cursor" aria-hidden="true" /></button>
             </div>
           </div>

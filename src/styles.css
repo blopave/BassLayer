@@ -255,7 +255,7 @@
 .bl-swipe-panel { width:50%; height:100%; overflow-y:auto; overflow-x:hidden; background:var(--bl-section-bg); -webkit-overflow-scrolling:touch; flex-shrink:0; }
 
 /* ── Topbar & Tabs ──────────────────────── */
-.bl-topbar { position:sticky; top:0; z-index:900; display:flex; align-items:center; justify-content:space-between; padding:20px 32px; background:var(--bl-glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid var(--bl-border); overflow:visible; }
+.bl-topbar { position:sticky; top:0; z-index:900; display:flex; align-items:center; justify-content:space-between; padding:22px 40px; background:var(--bl-glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-bottom:1px solid var(--bl-border); overflow:visible; }
 .bl-scroll-progress {
   position:absolute; bottom:0; left:0; width:100%; height:2px;
   transform-origin:left; transform:scaleX(0);
@@ -263,7 +263,7 @@
 }
 .bl-scroll-progress.progress-bass { background:var(--bl-accent-bass); }
 .bl-scroll-progress.progress-layer { background:var(--bl-accent-layer); }
-.bl-topbar-left { display:flex; align-items:center; gap:6px; }
+.bl-topbar-left { display:flex; align-items:center; gap:12px; }
 .bl-topbar-back { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:6px 10px; transition:color var(--duration-med); position:relative; }
 .bl-topbar-back::after { content:''; position:absolute; bottom:0; left:8px; right:8px; height:1px; background:var(--bl-text); transform:scaleX(0); transform-origin:right; transition:transform .4s var(--ease-out-expo); }
 .bl-topbar-back:hover { color:var(--bl-text); }
@@ -271,27 +271,28 @@
 .bl-topbar-sep { color:var(--bl-border); font-size:12px; padding:0 4px; user-select:none; }
 .bl-topbar-title { font-family:var(--font-display); font-weight:800; font-size:18px; letter-spacing:-0.5px; color:var(--bl-text); padding:0 8px; }
 .bl-topbar-meta { font-family:var(--font-mono); font-size:8px; letter-spacing:1px; color:var(--bl-text-sec); }
-.bl-topbar-tabs { display:flex; align-items:center; gap:0; }
-.bl-topbar-tab { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:6px 14px; transition:color var(--duration-med); position:relative; }
+.bl-topbar-tabs { display:flex; align-items:baseline; gap:2px; }
+.bl-topbar-tab { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); cursor:pointer; background:none; border:none; padding:4px 6px; transition:color .4s, text-shadow .5s; position:relative; }
 .bl-topbar-tab:hover { color:var(--bl-hover); }
 .bl-topbar-tab.active { color:var(--bl-text); }
-.bl-topbar-tab-bass { font-family:var(--font-bass); font-style:italic; font-weight:900; font-size:16px; letter-spacing:0; text-transform:none; }
-.bl-topbar-tab-bass.active { color:var(--bl-accent-bass); }
-.bl-topbar-tab-layer { font-family:var(--font-layer); font-weight:300; font-size:12px; letter-spacing:4px; }
-.bl-topbar-tab-layer.active { color:var(--bl-accent-layer); }
-.bl-topbar-tab-sep { color:var(--bl-border); font-size:12px; padding:0 2px; user-select:none; transition:transform .4s var(--ease-out-expo); }
+.bl-topbar-tab-bass { font-family:var(--font-bass); font-style:italic; font-weight:900; font-size:22px; letter-spacing:-0.01em; text-transform:none; line-height:1; }
+.bl-topbar-tab-bass:hover { color:var(--bl-accent-bass); text-shadow:0 0 20px rgba(200,149,108,0.3); }
+.bl-topbar-tab-bass.active { color:var(--bl-accent-bass); text-shadow:0 0 24px rgba(200,149,108,0.25); }
+.bl-topbar-tab-layer { font-family:var(--font-layer); font-weight:300; font-size:15px; letter-spacing:5px; line-height:1; }
+.bl-topbar-tab-layer:hover { color:var(--bl-accent-layer); text-shadow:0 0 20px rgba(108,184,200,0.3); }
+.bl-topbar-tab-layer.active { color:var(--bl-accent-layer); text-shadow:0 0 24px rgba(108,184,200,0.25); }
 
 /* Equalizer indicator for Bass tab */
-.bl-tab-eq { display:inline-flex; align-items:flex-end; gap:2px; height:12px; margin-left:6px; vertical-align:middle; opacity:0; transition:opacity .3s; }
+.bl-tab-eq { display:inline-flex; align-items:flex-end; gap:2px; height:16px; margin-left:8px; vertical-align:middle; opacity:0; transition:opacity .4s; }
 .bl-topbar-tab-bass.active .bl-tab-eq { opacity:1; }
-.bl-tab-eq-bar { width:2px; border-radius:1px; background:var(--bl-accent-bass); transform-origin:bottom; }
+.bl-tab-eq-bar { width:2.5px; border-radius:1px; background:var(--bl-accent-bass); transform-origin:bottom; box-shadow:0 0 6px rgba(200,149,108,0.4); }
 .bl-tab-eq-bar:nth-child(1) { animation:bl-eq 0.8s ease-in-out infinite alternate; }
 .bl-tab-eq-bar:nth-child(2) { animation:bl-eq 0.6s ease-in-out 0.15s infinite alternate; }
 .bl-tab-eq-bar:nth-child(3) { animation:bl-eq 0.9s ease-in-out 0.3s infinite alternate; }
-@keyframes bl-eq { 0% { height:3px; } 100% { height:12px; } }
+@keyframes bl-eq { 0% { height:3px; } 100% { height:16px; } }
 
 /* Blinking cursor indicator for Layer tab */
-.bl-tab-cursor { display:inline-block; width:1px; height:12px; background:var(--bl-accent-layer); margin-left:6px; vertical-align:middle; opacity:0; }
+.bl-tab-cursor { display:inline-block; width:1.5px; height:15px; background:var(--bl-accent-layer); margin-left:8px; vertical-align:middle; opacity:0; box-shadow:0 0 8px rgba(108,184,200,0.4); }
 .bl-topbar-tab-layer.active .bl-tab-cursor { animation:bl-blink 1s step-end infinite; }
 @keyframes bl-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
 
@@ -803,7 +804,9 @@
   .bl-concept-text { font-size:10px!important; letter-spacing:1.5px!important; }
   .bl-home-sub-text { font-size:8px!important; letter-spacing:2px!important; }
   .bl-home-sub { top:calc(50% + 50px)!important; }
-  .bl-topbar { padding:14px 12px; }
+  .bl-topbar { padding:16px 16px; }
+  .bl-topbar-tab-bass { font-size:19px; }
+  .bl-topbar-tab-layer { font-size:13px; letter-spacing:4px; }
   .bl-topbar-link { font-size:8px; letter-spacing:1px; padding:4px 6px; }
   .bl-price-bar { top:0; }
   .bl-filters { padding:8px 16px; gap:5px; }
