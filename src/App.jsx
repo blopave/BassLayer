@@ -528,7 +528,7 @@ export default function App() {
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
 
   return (
-    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`}>
+    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
       {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
       {!loaded && <Preloader done={() => { setLoaded(true); if (!localStorage.getItem("bl-onboarded")) setShowOnboarding(true); }} />}
