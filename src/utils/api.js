@@ -5,7 +5,10 @@ function authHeaders() {
 
 function authFetch(url, opts = {}) {
   return fetch(url, { ...opts, headers: { ...authHeaders(), ...opts.headers } })
-    .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.error || "Error")));
+    .then(r => {
+      if (r.ok) return r.json();
+      return r.json().catch(() => ({ error: `Error ${r.status}` })).then(e => Promise.reject(e.error || `Error ${r.status}`));
+    });
 }
 
 export const venueApi = {
@@ -19,8 +22,8 @@ export const venueApi = {
 };
 
 export const projectApi = {
-  getProfile:        () => authFetch("/api/venue/me"),
-  updateProfile:     (data) => authFetch("/api/venue/me", { method: "PUT", body: JSON.stringify(data) }),
+  getProfile:        () => authFetch("/api/project/me"),
+  updateProfile:     (data) => authFetch("/api/project/me", { method: "PUT", body: JSON.stringify(data) }),
   getAnnouncements:  () => authFetch("/api/project/announcements"),
   createAnnouncement:(data) => authFetch("/api/project/announcements", { method: "POST", body: JSON.stringify(data) }),
   updateAnnouncement:(id, data) => authFetch(`/api/project/announcements/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -52,7 +55,7 @@ export const api = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  }).then((r) => (r.ok ? r.json() : r.json().then(e => Promise.reject(e.error)))),
+  }).then((r) => (r.ok ? r.json() : r.json().catch(() => ({ error: `Error ${r.status}` })).then(e => Promise.reject(e.error || `Error ${r.status}`)))),
 };
 
 export function formatPrice(p) {

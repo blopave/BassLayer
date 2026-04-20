@@ -45,42 +45,44 @@ export function AdminPanel({ onBack }) {
   }, [tab, loadEvents, loadVenues, loadAnnouncements]);
 
   async function handleApprove(id) {
-    await adminApi.approve(id);
+    try { await adminApi.approve(id); } catch { /* ignore */ }
     loadEvents(tab);
   }
 
   async function handleReject() {
     if (!rejectId) return;
-    if (rejectType === "announcement") {
-      await adminApi.rejectAnn(rejectId, rejectNote);
-      setRejectId(null);
-      setRejectNote("");
-      loadAnnouncements(tab.replace("ann_", ""));
-    } else {
-      await adminApi.reject(rejectId, rejectNote);
-      setRejectId(null);
-      setRejectNote("");
-      loadEvents(tab);
+    try {
+      if (rejectType === "announcement") {
+        await adminApi.rejectAnn(rejectId, rejectNote);
+        setRejectId(null); setRejectNote("");
+        loadAnnouncements(tab.replace("ann_", ""));
+      } else {
+        await adminApi.reject(rejectId, rejectNote);
+        setRejectId(null); setRejectNote("");
+        loadEvents(tab);
+      }
+    } catch {
+      setRejectId(null); setRejectNote("");
     }
   }
 
   async function handleFeature(id) {
-    await adminApi.feature(id);
+    try { await adminApi.feature(id); } catch { /* ignore */ }
     loadEvents(tab);
   }
 
   async function handleVerify(id) {
-    await adminApi.verifyVenue(id);
+    try { await adminApi.verifyVenue(id); } catch { /* ignore */ }
     loadVenues();
   }
 
   async function handleApproveAnn(id) {
-    await adminApi.approveAnn(id);
+    try { await adminApi.approveAnn(id); } catch { /* ignore */ }
     loadAnnouncements(tab.replace("ann_", ""));
   }
 
   async function handlePinAnn(id) {
-    await adminApi.pinAnn(id);
+    try { await adminApi.pinAnn(id); } catch { /* ignore */ }
     loadAnnouncements(tab.replace("ann_", ""));
   }
 

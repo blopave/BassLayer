@@ -33,6 +33,7 @@ export function AnnouncementForm({ announcement, onSave, onBack }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { setError("La imagen no puede superar 2MB"); return; }
+    if (imagePreview && imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   }

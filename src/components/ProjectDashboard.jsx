@@ -54,13 +54,13 @@ export function ProjectDashboard({ user, onLogout, onBack }) {
 
   async function handleDelete(id) {
     if (!confirm("¿Eliminar este anuncio?")) return;
-    await projectApi.deleteAnnouncement(id);
-    loadData();
+    try { await projectApi.deleteAnnouncement(id); loadData(); }
+    catch { loadData(); }
   }
 
   async function handleSubmitForReview(id) {
-    await projectApi.updateAnnouncement(id, { status: "pending" });
-    loadData();
+    try { await projectApi.updateAnnouncement(id, { status: "pending" }); loadData(); }
+    catch { loadData(); }
   }
 
   if (view === "new" || view === "edit") {

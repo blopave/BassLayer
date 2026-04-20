@@ -48,6 +48,7 @@ export function VenueEventForm({ event, onSave, onBack }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { setError("El flyer no puede superar 2MB"); return; }
+    if (flyerPreview && flyerPreview.startsWith("blob:")) URL.revokeObjectURL(flyerPreview);
     setFlyerFile(file);
     setFlyerPreview(URL.createObjectURL(file));
   }

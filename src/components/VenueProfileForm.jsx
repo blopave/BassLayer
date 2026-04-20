@@ -45,6 +45,7 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { setError("La imagen no puede superar 2MB"); return; }
+    if (logoPreview && logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
   }

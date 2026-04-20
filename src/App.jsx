@@ -399,7 +399,7 @@ export default function App() {
     const sz = Math.max(innerWidth, innerHeight) * 2.5;
     // Letters exit first, then circle wipe
     setTimeout(() => {
-      setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? "#EAEAE5" : "#161616" });
+      setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? (startPanel === 0 ? "#E8E2DA" : "#DAE6EC") : (startPanel === 0 ? "#181614" : "#0F1418") });
       setCircleExpand(false);
       requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
       setTimeout(() => {
@@ -500,7 +500,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, venueView, projectView]);
 
   // Close menu on outside click
   useEffect(() => {

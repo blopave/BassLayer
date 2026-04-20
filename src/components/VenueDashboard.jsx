@@ -46,13 +46,13 @@ export function VenueDashboard({ user, onLogout, onBack }) {
 
   async function handleDeleteEvent(id) {
     if (!confirm("¿Eliminar este evento?")) return;
-    await venueApi.deleteEvent(id);
-    loadData();
+    try { await venueApi.deleteEvent(id); loadData(); }
+    catch { /* API error — silently reload */ loadData(); }
   }
 
   async function handleSubmitForReview(id) {
-    await venueApi.updateEvent(id, { status: "pending" });
-    loadData();
+    try { await venueApi.updateEvent(id, { status: "pending" }); loadData(); }
+    catch { loadData(); }
   }
 
   if (view === "profile") {
