@@ -2745,3 +2745,120 @@ select.bl-venue-input { cursor:pointer; }
   .bl-venue-row { flex-direction:column; }
   .bl-venue-dash-header { flex-direction:column; align-items:flex-start; }
 }
+
+/* ═══════════════════════════════════════════
+   Prediction markets — Polymarket
+   ═══════════════════════════════════════════ */
+
+.bl-predict-feed {
+  padding:8px 32px 24px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.bl-predict-header {
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  padding:8px 4px 12px;
+  border-bottom:1px solid var(--bl-border-sub);
+  margin-bottom:4px;
+}
+.bl-predict-source {
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--bl-accent-layer);
+  font-weight:700;
+}
+.bl-predict-sub {
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:1px;
+  color:var(--bl-text-ter);
+}
+.bl-predict-card {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:14px 16px;
+  background:var(--bl-subtle-bg);
+  border:1px solid var(--bl-border-sub);
+  border-radius:8px;
+  text-decoration:none;
+  color:inherit;
+  cursor:pointer;
+  transition:all .25s var(--ease-out-expo);
+}
+.bl-predict-card:hover {
+  border-color:var(--bl-accent-layer);
+  background:var(--bl-subtle);
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(108,184,200,0.08);
+}
+.bl-predict-top {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  justify-content:space-between;
+}
+.bl-predict-question {
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:14px;
+  line-height:1.35;
+  color:var(--bl-text);
+  letter-spacing:-0.2px;
+}
+.bl-predict-card:hover .bl-predict-question { color:var(--bl-white); }
+.bl-predict-deadline {
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:1.5px;
+  color:var(--bl-text-ter);
+  border:1px solid var(--bl-border-sub);
+  padding:3px 7px;
+  border-radius:4px;
+  flex-shrink:0;
+  text-transform:uppercase;
+}
+.bl-predict-meter { display:flex; flex-direction:column; gap:6px; }
+.bl-predict-bar {
+  height:4px;
+  background:var(--bl-subtle);
+  border-radius:2px;
+  overflow:hidden;
+}
+.bl-predict-fill {
+  height:100%;
+  background:linear-gradient(90deg, var(--bl-accent-layer), rgba(108,184,200,0.6));
+  border-radius:2px;
+  transition:width .4s var(--ease-out-expo);
+  box-shadow:0 0 8px rgba(108,184,200,0.25);
+}
+.bl-predict-meta {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:1px;
+}
+.bl-predict-outcome {
+  color:var(--bl-text-sec);
+  text-transform:uppercase;
+  font-weight:700;
+}
+.bl-predict-pct {
+  color:var(--bl-accent-layer);
+  font-weight:700;
+}
+.bl-predict-vol {
+  margin-left:auto;
+  color:var(--bl-text-ter);
+}
+
+@media (max-width:768px) {
+  .bl-predict-feed { padding:8px 16px 20px; }
+  .bl-predict-question { font-size:13px; }
+}

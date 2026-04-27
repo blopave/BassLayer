@@ -111,6 +111,7 @@ const cache = {
   musicNews:   { data: null, ts: 0, ttl: 10 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
+  predictions: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — Polymarket trending
 };
 
 function cached(key) {
@@ -967,6 +968,77 @@ app.get("/api/dashboard", async (req, res) => {
     console.error("[dashboard]", e.message);
     if (cache.dashboard?.data) return res.json(cache.dashboard.data);
     res.status(500).json({ error: "Dashboard data unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/prediction-markets — Polymarket Gamma
+// ─────────────────────────────────────────────
+
+function parseMaybeJSONArray(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v !== "string") return [];
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
+}
+
+app.get("/api/prediction-markets", async (req, res) => {
+  const hit = cached("predictions");
+  if (hit) return res.json(hit);
+  try {
+    // Pull a wider window because we filter out resolved/expired markets after
+    const url = "https://gamma-api.polymarket.com/markets?closed=false&active=true&limit=80&order=volume24hr&ascending=false";
+    const r = await fetchSafe(url, { headers: { "Accept": "application/json" } }, 10000);
+    if (!r.ok) throw new Error(`Polymarket ${r.status}`);
+    const raw = JSON.parse(await safeText(r));
+    const list = Array.isArray(raw) ? raw : (raw.data || []);
+    const now = Date.now();
+
+    const markets = list.map((m) => {
+      const outcomes = parseMaybeJSONArray(m.outcomes);
+      const prices = parseMaybeJSONArray(m.outcomePrices).map(Number);
+      // Pick the leading outcome (highest price)
+      let topIdx = 0;
+      for (let i = 1; i < prices.length; i++) if (prices[i] > prices[topIdx]) topIdx = i;
+      const topOutcome = outcomes[topIdx] || null;
+      const topPct = prices[topIdx] != null ? Math.round(prices[topIdx] * 100) : null;
+      const vol24 = Number(m.volume24hr) || 0;
+      const endDate = m.endDate || m.end_date_iso || null;
+      const endTs = endDate ? new Date(endDate).getTime() : null;
+      // Prefer the event slug — Polymarket URLs are /event/{eventSlug}, not market slug
+      const eventSlug = (Array.isArray(m.events) && m.events[0]?.slug) || m.slug || "";
+      return {
+        id: String(m.id || m.conditionId || m.slug),
+        slug: m.slug || "",
+        question: m.question || m.title || "",
+        icon: sanitizeUrl(m.icon || m.image || ""),
+        topOutcome,
+        topPct,
+        outcomes,
+        prices,
+        volume24h: Math.round(vol24),
+        endDate,
+        endTs,
+        url: eventSlug ? `https://polymarket.com/event/${eventSlug}` : "https://polymarket.com",
+      };
+    })
+      // Quality gates: alive market, real uncertainty, real volume, future deadline
+      .filter((m) =>
+        m.question &&
+        m.topPct != null &&
+        m.topPct < 97 &&
+        m.volume24h >= 1000 &&
+        (!m.endTs || m.endTs > now)
+      )
+      .slice(0, 12)
+      // Drop the temp endTs field before responding
+      .map(({ endTs: _t, ...rest }) => rest);
+
+    setCache("predictions", markets);
+    res.json(markets);
+  } catch (e) {
+    console.error("[prediction-markets]", e.message);
+    if (cache.predictions.data) return res.json(cache.predictions.data);
+    res.status(502).json({ error: "Prediction markets unavailable" });
   }
 });
 

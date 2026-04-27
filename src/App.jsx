@@ -599,7 +599,6 @@ export default function App() {
             <button className="bl-topbar-link" onClick={() => setShowAbout(true)}>about</button>
             <a className="bl-topbar-link" href="mailto:contacto@basslayer.io">contacto</a>
             {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>venues</button>}
-            {activePanel === 1 && <button className="bl-topbar-link bl-topbar-link-layer" onClick={() => setProjectView(venueUser ? "dashboard" : "auth")}>exchanges</button>}
           </div>
         </nav>
 
@@ -625,11 +624,10 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onOpenExchanges={() => setProjectView(venueUser ? "dashboard" : "auth")} />
+            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
               <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
-              <button className="bl-terminal-link" onClick={() => setProjectView(venueUser ? "dashboard" : "auth")}>&gt; para_exchanges</button>
             </footer>
           </div>
         </div>
