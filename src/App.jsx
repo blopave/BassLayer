@@ -597,7 +597,6 @@ export default function App() {
           </div>
           <div className="bl-topbar-links">
             <button className="bl-topbar-link" onClick={() => setShowAbout(true)}>about</button>
-            <a className="bl-topbar-link" href="mailto:contacto@basslayer.io">contacto</a>
             {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>venues</button>}
           </div>
         </nav>
@@ -615,7 +614,6 @@ export default function App() {
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
-              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
               <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; para_venues</button>
             </footer>
           </div>
@@ -627,7 +625,6 @@ export default function App() {
             <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
-              <a className="bl-terminal-link" href="mailto:contacto@basslayer.io">&gt; contacto</a>
             </footer>
           </div>
         </div>
