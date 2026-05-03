@@ -76,9 +76,11 @@ export function EventModal({ event, onClose, onShare }) {
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [artistInfo, setArtistInfo] = useState(null);
   const [artistLoading, setArtistLoading] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     if (!event) return;
+    setImageFailed(false);
     document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -160,11 +162,27 @@ export function EventModal({ event, onClose, onShare }) {
           </div>
         </div>
 
-        {event.image && (
-          <div className="bl-modal-image-wrap">
-            <img className="bl-modal-image" src={event.image} alt={event.name} loading="lazy" />
-          </div>
-        )}
+        <div className="bl-modal-image-wrap">
+          {event.image && !imageFailed ? (
+            <img
+              className="bl-modal-image"
+              src={event.image}
+              alt={event.name}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <div className="bl-modal-image-placeholder" aria-hidden="true">
+              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <rect x="4" y="6" width="24" height="20" rx="2" />
+                <circle cx="11" cy="13" r="2" />
+                <path d="M4 22l7-7 6 6 4-4 7 7" />
+              </svg>
+              <span className="bl-modal-image-placeholder-text">{t("event.noImage")}</span>
+            </div>
+          )}
+        </div>
+
 
         <div className="bl-modal-body">
           {artists.length > 0 && (

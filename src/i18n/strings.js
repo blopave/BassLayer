@@ -38,6 +38,7 @@ export const STRINGS = {
     "event.hoursShort": "hs",
     "event.viewArtist": "Ver info de",
     "event.weekendButton": "Eventos del fin de semana",
+    "event.noImage": "Sin flyer disponible",
 
     "weekend.title": "Este finde",
     "weekend.empty": "No hay eventos este finde",
@@ -126,6 +127,7 @@ export const STRINGS = {
     "event.hoursShort": "hs",
     "event.viewArtist": "View info on",
     "event.weekendButton": "This weekend's events",
+    "event.noImage": "No flyer available",
 
     "weekend.title": "This weekend",
     "weekend.empty": "No events this weekend",

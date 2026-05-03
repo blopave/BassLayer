@@ -1318,6 +1318,19 @@
 /* ── Modal Image ───────────────────────── */
 .bl-modal-image-wrap { padding:16px 28px 0; }
 .bl-modal-image { width:100%; max-height:200px; object-fit:cover; border-radius:4px; display:block; }
+.bl-modal-image-placeholder {
+  width:100%; height:120px; border-radius:4px;
+  border:1px dashed var(--bl-border);
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 8px, transparent 8px 16px),
+    var(--bl-surface, rgba(255,255,255,0.02));
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; color:var(--bl-text-sec);
+}
+.bl-modal-image-placeholder-text {
+  font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px;
+  text-transform:uppercase; opacity:0.75;
+}
 
 /* ── Event Modal (Bass) — extended layout ─── */
 .bl-modal.bl-event-modal { max-width:600px; }
