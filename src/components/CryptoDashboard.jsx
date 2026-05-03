@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../utils/api";
+import { IndicatorModal } from "./IndicatorModal";
+import { useLocale } from "../hooks/useLocale";
 
 function formatMarketCap(n) {
   if (!n) return "—";
@@ -8,14 +10,20 @@ function formatMarketCap(n) {
   return `$${(n / 1e6).toFixed(0)}M`;
 }
 
-function FearGreedGauge({ value, label }) {
+function FearGreedGauge({ value, label, onClick, t }) {
   if (value == null) return null;
-  // Color: 0=red, 50=yellow, 100=green
   const hue = (value / 100) * 120;
   const color = `hsl(${hue}, 60%, 45%)`;
   return (
-    <div className="bl-dash-card bl-dash-fng">
-      <div className="bl-dash-card-label">Fear & Greed</div>
+    <div
+      className="bl-dash-card bl-dash-fng bl-dash-card-clickable"
+      onClick={onClick}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onClick())}
+      role="button"
+      tabIndex={0}
+      aria-label={`${t("dashboard.viewInfo")} ${t("dashboard.fearGreed")}`}
+    >
+      <div className="bl-dash-card-label">{t("dashboard.fearGreed")}</div>
       <div className="bl-dash-fng-ring" style={{ "--fng-color": color, "--fng-pct": `${value}%` }}>
         <span className="bl-dash-fng-value">{value}</span>
       </div>
@@ -25,9 +33,11 @@ function FearGreedGauge({ value, label }) {
 }
 
 export function CryptoDashboard() {
+  const { t } = useLocale();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -46,29 +56,61 @@ export function CryptoDashboard() {
   if (loading || (!data && !error)) return null;
   if (error && !data) return null;
 
+  const openIndicator = (key, displayValue, matchValue) => {
+    setSelected({ key, displayValue, matchValue });
+  };
+
+  const cardKeyDown = (handler) => (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handler();
+    }
+  };
+
   return (
     <div className="bl-dashboard">
       <div className="bl-dash-grid">
         {/* BTC Dominance */}
         {data.btcDominance != null && (
-          <div className="bl-dash-card">
-            <div className="bl-dash-card-label">BTC Dominance</div>
+          <div
+            className="bl-dash-card bl-dash-card-clickable"
+            onClick={() => openIndicator("btcDominance", `${data.btcDominance}%`, data.btcDominance)}
+            onKeyDown={cardKeyDown(() => openIndicator("btcDominance", `${data.btcDominance}%`, data.btcDominance))}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t("dashboard.viewInfo")} ${t("dashboard.btcDominance")}`}
+          >
+            <div className="bl-dash-card-label">{t("dashboard.btcDominance")}</div>
             <div className="bl-dash-card-value">{data.btcDominance}%</div>
           </div>
         )}
 
         {/* ETH Dominance */}
         {data.ethDominance != null && (
-          <div className="bl-dash-card">
-            <div className="bl-dash-card-label">ETH Dominance</div>
+          <div
+            className="bl-dash-card bl-dash-card-clickable"
+            onClick={() => openIndicator("ethDominance", `${data.ethDominance}%`, data.ethDominance)}
+            onKeyDown={cardKeyDown(() => openIndicator("ethDominance", `${data.ethDominance}%`, data.ethDominance))}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t("dashboard.viewInfo")} ${t("dashboard.ethDominance")}`}
+          >
+            <div className="bl-dash-card-label">{t("dashboard.ethDominance")}</div>
             <div className="bl-dash-card-value">{data.ethDominance}%</div>
           </div>
         )}
 
         {/* Total Market Cap */}
         {data.totalMarketCap != null && (
-          <div className="bl-dash-card">
-            <div className="bl-dash-card-label">Market Cap</div>
+          <div
+            className="bl-dash-card bl-dash-card-clickable"
+            onClick={() => openIndicator("marketCap", formatMarketCap(data.totalMarketCap), data.marketCapChange24h ?? 0)}
+            onKeyDown={cardKeyDown(() => openIndicator("marketCap", formatMarketCap(data.totalMarketCap), data.marketCapChange24h ?? 0))}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t("dashboard.viewInfo")} ${t("dashboard.marketCap")}`}
+          >
+            <div className="bl-dash-card-label">{t("dashboard.marketCap")}</div>
             <div className="bl-dash-card-value">
               {formatMarketCap(data.totalMarketCap)}
               {data.marketCapChange24h != null && (
@@ -81,23 +123,35 @@ export function CryptoDashboard() {
         )}
 
         {/* Fear & Greed */}
-        <FearGreedGauge value={data.fearGreed?.value} label={data.fearGreed?.label} />
+        <FearGreedGauge
+          value={data.fearGreed?.value}
+          label={data.fearGreed?.label}
+          onClick={() => openIndicator("fearGreed", data.fearGreed?.value, data.fearGreed?.value)}
+          t={t}
+        />
 
         {/* ETH Gas */}
         {data.ethGas && (
-          <div className="bl-dash-card bl-dash-gas">
-            <div className="bl-dash-card-label">ETH Gas</div>
+          <div
+            className="bl-dash-card bl-dash-gas bl-dash-card-clickable"
+            onClick={() => openIndicator("ethGas", `${data.ethGas.avg} gwei`, data.ethGas.avg)}
+            onKeyDown={cardKeyDown(() => openIndicator("ethGas", `${data.ethGas.avg} gwei`, data.ethGas.avg))}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t("dashboard.viewInfo")} ${t("dashboard.ethGas")}`}
+          >
+            <div className="bl-dash-card-label">{t("dashboard.ethGas")}</div>
             <div className="bl-dash-gas-row">
               <div className="bl-dash-gas-item">
-                <span className="bl-dash-gas-tier">Low</span>
+                <span className="bl-dash-gas-tier">{t("dashboard.gasLow")}</span>
                 <span className="bl-dash-gas-val">{data.ethGas.low}</span>
               </div>
               <div className="bl-dash-gas-item">
-                <span className="bl-dash-gas-tier">Avg</span>
+                <span className="bl-dash-gas-tier">{t("dashboard.gasAvg")}</span>
                 <span className="bl-dash-gas-val">{data.ethGas.avg}</span>
               </div>
               <div className="bl-dash-gas-item">
-                <span className="bl-dash-gas-tier">Fast</span>
+                <span className="bl-dash-gas-tier">{t("dashboard.gasFast")}</span>
                 <span className="bl-dash-gas-val">{data.ethGas.high}</span>
               </div>
             </div>
@@ -105,6 +159,8 @@ export function CryptoDashboard() {
           </div>
         )}
       </div>
+
+      <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

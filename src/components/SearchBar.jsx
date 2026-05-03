@@ -1,6 +1,8 @@
 import { useRef } from "react";
+import { useLocale } from "../hooks/useLocale";
 
 export function SearchBar({ value, onChange }) {
+  const { t } = useLocale();
   const inputRef = useRef(null);
 
   function handleClear() {
@@ -16,15 +18,15 @@ export function SearchBar({ value, onChange }) {
           ref={inputRef}
           className="bl-search-input"
           type="text"
-          placeholder="Buscar eventos..."
+          placeholder={t("feed.searchPlaceholder")}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          aria-label="Buscar eventos"
+          aria-label={t("common.search")}
         />
         <button
           className={`bl-search-clear${value ? " visible" : ""}`}
           onClick={handleClear}
-          aria-label="Limpiar búsqueda"
+          aria-label={t("common.close")}
           tabIndex={value ? 0 : -1}
         >
           &#x2715;

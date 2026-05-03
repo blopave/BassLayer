@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
+import { useLocale } from "../hooks/useLocale";
+import { DAYS_LONG } from "../i18n/strings";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
-const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 
 function getEventDate(ev) {
   const m = MONTHS_MAP[ev.month?.toLowerCase()];
@@ -42,18 +43,20 @@ function formatArtists(artists) {
 }
 
 export function WeekendPicker({ events, onClose, onSelect }) {
+  const { locale, t } = useLocale();
   const grouped = useMemo(() => {
     const weekend = events
       .filter(e => isThisWeekend(getEventDate(e)))
       .sort((a, b) => (getEventDate(a) || 0) - (getEventDate(b) || 0));
 
-    // Group by day
     const days = [];
     let currentDay = null;
     for (const ev of weekend) {
       const d = getEventDate(ev);
       const dayKey = d ? `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` : "unknown";
-      const label = d ? `${DAY_NAMES[d.getDay()]} ${ev.day} ${ev.month}` : `${ev.day} ${ev.month}`;
+      const label = d
+        ? `${DAYS_LONG[locale][d.getDay()]} ${ev.day} ${ev.month}`
+        : `${ev.day} ${ev.month}`;
       if (dayKey !== currentDay) {
         days.push({ label, events: [ev] });
         currentDay = dayKey;
@@ -62,7 +65,7 @@ export function WeekendPicker({ events, onClose, onSelect }) {
       }
     }
     return days;
-  }, [events]);
+  }, [events, locale]);
 
   const total = grouped.reduce((sum, g) => sum + g.events.length, 0);
 
@@ -81,10 +84,10 @@ export function WeekendPicker({ events, onClose, onSelect }) {
       <div className="bl-wp-overlay" onClick={onClose}>
         <div className="bl-wp-panel" onClick={e => e.stopPropagation()}>
           <div className="bl-wp-panel-header">
-            <div className="bl-wp-panel-title">Este finde</div>
+            <div className="bl-wp-panel-title">{t("weekend.title")}</div>
             <button className="bl-wp-close" onClick={onClose}>&times;</button>
           </div>
-          <div className="bl-wp-empty-msg">No hay eventos este finde</div>
+          <div className="bl-wp-empty-msg">{t("weekend.empty")}</div>
         </div>
       </div>
     );
@@ -95,8 +98,8 @@ export function WeekendPicker({ events, onClose, onSelect }) {
       <div className="bl-wp-panel" onClick={e => e.stopPropagation()}>
         <div className="bl-wp-panel-header">
           <div>
-            <div className="bl-wp-panel-title">Este finde</div>
-            <div className="bl-wp-panel-count">{total} evento{total !== 1 ? "s" : ""}</div>
+            <div className="bl-wp-panel-title">{t("weekend.title")}</div>
+            <div className="bl-wp-panel-count">{total} {total !== 1 ? t("weekend.eventPlural") : t("weekend.eventSingle")}</div>
           </div>
           <button className="bl-wp-close" onClick={onClose}>&times;</button>
         </div>

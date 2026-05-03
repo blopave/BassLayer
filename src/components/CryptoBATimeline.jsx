@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { TimelineEventModal } from "./TimelineEventModal";
+import { useLocale } from "../hooks/useLocale";
 
 const TIMELINE = [
   {
@@ -50,15 +52,13 @@ const TIMELINE = [
   },
 ];
 
-const TYPE_LABELS = {
-  event: "Evento",
-  project: "Proyecto",
-  reg: "Regulacion",
-};
-
 export function CryptoBATimeline() {
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [expandedYear, setExpandedYear] = useState(TIMELINE[0].year);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const typeLabel = (type) => t(`timeline.type.${type}`);
 
   if (!open) {
     return (
@@ -67,9 +67,9 @@ export function CryptoBATimeline() {
           <span className="bl-timeline-toggle-icon">
             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1v14M4 5h8M4 9h8M6 13h4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </span>
-          <span className="bl-timeline-toggle-label">Crypto BA Timeline</span>
+          <span className="bl-timeline-toggle-label">{t("timeline.toggle")}</span>
         </div>
-        <span className="bl-timeline-toggle-sub">Memoria del ecosistema local</span>
+        <span className="bl-timeline-toggle-sub">{t("timeline.toggleSub")}</span>
       </button>
     );
   }
@@ -78,8 +78,8 @@ export function CryptoBATimeline() {
     <div className="bl-timeline">
       <div className="bl-timeline-header">
         <div className="bl-timeline-header-left">
-          <div className="bl-timeline-title">Crypto BA Timeline</div>
-          <div className="bl-timeline-subtitle">Memoria del ecosistema argentino</div>
+          <div className="bl-timeline-title">{t("timeline.title")}</div>
+          <div className="bl-timeline-subtitle">{t("timeline.subtitle")}</div>
         </div>
         <button className="bl-timeline-close" onClick={() => setOpen(false)}>&times;</button>
       </div>
@@ -102,14 +102,22 @@ export function CryptoBATimeline() {
         <div key={group.year} className="bl-timeline-group">
           <div className="bl-timeline-line" aria-hidden="true" />
           {group.events.map((ev, i) => (
-            <div className="bl-timeline-event" key={i}>
+            <div
+              className="bl-timeline-event bl-timeline-event-clickable"
+              key={i}
+              onClick={() => setSelectedEvent(ev)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setSelectedEvent(ev))}
+              role="button"
+              tabIndex={0}
+              aria-label={`${t("timeline.viewDetail")} ${ev.title}`}
+            >
               <div className="bl-timeline-dot-wrap">
                 <div className={`bl-timeline-dot bl-timeline-dot-${ev.type}`} />
               </div>
               <div className="bl-timeline-event-body">
                 <div className="bl-timeline-event-top">
                   <span className="bl-timeline-event-date">{ev.date}</span>
-                  <span className={`bl-timeline-event-type bl-timeline-type-${ev.type}`}>{TYPE_LABELS[ev.type]}</span>
+                  <span className={`bl-timeline-event-type bl-timeline-type-${ev.type}`}>{typeLabel(ev.type)}</span>
                 </div>
                 <div className="bl-timeline-event-title">{ev.title}</div>
                 <div className="bl-timeline-event-desc">{ev.desc}</div>
@@ -118,6 +126,8 @@ export function CryptoBATimeline() {
           ))}
         </div>
       ))}
+
+      <TimelineEventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 }

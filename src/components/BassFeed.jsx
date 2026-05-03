@@ -3,6 +3,7 @@ import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton } from "./SkeletonLoader";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { useLocale } from "../hooks/useLocale";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -88,6 +89,7 @@ function isThisWeekend(eventDate) {
 }
 
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker }) {
+  const { t } = useLocale();
   const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
   const [cityFilter, setCityFilter] = useState("Todas");
   const [esteFinde, setEsteFinde] = useState(false);
@@ -136,12 +138,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   function emptyMessage() {
     if (search) {
-      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83D\uDD0D"}</span>No encontramos nada para &ldquo;{search}&rdquo;. Prob&aacute; con otro t&eacute;rmino.</>;
+      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83D\uDD0D"}</span>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
     }
     if (esteFinde) {
-      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDF1F"}</span>Sin eventos este finde. Prob&aacute; quitando el filtro.</>;
+      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDF1F"}</span>{t("feed.empty.weekend")}</>;
     }
-    return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDFB6"}</span>Sin eventos para este filtro. Prob&aacute; con otro o volv&eacute; pronto.</>;
+    return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDFB6"}</span>{t("feed.empty.filter")}</>;
   }
 
   let itemIdx = 0;
@@ -150,7 +152,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     <>
       <div className="bl-weekend-picker-trigger">
         <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
-          Eventos del fin de semana
+          {t("event.weekendButton")}
           <span className="bl-wp-trigger-arrow">&rarr;</span>
         </button>
       </div>

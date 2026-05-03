@@ -6,6 +6,7 @@ import { supabase } from "./utils/supabase";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { EventModal } from "./components/EventModal";
+import { useLocale } from "./hooks/useLocale";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
@@ -17,6 +18,7 @@ import { ProjectAuth } from "./components/ProjectAuth";
 import { ProjectDashboard } from "./components/ProjectDashboard";
 
 export default function App() {
+  const { locale, setLocale, t } = useLocale();
   const isMobile = useIsMobile();
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState("home");
@@ -597,7 +599,7 @@ export default function App() {
           </div>
           <div className="bl-topbar-links">
             <button className="bl-topbar-link" onClick={() => setShowAbout(true)}>about</button>
-            {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>venues</button>}
+            {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>{t("topbar.venues")}</button>}
           </div>
         </nav>
 
@@ -610,21 +612,21 @@ export default function App() {
         >
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
-            <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
+            <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} />
             <footer className="bl-terminal-footer">
-              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
-              <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; para_venues</button>
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
+              <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; {t("topbar.forVenues")}</button>
             </footer>
           </div>
 
           {/* Panel 1: LAYER */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
-            <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} Tirar para actualizar</div></div>
+            <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
             <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} />
             <footer className="bl-terminal-footer">
-              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; about_basslayer</button>
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
           </div>
         </div>
@@ -670,6 +672,17 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* LANG TOGGLE */}
+      <button
+        className="bl-lang-toggle"
+        onClick={() => setLocale(locale === "es" ? "en" : "es")}
+        aria-label={t("lang.toggle")}
+      >
+        <span className={`bl-lang-opt${locale === "es" ? " active" : ""}`}>ES</span>
+        <span className="bl-lang-sep" aria-hidden="true">/</span>
+        <span className={`bl-lang-opt${locale === "en" ? " active" : ""}`}>EN</span>
+      </button>
 
       {/* MODE TOGGLE */}
       <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? "Modo nocturno" : "Modo diurno"}>

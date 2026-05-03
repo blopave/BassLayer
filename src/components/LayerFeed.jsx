@@ -6,8 +6,10 @@ import { CryptoBATimeline } from "./CryptoBATimeline";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { useLocale } from "../hooks/useLocale";
 
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
+  const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
   const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones"
 
@@ -28,7 +30,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
           className={`bl-layer-section-btn${section === "noticias" ? " active" : ""}`}
           onClick={() => setSection("noticias")}
         >
-          <span className="bl-layer-section-label">Noticias</span>
+          <span className="bl-layer-section-label">{t("section.news")}</span>
           <span className="bl-layer-section-count">{news.length}</span>
           <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
         </button>
@@ -36,14 +38,14 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
           className={`bl-layer-section-btn${section === "eventos" ? " active" : ""}`}
           onClick={() => setSection("eventos")}
         >
-          <span className="bl-layer-section-label">Eventos</span>
+          <span className="bl-layer-section-label">{t("section.events")}</span>
           <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
         </button>
         <button
           className={`bl-layer-section-btn${section === "predicciones" ? " active" : ""}`}
           onClick={() => setSection("predicciones")}
         >
-          <span className="bl-layer-section-label">Predicciones</span>
+          <span className="bl-layer-section-label">{t("section.predictions")}</span>
           <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
         </button>
       </div>
@@ -58,7 +60,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
               <div className="bl-feed">
                 <div className="bl-empty">
                   <span className="bl-empty-icon" aria-hidden="true">&#x1F4E1;</span>
-                  Sin noticias para &ldquo;{filter}&rdquo;. El mercado est&aacute; tranquilo.
+                  {t("feed.empty.news")} &ldquo;{filter === "All" ? t("common.all") : filter}&rdquo;. {t("feed.empty.newsHint")}
                 </div>
               </div>
             )

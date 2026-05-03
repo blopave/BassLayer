@@ -922,6 +922,196 @@ app.get("/api/prices/:id/chart", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  GET /api/artist?name=X — bio + thumbnail (Wikipedia REST, public)
+// ─────────────────────────────────────────────
+const artistCache = new Map();
+const ARTIST_CACHE_MAX = 200;
+const ARTIST_TTL = 24 * 60 * 60_000;
+
+async function tryWikipediaLang(name, lang) {
+  const baseCandidates = [name, `${name} (DJ)`, `${name} (musician)`, `${name} (producer)`];
+  const esExtras = lang === "es"
+    ? [`${name} (DJ argentino)`, `${name} (productor)`, `${name} (músico)`, `${name} (cantante)`]
+    : [];
+  const candidates = [...baseCandidates, ...esExtras];
+
+  for (const candidate of candidates) {
+    const slug = candidate.replace(/ /g, "_");
+    const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`;
+    try {
+      const r = await fetchSafe(url, {
+        headers: { "User-Agent": "BassLayer/1.0 (basslayer.app)" },
+      }, 8000);
+      if (!r.ok) continue;
+      const text = await safeText(r);
+      const j = JSON.parse(text);
+      if (j.type === "disambiguation") continue;
+      if (!j.extract) continue;
+      const haystack = `${j.description || ""} ${j.extract || ""}`.toLowerCase();
+      const isMusical = /\b(dj|musician|producer|artist|electronic|techno|house|trance|drum|composer|singer|band|músico|música|productor|productora|cantante|compositor|compositora|artista|banda|electrónica|electronica)\b/.test(haystack);
+      if (!isMusical) continue;
+      return {
+        name,
+        found: true,
+        title: j.title,
+        description: j.description || "",
+        extract: j.extract,
+        thumbnail: j.thumbnail?.source || null,
+        url: j.content_urls?.desktop?.page || null,
+        source: `wikipedia-${lang}`,
+      };
+    } catch {}
+  }
+  return null;
+}
+
+function normalizeArtistName(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+async function tryDeezer(name) {
+  const url = `https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=3`;
+  try {
+    const r = await fetchSafe(url, {}, 6000);
+    if (!r.ok) return null;
+    const j = JSON.parse(await safeText(r));
+    const candidates = j.data || [];
+    if (candidates.length === 0) return null;
+    const target = normalizeArtistName(name);
+    const match = candidates.find(a => normalizeArtistName(a.name) === target)
+                || candidates.find(a => normalizeArtistName(a.name).includes(target) || target.includes(normalizeArtistName(a.name)));
+    if (!match) return null;
+    const fans = match.nb_fan || 0;
+    const albums = match.nb_album || 0;
+    const desc = [
+      fans > 0 ? `${fans.toLocaleString("es-AR")} fans en Deezer` : null,
+      albums > 0 ? `${albums} ${albums === 1 ? "álbum" : "álbumes"}` : null,
+    ].filter(Boolean).join(" · ");
+    return {
+      name,
+      found: true,
+      title: match.name,
+      description: desc || "Perfil de Deezer",
+      extract: null,
+      thumbnail: match.picture_xl || match.picture_big || match.picture_medium || null,
+      url: match.link || null,
+      source: "deezer",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function tryItunes(name) {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=musicArtist&limit=3`;
+  try {
+    const r = await fetchSafe(url, {}, 6000);
+    if (!r.ok) return null;
+    const j = JSON.parse(await safeText(r));
+    const candidates = j.results || [];
+    if (candidates.length === 0) return null;
+    const target = normalizeArtistName(name);
+    const match = candidates.find(a => normalizeArtistName(a.artistName) === target)
+                || candidates.find(a => normalizeArtistName(a.artistName).includes(target) || target.includes(normalizeArtistName(a.artistName)));
+    if (!match) return null;
+    const genre = match.primaryGenreName ? match.primaryGenreName : null;
+    return {
+      name,
+      found: true,
+      title: match.artistName,
+      description: genre ? `${genre} · iTunes` : "iTunes",
+      extract: null,
+      thumbnail: null,
+      url: match.artistLinkUrl || null,
+      source: "itunes",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function tryMusicBrainz(name) {
+  const url = `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(name)}&fmt=json&limit=3`;
+  try {
+    const r = await fetchSafe(url, {
+      headers: {
+        "User-Agent": "BassLayer/1.0 (basslayer.app)",
+        "Accept": "application/json",
+      },
+    }, 7000);
+    if (!r.ok) return null;
+    const j = JSON.parse(await safeText(r));
+    const candidates = j.artists || [];
+    if (candidates.length === 0) return null;
+    const target = normalizeArtistName(name);
+    const match = candidates.find(a => normalizeArtistName(a.name) === target)
+                || candidates.find(a => normalizeArtistName(a.name).includes(target) || target.includes(normalizeArtistName(a.name)));
+    if (!match) return null;
+    const parts = [
+      match.country ? match.country : null,
+      match.type ? match.type : null,
+      match["life-span"]?.begin ? `${match["life-span"].begin}` : null,
+    ].filter(Boolean);
+    return {
+      name,
+      found: true,
+      title: match.name,
+      description: parts.length > 0 ? `${parts.join(" · ")} · MusicBrainz` : "MusicBrainz",
+      extract: match.disambiguation || null,
+      thumbnail: null,
+      url: `https://musicbrainz.org/artist/${match.id}`,
+      source: "musicbrainz",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchArtistInfo(name, locale = "es") {
+  const primary = locale === "en" ? "en" : "es";
+  const fallback = primary === "en" ? "es" : "en";
+  // 1. Wikipedia in the user's language (rich bio + thumbnail)
+  const wikiPrimary = await tryWikipediaLang(name, primary);
+  if (wikiPrimary) return wikiPrimary;
+  // 2. Wikipedia in the other language
+  const wikiFallback = await tryWikipediaLang(name, fallback);
+  if (wikiFallback) return wikiFallback;
+  // 3. Deezer (photo + fan count, great for DJs)
+  const deezer = await tryDeezer(name);
+  if (deezer) return deezer;
+  // 4. iTunes (genre + official link)
+  const itunes = await tryItunes(name);
+  if (itunes) return itunes;
+  // 5. MusicBrainz (country + type + start year, last-resort metadata)
+  const mb = await tryMusicBrainz(name);
+  if (mb) return mb;
+  return { name, found: false };
+}
+
+app.get("/api/artist", async (req, res) => {
+  const raw = (req.query.name || "").toString().trim();
+  const locale = (req.query.locale || "es").toString().toLowerCase() === "en" ? "en" : "es";
+  if (!raw || raw.length > 80) return res.status(400).json({ error: "Invalid name" });
+  const key = `${locale}:${raw.toLowerCase()}`;
+
+  const hit = artistCache.get(key);
+  if (hit && Date.now() - hit.ts < ARTIST_TTL) return res.json(hit.data);
+
+  try {
+    const data = await fetchArtistInfo(raw, locale);
+    if (artistCache.size >= ARTIST_CACHE_MAX) {
+      const oldest = artistCache.keys().next().value;
+      artistCache.delete(oldest);
+    }
+    artistCache.set(key, { data, ts: Date.now() });
+    res.json(data);
+  } catch (e) {
+    console.error("[artist]", e.message);
+    res.json({ name: raw, found: false });
+  }
+});
+
+// ─────────────────────────────────────────────
 //  GET /api/dashboard — BTC dominance, Fear & Greed, ETH gas
 // ─────────────────────────────────────────────
 

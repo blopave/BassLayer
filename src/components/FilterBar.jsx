@@ -1,4 +1,8 @@
+import { useLocale } from "../hooks/useLocale";
+
 export function FilterBar({ items, active, onChange, className }) {
+  const { t } = useLocale();
+  const display = (item) => (item === "All" ? t("common.all") : item);
   return (
     <div className={`bl-filters ${className}`} role="tablist" aria-label="Filtros">
       {items.map((item) => (
@@ -9,7 +13,7 @@ export function FilterBar({ items, active, onChange, className }) {
           role="tab"
           aria-selected={active === item}
         >
-          {item}
+          {display(item)}
         </button>
       ))}
     </div>
