@@ -659,8 +659,26 @@ async function fetchBuenosAliens() {
 // ── Strategy 2: RA GraphQL ──
 
 const RA_GRAPHQL = "https://ra.co/graphql";
-const RA_AREAS = [218, 13];
-const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int){eventListings(filters:$filters,pageSize:$pageSize,page:1,sortOrder:ASCENDING,sortField:DATE){data{event{id title date startTime endTime contentUrl flyerFront venue{name area{name}}artists{name}}}totalResults}}`;
+// Buenos Aires area id changed to 395 (was 218; 218 is now San Francisco/Oakland).
+const RA_AREAS = [395];
+// RA dropped sortOrder/sortField args and moved flyer URLs from `flyerFront` (now always null)
+// to `images[]` with `type: "FLYERFRONT"`. Filter syntax also changed: `areas:{eq:N}` returns 0,
+// must use `areas:{any:[N]}`.
+const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int){eventListings(filters:$filters,pageSize:$pageSize,page:1){data{event{id title date startTime endTime contentUrl images{filename type} venue{name area{name}}artists{name}}}totalResults}}`;
+
+function pickRAFlyer(images) {
+  if (!Array.isArray(images) || images.length === 0) return null;
+  const front = images.find(i => i?.type === "FLYERFRONT" && i?.filename);
+  if (front) return front.filename;
+  const any = images.find(i => i?.filename);
+  return any?.filename || null;
+}
+
+function extractRATime(t) {
+  if (!t) return "23:00";
+  if (typeof t === "string" && t.includes("T")) return t.split("T")[1].slice(0, 5);
+  return t;
+}
 
 function formatRAEvent(ev) {
   const date = new Date(ev.date);
@@ -677,10 +695,10 @@ function formatRAEvent(ev) {
     address: fullAddress,
     city: detectCity(venueName, fullAddress),
     artists,
-    time: ev.startTime || "23:00",
+    time: extractRATime(ev.startTime),
     genre,
     url: ev.contentUrl ? `https://ra.co${ev.contentUrl}` : "",
-    image: ev.flyerFront || null,
+    image: pickRAFlyer(ev.images) || ev.flyerFront || null,
     source: "ra",
   };
 }
@@ -692,7 +710,7 @@ async function fetchRAGraphQL(areaId) {
     const r = await fetchSafe(RA_GRAPHQL, {
       method: "POST",
       headers: { ...BROWSER_HEADERS, "Content-Type":"application/json", Referer:"https://ra.co/events/ar/buenosaires", Origin:"https://ra.co", Accept:"application/json" },
-      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{eq:areaId}, listingDate:{gte:today,lte:nextMonth} }, pageSize:20 } }),
+      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[areaId]}, listingDate:{gte:today,lte:nextMonth} }, pageSize:30 } }),
     }, 12000);
     if (!r.ok) return [];
     const json = JSON.parse(await safeText(r));
@@ -763,9 +781,19 @@ function markFeatured(ev) {
 
 function deduplicateEvents(events) {
   const seen = new Map();
+  // Normalize venue: lowercased, take the part before "@" or "," so
+  // "Under Club @ Blow, Palermo" (BA) and "Under Club" (RA) match.
+  const normVenue = (v) => (v || "").toLowerCase().split(/[@,]/)[0].trim();
   for (const ev of events) {
-    const key = `${ev.day}-${ev.month}-${ev.venue}`.toLowerCase();
-    if (!seen.has(key)) seen.set(key, ev);
+    const key = `${ev.day}-${ev.month}-${normVenue(ev.venue)}`;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, ev);
+    } else {
+      // Same event from a different source — adopt fields the first source lacks.
+      if (!existing.image && ev.image) existing.image = ev.image;
+      if (!existing.url && ev.url) existing.url = ev.url;
+    }
   }
   return [...seen.values()];
 }
