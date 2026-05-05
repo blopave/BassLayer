@@ -2,6 +2,26 @@ import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
 
+// Limpia el resumen para que no repita el título (común en RSS) y descarta
+// si lo único que queda es el mismo título o un fragmento muy corto.
+function cleanSummary(desc, title) {
+  if (!desc) return "";
+  let s = String(desc).trim();
+  if (!s) return "";
+  if (title) {
+    const t = String(title).trim();
+    // Si la descripción arranca con el título textual, lo recortamos
+    if (s.toLowerCase().startsWith(t.toLowerCase())) {
+      s = s.slice(t.length).replace(/^[\s.\-–—:|]+/, "").trim();
+    }
+    // Si tras limpiar queda igual que el título, no aporta nada
+    if (s.toLowerCase() === t.toLowerCase()) return "";
+  }
+  // Fragmentos muy cortos no son resumen, son ruido
+  if (s.length < 20) return "";
+  return s;
+}
+
 export function NewsModal({ item, onClose }) {
   const { t } = useLocale();
   const trapRef = useFocusTrap(!!item);
@@ -62,12 +82,10 @@ export function NewsModal({ item, onClose }) {
 
           <h2 className="bl-news-modal-title">{item.title}</h2>
 
-          {item.description && item.description !== item.title && (
-            <div className="bl-news-modal-section">
-              <div className="bl-news-modal-label">{t("news.summary")}</div>
-              <p className="bl-news-modal-desc">{item.description}</p>
-            </div>
-          )}
+          <div className="bl-news-modal-section">
+            <div className="bl-news-modal-label">{t("news.summary")}</div>
+            <p className="bl-news-modal-desc">{cleanSummary(item.description, item.title) || t("news.noSummary")}</p>
+          </div>
 
           <div className="bl-news-modal-actions">
             {item.url && (

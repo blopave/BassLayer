@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function BlThumb({ image, label, onImgFail }) {
+export function BlThumb({ image, onImgFail }) {
   const [imgFailed, setImgFailed] = useState(false);
   const hasImage = image && !imgFailed;
 
@@ -20,13 +20,14 @@ export function BlThumb({ image, label, onImgFail }) {
 
   return (
     <div className="bl-thumb bl-thumb-empty" aria-hidden="true">
-      <span className="bl-thumb-label">{label || "Bass"}</span>
-      <span className="bl-thumb-eq" aria-hidden="true">
-        <span className="bl-thumb-eq-bar" />
-        <span className="bl-thumb-eq-bar" />
-        <span className="bl-thumb-eq-bar" />
-        <span className="bl-thumb-eq-bar" />
-      </span>
+      <svg className="bl-thumb-rings" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <circle cx="32" cy="32" r="29" />
+        <circle cx="32" cy="32" r="24" />
+        <circle cx="32" cy="32" r="19" />
+        <circle cx="32" cy="32" r="14" />
+        <circle cx="32" cy="32" r="9" />
+        <circle className="bl-thumb-rings-center" cx="32" cy="32" r="4" />
+      </svg>
     </div>
   );
 }

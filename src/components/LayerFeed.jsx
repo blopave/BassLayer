@@ -8,7 +8,7 @@ import { PredictionMarkets } from "./PredictionMarkets";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 
-export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
+export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
   const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones"
@@ -59,19 +59,23 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
             : filtered.length === 0 ? (
               <div className="bl-feed">
                 <div className="bl-empty">
-                  <span className="bl-empty-icon" aria-hidden="true">&#x1F4E1;</span>
                   {t("feed.empty.news")} &ldquo;{filter === "All" ? t("common.all") : filter}&rdquo;. {t("feed.empty.newsHint")}
                 </div>
               </div>
             )
             : <div className="bl-feed" role="feed" aria-label="Noticias crypto" ref={listRef}>
                 {filtered.map((item, idx) => (
-                  <article className="bl-feed-item bl-reveal" key={`${item.source}-${(item.title || "").slice(0,40)}-${idx}`} style={{ transitionDelay: `${Math.min(idx * 0.03, 0.25)}s` }}>
-                    <span className="bl-feed-time">{item.time}</span>
-                    <span className="bl-feed-tag">{item.tag}</span>
-                    {item.url ? <a className="bl-feed-title" href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
-                      : <span className="bl-feed-title">{item.title}</span>}
-                    <span className="bl-feed-src">{item.source}</span>
+                  <article
+                    className="bl-feed-item bl-reveal"
+                    key={`${item.source}-${(item.title || "").slice(0,40)}-${idx}`}
+                    onClick={() => onSelectNews?.(item)}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelectNews?.(item))}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={item.title}
+                    style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.03, 0.25)}s` }}
+                  >
+                    <span className="bl-feed-title">{item.title}</span>
                   </article>
                 ))}
                 <div className="bl-end-of-feed" aria-hidden="true">

@@ -120,7 +120,6 @@ export function CryptoBATimeline() {
                   <span className={`bl-timeline-event-type bl-timeline-type-${ev.type}`}>{typeLabel(ev.type)}</span>
                 </div>
                 <div className="bl-timeline-event-title">{ev.title}</div>
-                <div className="bl-timeline-event-desc">{ev.desc}</div>
               </div>
             </div>
           ))}

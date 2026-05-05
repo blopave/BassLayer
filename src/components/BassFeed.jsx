@@ -192,12 +192,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   function emptyMessage() {
     if (search) {
-      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83D\uDD0D"}</span>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
+      return <>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
     }
     if (esteFinde) {
-      return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDF1F"}</span>{t("feed.empty.weekend")}</>;
+      return <>{t("feed.empty.weekend")}</>;
     }
-    return <><span className="bl-empty-icon" aria-hidden="true">{"\uD83C\uDFB6"}</span>{t("feed.empty.filter")}</>;
+    return <>{t("feed.empty.filter")}</>;
   }
 
   let itemIdx = 0;
@@ -211,21 +211,18 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           onClick={() => setSection("eventos")}
         >
           <span className="bl-bass-section-label">{t("section.events")}</span>
-          <span className="bl-bass-section-count">{events.length}</span>
         </button>
         <button
           className={`bl-bass-section-btn${section === "noticias" ? " active" : ""}`}
           onClick={() => setSection("noticias")}
         >
           <span className="bl-bass-section-label">{t("section.news")}</span>
-          {bassNews.length > 0 && <span className="bl-bass-section-count">{bassNews.length}</span>}
         </button>
         <button
           className={`bl-bass-section-btn${section === "festivales" ? " active" : ""}`}
           onClick={() => setSection("festivales")}
         >
           <span className="bl-bass-section-label">{t("section.festivals")}</span>
-          {festivals.length > 0 && <span className="bl-bass-section-count">{festivals.length}</span>}
         </button>
       </div>
 
@@ -284,7 +281,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               const artistStr = formatArtists(ev.artists);
               return (
                 <article
-                  className={`bl-ev-item bl-reveal${ev.featured ? " bl-ev-item-featured" : ""}`}
+                  className="bl-ev-item bl-reveal"
                   key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
                   onClick={() => onSelect(ev)}
                   onKeyDown={(e) => e.key === "Enter" && onSelect(ev)}
@@ -309,7 +306,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       <span className="bl-ev-time-inline">{ev.time} hs</span>
                     </div>
                   </div>
-                  <BlThumb image={ev.image} label={ev.genre} />
+                  <BlThumb image={ev.image} />
                   <div className="bl-ev-end">
                     <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
                   </div>
@@ -344,7 +341,6 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
     return (
       <div className="bl-feed">
         <div className="bl-empty">
-          <span className="bl-empty-icon" aria-hidden="true">{"📰"}</span>
           {t("feed.empty.bassNews")}
         </div>
       </div>
@@ -379,7 +375,7 @@ function BassNewsItem({ item, idx, onSelect }) {
       aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
-      <BlThumb image={item.image} label={item.tag} onImgFail={() => setImgFailed(true)} />
+      <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
       <div className="bl-bass-news-body">
         <h3 className="bl-bass-news-title">{item.title}</h3>
         {showPill && <span className="bl-bass-news-tag-pill">{item.tag}</span>}
@@ -389,7 +385,6 @@ function BassNewsItem({ item, idx, onSelect }) {
 }
 
 const FESTIVAL_REGIONS = ["All", "BA", "Sudamérica", "Europa", "Norteamérica", "Asia"];
-const FESTIVAL_REGION_SHORT = { "BA":"BA", "Sudamérica":"SUDAM", "Europa":"EUR", "Norteamérica":"NORTE", "Asia":"ASIA" };
 const FESTIVAL_MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 function festivalDay(start) {
@@ -444,7 +439,6 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
        : !festivals || festivals.length === 0 ? (
          <div className="bl-feed">
            <div className="bl-empty">
-             <span className="bl-empty-icon" aria-hidden="true">🎪</span>
              {t("feed.empty.festivals")}
            </div>
          </div>
@@ -464,7 +458,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
 function FestivalItem({ f, idx, onSelect }) {
   return (
     <article
-      className={`bl-ev-item bl-reveal${f.status === "live" ? " bl-ev-item-featured" : ""}`}
+      className="bl-ev-item bl-reveal"
       onClick={() => onSelect?.(f)}
       onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
       tabIndex={0}
@@ -493,7 +487,7 @@ function FestivalItem({ f, idx, onSelect }) {
           </>}
         </div>
       </div>
-      <BlThumb image={f.image} label={FESTIVAL_REGION_SHORT[f.region]} />
+      <BlThumb image={f.image} />
       <div className="bl-ev-end">
         <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>
       </div>

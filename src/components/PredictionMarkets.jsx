@@ -62,7 +62,6 @@ export function PredictionMarkets() {
     return (
       <div className="bl-feed">
         <div className="bl-empty">
-          <span className="bl-empty-icon" aria-hidden="true">&#x1F52E;</span>
           Sin mercados destacados ahora mismo.
         </div>
       </div>

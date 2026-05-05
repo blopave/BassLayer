@@ -381,15 +381,23 @@ app.get("/api/news", async (req, res) => {
 // Si una fuente cae, el cap de antigüedad mantiene el feed honesto en lugar de
 // rellenar con notas viejas.
 const BASS_NEWS_FEEDS = [
-  // 1 BA + 1 LatAm + 7 internacionales (UK · USA · FR · DE), electrónica-first
-  { url: "https://mixmaglatam.com/rss.xml",      source: "Mixmag Latam", slug: "mixmaglatam", region: "LatAm" },
-  { url: "https://djmag.com/rss",                source: "DJ Mag",       slug: "djmag",       region: "Intl"  },
-  { url: "https://crackmagazine.net/feed/",      source: "Crack",        slug: "crack",       region: "Intl"  },
-  { url: "https://daily.bandcamp.com/feed",      source: "Bandcamp",     slug: "bandcamp",    region: "Intl"  },
-  { url: "https://www.attackmagazine.com/feed/", source: "Attack Mag",   slug: "attackmag",   region: "Intl"  },
-  { url: "https://www.5mag.net/feed/",           source: "5 Magazine",   slug: "5mag",        region: "Intl"  },
-  { url: "https://www.tsugi.fr/feed/",           source: "Tsugi",        slug: "tsugi",       region: "Intl"  },
-  { url: "https://www.groove.de/feed/",          source: "Groove",       slug: "groove",      region: "Intl"  },
+  // Curaduría: BA + LatAm + 12 internacionales, electrónica-first y excluyente.
+  // `freshOnNoDate` se usa para fuentes cuyo RSS no expone pubDate; sin él el
+  // filtro de 7 días los descartaría. Asume que items al tope del feed son
+  // recientes (válido para publicaciones que rotan a diario).
+  { url: "https://mixmaglatam.com/rss.xml",         source: "Mixmag Latam",     slug: "mixmaglatam",   region: "LatAm" },
+  { url: "https://djmag.com/rss",                   source: "DJ Mag",           slug: "djmag",         region: "Intl"  },
+  { url: "https://mixmag.net/rss.xml",              source: "Mixmag",           slug: "mixmaguk",      region: "Intl", freshOnNoDate: true },
+  { url: "https://crackmagazine.net/feed/",         source: "Crack",            slug: "crack",         region: "Intl"  },
+  { url: "https://daily.bandcamp.com/feed",         source: "Bandcamp",         slug: "bandcamp",      region: "Intl"  },
+  { url: "https://www.attackmagazine.com/feed/",    source: "Attack Mag",       slug: "attackmag",     region: "Intl"  },
+  { url: "https://www.5mag.net/feed/",              source: "5 Magazine",       slug: "5mag",          region: "Intl"  },
+  { url: "https://magneticmag.com/feed",            source: "Magnetic",         slug: "magneticmag",   region: "Intl"  },
+  { url: "https://inverted-audio.com/feed/",        source: "Inverted Audio",   slug: "invertedaudio", region: "Intl"  },
+  { url: "https://www.theransomnote.com/feed/",     source: "Ransom Note",      slug: "ransomnote",    region: "Intl"  },
+  { url: "https://www.decodedmagazine.com/feed/",   source: "Decoded",          slug: "decodedmag",    region: "Intl"  },
+  { url: "https://www.tsugi.fr/feed/",              source: "Tsugi",            slug: "tsugi",         region: "Intl"  },
+  { url: "https://www.groove.de/feed/",             source: "Groove",           slug: "groove",        region: "Intl"  },
 ];
 
 // Items publicados hace más de N días no aparecen en el feed.
@@ -505,12 +513,18 @@ async function fetchBassNewsRSSFeed(feed) {
     const parsed = xmlParser.parse(xml);
     let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
     if (!Array.isArray(items)) items = [items];
-    return items.slice(0, 15).map((item) => {
+    return items.slice(0, 15).map((item, idx) => {
       const title = item.title?.["#text"] || item.title || "";
       const rawLink = item.link?.["@_href"] || item.link || "";
       const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
       const url = sanitizeUrl(link);
-      const date = item.pubDate || item.published || item.updated || "";
+      let date = item.pubDate || item.published || item.updated || "";
+      // Algunos feeds (ej: Mixmag) no exponen pubDate. Los marcados con
+      // freshOnNoDate asumen que el orden del RSS = orden cronológico real;
+      // staggeo unos minutos por posición para preservar el orden al sortear.
+      if (!date && feed.freshOnNoDate) {
+        date = new Date(Date.now() - idx * 60_000).toISOString();
+      }
       const rel = relativeTime(date);
       const descRaw = item.description || item.summary || "";
       const descStr = typeof descRaw === "object" ? (descRaw["#text"] || "") : String(descRaw);
