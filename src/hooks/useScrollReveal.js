@@ -33,6 +33,23 @@ export function useScrollReveal(loading, ...deps) {
       });
     }, { threshold: 0.1, rootMargin: "0px 0px -20px 0px" });
     items.forEach((item) => observerRef.current.observe(item));
+
+    // Safety net: si el observer no disparó en 800ms (edge case raro,
+    // overlay activo, panel offscreen, etc.), forzamos visible en items
+    // que de hecho estén en viewport. Evita la regresión de contenido
+    // invisible permanente.
+    setTimeout(() => {
+      if (!containerRef.current) return;
+      const stillHidden = containerRef.current.querySelectorAll(".bl-reveal:not(.visible)");
+      stillHidden.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const inViewport = rect.bottom > 0 && rect.top < (window.innerHeight || document.documentElement.clientHeight);
+        if (inViewport) {
+          el.classList.add("visible");
+          observerRef.current?.unobserve(el);
+        }
+      });
+    }, 800);
   }, []);
 
   const setRef = useCallback((node) => {

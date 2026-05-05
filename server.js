@@ -2489,24 +2489,33 @@ if (IS_PROD) {
 }
 
 const server = app.listen(PORT, () => console.log(`
-  ┌──────────────────────────────────────┐
-  │  BassLayer API v1.5                  │
-  │  http://localhost:${PORT}              │
-  │                                      │
-  │  /api/prices      30s cache          │
-  │  /api/news        5min (?tag=BTC)    │
-  │  /api/bass-news   30min (?tag=...)   │
-  │  /api/events      1h (?genre=...)    │
-  │  /api/dashboard   5min (market)     │
-  │  /api/meta        filter options     │
-  │  /api/health                         │
-  │                                      │
-  │  Sources:                            │
-  │   Events: Buenos Aliens → RA → fb   │
-  │   Crypto: 16 RSS feeds (EN+ES)      │
-  │   Music: 9 feeds (AR+intl)          │
-  │   Prices: CoinGecko                 │
-  └──────────────────────────────────────┘
+  ┌──────────────────────────────────────────┐
+  │  BassLayer API v1.6                      │
+  │  http://localhost:${PORT}                  │
+  │                                          │
+  │  Layer ─────────────────────             │
+  │   /api/prices              30s           │
+  │   /api/news                5min          │
+  │   /api/dashboard           5min          │
+  │   /api/prediction-markets  5min          │
+  │   /api/crypto-events       1h            │
+  │   /api/crypto-irl          static        │
+  │                                          │
+  │  Bass ──────────────────────             │
+  │   /api/events              1h            │
+  │   /api/bass-news           30min         │
+  │   /api/festivals           1h            │
+  │                                          │
+  │  Sources:                                │
+  │   Events: Buenos Aliens (BA area 395)    │
+  │           + RA GraphQL + fallback        │
+  │   News:   BA Notas + Mixmag Latam +      │
+  │           DJ Mag + Crack + Bandcamp +    │
+  │           Attack + 5 Mag + Tsugi + Groove│
+  │   Festivals: 30 curados, og:image auto   │
+  │   Crypto: 16 RSS feeds (EN+ES)           │
+  │   Prices: CoinGecko                      │
+  └──────────────────────────────────────────┘
 `));
 
 // Graceful shutdown
