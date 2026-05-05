@@ -53,6 +53,16 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
       {/* Noticias section */}
       {section === "noticias" && (
         <div className="bl-layer-content">
+          <div className="bl-terminal-prompt" aria-hidden="true">
+            <span className="bl-terminal-prompt-user">bl@layer</span>
+            <span className="bl-terminal-prompt-sep">:</span>
+            <span className="bl-terminal-prompt-path">~</span>
+            <span className="bl-terminal-prompt-sep">$</span>
+            <span className="bl-terminal-prompt-cmd">
+              news --tag={filter === "All" ? "ALL" : filter} --since=24h
+            </span>
+            <span className="bl-terminal-prompt-cursor" />
+          </div>
           <FilterBar items={tags} active={filter} onChange={onFilter} className="layer-filters" />
           {loading ? <NewsSkeleton />
             : error ? <div className="bl-feed"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
@@ -74,6 +84,10 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter }) {
                     <span className="bl-feed-src">{item.source}</span>
                   </article>
                 ))}
+                <div className="bl-end-of-feed" aria-hidden="true">
+                  <span>{t("feed.endOfFeed")}</span>
+                  <span className="bl-end-cursor" />
+                </div>
               </div>}
         </div>
       )}

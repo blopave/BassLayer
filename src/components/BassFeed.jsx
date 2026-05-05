@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
-import { EventSkeleton } from "./SkeletonLoader";
+import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
+import { api } from "../utils/api";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -88,11 +89,61 @@ function isThisWeekend(eventDate) {
   return evDay >= friday && evDay < monday;
 }
 
-export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker }) {
+export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival }) {
   const { t } = useLocale();
   const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
   const [cityFilter, setCityFilter] = useState("Todas");
   const [esteFinde, setEsteFinde] = useState(false);
+  const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
+
+  // Bass news — lazy loaded on first toggle to "noticias"
+  const [bassNews, setBassNews] = useState([]);
+  const [bassNewsLoading, setBassNewsLoading] = useState(false);
+  const [bassNewsError, setBassNewsError] = useState(null);
+  const newsLoadedRef = useRef(false);
+
+  const loadBassNews = () => {
+    setBassNewsLoading(true);
+    setBassNewsError(null);
+    api.bassNews()
+      .then((items) => { setBassNews(items || []); })
+      .catch(() => setBassNewsError(t("feed.bassNewsLoadError")))
+      .finally(() => setBassNewsLoading(false));
+  };
+
+  // Festivales — lazy loaded on first toggle to "festivales"
+  const [festivals, setFestivals] = useState([]);
+  const [festivalsLoading, setFestivalsLoading] = useState(false);
+  const [festivalsError, setFestivalsError] = useState(null);
+  const [festivalsRegion, setFestivalsRegion] = useState("All");
+  const festivalsLoadedRef = useRef(false);
+
+  const loadFestivals = (region = festivalsRegion) => {
+    setFestivalsLoading(true);
+    setFestivalsError(null);
+    api.festivals(region)
+      .then((items) => { setFestivals(items || []); })
+      .catch(() => setFestivalsError(t("feed.festivalsLoadError")))
+      .finally(() => setFestivalsLoading(false));
+  };
+
+  useEffect(() => {
+    if (section === "noticias" && !newsLoadedRef.current) {
+      newsLoadedRef.current = true;
+      loadBassNews();
+    }
+    if (section === "festivales" && !festivalsLoadedRef.current) {
+      festivalsLoadedRef.current = true;
+      loadFestivals();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section]);
+
+  // Re-fetch when region filter changes
+  useEffect(() => {
+    if (festivalsLoadedRef.current) loadFestivals(festivalsRegion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [festivalsRegion]);
 
   // Detect available cities from events
   const cities = useMemo(() => {
@@ -134,7 +185,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return groups;
   }, [filtered]);
 
-  const listRef = useScrollReveal(loading);
+  // Pass `section` as dep so the observer re-attaches when toggling back from
+  // noticias → eventos (the events list unmounts and remounts in that flow).
+  const listRef = useScrollReveal(loading, section);
 
   function emptyMessage() {
     if (search) {
@@ -150,6 +203,51 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   return (
     <>
+      {/* Section toggle: Eventos · Noticias · Festivales */}
+      <div className="bl-bass-sections">
+        <button
+          className={`bl-bass-section-btn${section === "eventos" ? " active" : ""}`}
+          onClick={() => setSection("eventos")}
+        >
+          <span className="bl-bass-section-label">{t("section.events")}</span>
+          <span className="bl-bass-section-count">{events.length}</span>
+        </button>
+        <button
+          className={`bl-bass-section-btn${section === "noticias" ? " active" : ""}`}
+          onClick={() => setSection("noticias")}
+        >
+          <span className="bl-bass-section-label">{t("section.news")}</span>
+          {bassNews.length > 0 && <span className="bl-bass-section-count">{bassNews.length}</span>}
+        </button>
+        <button
+          className={`bl-bass-section-btn${section === "festivales" ? " active" : ""}`}
+          onClick={() => setSection("festivales")}
+        >
+          <span className="bl-bass-section-label">{t("section.festivals")}</span>
+          {festivals.length > 0 && <span className="bl-bass-section-count">{festivals.length}</span>}
+        </button>
+      </div>
+
+      {section === "festivales" ? (
+        <FestivalsList
+          festivals={festivals}
+          loading={festivalsLoading}
+          error={festivalsError}
+          onRetry={() => loadFestivals(festivalsRegion)}
+          region={festivalsRegion}
+          onRegionChange={setFestivalsRegion}
+          onSelect={onSelectFestival}
+        />
+      ) : section === "noticias" ? (
+        <BassNewsList
+          news={bassNews}
+          loading={bassNewsLoading}
+          error={bassNewsError}
+          onRetry={loadBassNews}
+          onSelect={onSelectNews}
+        />
+      ) : (
+        <>
       <div className="bl-weekend-picker-trigger">
         <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
           {t("event.weekendButton")}
@@ -185,7 +283,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               const artistStr = formatArtists(ev.artists);
               return (
                 <article
-                  className="bl-ev-item bl-reveal"
+                  className={`bl-ev-item bl-reveal${ev.featured ? " bl-ev-item-featured" : ""}`}
                   key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
                   onClick={() => onSelect(ev)}
                   onKeyDown={(e) => e.key === "Enter" && onSelect(ev)}
@@ -210,13 +308,236 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       <span className="bl-ev-time-inline">{ev.time} hs</span>
                     </div>
                   </div>
+                  <div className="bl-ev-thumb-wrap" aria-hidden="true">
+                    {ev.image ? (
+                      <img
+                        className="bl-ev-thumb"
+                        src={ev.image}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => {
+                          const wrap = e.currentTarget.parentElement;
+                          wrap.classList.add("bl-ev-thumb-empty");
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="bl-ev-thumb-empty-inner">
+                        <svg viewBox="0 0 32 32" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4">
+                          <rect x="4" y="6" width="24" height="20" rx="2" />
+                          <circle cx="11" cy="13" r="2" />
+                          <path d="M4 22l7-7 6 6 4-4 7 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   <div className="bl-ev-end">
-                    <span className="bl-ev-genre-badge">{ev.genre}</span>
+                    <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
                   </div>
                 </article>
               );
             })}
+            {filtered.length > 0 && (
+              <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+            )}
           </div>}
+        </>
+      )}
+    </>
+  );
+}
+
+function BassNewsList({ news, loading, error, onRetry, onSelect }) {
+  const { t } = useLocale();
+  const listRef = useScrollReveal(loading);
+
+  if (loading) return <NewsSkeleton />;
+  if (error) {
+    return (
+      <div className="bl-feed">
+        <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>
+          {error}
+        </div>
+      </div>
+    );
+  }
+  if (!news || news.length === 0) {
+    return (
+      <div className="bl-feed">
+        <div className="bl-empty">
+          <span className="bl-empty-icon" aria-hidden="true">{"📰"}</span>
+          {t("feed.empty.bassNews")}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bl-bass-news-list" role="feed" aria-label="Noticias de música electrónica" ref={listRef}>
+      {news.map((item, idx) => (
+        <article
+          className="bl-bass-news-item bl-reveal"
+          key={`${item.source_slug || item.source}-${item.url || idx}`}
+          onClick={() => onSelect?.(item)}
+          onKeyDown={(e) => e.key === "Enter" && onSelect?.(item)}
+          tabIndex={0}
+          role="button"
+          aria-label={`${item.title} — ${item.source}`}
+          style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
+        >
+          {item.image ? (
+            <img className="bl-bass-news-thumb" src={item.image} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          ) : (
+            <div className="bl-bass-news-thumb bl-bass-news-thumb-empty" aria-hidden="true">
+              <svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <rect x="4" y="6" width="24" height="20" rx="2" />
+                <path d="M4 22l7-7 6 6 4-4 7 7" />
+              </svg>
+            </div>
+          )}
+          <div className="bl-bass-news-body">
+            <div className="bl-bass-news-meta">
+              <span className="bl-bass-news-source">{item.source}</span>
+              {item.region && <span className={`bl-bass-news-region bl-bass-news-region-${item.region.toLowerCase()}`}>{item.region}</span>}
+              {item.tag && <span className="bl-bass-news-tag">{item.tag}</span>}
+              {item.time && <span className="bl-bass-news-time">{item.time}</span>}
+            </div>
+            <h3 className="bl-bass-news-title">{item.title}</h3>
+            {item.description && item.description !== item.title && (
+              <p className="bl-bass-news-desc">{item.description}</p>
+            )}
+          </div>
+        </article>
+      ))}
+      <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+    </div>
+  );
+}
+
+const FESTIVAL_REGIONS = ["All", "BA", "Sudamérica", "Europa", "Norteamérica", "Asia"];
+const FESTIVAL_MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function festivalDay(start) {
+  if (!start) return "??";
+  const s = new Date(start + "T00:00:00");
+  return String(s.getDate()).padStart(2, "0");
+}
+
+function festivalMonth(start) {
+  if (!start) return "TBA";
+  const s = new Date(start + "T00:00:00");
+  return FESTIVAL_MONTHS_ES[s.getMonth()];
+}
+
+function festivalDateRange(start, end) {
+  if (!start) return "—";
+  const s = new Date(start + "T00:00:00");
+  const e = end ? new Date(end + "T00:00:00") : null;
+  if (!e || e.getTime() === s.getTime()) return `${String(s.getDate()).padStart(2,"0")} ${FESTIVAL_MONTHS_ES[s.getMonth()]}`;
+  const sd = String(s.getDate()).padStart(2,"0");
+  const ed = String(e.getDate()).padStart(2,"0");
+  const sm = FESTIVAL_MONTHS_ES[s.getMonth()];
+  const em = FESTIVAL_MONTHS_ES[e.getMonth()];
+  return sm === em ? `${sd}–${ed} ${sm}` : `${sd} ${sm} → ${ed} ${em}`;
+}
+
+function FestivalsList({ festivals, loading, error, onRetry, region, onRegionChange, onSelect }) {
+  const { t } = useLocale();
+  const listRef = useScrollReveal(loading, region);
+
+  return (
+    <>
+      <div className="bl-festival-filters">
+        {FESTIVAL_REGIONS.map((r) => (
+          <button
+            key={r}
+            className={`bl-festival-region-chip${region === r ? " active" : ""}`}
+            onClick={() => onRegionChange(r)}
+          >
+            {r === "All" ? t("common.all") : r}
+          </button>
+        ))}
+      </div>
+      {loading ? <NewsSkeleton />
+       : error ? (
+         <div className="bl-feed">
+           <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>
+             {error}
+           </div>
+         </div>
+       )
+       : !festivals || festivals.length === 0 ? (
+         <div className="bl-feed">
+           <div className="bl-empty">
+             <span className="bl-empty-icon" aria-hidden="true">🎪</span>
+             {t("feed.empty.festivals")}
+           </div>
+         </div>
+       )
+       : (
+         <div className="bl-ev-list" role="feed" aria-label="Festivales de música electrónica" ref={listRef}>
+           {festivals.map((f, idx) => (
+             <article
+               key={f.id}
+               className={`bl-ev-item bl-reveal${f.status === "live" ? " bl-ev-item-featured" : ""}`}
+               onClick={() => onSelect?.(f)}
+               onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
+               tabIndex={0}
+               role="button"
+               aria-label={`${f.name} — ${f.city}, ${f.country}`}
+               style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
+             >
+               <div className="bl-ev-date">
+                 <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
+                 <div className="bl-ev-date-m">{festivalMonth(f.dates_start)}</div>
+               </div>
+               <div className="bl-ev-sep" aria-hidden="true" />
+               <div className="bl-ev-body">
+                 <div className="bl-ev-name">
+                   {f.name}
+                   {f.linkStatus === "broken" && (
+                     <span className="bl-festival-broken-dot" title="Sitio temporalmente caído" aria-label="Sitio caído">●</span>
+                   )}
+                 </div>
+                 <div className="bl-ev-artists">{f.city}, {f.country}</div>
+                 <div className="bl-ev-meta-row">
+                   <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end)}</span>
+                   {f.status === "live" && <>
+                     <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
+                     <span className="bl-festival-live-dot">EN CURSO</span>
+                   </>}
+                 </div>
+               </div>
+               <div className="bl-ev-thumb-wrap" aria-hidden="true">
+                 {f.image ? (
+                   <img
+                     className="bl-ev-thumb"
+                     src={f.image}
+                     alt=""
+                     loading="lazy"
+                     onError={(e) => {
+                       const wrap = e.currentTarget.parentElement;
+                       wrap.classList.add("bl-ev-thumb-empty");
+                       e.currentTarget.style.display = "none";
+                     }}
+                   />
+                 ) : (
+                   <div className="bl-ev-thumb-empty-inner">
+                     <svg viewBox="0 0 32 32" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4">
+                       <path d="M4 28V10l12-6 12 6v18" />
+                       <path d="M10 28V14l6-3 6 3v14" />
+                     </svg>
+                   </div>
+                 )}
+               </div>
+               <div className="bl-ev-end">
+                 <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>
+               </div>
+             </article>
+           ))}
+           <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+         </div>
+       )}
     </>
   );
 }

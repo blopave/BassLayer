@@ -6,6 +6,8 @@ import { supabase } from "./utils/supabase";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { EventModal } from "./components/EventModal";
+import { NewsModal } from "./components/NewsModal";
+import { FestivalModal } from "./components/FestivalModal";
 import { useLocale } from "./hooks/useLocale";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
@@ -41,6 +43,8 @@ export default function App() {
   const [eventsSearch, setEventsSearch] = useState("");
   // toast removed — was unused
   const [selectedPrice, setSelectedPrice] = useState(null);
+  const [selectedNews, setSelectedNews] = useState(null);
+  const [selectedFestival, setSelectedFestival] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -613,7 +617,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={setSelectedNews} onSelectFestival={setSelectedFestival} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
               <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; {t("topbar.forVenues")}</button>
@@ -637,6 +641,12 @@ export default function App() {
 
       {/* PRICE MODAL */}
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />
+
+      {/* NEWS MODAL */}
+      <NewsModal item={selectedNews} onClose={() => setSelectedNews(null)} />
+
+      {/* FESTIVAL MODAL */}
+      <FestivalModal festival={selectedFestival} onClose={() => setSelectedFestival(null)} />
 
       {/* WEEKEND PICKER */}
       {showWeekendPicker && (

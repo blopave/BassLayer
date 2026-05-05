@@ -40,7 +40,10 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https://ra.co", "https://*.ra.co", "https://images.ra.co", "https://jbszspnwegykpnlagypf.supabase.co"],
+      // imgSrc abierto a cualquier HTTPS — los festivales y feeds se hostean en
+      // dominios variados e impredecibles (CDNs, WP, S3, etc.). Las URLs vienen
+      // de fuentes que controlamos curatorialmente, no de input de usuario.
+      imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://jbszspnwegykpnlagypf.supabase.co"],
     },
   },
@@ -108,7 +111,7 @@ const cache = {
   prices:      { data: null, ts: 0, ttl: 30_000 },
   news:        { data: null, ts: 0, ttl: 5 * 60_000 },
   events:      { data: null, ts: 0, ttl: 60 * 60_000 },
-  musicNews:   { data: null, ts: 0, ttl: 10 * 60_000 },
+  bassNews:    { data: null, ts: 0, ttl: 30 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
   predictions: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — Polymarket trending
@@ -289,9 +292,20 @@ function detectTag(title) {
   return "Crypto";
 }
 
+// Common timezone abbreviations Node's Date parser doesn't accept (BST, EDT, etc.)
+const TZ_OFFSETS = {
+  BST:"+0100", GMT:"+0000", UTC:"+0000",
+  EST:"-0500", EDT:"-0400", CST:"-0600", CDT:"-0500", MST:"-0700", MDT:"-0600", PST:"-0800", PDT:"-0700",
+  CET:"+0100", CEST:"+0200", AEST:"+1000", AEDT:"+1100", JST:"+0900",
+};
+function normalizeDateString(s) {
+  if (!s) return s;
+  return String(s).replace(/\b([A-Z]{2,5})\b\s*$/, (m, abbr) => TZ_OFFSETS[abbr] || m);
+}
+
 function relativeTime(dateStr) {
   if (!dateStr) return "";
-  const ms = new Date(dateStr).getTime();
+  const ms = new Date(normalizeDateString(dateStr)).getTime();
   if (isNaN(ms)) return "";
   const mins = Math.floor((Date.now() - ms) / 60000);
   if (mins < 0) return "now";
@@ -358,30 +372,41 @@ app.get("/api/news", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  GET /api/music-news — Electronic music RSS
+//  GET /api/bass-news — Música electrónica BA + LatAm
+//  Fuentes: Buenos Aliens (scrape) + Mixmag Latam (RSS)
+//  Curaduría chica y local-first; ver memoria del proyecto.
 // ─────────────────────────────────────────────
 
-const MUSIC_RSS_FEEDS = [
-  // Argentina / Latam
-  { url: "https://indiehoy.com/feed/", source: "Indie Hoy" },
-  { url: "https://www.clarin.com/rss/espectaculos/", source: "Clarín" },
-  // International — electronic music
-  { url: "https://djmag.com/feed", source: "DJ Mag" },
-  { url: "https://magneticmag.com/feed/", source: "Magnetic" },
-  { url: "https://daily.bandcamp.com/feed", source: "Bandcamp" },
-  { url: "https://crackmagazine.net/feed/", source: "Crack" },
-  { url: "https://dancingastronaut.com/feed/", source: "Dancing Astro" },
-  { url: "https://datatransmission.co/feed/", source: "Data Trans" },
-  { url: "https://clubbingtv.com/feed/", source: "Clubbing TV" },
+// Curaduría chica y deliberada: 1 BA (scrape) + 1 LatAm + 2 internacionales.
+// Si una fuente cae, el cap de antigüedad mantiene el feed honesto en lugar de
+// rellenar con notas viejas.
+const BASS_NEWS_FEEDS = [
+  // 1 BA + 1 LatAm + 7 internacionales (UK · USA · FR · DE), electrónica-first
+  { url: "https://mixmaglatam.com/rss.xml",      source: "Mixmag Latam", slug: "mixmaglatam", region: "LatAm" },
+  { url: "https://djmag.com/rss",                source: "DJ Mag",       slug: "djmag",       region: "Intl"  },
+  { url: "https://crackmagazine.net/feed/",      source: "Crack",        slug: "crack",       region: "Intl"  },
+  { url: "https://daily.bandcamp.com/feed",      source: "Bandcamp",     slug: "bandcamp",    region: "Intl"  },
+  { url: "https://www.attackmagazine.com/feed/", source: "Attack Mag",   slug: "attackmag",   region: "Intl"  },
+  { url: "https://www.5mag.net/feed/",           source: "5 Magazine",   slug: "5mag",        region: "Intl"  },
+  { url: "https://www.tsugi.fr/feed/",           source: "Tsugi",        slug: "tsugi",       region: "Intl"  },
+  { url: "https://www.groove.de/feed/",          source: "Groove",       slug: "groove",      region: "Intl"  },
 ];
+
+// Items publicados hace más de N días no aparecen en el feed.
+// 7d = "esta semana en electrónica". Las fuentes weekly (Crack, Attack, 5 Mag)
+// alcanzan a tener 1-2 ítems; las daily (DJ Mag, Bandcamp, Mixmag Latam) siempre
+// están frescas. BA queda fuera la mayor parte del tiempo — decisión deliberada.
+const MAX_NEWS_AGE_DAYS = 7;
+// Tope de items por fuente. Garantiza diversidad: las fuentes que publican
+// daily (DJ Mag, Bandcamp) no eclipsan a las que publican semanal (Attack
+// Magazine) ni a Buenos Aliens (mensual).
+const MAX_ITEMS_PER_SOURCE = 8;
 
 function detectMusicTag(title) {
   const t = title.toLowerCase();
   if (t.includes("interview") || t.includes("entrevista") || t.includes("speaks") || t.includes("talks") || t.includes("habla") || t.includes("charla")) return "Interview";
-  if (t.includes("review") || t.includes("album") || t.includes("álbum") || t.includes("release") || t.includes("lanzamiento") || t.includes("estreno") || t.includes("track") || t.includes("remix") || t.includes("ep ") || t.includes("lp ") || t.includes("disco")) return "Music";
-  if (t.includes("festival") || t.includes("lineup") || t.includes("line-up") || t.includes("announces") || t.includes("grilla") || t.includes("lollapalooza") || t.includes("creamfields")) return "Festival";
-  if (t.includes("techno")) return "Techno";
-  if (t.includes("house")) return "House";
+  if (t.includes("festival") || t.includes("lineup") || t.includes("line-up") || t.includes("grilla") || t.includes("lollapalooza") || t.includes("creamfields")) return "Festival";
+  if (t.includes("review") || t.includes("álbum") || t.includes("album") || t.includes("release") || t.includes("lanzamiento") || t.includes("estreno") || t.includes("track") || t.includes("remix") || t.includes(" ep ") || t.includes(" lp ") || t.includes("disco")) return "Music";
   if (t.includes("club") || t.includes("venue") || t.includes("boliche") || t.includes("closing") || t.includes("opening") || t.includes("fiesta")) return "Clubs";
   if (t.includes("tour") || t.includes("gira") || t.includes("dates") || t.includes("show") || t.includes("recital") || t.includes("concierto")) return "Tour";
   if (t.includes("mix") || t.includes("set") || t.includes("podcast") || t.includes("sesión") || t.includes("sesion")) return "Mix";
@@ -389,7 +414,90 @@ function detectMusicTag(title) {
   return "Scene";
 }
 
-async function fetchMusicRSSFeed(feed) {
+// Strip HTML, decode named entities, collapse whitespace.
+function htmlToText(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#x27;|&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&aacute;/gi, "á").replace(/&eacute;/gi, "é").replace(/&iacute;/gi, "í")
+    .replace(/&oacute;/gi, "ó").replace(/&uacute;/gi, "ú").replace(/&ntilde;/gi, "ñ")
+    .replace(/&iexcl;/gi, "¡").replace(/&iquest;/gi, "¿")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function pickFirstImage(html) {
+  if (!html) return null;
+  const m = String(html).match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m ? sanitizeUrl(m[1]) || null : null;
+}
+
+// Different feeds expose the cover image differently:
+//   • <media:content url="..."/>            → object with @_url attr
+//   • <media:content>https://...</media:content>  → bare URL as text content
+//   • <enclosure url="..." type="image/jpeg"/>  → object with @_url + @_type
+//   • <content:encoded><![CDATA[https://...]]></content:encoded> → CDATA URL
+//   • <description>...<img src="..."/>...</description>          → first img
+// Important: some feeds (Attack Magazine) put audio MP3s in <enclosure> — we
+// must reject those by type, and handle arrays since a single item can have
+// multiple enclosures.
+function isImageType(t) {
+  if (!t) return true; // unknown type → assume image (most feeds omit it)
+  return /^image\//i.test(String(t));
+}
+
+function extractUrlIfImage(field) {
+  if (!field) return null;
+  // Array — try each
+  if (Array.isArray(field)) {
+    for (const f of field) {
+      const u = extractUrlIfImage(f);
+      if (u) return u;
+    }
+    return null;
+  }
+  // Plain string with bare URL
+  if (typeof field === "string" && /^https?:\/\//i.test(field.trim())) {
+    const url = field.trim();
+    return /\.(?:mp3|mp4|m4a|ogg|wav|webm)(?:\?|$)/i.test(url) ? null : url;
+  }
+  // Object (typical: { "@_url": "...", "@_type": "..." })
+  if (typeof field === "object") {
+    if (!isImageType(field["@_type"])) return null;
+    const url = field["@_url"] || (typeof field["#text"] === "string" ? field["#text"] : null);
+    if (url && /^https?:\/\//i.test(url)) {
+      return /\.(?:mp3|mp4|m4a|ogg|wav|webm)(?:\?|$)/i.test(url) ? null : url;
+    }
+  }
+  return null;
+}
+
+function pickItemImage(item, descStr) {
+  for (const key of ["media:content", "media:thumbnail", "enclosure"]) {
+    const u = extractUrlIfImage(item[key]);
+    if (u) return u;
+  }
+  const ce = item["content:encoded"];
+  if (ce) {
+    const ceStr = typeof ce === "object" ? (ce["#text"] || "") : String(ce);
+    const fromImg = pickFirstImage(ceStr);
+    if (fromImg) return fromImg;
+    const bare = ceStr.match(/https?:\/\/\S+\.(?:jpg|jpeg|png|webp|gif)(?:\?\S*)?/i);
+    if (bare) return bare[0];
+  }
+  return pickFirstImage(descStr);
+}
+
+async function fetchBassNewsRSSFeed(feed) {
   try {
     const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
     if (!r.ok) return [];
@@ -397,53 +505,197 @@ async function fetchMusicRSSFeed(feed) {
     const parsed = xmlParser.parse(xml);
     let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
     if (!Array.isArray(items)) items = [items];
-    return items.slice(0, 12).map((item) => {
+    return items.slice(0, 15).map((item) => {
       const title = item.title?.["#text"] || item.title || "";
       const rawLink = item.link?.["@_href"] || item.link || "";
       const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
       const url = sanitizeUrl(link);
       const date = item.pubDate || item.published || item.updated || "";
       const rel = relativeTime(date);
+      const descRaw = item.description || item.summary || "";
+      const descStr = typeof descRaw === "object" ? (descRaw["#text"] || "") : String(descRaw);
+      const image = pickItemImage(item, descStr);
+      const description = htmlToText(descStr)
+        // WordPress trailers in multiple languages
+        .replace(/\s*The post\s+.+?\s+appeared first on\s+.+?\.?\s*$/i, "")            // EN
+        .replace(/\s*La entrada\s+.+?\s+apareci[óo] primero en\s+.+?\.?\s*$/i, "")     // ES
+        .replace(/\s*L[''`]article\s+.+?\s+est apparu en premier sur\s+.+?\.?\s*$/i, "") // FR
+        .replace(/\s*Der Beitrag\s+.+?\s+erschien zuerst auf\s+.+?\.?\s*$/i, "")       // DE
+        .replace(/\s*(?:Continue reading|Read more|Seguir leyendo|Leer más|Suite|Weiterlesen)\.{0,3}\s*$/i, "")
+        .slice(0, 320);
       let cleanTitle = String(title).replace(/^(Mixmag|DJ Mag|RA|EDM\.com)\s*[:–—\-|]\s*/i, "").trim();
-      cleanTitle = cleanTitle.replace(/\s{2,}/g, " ").slice(0, 120);
-      return { time: rel, _mins: timeToMins(rel), tag: detectMusicTag(String(title)), title: cleanTitle, source: feed.source, url };
+      cleanTitle = cleanTitle.replace(/\s{2,}/g, " ").slice(0, 140);
+      return {
+        time: rel,
+        _mins: timeToMins(rel),
+        _pubDate: date || null,
+        tag: detectMusicTag(String(title) + " " + description),
+        title: cleanTitle,
+        description,
+        image: image ? sanitizeUrl(image) : null,
+        source: feed.source,
+        source_slug: feed.slug,
+        region: feed.region || "Intl",
+        url,
+      };
     });
   } catch (e) {
-    console.error(`[music-news] ${feed.source}:`, e.message);
+    console.error(`[bass-news] ${feed.source}:`, e.message);
     return [];
   }
 }
 
-app.get("/api/music-news", async (req, res) => {
+// Scrape /notas page on Buenos Aliens. They publish editorial pieces about local
+// artists, labels and venues. No RSS — but the listing is HTML-stable.
+async function fetchBuenosAliensNotas() {
+  try {
+    const r = await fetchSafe("https://www.buenosaliens.com/notas", {
+      headers: { ...BROWSER_HEADERS, Accept: "text/html" },
+    }, 12000);
+    if (!r.ok) { console.error(`[bass-news] BA Notas ${r.status}`); return []; }
+    const html = await safeText(r, 2 * 1024 * 1024);
+
+    // Each note is wrapped in <article class="card …"> with an inner <a href> + <img> + <h1 class="card__title">
+    // and a <span class="tag__date"> like "MIE 29 ABR".
+    const articles = html.split(/<article class="card[^"]*"[^>]*>/).slice(1);
+    const items = [];
+    for (const block of articles) {
+      const end = block.indexOf("</article>");
+      const seg = end >= 0 ? block.slice(0, end) : block;
+      const hrefMatch = seg.match(/href="([^"]+notas\.cfm[^"]+)"/);
+      if (!hrefMatch) continue;
+      const href = hrefMatch[1];
+      const url = href.startsWith("http") ? href : `https://www.buenosaliens.com${href.startsWith("/") ? "" : "/"}${href}`;
+      const imgMatch = seg.match(/<img[^>]+src="([^"]+)"/);
+      const image = imgMatch ? sanitizeUrl(imgMatch[1]) : null;
+      const dateMatch = seg.match(/<span class="tag__date">([^<]+)<\/span>/);
+      const dateLabel = dateMatch ? dateMatch[1].trim() : "";
+      const titleMatch = seg.match(/<h1 class="card__title[^"]*">([\s\S]*?)<\/h1>/);
+      let titleHtml = titleMatch ? titleMatch[1] : "";
+      // Title shape: "ARTIST<br/>Subtitle" — split into artist + subtitle.
+      const parts = titleHtml.split(/<br\s*\/?>/i);
+      const artist = htmlToText(parts[0] || "");
+      const subtitle = htmlToText(parts.slice(1).join(" "));
+      const title = subtitle ? `${artist} — ${subtitle}` : artist;
+      if (!title) continue;
+
+      // Convert "MIE 29 ABR" → mins-ago using current year
+      let mins = 999_999;
+      let pubDateISO = null;
+      const dm = dateLabel.match(/(\d{1,2})\s+([A-Za-zñÑ]{3})/);
+      if (dm) {
+        const day = parseInt(dm[1], 10);
+        const monIdx = MONTH_MAP[dm[2].toLowerCase().slice(0,3)];
+        if (monIdx !== undefined) {
+          const now = new Date();
+          let d = new Date(now.getFullYear(), monIdx, day);
+          if (d > now) d = new Date(now.getFullYear() - 1, monIdx, day);
+          mins = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60_000));
+          pubDateISO = d.toISOString();
+        }
+      }
+      const time = mins < 60 ? `${mins}m` : mins < 24*60 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/(24*60))}d`;
+
+      items.push({
+        time,
+        _mins: mins,
+        _pubDate: pubDateISO,
+        tag: detectMusicTag(title),
+        title: title.slice(0, 140),
+        description: subtitle ? `${artist}. ${subtitle}` : artist,
+        image,
+        source: "Buenos Aliens",
+        source_slug: "buenosaliens",
+        region: "BA",
+        url,
+        artist,
+        date_label: dateLabel,
+      });
+    }
+    console.log(`[bass-news] Buenos Aliens Notas: ${items.length} items`);
+    return items;
+  } catch (e) {
+    console.error("[bass-news] BA Notas error:", e.message);
+    return [];
+  }
+}
+
+// Per-source last-good cache: si una fuente devuelve 0 ítems en un ciclo
+// (caída temporal, rate-limit, schema change), reutilizamos sus últimos ítems
+// buenos en lugar de borrarlos del feed durante 30min. Tiene techo: si la
+// fuente sigue caída, eventualmente sus ítems caerán fuera del cap de edad.
+const bassNewsLastGood = new Map(); // slug → { items, ts }
+const BASS_NEWS_LAST_GOOD_MAX_AGE_MS = 24 * 60 * 60 * 1000; // descartar fallback si lleva +24h sin éxito
+
+async function fetchSourceWithFallback(slug, fetcher) {
+  let items = [];
+  try { items = await fetcher(); } catch (e) {
+    console.error(`[bass-news] ${slug}: fetch threw — ${e.message}`);
+  }
+  if (Array.isArray(items) && items.length > 0) {
+    bassNewsLastGood.set(slug, { items, ts: Date.now() });
+    return items;
+  }
+  const last = bassNewsLastGood.get(slug);
+  if (last && (Date.now() - last.ts) < BASS_NEWS_LAST_GOOD_MAX_AGE_MS) {
+    const ageMin = Math.round((Date.now() - last.ts) / 60_000);
+    console.log(`[bass-news] ${slug}: 0 ítems frescos, reutilizando últimos buenos (${last.items.length} ítems, hace ${ageMin}m)`);
+    return last.items;
+  }
+  return [];
+}
+
+// Recalcula time/_mins desde _pubDate. Necesario para fallbacks: ítems
+// cacheados pueden tener varias horas y la edad relativa debe reflejar ahora.
+function refreshItemAges(items) {
+  return items.map((item) => {
+    if (!item._pubDate) return item;
+    const rel = relativeTime(item._pubDate);
+    if (!rel) return item;
+    return { ...item, time: rel, _mins: timeToMins(rel) };
+  });
+}
+
+app.get("/api/bass-news", async (req, res) => {
   const tagFilter = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
   const applyFilter = (arr) => tagFilter && tagFilter.toLowerCase() !== "all"
     ? arr.filter((n) => n.tag.toLowerCase() === tagFilter.toLowerCase()) : arr;
 
-  const hit = cached("musicNews");
+  const hit = cached("bassNews");
   if (hit) return res.json(applyFilter(hit));
 
   try {
-    const results = await Promise.allSettled(MUSIC_RSS_FEEDS.map(fetchMusicRSSFeed));
-    // Filter general sources to only music/electronic related content
-    const MUSIC_KEYWORDS = /electr[oó]ni|techno|house|dj\b|club|fiesta|rave|festival|remix|beat|synth|dance|boliche|recital|disco|vinyl|vinilo|producer|productor|bass|bpm|after|underground/i;
-    const news = results
-      .filter((r) => r.status === "fulfilled").flatMap((r) => r.value)
-      .filter((item) => {
-        if (!item.title) return false;
-        // Music-specific sources: keep all
-        if (["DJ Mag", "Magnetic", "Bandcamp", "Crack", "Dancing Astro", "Data Trans", "Clubbing TV"].includes(item.source)) return true;
-        // General sources: only keep music/electronic related
-        return MUSIC_KEYWORDS.test(item.title);
-      })
-      .sort((a, b) => a._mins - b._mins)
+    const [notas, ...rssResults] = await Promise.all([
+      fetchSourceWithFallback("buenosaliens", fetchBuenosAliensNotas),
+      ...BASS_NEWS_FEEDS.map((feed) =>
+        fetchSourceWithFallback(feed.slug, () => fetchBassNewsRSSFeed(feed))
+      ),
+    ]);
+    const maxAgeMins = MAX_NEWS_AGE_DAYS * 24 * 60;
+    const all = refreshItemAges([...notas, ...rssResults.flat()])
+      .filter((item) => item.title && item._mins < maxAgeMins)
+      .sort((a, b) => a._mins - b._mins);
+
+    // Quota por fuente para garantizar diversidad (ver MAX_ITEMS_PER_SOURCE).
+    const perSource = new Map();
+    const quotaApplied = [];
+    for (const item of all) {
+      const slug = item.source_slug || item.source;
+      const used = perSource.get(slug) || 0;
+      if (used >= MAX_ITEMS_PER_SOURCE) continue;
+      perSource.set(slug, used + 1);
+      quotaApplied.push(item);
+    }
+
+    const news = quotaApplied
       .slice(0, 40)
-      .map(({ _mins, ...rest }) => rest);
-    setCache("musicNews", news);
+      .map(({ _mins, _pubDate, ...rest }) => rest);
+    setCache("bassNews", news);
     res.json(applyFilter(news));
   } catch (e) {
-    console.error("[music-news]", e.message);
-    if (cache.musicNews.data) return res.json(cache.musicNews.data);
-    res.status(502).json({ error: "Music news unavailable" });
+    console.error("[bass-news]", e.message);
+    if (cache.bassNews.data) return res.json(cache.bassNews.data);
+    res.status(502).json({ error: "Bass news unavailable" });
   }
 });
 
@@ -797,6 +1049,213 @@ function deduplicateEvents(events) {
   }
   return [...seen.values()];
 }
+
+// ─────────────────────────────────────────────
+//  GET /api/festivals — Curaduría manual de festivales
+//  Foco electrónica. Datos en data/festivals.json.
+//  Imágenes: si el JSON no trae `image`, scrapea og:image del sitio oficial
+//  y la cachea 7 días.
+// ─────────────────────────────────────────────
+
+const FESTIVALS_FILE = join(__dirname, "data", "festivals.json");
+let festivalsCache = null;
+let festivalsCacheTs = 0;
+const FESTIVALS_CACHE_TTL = 60 * 60_000; // 1h — el JSON no cambia frecuentemente
+
+function loadFestivals() {
+  const now = Date.now();
+  if (festivalsCache && (now - festivalsCacheTs) < FESTIVALS_CACHE_TTL) return festivalsCache;
+  try {
+    if (existsSync(FESTIVALS_FILE)) {
+      festivalsCache = JSON.parse(readFileSync(FESTIVALS_FILE, "utf-8"));
+      festivalsCacheTs = now;
+      return festivalsCache;
+    }
+  } catch (e) {
+    console.error("[festivals] load error:", e.message);
+  }
+  return [];
+}
+
+function festivalStatus(f) {
+  const now = new Date();
+  const start = f.dates_start ? new Date(f.dates_start) : null;
+  const end = f.dates_end ? new Date(f.dates_end) : start;
+  if (!start) return "tba";
+  if (end && end < now) return "past";
+  if (start <= now && (!end || end >= now)) return "live";
+  return "upcoming";
+}
+
+// Cache de meta (image + link status) por festival id. La primera carga es
+// lenta (~3-5s, 30 fetches en paralelo); las siguientes son instantáneas
+// durante 7 días para imagen, 12h para link status (chequeamos vigencia más
+// seguido por si un dominio cae o se recupera).
+const festivalImageCache = new Map();   // id → { image, ts }
+const festivalLinkCache  = new Map();   // id → { status, ts }
+const FESTIVAL_IMAGE_TTL = 7 * 24 * 60 * 60 * 1000;
+const FESTIVAL_LINK_TTL  = 12 * 60 * 60 * 1000;
+
+function extractOgImage(html) {
+  if (!html) return null;
+  // Probar property="og:image", twitter:image, og:image:secure_url, etc.
+  const patterns = [
+    /<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image:secure_url["']/i,
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+  ];
+  for (const rx of patterns) {
+    const m = html.match(rx);
+    if (m && m[1]) return m[1].trim();
+  }
+  return null;
+}
+
+function absolutizeUrl(maybeRelative, base) {
+  if (!maybeRelative) return null;
+  try { return new URL(maybeRelative, base).toString(); } catch { return null; }
+}
+
+// Lee los primeros N bytes de una respuesta y trunca el resto SIN tirar error.
+// Necesario para extraer og:image: la mayoría está en los primeros ~50KB (head),
+// pero algunos sitios sirven HTMLs de varios MB que el safeText rechaza entero.
+// Soporta tanto Web Streams (response.body.getReader) como Node Streams (node-fetch).
+async function readHead(response, maxBytes = 256 * 1024) {
+  const chunks = [];
+  let total = 0;
+  const webReader = response.body?.getReader?.();
+  if (webReader) {
+    try {
+      while (true) {
+        const { done, value } = await webReader.read();
+        if (done) break;
+        total += value.length;
+        if (total > maxBytes) {
+          chunks.push(value.slice(0, value.length - (total - maxBytes)));
+          try { await webReader.cancel(); } catch {}
+          break;
+        }
+        chunks.push(value);
+      }
+    } catch {
+      try { await webReader.cancel(); } catch {}
+    }
+    return Buffer.concat(chunks).toString("utf-8");
+  }
+  // node-fetch: Node Stream con async iteration
+  try {
+    for await (const chunk of response.body) {
+      total += chunk.length;
+      if (total > maxBytes) {
+        chunks.push(chunk.slice(0, chunk.length - (total - maxBytes)));
+        response.body.destroy?.();
+        break;
+      }
+      chunks.push(chunk);
+    }
+  } catch {
+    response.body.destroy?.();
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+// Devuelve { image, linkStatus } para un festival.
+//   linkStatus: 'ok'        → el sitio respondió 2xx
+//               'broken'    → DNS, timeout, 4xx/5xx persistente
+//               'no_url'    → no tiene URL en el JSON
+//               'cached_ok' → no chequeado este ciclo, usamos cache previo OK
+async function resolveFestivalMeta(festival) {
+  // Si tiene image explícita en el JSON, no hacemos fetch — confiamos.
+  // Pero igual chequeamos el link status si tiene url.
+  const hasExplicitImage = !!festival.image;
+
+  // Sin URL: image como esté en JSON, status no_url.
+  if (!festival.url) {
+    return { image: festival.image || null, linkStatus: "no_url" };
+  }
+
+  const imgCached = festivalImageCache.get(festival.id);
+  const linkCached = festivalLinkCache.get(festival.id);
+  const now = Date.now();
+
+  const imgFresh = imgCached && (now - imgCached.ts) < FESTIVAL_IMAGE_TTL;
+  const linkFresh = linkCached && (now - linkCached.ts) < FESTIVAL_LINK_TTL;
+
+  if (imgFresh && linkFresh) {
+    return {
+      image: hasExplicitImage ? festival.image : imgCached.image,
+      linkStatus: linkCached.status,
+    };
+  }
+
+  try {
+    const r = await fetchSafe(festival.url, {
+      headers: { ...BROWSER_HEADERS, Accept: "text/html" },
+    }, 8000);
+
+    const linkStatus = r.ok ? "ok" : "broken";
+    festivalLinkCache.set(festival.id, { status: linkStatus, ts: now });
+
+    if (!r.ok || hasExplicitImage) {
+      // No parseamos imagen si la URL falló o si ya tenemos image explícita.
+      if (!imgFresh && !hasExplicitImage) {
+        festivalImageCache.set(festival.id, { image: null, ts: now });
+      }
+      return { image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null), linkStatus };
+    }
+
+    const html = await readHead(r, 256 * 1024);
+    const raw = extractOgImage(html);
+    const abs = absolutizeUrl(raw, festival.url);
+    const image = abs ? sanitizeUrl(abs) : null;
+    festivalImageCache.set(festival.id, { image, ts: now });
+    return { image, linkStatus };
+  } catch (e) {
+    console.error(`[festivals] meta ${festival.id}:`, e.message);
+    festivalLinkCache.set(festival.id, { status: "broken", ts: now });
+    if (!imgFresh && !hasExplicitImage) {
+      festivalImageCache.set(festival.id, { image: null, ts: now });
+    }
+    return {
+      image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null),
+      linkStatus: "broken",
+    };
+  }
+}
+
+app.get("/api/festivals", async (req, res) => {
+  const regionFilter = Array.isArray(req.query.region) ? req.query.region[0] : req.query.region;
+  const all = loadFestivals();
+
+  // Drop past first (no gastamos fetches en festivales pasados)
+  const includesPast = String(req.query.past || "").toLowerCase() === "1";
+  let pool = all.map((f) => ({ ...f, status: festivalStatus(f) }));
+  if (!includesPast) pool = pool.filter((f) => f.status !== "past");
+  if (regionFilter && regionFilter.toLowerCase() !== "all") {
+    pool = pool.filter((f) => (f.region || "").toLowerCase() === regionFilter.toLowerCase());
+  }
+
+  // Resolver imagen + link status en paralelo (cacheadas)
+  const enriched = await Promise.all(pool.map(async (f) => {
+    const { image, linkStatus } = await resolveFestivalMeta(f);
+    return { ...f, image, linkStatus };
+  }));
+
+  // Sort: live first, then upcoming por fecha asc, then tba
+  const order = { live: 0, upcoming: 1, tba: 2, past: 3 };
+  enriched.sort((a, b) => {
+    const o = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+    if (o !== 0) return o;
+    const da = a.dates_start ? new Date(a.dates_start).getTime() : Infinity;
+    const db = b.dates_start ? new Date(b.dates_start).getTime() : Infinity;
+    return da - db;
+  });
+
+  res.json(enriched);
+});
 
 app.get("/api/events", async (req, res) => {
   const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
@@ -2036,7 +2495,7 @@ const server = app.listen(PORT, () => console.log(`
   │                                      │
   │  /api/prices      30s cache          │
   │  /api/news        5min (?tag=BTC)    │
-  │  /api/music-news  10min (?tag=...)   │
+  │  /api/bass-news   30min (?tag=...)   │
   │  /api/events      1h (?genre=...)    │
   │  /api/dashboard   5min (market)     │
   │  /api/meta        filter options     │
