@@ -338,7 +338,36 @@ async function fetchRSSFeed(feed) {
       const url = sanitizeUrl(link);
       const date = item.pubDate || item.published || item.updated || "";
       const rel = relativeTime(date);
-      return { time: rel, _mins: timeToMins(rel), tag: detectTag(String(title)), title: String(title).slice(0, 120), source: feed.source, url };
+      // Algunos feeds (CriptoNoticias y otros WordPress) ponen el resumen
+      // útil en content:encoded y dejan <description> mínimo. Probamos varios
+      // campos y nos quedamos con el texto más rico.
+      const descCandidates = [
+        item.description, item.summary, item["content:encoded"], item.content,
+      ];
+      let descStr = "";
+      for (const c of descCandidates) {
+        if (!c) continue;
+        const s = typeof c === "object" ? (c["#text"] || "") : String(c);
+        if (s.length > descStr.length) descStr = s;
+      }
+      const image = pickItemImage(item, descStr);
+      const description = htmlToText(descStr)
+        .replace(/\s*The post\s+.+?\s+appeared first on\s+.+?\.?\s*$/i, "")
+        .replace(/\s*La entrada\s+.+?\s+apareci[óo] primero en\s+.+?\.?\s*$/i, "")
+        .replace(/\s*L[''`]article\s+.+?\s+est apparu en premier sur\s+.+?\.?\s*$/i, "")
+        .replace(/\s*Der Beitrag\s+.+?\s+erschien zuerst auf\s+.+?\.?\s*$/i, "")
+        .replace(/\s*(?:Continue reading|Read more|Seguir leyendo|Leer más|Suite|Weiterlesen)\.{0,3}\s*$/i, "")
+        .slice(0, 320);
+      return {
+        time: rel,
+        _mins: timeToMins(rel),
+        tag: detectTag(String(title)),
+        title: String(title).slice(0, 120),
+        description,
+        image: image ? sanitizeUrl(image) : null,
+        source: feed.source,
+        url,
+      };
     });
   } catch (e) {
     console.error(`[news] ${feed.source}:`, e.message);

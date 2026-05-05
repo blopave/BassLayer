@@ -310,6 +310,8 @@ export default function App() {
 
   // Navigation
   const [activePanel, setActivePanel] = useState(0);
+  // Wipe flash trigger when switching worlds (header animation)
+  const [wiping, setWiping] = useState(null); // null | "bass" | "layer"
 
   // Scroll progress
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -433,7 +435,13 @@ export default function App() {
   }, [view, dayMode]);
 
   const swipeTo = useCallback((panel) => {
-    setActivePanel(panel);
+    setActivePanel((prev) => {
+      if (panel !== prev) {
+        setWiping(panel === 0 ? "bass" : "layer");
+        setTimeout(() => setWiping(null), 600);
+      }
+      return panel;
+    });
     if (containerRef.current) containerRef.current.classList.remove("dragging");
   }, []);
 
@@ -592,18 +600,33 @@ export default function App() {
 
       {/* SECTIONS */}
       <section className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`} aria-label="Contenido principal">
-        <nav className="bl-topbar" aria-label="Navegaci&oacute;n principal">
-          <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
-          <div className="bl-topbar-left">
-            <button className="bl-topbar-back" onClick={navigateHome} aria-label="Volver al inicio">&larr;</button>
-            <div className="bl-topbar-tabs" role="tablist">
-              <button className={`bl-topbar-tab bl-topbar-tab-bass${activePanel === 0 ? " active" : ""}`} onClick={() => swipeTo(0)} role="tab" aria-selected={activePanel === 0}>Bass<span className="bl-tab-eq" aria-hidden="true"><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /><span className="bl-tab-eq-bar" /></span></button>
-              <button className={`bl-topbar-tab bl-topbar-tab-layer${activePanel === 1 ? " active" : ""}`} onClick={() => swipeTo(1)} role="tab" aria-selected={activePanel === 1}>Layer<span className="bl-tab-cursor" aria-hidden="true" /></button>
-            </div>
-          </div>
-          <div className="bl-topbar-links">
-            <button className="bl-topbar-link" onClick={() => setShowAbout(true)}>about</button>
-            {activePanel === 0 && <button className="bl-topbar-link bl-topbar-link-accent" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>{t("topbar.venues")}</button>}
+        <nav className={`bl-header${wiping ? " is-wiping wiping-" + wiping : ""}`} aria-label="Navegaci&oacute;n principal">
+          <div className="bl-header-duo" role="tablist">
+            <button
+              className={`bl-header-half bl-header-half-bass${activePanel === 0 ? " is-active" : ""}`}
+              onClick={() => swipeTo(0)}
+              role="tab"
+              aria-selected={activePanel === 0}
+              aria-current={activePanel === 0 ? "page" : undefined}
+            >
+              <span className="bl-header-world-name">Bass</span>
+              <span className="bl-tab-eq" aria-hidden="true">
+                <span className="bl-tab-eq-bar" />
+                <span className="bl-tab-eq-bar" />
+                <span className="bl-tab-eq-bar" />
+              </span>
+            </button>
+            <button
+              className={`bl-header-half bl-header-half-layer${activePanel === 1 ? " is-active" : ""}`}
+              onClick={() => swipeTo(1)}
+              role="tab"
+              aria-selected={activePanel === 1}
+              aria-current={activePanel === 1 ? "page" : undefined}
+            >
+              <span className="bl-header-world-name">Layer</span>
+              <span className="bl-tab-cursor" aria-hidden="true" />
+            </button>
+            <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           </div>
         </nav>
 
@@ -620,7 +643,6 @@ export default function App() {
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={setSelectedNews} onSelectFestival={setSelectedFestival} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
-              <button className="bl-terminal-link" onClick={() => setVenueView(venueUser ? "dashboard" : "auth")}>&gt; {t("topbar.forVenues")}</button>
             </footer>
           </div>
 
@@ -683,25 +705,34 @@ export default function App() {
         </div>
       )}
 
-      {/* LANG TOGGLE */}
-      <button
-        className="bl-lang-toggle"
-        onClick={() => setLocale(locale === "es" ? "en" : "es")}
-        aria-label={t("lang.toggle")}
-      >
-        <span className={`bl-lang-opt${locale === "es" ? " active" : ""}`}>ES</span>
-        <span className="bl-lang-sep" aria-hidden="true">/</span>
-        <span className={`bl-lang-opt${locale === "en" ? " active" : ""}`}>EN</span>
-      </button>
-
-      {/* MODE TOGGLE */}
-      <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? "Modo nocturno" : "Modo diurno"}>
-        {dayMode ? (
-          <svg viewBox="0 0 24 24"><path className="bl-mode-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-        ) : (
-          <svg viewBox="0 0 24 24"><circle className="bl-mode-icon" cx="12" cy="12" r="5" /><path className="bl-mode-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+      {/* UTILITY CLUSTER — home / about / lang / mode */}
+      <div className="bl-util-bar">
+        {view === "sections" && (
+          <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label="Volver al inicio">
+            <span className="bl-util-arrow" aria-hidden="true">&larr;</span>
+            <span>home</span>
+          </button>
         )}
-      </button>
+        <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label="Acerca de BassLayer">
+          about
+        </button>
+        <button
+          className="bl-lang-toggle"
+          onClick={() => setLocale(locale === "es" ? "en" : "es")}
+          aria-label={t("lang.toggle")}
+        >
+          <span className={`bl-lang-opt${locale === "es" ? " active" : ""}`}>ES</span>
+          <span className="bl-lang-sep" aria-hidden="true">/</span>
+          <span className={`bl-lang-opt${locale === "en" ? " active" : ""}`}>EN</span>
+        </button>
+        <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? "Modo nocturno" : "Modo diurno"}>
+          {dayMode ? (
+            <svg viewBox="0 0 24 24"><path className="bl-mode-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+          ) : (
+            <svg viewBox="0 0 24 24"><circle className="bl-mode-icon" cx="12" cy="12" r="5" /><path className="bl-mode-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+          )}
+        </button>
+      </div>
 
       {/* ABOUT MODAL */}
       {showAbout && (
