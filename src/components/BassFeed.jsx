@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { FilterBar } from "./FilterBar";
 import { SearchBar } from "./SearchBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
+import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -308,29 +309,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       <span className="bl-ev-time-inline">{ev.time} hs</span>
                     </div>
                   </div>
-                  <div className="bl-ev-thumb-wrap" aria-hidden="true">
-                    {ev.image ? (
-                      <img
-                        className="bl-ev-thumb"
-                        src={ev.image}
-                        alt=""
-                        loading="lazy"
-                        onError={(e) => {
-                          const wrap = e.currentTarget.parentElement;
-                          wrap.classList.add("bl-ev-thumb-empty");
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="bl-ev-thumb-empty-inner">
-                        <svg viewBox="0 0 32 32" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4">
-                          <rect x="4" y="6" width="24" height="20" rx="2" />
-                          <circle cx="11" cy="13" r="2" />
-                          <path d="M4 22l7-7 6 6 4-4 7 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
+                  <BlThumb image={ev.image} label={ev.genre} />
                   <div className="bl-ev-end">
                     <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
                   </div>
@@ -375,46 +354,42 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   return (
     <div className="bl-bass-news-list" role="feed" aria-label="Noticias de música electrónica" ref={listRef}>
       {news.map((item, idx) => (
-        <article
-          className="bl-bass-news-item bl-reveal"
+        <BassNewsItem
           key={`${item.source_slug || item.source}-${item.url || idx}`}
-          onClick={() => onSelect?.(item)}
-          onKeyDown={(e) => e.key === "Enter" && onSelect?.(item)}
-          tabIndex={0}
-          role="button"
-          aria-label={`${item.title} — ${item.source}`}
-          style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
-        >
-          {item.image ? (
-            <img className="bl-bass-news-thumb" src={item.image} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-          ) : (
-            <div className="bl-bass-news-thumb bl-bass-news-thumb-empty" aria-hidden="true">
-              <svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.4">
-                <rect x="4" y="6" width="24" height="20" rx="2" />
-                <path d="M4 22l7-7 6 6 4-4 7 7" />
-              </svg>
-            </div>
-          )}
-          <div className="bl-bass-news-body">
-            <div className="bl-bass-news-meta">
-              <span className="bl-bass-news-source">{item.source}</span>
-              {item.region && <span className={`bl-bass-news-region bl-bass-news-region-${item.region.toLowerCase()}`}>{item.region}</span>}
-              {item.tag && <span className="bl-bass-news-tag">{item.tag}</span>}
-              {item.time && <span className="bl-bass-news-time">{item.time}</span>}
-            </div>
-            <h3 className="bl-bass-news-title">{item.title}</h3>
-            {item.description && item.description !== item.title && (
-              <p className="bl-bass-news-desc">{item.description}</p>
-            )}
-          </div>
-        </article>
+          item={item}
+          idx={idx}
+          onSelect={onSelect}
+        />
       ))}
       <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
     </div>
   );
 }
 
+function BassNewsItem({ item, idx, onSelect }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showPill = !!(item.tag && item.image && !imgFailed);
+  return (
+    <article
+      className="bl-bass-news-item bl-reveal"
+      onClick={() => onSelect?.(item)}
+      onKeyDown={(e) => e.key === "Enter" && onSelect?.(item)}
+      tabIndex={0}
+      role="button"
+      aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
+      style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
+    >
+      <BlThumb image={item.image} label={item.tag} onImgFail={() => setImgFailed(true)} />
+      <div className="bl-bass-news-body">
+        <h3 className="bl-bass-news-title">{item.title}</h3>
+        {showPill && <span className="bl-bass-news-tag-pill">{item.tag}</span>}
+      </div>
+    </article>
+  );
+}
+
 const FESTIVAL_REGIONS = ["All", "BA", "Sudamérica", "Europa", "Norteamérica", "Asia"];
+const FESTIVAL_REGION_SHORT = { "BA":"BA", "Sudamérica":"SUDAM", "Europa":"EUR", "Norteamérica":"NORTE", "Asia":"ASIA" };
 const FESTIVAL_MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 function festivalDay(start) {
@@ -477,67 +452,51 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
        : (
          <div className="bl-ev-list" role="feed" aria-label="Festivales de música electrónica" ref={listRef}>
            {festivals.map((f, idx) => (
-             <article
-               key={f.id}
-               className={`bl-ev-item bl-reveal${f.status === "live" ? " bl-ev-item-featured" : ""}`}
-               onClick={() => onSelect?.(f)}
-               onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
-               tabIndex={0}
-               role="button"
-               aria-label={`${f.name} — ${f.city}, ${f.country}`}
-               style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
-             >
-               <div className="bl-ev-date">
-                 <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
-                 <div className="bl-ev-date-m">{festivalMonth(f.dates_start)}</div>
-               </div>
-               <div className="bl-ev-sep" aria-hidden="true" />
-               <div className="bl-ev-body">
-                 <div className="bl-ev-name">
-                   {f.name}
-                   {f.linkStatus === "broken" && (
-                     <span className="bl-festival-broken-dot" title="Sitio temporalmente caído" aria-label="Sitio caído">●</span>
-                   )}
-                 </div>
-                 <div className="bl-ev-artists">{f.city}, {f.country}</div>
-                 <div className="bl-ev-meta-row">
-                   <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end)}</span>
-                   {f.status === "live" && <>
-                     <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
-                     <span className="bl-festival-live-dot">EN CURSO</span>
-                   </>}
-                 </div>
-               </div>
-               <div className="bl-ev-thumb-wrap" aria-hidden="true">
-                 {f.image ? (
-                   <img
-                     className="bl-ev-thumb"
-                     src={f.image}
-                     alt=""
-                     loading="lazy"
-                     onError={(e) => {
-                       const wrap = e.currentTarget.parentElement;
-                       wrap.classList.add("bl-ev-thumb-empty");
-                       e.currentTarget.style.display = "none";
-                     }}
-                   />
-                 ) : (
-                   <div className="bl-ev-thumb-empty-inner">
-                     <svg viewBox="0 0 32 32" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.4">
-                       <path d="M4 28V10l12-6 12 6v18" />
-                       <path d="M10 28V14l6-3 6 3v14" />
-                     </svg>
-                   </div>
-                 )}
-               </div>
-               <div className="bl-ev-end">
-                 <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>
-               </div>
-             </article>
+             <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
            ))}
            <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
          </div>
        )}
     </>
+  );
+}
+
+function FestivalItem({ f, idx, onSelect }) {
+  return (
+    <article
+      className={`bl-ev-item bl-reveal${f.status === "live" ? " bl-ev-item-featured" : ""}`}
+      onClick={() => onSelect?.(f)}
+      onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
+      tabIndex={0}
+      role="button"
+      aria-label={`${f.name} — ${f.city}, ${f.country}`}
+      style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
+    >
+      <div className="bl-ev-date">
+        <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
+        <div className="bl-ev-date-m">{festivalMonth(f.dates_start)}</div>
+      </div>
+      <div className="bl-ev-sep" aria-hidden="true" />
+      <div className="bl-ev-body">
+        <div className="bl-ev-name">
+          {f.name}
+          {f.linkStatus === "broken" && (
+            <span className="bl-festival-broken-dot" title="Sitio temporalmente caído" aria-label="Sitio caído">●</span>
+          )}
+        </div>
+        <div className="bl-ev-artists">{f.city}, {f.country}</div>
+        <div className="bl-ev-meta-row">
+          <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end)}</span>
+          {f.status === "live" && <>
+            <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
+            <span className="bl-festival-live-dot">EN CURSO</span>
+          </>}
+        </div>
+      </div>
+      <BlThumb image={f.image} label={FESTIVAL_REGION_SHORT[f.region]} />
+      <div className="bl-ev-end">
+        <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>
+      </div>
+    </article>
   );
 }
