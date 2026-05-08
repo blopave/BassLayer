@@ -1075,22 +1075,99 @@ function markFeatured(ev) {
 // ── Merge & dedup ──
 
 function deduplicateEvents(events) {
-  const seen = new Map();
-  // Normalize venue: lowercased, take the part before "@" or "," so
-  // "Under Club @ Blow, Palermo" (BA) and "Under Club" (RA) match.
-  const normVenue = (v) => (v || "").toLowerCase().split(/[@,]/)[0].trim();
+  // Pass 1: dedup by normalized venue. Catches accent diffs ("Moscú" vs
+  // "Moscu"), TBA- prefix when RA hasn't confirmed the venue, and trailing
+  // city/zone suffixes (", Costanera"). Falls short on aliases between
+  // sources (e.g. BA "Amerika" vs RA "TBA - AMK Club") — pass 2 covers that.
+  const STOP_WORDS = new Set(["club","the","el","la","los","las","bar","centro","casa"]);
+  const normVenue = (v) => {
+    if (!v) return "";
+    const cleaned = v
+      .toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/^(tba|tbd|tbc)\s*[-:|–—]\s*/i, "")
+      .replace(/[@,]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const words = cleaned.split(" ").filter(Boolean);
+    if (words.length <= 1) return words[0] || "";
+    return STOP_WORDS.has(words[0]) ? `${words[0]} ${words[1]}` : words[0];
+  };
+  const mergeFields = (target, src) => {
+    if (!target.image && src.image) target.image = src.image;
+    if (!target.url && src.url) target.url = src.url;
+    // Keep the longer artist list — more info wins, and the venue source
+    // (BA) typically has the full local lineup vs RA's shorter abstract.
+    if ((src.artists?.length || 0) > (target.artists?.length || 0)) {
+      target.artists = src.artists;
+    }
+  };
+
+  const byVenue = new Map();
   for (const ev of events) {
     const key = `${ev.day}-${ev.month}-${normVenue(ev.venue)}`;
-    const existing = seen.get(key);
-    if (!existing) {
-      seen.set(key, ev);
-    } else {
-      // Same event from a different source — adopt fields the first source lacks.
-      if (!existing.image && ev.image) existing.image = ev.image;
-      if (!existing.url && ev.url) existing.url = ev.url;
+    const existing = byVenue.get(key);
+    if (!existing) byVenue.set(key, ev);
+    else mergeFields(existing, ev);
+  }
+
+  // Pass 2: dedup by line-up overlap on same date. Catches venue aliases
+  // that pass 1 misses (e.g. "Amerika" vs "AMK Club"). Two events on the
+  // same day sharing ≥1 non-trivial artist are treated as the same event.
+  // Risk: a DJ playing two real gigs the same night collapses into one —
+  // rare in BA, accepted trade for the much more common alias case.
+  const TRIVIAL_ARTISTS = new Set(["tba","b2b","más a confirmar","mas a confirmar",""]);
+  const normArtist = (a) => (a || "").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .trim();
+  const artistSet = (ev) => new Set(
+    (ev.artists || []).map(normArtist).filter(a => a && !TRIVIAL_ARTISTS.has(a))
+  );
+  // Score: prefer entries with a clean venue/name (BA-style local naming)
+  // over RA's noisy placeholders ("TBA - X Club, Zone", "X & MORE ARTISTS").
+  // Image and url are still rewarded but only as tie-breakers — they're
+  // merged into the keeper anyway via mergeFields, so it's better to pick
+  // the human-friendly entry as the visible one.
+  const score = (ev) => {
+    let s = 0;
+    if (ev.image) s += 0.5;
+    if (ev.url) s += 0.3;
+    s += (ev.artists?.length || 0) / 100;
+    if (/^(tba|tbd|tbc)\s*[-:|–—]/i.test(ev.venue || "")) s -= 3;
+    if (/\bMORE ARTISTS\b/.test(ev.name || "")) s -= 2;
+    return s;
+  };
+
+  const list = [...byVenue.values()];
+  const byDay = new Map();
+  for (const ev of list) {
+    const dKey = `${ev.day}-${ev.month}`;
+    if (!byDay.has(dKey)) byDay.set(dKey, []);
+    byDay.get(dKey).push(ev);
+  }
+  const dropped = new Set();
+  for (const evs of byDay.values()) {
+    if (evs.length < 2) continue;
+    for (let i = 0; i < evs.length; i++) {
+      if (dropped.has(evs[i])) continue;
+      const aSet = artistSet(evs[i]);
+      if (aSet.size === 0) continue;
+      for (let j = i + 1; j < evs.length; j++) {
+        if (dropped.has(evs[j])) continue;
+        const bSet = artistSet(evs[j]);
+        let overlap = false;
+        for (const a of aSet) { if (bSet.has(a)) { overlap = true; break; } }
+        if (!overlap) continue;
+        // Merge into the higher-scored entry, drop the other.
+        const [keep, drop] = score(evs[i]) >= score(evs[j])
+          ? [evs[i], evs[j]] : [evs[j], evs[i]];
+        mergeFields(keep, drop);
+        dropped.add(drop);
+        if (drop === evs[i]) break; // i was dropped, advance outer loop
+      }
     }
   }
-  return [...seen.values()];
+  return list.filter(ev => !dropped.has(ev));
 }
 
 // ─────────────────────────────────────────────

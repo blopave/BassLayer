@@ -292,7 +292,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 >
                   <div className="bl-ev-date">
                     <div className="bl-ev-date-d">{ev.day}</div>
-                    <div className="bl-ev-date-m">{ev.month}</div>
+                    <div className="bl-ev-date-m">{ev.time || ev.month}</div>
                   </div>
                   <div className="bl-ev-sep" aria-hidden="true" />
                   <div className="bl-ev-body">
@@ -302,8 +302,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       <span className="bl-ev-venue-inline">{ev.venue}</span>
                       {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
                       {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
-                      <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
-                      <span className="bl-ev-time-inline">{ev.time} hs</span>
                     </div>
                   </div>
                   <BlThumb image={ev.image} />
