@@ -275,6 +275,78 @@ const xmlParser = new XMLParser({
   htmlEntities: true,           // Still decode standard HTML entities (amp, lt, etc.)
 });
 
+// Lista de nombres que algunos feeds RSS anteponen/posponen al título
+// (incluye variantes que no son exactamente `source` de RSS_FEEDS).
+const NEWS_TITLE_BRANDS = [
+  "CoinDesk", "Cointelegraph", "Decrypt", "The Defiant", "The Block",
+  "Blockworks", "Bitcoin Magazine", "Bitcoin Mag", "Unchained",
+  "CryptoSlate", "Crypto Briefing", "CryptoBriefing", "U.Today", "UToday",
+  "Daily Hodl", "DailyHodl", "CT Español", "Cointelegraph Español",
+  "CriptoNoticias", "Cripto Noticias", "DiarioBitcoin", "Diario Bitcoin",
+  "CriptoTendencia", "Cripto Tendencia",
+];
+const NEWS_TITLE_BRAND_RE = NEWS_TITLE_BRANDS
+  .map((b) => b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  .join("|");
+const NEWS_TITLE_PREFIX = new RegExp(`^(?:${NEWS_TITLE_BRAND_RE})\\s*[:\\-–—|]\\s*`, "i");
+const NEWS_TITLE_SUFFIX = new RegExp(`\\s*[\\-–—|]\\s*(?:${NEWS_TITLE_BRAND_RE})\\s*$`, "i");
+
+// Tabla extendida de entidades HTML named que aparecen seguido en títulos RSS
+// (htmlToText solo cubre un subconjunto; acá agregamos puntuación tipográfica
+// y símbolos comunes para no dejar &mdash;, &hellip;, &rsquo; en pantalla).
+const NAMED_ENTITIES = {
+  mdash: "—", ndash: "–", hellip: "…", bull: "•", middot: "·",
+  lsquo: "‘", rsquo: "’", sbquo: "‚",
+  ldquo: "“", rdquo: "”", bdquo: "„",
+  laquo: "«", raquo: "»", prime: "′", Prime: "″",
+  copy: "©", reg: "®", trade: "™",
+  euro: "€", pound: "£", cent: "¢", yen: "¥",
+  deg: "°", plusmn: "±", times: "×", divide: "÷",
+  hearts: "♥", diams: "♦", clubs: "♣", spades: "♠",
+  larr: "←", rarr: "→", uarr: "↑", darr: "↓", harr: "↔",
+};
+function decodeHtmlEntities(s) {
+  return String(s)
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => {
+      const n = parseInt(h, 16);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : _;
+    })
+    .replace(/&#(\d+);/g, (_, n) => {
+      const c = parseInt(n, 10);
+      return Number.isFinite(c) ? String.fromCodePoint(c) : _;
+    })
+    .replace(/&([a-zA-Z]+);/g, (m, name) => {
+      const lower = name.toLowerCase();
+      if (lower === "amp")  return "&";
+      if (lower === "lt")   return "<";
+      if (lower === "gt")   return ">";
+      if (lower === "quot") return "\"";
+      if (lower === "apos") return "'";
+      if (lower === "nbsp") return " ";
+      if (NAMED_ENTITIES[name]) return NAMED_ENTITIES[name];
+      if (NAMED_ENTITIES[lower]) return NAMED_ENTITIES[lower];
+      return m;
+    });
+}
+
+// Limpia un título RSS: decodifica entidades, stripea tags, quita prefijo/sufijo
+// de fuente, colapsa whitespace y trunca. El orden importa: decodificar PRIMERO
+// para que `&lt;b&gt;` se convierta en `<b>` y la pasada de strip lo elimine.
+function cleanNewsTitle(raw) {
+  if (!raw) return "";
+  let t = decodeHtmlEntities(String(raw));
+  t = t.replace(/<style[\s\S]*?<\/style>/gi, "");
+  t = t.replace(/<script[\s\S]*?<\/script>/gi, "");
+  t = t.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+  t = t.replace(/<[^>]+>/g, " ");
+  // Algunos feeds agregan paréntesis tipo "(coindesk.com)" o "(Bitcoinist)"
+  t = t.replace(/\s*\((?:[a-z0-9.-]+\.[a-z]{2,})\)\s*$/i, "");
+  t = t.replace(NEWS_TITLE_PREFIX, "");
+  t = t.replace(NEWS_TITLE_SUFFIX, "");
+  t = t.replace(/\s{2,}/g, " ").trim();
+  return t.slice(0, 140);
+}
+
 function detectTag(title) {
   const t = title.toLowerCase();
   if (t.includes("bitcoin") || /\bbtc\b/.test(t))  return "BTC";
@@ -332,7 +404,8 @@ async function fetchRSSFeed(feed) {
     let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
     if (!Array.isArray(items)) items = [items];
     return items.slice(0, 10).map((item) => {
-      const title = item.title?.["#text"] || item.title || "";
+      const rawTitle = item.title?.["#text"] || item.title || "";
+      const title = cleanNewsTitle(rawTitle);
       const rawLink = item.link?.["@_href"] || item.link || "";
       const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
       const url = sanitizeUrl(link);
@@ -361,8 +434,8 @@ async function fetchRSSFeed(feed) {
       return {
         time: rel,
         _mins: timeToMins(rel),
-        tag: detectTag(String(title)),
-        title: String(title).slice(0, 120),
+        tag: detectTag(title),
+        title,
         description,
         image: image ? sanitizeUrl(image) : null,
         source: feed.source,
@@ -1000,12 +1073,14 @@ function formatRAEvent(ev) {
 
 async function fetchRAGraphQL(areaId) {
   const today = new Date().toISOString().split("T")[0];
-  const nextMonth = new Date(Date.now() + 30*86400000).toISOString().split("T")[0];
+  // Ventana 60 días: diagnóstico mostró que RA tiene ~58 eventos en 60d para
+  // CABA, contra ~30 en 30d. pageSize 100 cubre el total con margen sin paginar.
+  const windowEnd = new Date(Date.now() + 60*86400000).toISOString().split("T")[0];
   try {
     const r = await fetchSafe(RA_GRAPHQL, {
       method: "POST",
       headers: { ...BROWSER_HEADERS, "Content-Type":"application/json", Referer:"https://ra.co/events/ar/buenosaires", Origin:"https://ra.co", Accept:"application/json" },
-      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[areaId]}, listingDate:{gte:today,lte:nextMonth} }, pageSize:30 } }),
+      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[areaId]}, listingDate:{gte:today,lte:windowEnd} }, pageSize:100 } }),
     }, 12000);
     if (!r.ok) return [];
     const json = JSON.parse(await safeText(r));
