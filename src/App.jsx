@@ -609,11 +609,13 @@ export default function App() {
               aria-selected={activePanel === 0}
               aria-current={activePanel === 0 ? "page" : undefined}
             >
-              <span className="bl-header-world-name">Bass</span>
-              <span className="bl-tab-eq" aria-hidden="true">
-                <span className="bl-tab-eq-bar" />
-                <span className="bl-tab-eq-bar" />
-                <span className="bl-tab-eq-bar" />
+              <span className="bl-header-cluster">
+                <span className="bl-header-world-name">Bass</span>
+                <span className="bl-tab-eq" aria-hidden="true">
+                  <span className="bl-tab-eq-bar" />
+                  <span className="bl-tab-eq-bar" />
+                  <span className="bl-tab-eq-bar" />
+                </span>
               </span>
             </button>
             <button
@@ -623,8 +625,10 @@ export default function App() {
               aria-selected={activePanel === 1}
               aria-current={activePanel === 1 ? "page" : undefined}
             >
-              <span className="bl-header-world-name">Layer</span>
-              <span className="bl-tab-cursor" aria-hidden="true" />
+              <span className="bl-header-cluster">
+                <span className="bl-header-world-name">Layer</span>
+                <span className="bl-tab-cursor" aria-hidden="true" />
+              </span>
             </button>
             <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
           </div>

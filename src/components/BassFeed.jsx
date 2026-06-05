@@ -42,14 +42,6 @@ function useCountdown(targetDate) {
   return text;
 }
 
-function formatArtists(artists) {
-  if (!artists || artists.length === 0) return null;
-  const clean = artists.filter(a => a && a !== "TBA" && !a.match(/^(b2b|más a confirmar)/i));
-  if (clean.length === 0) return null;
-  if (clean.length <= 3) return clean.join(", ");
-  return clean.slice(0, 3).join(", ") + ` +${clean.length - 3}`;
-}
-
 function EventCountdown({ event }) {
   const eventDate = getEventDate(event);
   const countdown = useCountdown(eventDate);
@@ -171,11 +163,16 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     );
   }
 
-  // Group events by day
+  // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
     const groups = [];
     let currentLabel = null;
+    let currentMonth = null;
     for (const ev of filtered) {
+      if (currentMonth !== null && ev.month !== currentMonth) {
+        groups.push({ type: "month", label: ev.month });
+      }
+      currentMonth = ev.month;
       const label = getDayLabel(getEventDate(ev));
       if (label !== currentLabel) {
         groups.push({ type: "header", label });
@@ -185,6 +182,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     }
     return groups;
   }, [filtered]);
+
+  const MONTH_FULL = { Ene:"Enero", Feb:"Febrero", Mar:"Marzo", Abr:"Abril", May:"Mayo", Jun:"Junio", Jul:"Julio", Ago:"Agosto", Sep:"Septiembre", Oct:"Octubre", Nov:"Noviembre", Dic:"Diciembre" };
 
   // Pass `section` as dep so the observer re-attaches when toggling back from
   // noticias → eventos (the events list unmounts and remounts in that flow).
@@ -268,6 +267,15 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
         : <div className="bl-ev-list" role="feed" aria-label="Eventos de m&uacute;sica electr&oacute;nica" ref={listRef}>
             {grouped.map((item, gIdx) => {
+              if (item.type === "month") {
+                return (
+                  <div className="bl-month-divider" key={`m-${item.label}-${gIdx}`} aria-hidden="true">
+                    <span className="bl-month-line" />
+                    <span className="bl-month-label">{MONTH_FULL[item.label] || item.label}</span>
+                    <span className="bl-month-line" />
+                  </div>
+                );
+              }
               if (item.type === "header") {
                 return (
                   <div className="bl-day-header bl-reveal" key={`h-${item.label}`} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
@@ -278,11 +286,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               }
               const ev = item.data;
               const idx = itemIdx++;
-              const artistStr = formatArtists(ev.artists);
               return (
                 <article
                   className="bl-ev-item bl-reveal"
                   key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
+                  data-genre={ev.genre}
+                  data-featured={ev.featured ? "true" : undefined}
                   onClick={() => onSelect(ev)}
                   onKeyDown={(e) => e.key === "Enter" && onSelect(ev)}
                   style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
@@ -297,7 +306,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   <div className="bl-ev-sep" aria-hidden="true" />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
-                    {artistStr && <div className="bl-ev-artists">{artistStr}</div>}
                     <div className="bl-ev-meta-row">
                       <span className="bl-ev-venue-inline">{ev.venue}</span>
                       {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
