@@ -191,6 +191,31 @@ const BROWSER_HEADERS = {
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTH_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 
+// ─── Slug helpers (SEO URLs) ─────────────────
+// Determinista: el mismo evento siempre produce el mismo slug en server y cliente.
+function slugify(s) {
+  return String(s || "")
+    .normalize("NFD").replace(/\p{Mn}/gu, "")
+    .toLowerCase()
+    .replace(/&/g, " y ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+function eventSlug(ev) {
+  if (!ev || !ev.name) return "";
+  const namePart = slugify(ev.name);
+  const datePart = slugify(`${ev.day || ""}-${ev.month || ""}`);
+  return [namePart, datePart].filter(Boolean).join("-");
+}
+function findEventBySlug(slug) {
+  const events = cached("events") || [];
+  for (const ev of events) {
+    if (eventSlug(ev) === slug) return ev;
+  }
+  return null;
+}
+
 // ─── City detection ──────────────────────────
 const CITY_PATTERNS = [
   { city: "CABA",     rx: /\b(palermo|recoleta|san telmo|microcentro|belgrano|almagro|caballito|flores|villa crespo|villa urquiza|nuñez|colegiales|barracas|la boca|congreso|abasto|chacarita|constitución|monserrat|retiro|tribunales|costanera|puerto madero)\b/i },
@@ -2603,6 +2628,63 @@ app.put("/api/admin/announcements/:id/pin", requireAuth, requireAdmin, async (re
   res.json(data);
 });
 
+// SEO: sitemap dinámico — home + un URL por evento en el caché
+app.get("/sitemap.xml", (req, res) => {
+  const today = new Date().toISOString().split("T")[0];
+  const xmlEsc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+  const urls = [
+    {
+      loc: `${PROD_ORIGIN}/`,
+      lastmod: today,
+      changefreq: "daily",
+      priority: "1.0",
+      alternates: [
+        { hreflang: "es-AR", href: `${PROD_ORIGIN}/` },
+        { hreflang: "es", href: `${PROD_ORIGIN}/` },
+        { hreflang: "en", href: `${PROD_ORIGIN}/?lang=en` },
+        { hreflang: "x-default", href: `${PROD_ORIGIN}/` },
+      ],
+    },
+  ];
+
+  // Eventos
+  const events = cached("events") || [];
+  const seen = new Set();
+  for (const ev of events) {
+    const slug = eventSlug(ev);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    urls.push({
+      loc: `${PROD_ORIGIN}/eventos/${slug}`,
+      lastmod: today,
+      changefreq: "weekly",
+      priority: "0.8",
+    });
+  }
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+  ];
+  for (const u of urls) {
+    xml.push("  <url>");
+    xml.push(`    <loc>${xmlEsc(u.loc)}</loc>`);
+    xml.push(`    <lastmod>${u.lastmod}</lastmod>`);
+    xml.push(`    <changefreq>${u.changefreq}</changefreq>`);
+    xml.push(`    <priority>${u.priority}</priority>`);
+    for (const alt of u.alternates || []) {
+      xml.push(`    <xhtml:link rel="alternate" hreflang="${alt.hreflang}" href="${xmlEsc(alt.href)}"/>`);
+    }
+    xml.push("  </url>");
+  }
+  xml.push("</urlset>");
+
+  res.set("Content-Type", "application/xml; charset=utf-8");
+  res.set("Cache-Control", "public, max-age=3600");
+  res.send(xml.join("\n"));
+});
+
 // API 404 — return JSON instead of falling through to SPA
 app.all("/api/*", (req, res) => res.status(404).json({ error: "Endpoint not found" }));
 
@@ -2614,7 +2696,9 @@ if (IS_PROD) {
   }
   const indexHtml = readFileSync(distIndex, "utf-8");
 
-  // SEO: inject prerendered content for crawlers
+  // SEO: prerendered content visible y semántico dentro de #root.
+  // React reemplaza el contenido al hidratar (createRoot.render() clears container),
+  // así que es progressive enhancement honesto, no cloaking.
   function escHtml(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -2624,59 +2708,308 @@ if (IS_PROD) {
 
     if (events.length === 0 && news.length === 0) return "";
 
-    const lines = ['<div id="seo-content" style="position:absolute;left:-9999px;overflow:hidden">'];
-    lines.push("<h1>BassLayer — Eventos de musica electronica y Crypto en Buenos Aires</h1>");
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:1100px;margin:0 auto;padding:2.5rem 1.25rem";
+    const h1Style = "font-size:1.85rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 0.75rem;color:#fff";
+    const introStyle = "color:#a0a0a0;margin:0 0 2.5rem;max-width:62ch;line-height:1.55;font-size:1rem";
+    const h2Style = "font-size:1.15rem;font-weight:500;color:#fff;margin:0 0 1rem;padding-bottom:0.5rem;border-bottom:1px solid #222;letter-spacing:-0.01em";
+    const ulStyle = "list-style:none;padding:0;margin:0";
+    const liStyle = "padding:0.65rem 0;border-bottom:1px solid #141414;line-height:1.4;font-size:0.95rem";
+    const linkStyle = "color:#7ec8ff;text-decoration:none";
+    const metaStyle = "color:#888;font-size:0.88em";
+    const sectionStyle = "margin-bottom:2.5rem";
+
+    const lines = [`<main style="${wrapStyle}" aria-label="BassLayer">`, `<div style="${innerStyle}">`];
+
+    lines.push(`<h1 style="${h1Style}">Eventos de música electrónica en Buenos Aires + Crypto LATAM</h1>`);
+    lines.push(`<p style="${introStyle}">Agenda completa de fiestas, festivales y boliches de música electrónica en Buenos Aires — techno, house, drum &amp; bass, DJs locales e internacionales. Precios en vivo de Bitcoin, Ethereum y noticias crypto en español. Actualizado cada hora.</p>`);
+
+    // Navegación semántica
+    lines.push('<nav aria-label="Secciones" style="margin-bottom:2.5rem;display:flex;gap:1rem;flex-wrap:wrap">');
+    lines.push(`<a href="/" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Eventos</a>`);
+    lines.push(`<a href="/?view=layer" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Crypto</a>`);
+    lines.push(`<a href="/?lang=en" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">English</a>`);
+    lines.push("</nav>");
 
     if (events.length > 0) {
-      lines.push("<h2>Proximos eventos de musica electronica</h2><ul>");
-      for (const ev of events.slice(0, 15)) {
-        const artists = (ev.artists || []).slice(0, 3).map(a => escHtml(a)).join(", ");
-        lines.push(`<li>${escHtml(ev.name)} — ${escHtml(ev.day)} ${escHtml(ev.month)} en ${escHtml(ev.venue)}. ${escHtml(ev.genre)}. ${artists}</li>`);
+      lines.push(`<section style="${sectionStyle}" aria-labelledby="seo-events">`);
+      lines.push(`<h2 id="seo-events" style="${h2Style}">Próximos eventos electrónicos en Buenos Aires</h2>`);
+      lines.push(`<ul style="${ulStyle}">`);
+      for (const ev of events.slice(0, 25)) {
+        const artists = (ev.artists || []).slice(0, 3).map(escHtml).join(", ");
+        const nameMarkup = ev.url
+          ? `<a href="${escHtml(ev.url)}" rel="noopener" style="${linkStyle};font-weight:500">${escHtml(ev.name)}</a>`
+          : `<strong style="color:#fff">${escHtml(ev.name)}</strong>`;
+        const venue = ev.venue ? ` · <span>${escHtml(ev.venue)}</span>` : "";
+        const genre = ev.genre ? ` · <em style="color:#7ec8ff;font-style:normal">${escHtml(ev.genre)}</em>` : "";
+        const performers = artists ? ` · <span style="${metaStyle}">${artists}</span>` : "";
+        lines.push(`<li style="${liStyle}">${nameMarkup} <span style="${metaStyle}">${escHtml(ev.day)} ${escHtml(ev.month)}</span>${venue}${genre}${performers}</li>`);
       }
-      lines.push("</ul>");
+      lines.push("</ul></section>");
     }
 
     if (news.length > 0) {
-      lines.push("<h2>Ultimas noticias crypto</h2><ul>");
-      for (const n of news.slice(0, 10)) {
-        lines.push(`<li>${escHtml(n.title)} (${escHtml(n.source)})</li>`);
+      lines.push(`<section style="${sectionStyle}" aria-labelledby="seo-news">`);
+      lines.push(`<h2 id="seo-news" style="${h2Style}">Últimas noticias crypto y música electrónica</h2>`);
+      lines.push(`<ul style="${ulStyle}">`);
+      for (const n of news.slice(0, 15)) {
+        const titleMarkup = n.url
+          ? `<a href="${escHtml(n.url)}" rel="noopener nofollow" style="color:#e5e5e5;text-decoration:none">${escHtml(n.title)}</a>`
+          : `<span>${escHtml(n.title)}</span>`;
+        const source = n.source ? ` <span style="${metaStyle}">(${escHtml(n.source)})</span>` : "";
+        lines.push(`<li style="${liStyle}">${titleMarkup}${source}</li>`);
       }
-      lines.push("</ul>");
+      lines.push("</ul></section>");
     }
 
-    // JSON-LD for individual events
-    const eventSchemas = events.slice(0, 10).map(ev => {
+    lines.push('<p style="color:#666;font-size:0.85rem;margin-top:3rem">Cargando experiencia interactiva…</p>');
+    lines.push("</div></main>");
+
+    // JSON-LD: ItemList con MusicEvent por evento (rich results en Google Events)
+    const eventSchemas = events.slice(0, 25).map(ev => {
       const m = MONTH_MAP[ev.month?.toLowerCase()] ?? 0;
       const year = new Date().getFullYear();
       const date = new Date(year, m, parseInt(ev.day));
       if (date < new Date() - 30 * 86400000) date.setFullYear(year + 1);
-      return {
+      const schema = {
         "@type": "MusicEvent",
         "name": ev.name,
         "startDate": date.toISOString().split("T")[0],
+        "eventStatus": "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
         "location": {
           "@type": "Place",
-          "name": ev.venue,
-          "address": { "@type": "PostalAddress", "addressLocality": ev.city || "Buenos Aires", "addressCountry": "AR" }
+          "name": ev.venue || "Buenos Aires",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": ev.city || "Buenos Aires",
+            "addressRegion": "CABA",
+            "addressCountry": "AR"
+          }
         },
-        "performer": (ev.artists || []).slice(0, 5).map(a => ({ "@type": "Person", "name": a })),
-        ...(ev.url ? { "url": ev.url } : {}),
+        "performer": (ev.artists || []).slice(0, 5).map(a => ({ "@type": "PerformingGroup", "name": a })),
+        "organizer": { "@type": "Organization", "name": ev.venue || "BassLayer" }
       };
+      if (ev.image) schema.image = [ev.image];
+      if (ev.url) {
+        schema.url = ev.url;
+        schema.offers = {
+          "@type": "Offer",
+          "url": ev.url,
+          "availability": "https://schema.org/InStock",
+          "category": "primary"
+        };
+      }
+      return schema;
     });
 
     if (eventSchemas.length > 0) {
-      const jsonLd = JSON.stringify({"@context":"https://schema.org","@graph":eventSchemas}).replace(/<\//g, "<\\/");
+      const itemList = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Próximos eventos electrónicos en Buenos Aires",
+        "numberOfItems": eventSchemas.length,
+        "itemListElement": eventSchemas.map((schema, i) => ({
+          "@type": "ListItem",
+          "position": i + 1,
+          "item": schema
+        }))
+      };
+      const jsonLd = JSON.stringify(itemList).replace(/<\//g, "<\\/");
       lines.push(`<script type="application/ld+json">${jsonLd}</script>`);
     }
 
-    lines.push("</div>");
+    // BreadcrumbList — mejora apariencia en SERP
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
     return lines.join("");
   }
 
+  // Reemplazo selectivo de meta tags en el template del index.
+  // Cuando una ruta tiene contenido propio (evento, noticia, etc), sobreescribimos
+  // title/description/canonical/OG para que Google indexe la pieza correcta.
+  function renderHtmlWithMeta(meta) {
+    let html = indexHtml;
+    if (meta.title) {
+      const t = escHtml(meta.title);
+      html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${t}</title>`);
+      html = html.replace(/<meta property="og:title"\s+content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${t}" />`);
+      html = html.replace(/<meta name="twitter:title"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${t}" />`);
+    }
+    if (meta.description) {
+      const d = escHtml(meta.description);
+      html = html.replace(/<meta name="description"\s+content="[^"]*"\s*\/?>/, `<meta name="description" content="${d}" />`);
+      html = html.replace(/<meta property="og:description"\s+content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${d}" />`);
+      html = html.replace(/<meta name="twitter:description"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${d}" />`);
+    }
+    if (meta.canonical) {
+      const c = escHtml(meta.canonical);
+      html = html.replace(/<link rel="canonical"\s+href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${c}" />`);
+      html = html.replace(/<meta property="og:url"\s+content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${c}" />`);
+    }
+    if (meta.image) {
+      const img = escHtml(meta.image);
+      html = html.replace(/<meta property="og:image"\s+content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${img}" />`);
+      html = html.replace(/<meta name="twitter:image"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${img}" />`);
+    }
+    if (meta.body) {
+      html = html.replace('<div id="root"></div>', `<div id="root">${meta.body}</div>`);
+    }
+    if (meta.extraHead) {
+      html = html.replace("</head>", `${meta.extraHead}\n</head>`);
+    }
+    return html;
+  }
+
+  // Construye el body SEO de una ficha de evento (lo que el crawler indexa,
+  // y lo que el usuario ve durante el flash pre-hidratación).
+  function buildEventPageBody(ev) {
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:780px;margin:0 auto;padding:2rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:1.9rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 1rem;color:#fff";
+    const metaRow = "color:#a0a0a0;margin:0 0 1.5rem;font-size:0.95rem;line-height:1.6";
+    const dlStyle = "display:grid;grid-template-columns:140px 1fr;gap:0.75rem 1rem;margin:1.5rem 0;font-size:0.95rem";
+    const dtStyle = "color:#888";
+    const ddStyle = "color:#e5e5e5;margin:0";
+    const ctaStyle = "display:inline-block;margin-top:1.5rem;padding:0.75rem 1.5rem;background:#7ec8ff;color:#000;text-decoration:none;border-radius:6px;font-weight:600";
+
+    const artists = (ev.artists || []).filter(a => a && a !== "TBA").slice(0, 8);
+    const artistsLine = artists.map(escHtml).join(", ");
+
+    const desc = [
+      `${ev.name} se realiza el ${ev.day} de ${ev.month} en ${ev.venue || "Buenos Aires"}.`,
+      ev.genre ? `Género: ${ev.genre}.` : "",
+      artistsLine ? `Lineup: ${artistsLine}.` : "",
+      "Más información, próximos eventos y agenda completa de música electrónica en Buenos Aires en BassLayer.",
+    ].filter(Boolean).join(" ");
+
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(ev.name)}">`, `<div style="${innerStyle}">`];
+
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Eventos</a> <span>›</span> <span>${escHtml(ev.name)}</span></nav>`);
+
+    lines.push(`<article>`);
+    lines.push(`<h1 style="${h1Style}">${escHtml(ev.name)}</h1>`);
+    lines.push(`<p style="${metaRow}">${escHtml(ev.day)} ${escHtml(ev.month)}${ev.venue ? ` · ${escHtml(ev.venue)}` : ""}${ev.city ? `, ${escHtml(ev.city)}` : ""}</p>`);
+
+    if (ev.image) {
+      lines.push(`<img src="${escHtml(ev.image)}" alt="Flyer de ${escHtml(ev.name)}" loading="eager" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
+    }
+
+    lines.push(`<p style="color:#bcbcbc;line-height:1.6;margin:0 0 1.5rem">${escHtml(desc)}</p>`);
+
+    lines.push(`<dl style="${dlStyle}">`);
+    lines.push(`<dt style="${dtStyle}">Fecha</dt><dd style="${ddStyle}">${escHtml(ev.day)} de ${escHtml(ev.month)}</dd>`);
+    if (ev.venue) lines.push(`<dt style="${dtStyle}">Venue</dt><dd style="${ddStyle}">${escHtml(ev.venue)}</dd>`);
+    if (ev.city) lines.push(`<dt style="${dtStyle}">Ciudad</dt><dd style="${ddStyle}">${escHtml(ev.city)}</dd>`);
+    if (ev.genre) lines.push(`<dt style="${dtStyle}">Género</dt><dd style="${ddStyle}">${escHtml(ev.genre)}</dd>`);
+    if (artistsLine) lines.push(`<dt style="${dtStyle}">Artistas</dt><dd style="${ddStyle}">${artistsLine}</dd>`);
+    lines.push(`</dl>`);
+
+    if (ev.url) {
+      lines.push(`<a href="${escHtml(ev.url)}" rel="noopener" style="${ctaStyle}">Ver entradas / más info</a>`);
+    }
+
+    lines.push(`</article>`);
+    lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${crumbLink}">← Volver a la agenda completa</a></p>`);
+    lines.push(`</div></main>`);
+
+    // JSON-LD MusicEvent enriquecido
+    const m = MONTH_MAP[ev.month?.toLowerCase()] ?? 0;
+    const year = new Date().getFullYear();
+    const date = new Date(year, m, parseInt(ev.day));
+    if (date < new Date() - 30 * 86400000) date.setFullYear(year + 1);
+
+    const eventSchema = {
+      "@context": "https://schema.org",
+      "@type": "MusicEvent",
+      "name": ev.name,
+      "description": desc,
+      "startDate": date.toISOString().split("T")[0],
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": ev.venue || "Buenos Aires",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": ev.city || "Buenos Aires",
+          "addressRegion": "CABA",
+          "addressCountry": "AR"
+        }
+      },
+      "performer": artists.map(a => ({ "@type": "PerformingGroup", "name": a })),
+      "organizer": { "@type": "Organization", "name": ev.venue || "BassLayer" },
+      "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}`
+    };
+    if (ev.image) eventSchema.image = [ev.image];
+    if (ev.url) {
+      eventSchema.offers = {
+        "@type": "Offer",
+        "url": ev.url,
+        "availability": "https://schema.org/InStock",
+        "category": "primary"
+      };
+    }
+    lines.push(`<script type="application/ld+json">${JSON.stringify(eventSchema).replace(/<\//g, "<\\/")}</script>`);
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 2, "name": "Eventos", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 3, "name": ev.name, "item": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
+    return { html: lines.join(""), desc };
+  }
+
+  function renderEventPage(ev) {
+    const { html: body, desc } = buildEventPageBody(ev);
+    const slug = eventSlug(ev);
+    const title = `${ev.name} — ${ev.day} ${ev.month}${ev.venue ? ` en ${ev.venue}` : ""} | BassLayer`;
+    return renderHtmlWithMeta({
+      title,
+      description: desc.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/eventos/${slug}`,
+      image: ev.image || `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   app.get("*", (req, res) => {
+    // /eventos/[slug] — ficha individual indexable
+    const eventMatch = req.path.match(/^\/eventos\/([^/]+)\/?$/);
+    if (eventMatch) {
+      const slug = decodeURIComponent(eventMatch[1]);
+      const ev = findEventBySlug(slug);
+      if (ev) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderEventPage(ev));
+      }
+      // Slug no encontrado — devolvemos home con 404 para que React maneje el fallback UX
+      const seoBlock = buildSeoHtml();
+      const html = seoBlock
+        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
+        : indexHtml;
+      return res.status(404).set("Content-Type", "text/html").send(html);
+    }
+
+    // Home + cualquier otra ruta SPA
     const seoBlock = buildSeoHtml();
     const html = seoBlock
-      ? indexHtml.replace('<div id="root"></div>', `<div id="root"></div>${seoBlock}`)
+      ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
       : indexHtml;
     res.set("Content-Type", "text/html");
     res.send(html);

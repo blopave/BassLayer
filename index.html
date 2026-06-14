@@ -3,24 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BassLayer — Eventos electrónicos & Crypto en Buenos Aires</title>
+  <title>Eventos de música electrónica en Buenos Aires + Crypto LATAM | BassLayer</title>
 
   <!-- SEO -->
-  <meta name="description" content="BassLayer — Tu hub de eventos de música electrónica y noticias crypto en Buenos Aires. Techno, House, DeFi, Bitcoin y más." />
+  <meta name="description" content="Agenda de fiestas, festivales y boliches de música electrónica en Buenos Aires (techno, house, DJs). Precios en vivo de Bitcoin, Ethereum y noticias crypto en español. Tu hub de vida nocturna y mercados cripto." />
+  <meta name="keywords" content="eventos buenos aires, música electrónica buenos aires, boliches buenos aires, salidas nocturnas, fiestas electronicas, techno buenos aires, house buenos aires, festivales electronica argentina, agenda finde semana, crypto argentina, bitcoin pesos, ethereum, noticias crypto, DJ buenos aires, vida nocturna CABA" />
   <meta name="theme-color" content="#000000" />
+  <meta name="author" content="BassLayer" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="geo.region" content="AR-C" />
+  <meta name="geo.placename" content="Buenos Aires" />
+
+  <!-- Canonical + i18n -->
+  <link rel="canonical" href="https://basslayer.app/" />
+  <link rel="alternate" hreflang="es-AR" href="https://basslayer.app/" />
+  <link rel="alternate" hreflang="es" href="https://basslayer.app/" />
+  <link rel="alternate" hreflang="en" href="https://basslayer.app/?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://basslayer.app/" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="BassLayer" />
-  <meta property="og:description" content="Eventos electrónicos & Crypto en Buenos Aires" />
-  <meta property="og:url" content="https://basslayer.app" />
+  <meta property="og:site_name" content="BassLayer" />
+  <meta property="og:locale" content="es_AR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:title" content="Eventos de música electrónica en Buenos Aires + Crypto LATAM | BassLayer" />
+  <meta property="og:description" content="Agenda de fiestas, festivales y boliches en Buenos Aires. Precios en vivo y noticias crypto en español. Techno, house, Bitcoin, DeFi." />
+  <meta property="og:url" content="https://basslayer.app/" />
   <meta property="og:image" content="https://basslayer.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="BassLayer — eventos electrónicos y crypto en Buenos Aires" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://basslayer.app/og-image.png" />
-  <meta name="twitter:title" content="BassLayer" />
-  <meta name="twitter:description" content="Eventos electrónicos & Crypto en Buenos Aires" />
+  <meta name="twitter:image:alt" content="BassLayer — eventos electrónicos y crypto en Buenos Aires" />
+  <meta name="twitter:title" content="Eventos electrónicos en Buenos Aires + Crypto LATAM | BassLayer" />
+  <meta name="twitter:description" content="Agenda de fiestas, festivales y boliches en Buenos Aires. Precios en vivo y noticias crypto en español." />
 
   <!-- Favicon + PWA -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -41,16 +60,62 @@
     "@graph": [
       {
         "@type": "WebSite",
+        "@id": "https://basslayer.app/#website",
         "name": "BassLayer",
-        "url": "https://basslayer.app",
-        "description": "Hub de eventos de música electrónica y noticias crypto en Buenos Aires",
-        "inLanguage": ["es", "en"]
+        "alternateName": "BassLayer — Eventos & Crypto BA",
+        "url": "https://basslayer.app/",
+        "description": "Hub de eventos de música electrónica en Buenos Aires y noticias crypto en español",
+        "inLanguage": ["es-AR", "en"],
+        "publisher": { "@id": "https://basslayer.app/#organization" }
       },
       {
         "@type": "Organization",
+        "@id": "https://basslayer.app/#organization",
         "name": "BassLayer",
-        "url": "https://basslayer.app",
-        "logo": "https://basslayer.app/icon-512.png"
+        "url": "https://basslayer.app/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://basslayer.app/icon-512.png",
+          "width": 512,
+          "height": 512
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Buenos Aires",
+          "containedInPlace": { "@type": "Country", "name": "Argentina" }
+        },
+        "knowsAbout": [
+          "Música electrónica",
+          "Techno",
+          "House",
+          "Drum and Bass",
+          "Festivales",
+          "Vida nocturna Buenos Aires",
+          "Bitcoin",
+          "Ethereum",
+          "Criptomonedas",
+          "DeFi",
+          "Mercados de predicción"
+        ]
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://basslayer.app/#webpage",
+        "url": "https://basslayer.app/",
+        "name": "Agenda de música electrónica en Buenos Aires + Crypto LATAM",
+        "description": "Eventos electrónicos, festivales, noticias y precios crypto — actualizados en vivo.",
+        "isPartOf": { "@id": "https://basslayer.app/#website" },
+        "inLanguage": "es-AR",
+        "about": [
+          { "@type": "Thing", "name": "Música electrónica" },
+          { "@type": "Thing", "name": "Vida nocturna en Buenos Aires" },
+          { "@type": "Thing", "name": "Criptomonedas" },
+          { "@type": "Thing", "name": "Bitcoin" }
+        ],
+        "primaryImageOfPage": {
+          "@type": "ImageObject",
+          "url": "https://basslayer.app/og-image.png"
+        }
       }
     ]
   }

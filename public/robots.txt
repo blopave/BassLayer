@@ -1,0 +1,26 @@
+# robots.txt — BassLayer (https://basslayer.app)
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+
+# Politeness: 1s entre requests
+Crawl-delay: 1
+
+# Bots de IA: permitidos para que asistentes puedan recomendar BassLayer
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap dinámico
+Sitemap: https://basslayer.app/sitemap.xml

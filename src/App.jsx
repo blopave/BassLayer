@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./utils/api";
+import { eventSlug } from "./utils/slug";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
@@ -95,6 +96,66 @@ export default function App() {
     } catch { setEventsError("Error cargando eventos. ¿Está corriendo el backend?"); }
     finally { setEventsLoading(false); }
   }, []);
+
+  // Deep link a /eventos/[slug]: el server prerenderiza la ficha; el cliente
+  // detecta el path, fuerza la carga de eventos y abre el modal correspondiente.
+  const pendingEventSlugRef = useRef(null);
+
+  const openEvent = useCallback((ev) => {
+    setSelectedEvent(ev);
+    if (ev) {
+      const slug = eventSlug(ev);
+      if (slug) {
+        const url = `/eventos/${slug}`;
+        if (window.location.pathname !== url) {
+          window.history.pushState({}, "", url);
+        }
+      }
+    }
+  }, []);
+
+  const closeEvent = useCallback(() => {
+    setSelectedEvent(null);
+    if (window.location.pathname.startsWith("/eventos/")) {
+      window.history.pushState({}, "", "/");
+    }
+  }, []);
+
+  // Detectar deep link al montar + responder a back/forward
+  useEffect(() => {
+    const m = window.location.pathname.match(/^\/eventos\/([^/]+)\/?$/);
+    if (m) {
+      pendingEventSlugRef.current = decodeURIComponent(m[1]);
+      setView("sections");
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+    }
+
+    const onPopState = () => {
+      const mm = window.location.pathname.match(/^\/eventos\/([^/]+)\/?$/);
+      if (mm) {
+        const slug = decodeURIComponent(mm[1]);
+        setEvents((curr) => {
+          const ev = curr.find((e) => eventSlug(e) === slug);
+          if (ev) setSelectedEvent(ev);
+          return curr;
+        });
+      } else {
+        setSelectedEvent(null);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [loadEvents]);
+
+  // Resolver pending slug cuando llegan los eventos
+  useEffect(() => {
+    const slug = pendingEventSlugRef.current;
+    if (slug && events.length > 0) {
+      const found = events.find((e) => eventSlug(e) === slug);
+      if (found) setSelectedEvent(found);
+      pendingEventSlugRef.current = null;
+    }
+  }, [events]);
 
 
   // Share
@@ -644,7 +705,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={setSelectedEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={setSelectedNews} onSelectFestival={setSelectedFestival} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={setSelectedNews} onSelectFestival={setSelectedFestival} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -663,7 +724,7 @@ export default function App() {
       </section>
 
       {/* EVENT MODAL */}
-      <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} onShare={shareEvent} />
+      <EventModal event={selectedEvent} onClose={closeEvent} onShare={shareEvent} />
 
       {/* PRICE MODAL */}
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />
@@ -679,7 +740,7 @@ export default function App() {
         <WeekendPicker
           events={events}
           onClose={() => setShowWeekendPicker(false)}
-          onSelect={setSelectedEvent}
+          onSelect={openEvent}
         />
       )}
 
