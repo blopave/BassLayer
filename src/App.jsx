@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./utils/api";
-import { eventSlug } from "./utils/slug";
+import { eventSlug, newsSlug } from "./utils/slug";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
@@ -97,9 +97,10 @@ export default function App() {
     finally { setEventsLoading(false); }
   }, []);
 
-  // Deep link a /eventos/[slug]: el server prerenderiza la ficha; el cliente
-  // detecta el path, fuerza la carga de eventos y abre el modal correspondiente.
+  // Deep link a /eventos/[slug] y /noticias/[slug]: el server prerenderiza la
+  // ficha; el cliente detecta el path, fuerza la carga del feed y abre el modal.
   const pendingEventSlugRef = useRef(null);
+  const pendingNewsSlugRef = useRef(null);
 
   const openEvent = useCallback((ev) => {
     setSelectedEvent(ev);
@@ -121,33 +122,72 @@ export default function App() {
     }
   }, []);
 
+  const openNews = useCallback((n) => {
+    setSelectedNews(n);
+    if (n) {
+      const slug = newsSlug(n);
+      if (slug) {
+        const url = `/noticias/${slug}`;
+        if (window.location.pathname !== url) {
+          window.history.pushState({}, "", url);
+        }
+      }
+    }
+  }, []);
+
+  const closeNews = useCallback(() => {
+    setSelectedNews(null);
+    if (window.location.pathname.startsWith("/noticias/")) {
+      window.history.pushState({}, "", "/");
+    }
+  }, []);
+
   // Detectar deep link al montar + responder a back/forward
   useEffect(() => {
-    const m = window.location.pathname.match(/^\/eventos\/([^/]+)\/?$/);
-    if (m) {
-      pendingEventSlugRef.current = decodeURIComponent(m[1]);
+    const path = window.location.pathname;
+    const evMatch = path.match(/^\/eventos\/([^/]+)\/?$/);
+    const newsMatch = path.match(/^\/noticias\/([^/]+)\/?$/);
+
+    if (evMatch) {
+      pendingEventSlugRef.current = decodeURIComponent(evMatch[1]);
       setView("sections");
       if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+    } else if (newsMatch) {
+      pendingNewsSlugRef.current = decodeURIComponent(newsMatch[1]);
+      setView("sections");
+      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
     }
 
     const onPopState = () => {
-      const mm = window.location.pathname.match(/^\/eventos\/([^/]+)\/?$/);
-      if (mm) {
-        const slug = decodeURIComponent(mm[1]);
+      const p = window.location.pathname;
+      const em = p.match(/^\/eventos\/([^/]+)\/?$/);
+      const nm = p.match(/^\/noticias\/([^/]+)\/?$/);
+      if (em) {
+        const slug = decodeURIComponent(em[1]);
         setEvents((curr) => {
           const ev = curr.find((e) => eventSlug(e) === slug);
           if (ev) setSelectedEvent(ev);
           return curr;
         });
+        setSelectedNews(null);
+      } else if (nm) {
+        const slug = decodeURIComponent(nm[1]);
+        setNews((curr) => {
+          const item = curr.find((x) => newsSlug(x) === slug);
+          if (item) setSelectedNews(item);
+          return curr;
+        });
+        setSelectedEvent(null);
       } else {
         setSelectedEvent(null);
+        setSelectedNews(null);
       }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [loadEvents]);
+  }, [loadEvents, loadNews]);
 
-  // Resolver pending slug cuando llegan los eventos
+  // Resolver pending event slug cuando llegan los eventos
   useEffect(() => {
     const slug = pendingEventSlugRef.current;
     if (slug && events.length > 0) {
@@ -156,6 +196,16 @@ export default function App() {
       pendingEventSlugRef.current = null;
     }
   }, [events]);
+
+  // Resolver pending news slug cuando llegan las noticias
+  useEffect(() => {
+    const slug = pendingNewsSlugRef.current;
+    if (slug && news.length > 0) {
+      const found = news.find((n) => newsSlug(n) === slug);
+      if (found) setSelectedNews(found);
+      pendingNewsSlugRef.current = null;
+    }
+  }, [news]);
 
 
   // Share
@@ -705,7 +755,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={setSelectedNews} onSelectFestival={setSelectedFestival} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={setSelectedFestival} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -715,7 +765,7 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={setSelectedNews} />
+            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -730,7 +780,7 @@ export default function App() {
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />
 
       {/* NEWS MODAL */}
-      <NewsModal item={selectedNews} onClose={() => setSelectedNews(null)} />
+      <NewsModal item={selectedNews} onClose={closeNews} />
 
       {/* FESTIVAL MODAL */}
       <FestivalModal festival={selectedFestival} onClose={() => setSelectedFestival(null)} />

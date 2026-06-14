@@ -215,6 +215,27 @@ function findEventBySlug(slug) {
   }
   return null;
 }
+function hash6(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36).slice(0, 6);
+}
+function newsSlug(n) {
+  if (!n || !n.title) return "";
+  const titlePart = slugify(n.title).slice(0, 60);
+  const idPart = n.url ? hash6(n.url) : hash6(n.title + (n.source || ""));
+  return [titlePart, idPart].filter(Boolean).join("-");
+}
+function findNewsBySlug(slug) {
+  // Buscar en ambos pools: crypto (news) y música (bassNews)
+  const pools = [cached("news") || [], cached("bassNews") || []];
+  for (const pool of pools) {
+    for (const n of pool) {
+      if (newsSlug(n) === slug) return n;
+    }
+  }
+  return null;
+}
 
 // ─── City detection ──────────────────────────
 const CITY_PATTERNS = [
@@ -2859,6 +2880,9 @@ if (IS_PROD) {
       html = html.replace(/<meta property="og:image"\s+content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${img}" />`);
       html = html.replace(/<meta name="twitter:image"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${img}" />`);
     }
+    if (meta.robots) {
+      html = html.replace(/<meta name="robots"\s+content="[^"]*"\s*\/?>/, `<meta name="robots" content="${escHtml(meta.robots)}" />`);
+    }
     if (meta.body) {
       html = html.replace('<div id="root"></div>', `<div id="root">${meta.body}</div>`);
     }
@@ -2988,6 +3012,110 @@ if (IS_PROD) {
     });
   }
 
+  // Página de noticia: la canonical apunta a la fuente original (somos un
+  // agregador, no creamos el contenido). Esto le dice a Google "esta es una
+  // copia, indexá la fuente". Lo nuestro suma valor en share previews + UX
+  // sin pelearle ranking al medio original.
+  function buildNewsPageBody(n) {
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:720px;margin:0 auto;padding:2rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:1.85rem;font-weight:600;letter-spacing:-0.02em;line-height:1.25;margin:0 0 1rem;color:#fff";
+    const metaRow = "color:#a0a0a0;margin:0 0 1.5rem;font-size:0.9rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap";
+    const sourcePill = "display:inline-block;padding:0.2rem 0.6rem;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:999px;color:#bcbcbc;font-size:0.8rem";
+    const tagPill = "display:inline-block;padding:0.2rem 0.6rem;background:#7ec8ff;color:#000;border-radius:999px;font-size:0.78rem;font-weight:600";
+    const ctaStyle = "display:inline-block;margin-top:1.5rem;padding:0.85rem 1.5rem;background:#7ec8ff;color:#000;text-decoration:none;border-radius:6px;font-weight:600";
+    const noteStyle = "color:#666;font-size:0.85rem;margin-top:2.5rem;line-height:1.5;border-top:1px solid #1a1a1a;padding-top:1.5rem";
+
+    const desc = String(n.description || "").slice(0, 500);
+    const sourceName = n.source || "fuente original";
+
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(n.title)}">`, `<div style="${innerStyle}">`];
+
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Noticias</a> <span>›</span> <span>${escHtml(sourceName)}</span></nav>`);
+
+    lines.push(`<article>`);
+    lines.push(`<p style="${metaRow}">`);
+    lines.push(`<span style="${sourcePill}">${escHtml(sourceName)}</span>`);
+    if (n.tag) lines.push(`<span style="${tagPill}">${escHtml(n.tag)}</span>`);
+    if (n.time) lines.push(`<span>${escHtml(n.time)}</span>`);
+    lines.push(`</p>`);
+
+    lines.push(`<h1 style="${h1Style}">${escHtml(n.title)}</h1>`);
+
+    if (n.image) {
+      lines.push(`<img src="${escHtml(n.image)}" alt="${escHtml(n.title)}" loading="eager" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
+    }
+
+    if (desc) {
+      lines.push(`<p style="color:#d0d0d0;line-height:1.65;margin:0 0 1.5rem;font-size:1.05rem">${escHtml(desc)}</p>`);
+    }
+
+    if (n.url) {
+      lines.push(`<a href="${escHtml(n.url)}" rel="noopener" target="_blank" style="${ctaStyle}">Leer artículo completo en ${escHtml(sourceName)} →</a>`);
+    }
+
+    lines.push(`<p style="${noteStyle}">Esta es una vista resumen curada por BassLayer. El artículo completo y la atribución pertenecen a <strong>${escHtml(sourceName)}</strong>. Para más noticias y eventos, volvé a <a href="/" style="${crumbLink}">BassLayer</a>.</p>`);
+    lines.push(`</article>`);
+    lines.push(`</div></main>`);
+
+    // JSON-LD NewsArticle — publisher = fuente original, mainEntityOfPage = source.
+    // Esto comunica a Google que somos una vista derivada, no la fuente.
+    const newsSchema = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      "headline": String(n.title || "").slice(0, 110),
+      "description": desc,
+      "url": n.url || `${PROD_ORIGIN}/noticias/${newsSlug(n)}`,
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": n.url || `${PROD_ORIGIN}/noticias/${newsSlug(n)}`
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": sourceName
+      },
+      "isAccessibleForFree": true,
+      "inLanguage": n.region === "Intl" ? "en" : "es"
+    };
+    if (n.image) newsSchema.image = [n.image];
+    if (n.tag) newsSchema.keywords = n.tag;
+    lines.push(`<script type="application/ld+json">${JSON.stringify(newsSchema).replace(/<\//g, "<\\/")}</script>`);
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 2, "name": "Noticias", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 3, "name": n.title, "item": `${PROD_ORIGIN}/noticias/${newsSlug(n)}` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
+    return { html: lines.join(""), desc };
+  }
+
+  function renderNewsPage(n) {
+    const { html: body, desc } = buildNewsPageBody(n);
+    const sourceName = n.source || "BassLayer";
+    const title = `${n.title} — ${sourceName} | BassLayer`;
+    // Canonical apunta a la fuente original cuando existe — somos derivados.
+    const canonical = n.url || `${PROD_ORIGIN}/noticias/${newsSlug(n)}`;
+    return renderHtmlWithMeta({
+      title,
+      description: (desc || `Resumen de ${n.title}, publicado por ${sourceName}.`).slice(0, 300),
+      canonical,
+      image: n.image || `${PROD_ORIGIN}/og-image.png`,
+      body,
+      // noindex porque la canónica es la fuente original — no queremos competir
+      // con el medio por su propio artículo. follow para que Google siga los
+      // links internos hacia eventos/home y entienda nuestra estructura.
+      robots: "noindex, follow, max-image-preview:large",
+    });
+  }
+
   app.get("*", (req, res) => {
     // /eventos/[slug] — ficha individual indexable
     const eventMatch = req.path.match(/^\/eventos\/([^/]+)\/?$/);
@@ -2998,7 +3126,22 @@ if (IS_PROD) {
         res.set("Content-Type", "text/html");
         return res.send(renderEventPage(ev));
       }
-      // Slug no encontrado — devolvemos home con 404 para que React maneje el fallback UX
+      const seoBlock = buildSeoHtml();
+      const html = seoBlock
+        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
+        : indexHtml;
+      return res.status(404).set("Content-Type", "text/html").send(html);
+    }
+
+    // /noticias/[slug] — ficha de noticia (noindex, canonical a la fuente)
+    const newsMatch = req.path.match(/^\/noticias\/([^/]+)\/?$/);
+    if (newsMatch) {
+      const slug = decodeURIComponent(newsMatch[1]);
+      const n = findNewsBySlug(slug);
+      if (n) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderNewsPage(n));
+      }
       const seoBlock = buildSeoHtml();
       const html = seoBlock
         ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
