@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./utils/api";
-import { eventSlug, newsSlug } from "./utils/slug";
+import { eventSlug, newsSlug, festivalSlug } from "./utils/slug";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
@@ -142,11 +142,32 @@ export default function App() {
     }
   }, []);
 
+  const openFestival = useCallback((f) => {
+    setSelectedFestival(f);
+    if (f) {
+      const slug = festivalSlug(f);
+      if (slug) {
+        const url = `/festivales/${slug}`;
+        if (window.location.pathname !== url) {
+          window.history.pushState({}, "", url);
+        }
+      }
+    }
+  }, []);
+
+  const closeFestival = useCallback(() => {
+    setSelectedFestival(null);
+    if (window.location.pathname.startsWith("/festivales/")) {
+      window.history.pushState({}, "", "/");
+    }
+  }, []);
+
   // Detectar deep link al montar + responder a back/forward
   useEffect(() => {
     const path = window.location.pathname;
     const evMatch = path.match(/^\/eventos\/([^/]+)\/?$/);
     const newsMatch = path.match(/^\/noticias\/([^/]+)\/?$/);
+    const festMatch = path.match(/^\/festivales\/([^/]+)\/?$/);
 
     if (evMatch) {
       pendingEventSlugRef.current = decodeURIComponent(evMatch[1]);
@@ -156,12 +177,25 @@ export default function App() {
       pendingNewsSlugRef.current = decodeURIComponent(newsMatch[1]);
       setView("sections");
       if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
+    } else if (festMatch) {
+      // Los festivales se cargan dentro de BassFeed, no a nivel de App. Para
+      // el deep link hacemos un fetch directo y abrimos el modal — no
+      // necesitamos hidratar la lista interna del feed.
+      const slug = decodeURIComponent(festMatch[1]);
+      setView("sections");
+      api.festivals("All")
+        .then((items) => {
+          const found = items.find((x) => festivalSlug(x) === slug);
+          if (found) setSelectedFestival(found);
+        })
+        .catch(() => {});
     }
 
     const onPopState = () => {
       const p = window.location.pathname;
       const em = p.match(/^\/eventos\/([^/]+)\/?$/);
       const nm = p.match(/^\/noticias\/([^/]+)\/?$/);
+      const fm = p.match(/^\/festivales\/([^/]+)\/?$/);
       if (em) {
         const slug = decodeURIComponent(em[1]);
         setEvents((curr) => {
@@ -170,6 +204,7 @@ export default function App() {
           return curr;
         });
         setSelectedNews(null);
+        setSelectedFestival(null);
       } else if (nm) {
         const slug = decodeURIComponent(nm[1]);
         setNews((curr) => {
@@ -178,9 +213,21 @@ export default function App() {
           return curr;
         });
         setSelectedEvent(null);
+        setSelectedFestival(null);
+      } else if (fm) {
+        const slug = decodeURIComponent(fm[1]);
+        api.festivals("All")
+          .then((items) => {
+            const found = items.find((x) => festivalSlug(x) === slug);
+            if (found) setSelectedFestival(found);
+          })
+          .catch(() => {});
+        setSelectedEvent(null);
+        setSelectedNews(null);
       } else {
         setSelectedEvent(null);
         setSelectedNews(null);
+        setSelectedFestival(null);
       }
     };
     window.addEventListener("popstate", onPopState);
@@ -755,7 +802,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={setSelectedFestival} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilter} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -783,7 +830,7 @@ export default function App() {
       <NewsModal item={selectedNews} onClose={closeNews} />
 
       {/* FESTIVAL MODAL */}
-      <FestivalModal festival={selectedFestival} onClose={() => setSelectedFestival(null)} />
+      <FestivalModal festival={selectedFestival} onClose={closeFestival} />
 
       {/* WEEKEND PICKER */}
       {showWeekendPicker && (

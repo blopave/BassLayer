@@ -33,3 +33,10 @@ export function newsSlug(n) {
   const idPart = n.url ? hash6(n.url) : hash6(n.title + (n.source || ""));
   return [titlePart, idPart].filter(Boolean).join("-");
 }
+
+// Los festivales tienen un id curado en data/festivals.json (ej.
+// "lollapalooza-ar-2026") que ya es slug-shaped. Usamos eso directamente.
+export function festivalSlug(f) {
+  if (!f) return "";
+  return f.id || slugify(f.name);
+}

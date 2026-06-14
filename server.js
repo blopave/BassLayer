@@ -236,6 +236,17 @@ function findNewsBySlug(slug) {
   }
   return null;
 }
+function festivalSlug(f) {
+  if (!f) return "";
+  return f.id || slugify(f.name);
+}
+function findFestivalBySlug(slug) {
+  const list = loadFestivals();
+  for (const f of list) {
+    if (festivalSlug(f) === slug) return f;
+  }
+  return null;
+}
 
 // ─── City detection ──────────────────────────
 const CITY_PATTERNS = [
@@ -2684,6 +2695,20 @@ app.get("/sitemap.xml", (req, res) => {
     });
   }
 
+  // Festivales — curados, evergreen, sólo los no pasados
+  const festivals = loadFestivals();
+  for (const f of festivals) {
+    if (festivalStatus(f) === "past") continue;
+    const slug = festivalSlug(f);
+    if (!slug) continue;
+    urls.push({
+      loc: `${PROD_ORIGIN}/festivales/${slug}`,
+      lastmod: today,
+      changefreq: "monthly",
+      priority: "0.7",
+    });
+  }
+
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
@@ -3097,6 +3122,159 @@ if (IS_PROD) {
     return { html: lines.join(""), desc };
   }
 
+  // Página de festival: curado por nosotros → SÍ es indexable (no hay riesgo
+  // de duplicate content). Schema MusicFestival (subtipo de MusicEvent reconocido
+  // por Google Events) con startDate/endDate, location multi-país, tags, etc.
+  function formatLongDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const months = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    return `${d.getUTCDate()} de ${months[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+  }
+  function dateRange(start, end) {
+    if (!start) return "fecha por confirmar";
+    if (!end || end === start) return formatLongDate(start);
+    const s = new Date(start), e = new Date(end);
+    if (s.getUTCFullYear() === e.getUTCFullYear() && s.getUTCMonth() === e.getUTCMonth()) {
+      const months = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+      return `${s.getUTCDate()} – ${e.getUTCDate()} de ${months[s.getUTCMonth()]} de ${s.getUTCFullYear()}`;
+    }
+    return `${formatLongDate(start)} – ${formatLongDate(end)}`;
+  }
+
+  function buildFestivalPageBody(f) {
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:760px;margin:0 auto;padding:2rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:2rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 0.5rem;color:#fff";
+    const subtitleStyle = "color:#a0a0a0;margin:0 0 1.5rem;font-size:1rem";
+    const dlStyle = "display:grid;grid-template-columns:140px 1fr;gap:0.75rem 1rem;margin:1.5rem 0;font-size:0.95rem";
+    const dtStyle = "color:#888";
+    const ddStyle = "color:#e5e5e5;margin:0";
+    const tagStyle = "display:inline-block;padding:0.25rem 0.7rem;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:999px;color:#bcbcbc;font-size:0.8rem;margin:0 0.4rem 0.4rem 0";
+    const ctaStyle = "display:inline-block;margin-top:1.5rem;padding:0.85rem 1.5rem;background:#7ec8ff;color:#000;text-decoration:none;border-radius:6px;font-weight:600";
+    const statusBadge = "display:inline-block;padding:0.25rem 0.7rem;border-radius:999px;font-size:0.8rem;font-weight:600;margin-left:0.5rem";
+
+    const status = festivalStatus(f);
+    const statusLabel = { live: "EN VIVO", upcoming: "PRÓXIMO", tba: "POR CONFIRMAR", past: "FINALIZADO" }[status] || "";
+    const statusColor = { live: "background:#ff4444;color:#fff", upcoming: "background:#7ec8ff;color:#000", tba: "background:#444;color:#fff", past: "background:#333;color:#888" }[status] || "background:#333;color:#888";
+
+    const range = dateRange(f.dates_start, f.dates_end);
+    const location = [f.city, f.country].filter(Boolean).join(", ");
+    const tags = Array.isArray(f.tags) ? f.tags : [];
+
+    const desc = [
+      f.description || `${f.name} en ${location}, ${range}.`,
+      tags.length ? `Géneros: ${tags.join(", ")}.` : "",
+      "Más festivales y agenda completa de música electrónica en BassLayer.",
+    ].filter(Boolean).join(" ");
+
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(f.name)}">`, `<div style="${innerStyle}">`];
+
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Festivales</a> <span>›</span> <span>${escHtml(f.name)}</span></nav>`);
+
+    lines.push(`<article>`);
+    lines.push(`<h1 style="${h1Style}">${escHtml(f.name)}${statusLabel ? `<span style="${statusBadge};${statusColor}">${statusLabel}</span>` : ""}</h1>`);
+    lines.push(`<p style="${subtitleStyle}">${escHtml(range)}${location ? ` · ${escHtml(location)}` : ""}</p>`);
+
+    if (f.image) {
+      lines.push(`<img src="${escHtml(f.image)}" alt="Logo ${escHtml(f.name)}" loading="eager" style="width:100%;max-width:480px;height:auto;border-radius:8px;margin-bottom:1.5rem;background:#0a0a0a;padding:1rem" />`);
+    }
+
+    if (f.description) {
+      lines.push(`<p style="color:#d0d0d0;line-height:1.65;margin:0 0 1.5rem;font-size:1.05rem">${escHtml(f.description)}</p>`);
+    }
+
+    lines.push(`<dl style="${dlStyle}">`);
+    if (f.dates_start) lines.push(`<dt style="${dtStyle}">Fechas</dt><dd style="${ddStyle}">${escHtml(range)}</dd>`);
+    if (f.city) lines.push(`<dt style="${dtStyle}">Ciudad</dt><dd style="${ddStyle}">${escHtml(f.city)}</dd>`);
+    if (f.country) lines.push(`<dt style="${dtStyle}">País</dt><dd style="${ddStyle}">${escHtml(f.country)}</dd>`);
+    if (f.region) lines.push(`<dt style="${dtStyle}">Región</dt><dd style="${ddStyle}">${escHtml(f.region)}</dd>`);
+    if (tags.length) {
+      lines.push(`<dt style="${dtStyle}">Géneros</dt><dd style="${ddStyle}">${tags.map(t => `<span style="${tagStyle}">${escHtml(t)}</span>`).join("")}</dd>`);
+    }
+    lines.push(`</dl>`);
+
+    if (f.url) {
+      lines.push(`<a href="${escHtml(f.url)}" rel="noopener" target="_blank" style="${ctaStyle}">Sitio oficial / entradas →</a>`);
+    }
+
+    lines.push(`</article>`);
+    lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${crumbLink}">← Ver todos los festivales y agenda completa</a></p>`);
+    lines.push(`</div></main>`);
+
+    // JSON-LD MusicFestival — Google Events lo entiende y lo muestra en rich
+    // results con un panel especial de festivales.
+    const eventStatusMap = {
+      live: "https://schema.org/EventScheduled",
+      upcoming: "https://schema.org/EventScheduled",
+      tba: "https://schema.org/EventScheduled",
+      past: "https://schema.org/EventScheduled",
+    };
+    const festivalSchema = {
+      "@context": "https://schema.org",
+      "@type": "MusicFestival",
+      "name": f.name,
+      "description": f.description || desc,
+      "url": `${PROD_ORIGIN}/festivales/${festivalSlug(f)}`,
+      "startDate": f.dates_start || undefined,
+      "endDate": f.dates_end || f.dates_start || undefined,
+      "eventStatus": eventStatusMap[status],
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": location || f.name,
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": f.city || undefined,
+          "addressCountry": f.country || undefined
+        }
+      },
+      "organizer": { "@type": "Organization", "name": f.name, "url": f.url || undefined },
+      "isAccessibleForFree": false
+    };
+    if (f.image) festivalSchema.image = [f.image];
+    if (tags.length) festivalSchema.keywords = tags.join(", ");
+    if (f.url) {
+      festivalSchema.offers = {
+        "@type": "Offer",
+        "url": f.url,
+        "availability": status === "past" ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+        "category": "primary"
+      };
+    }
+    // Limpiar undefined (JSON.stringify ya los omite, pero por prolijidad)
+    lines.push(`<script type="application/ld+json">${JSON.stringify(festivalSchema).replace(/<\//g, "<\\/")}</script>`);
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 2, "name": "Festivales", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 3, "name": f.name, "item": `${PROD_ORIGIN}/festivales/${festivalSlug(f)}` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
+    return { html: lines.join(""), desc };
+  }
+
+  function renderFestivalPage(f) {
+    const { html: body, desc } = buildFestivalPageBody(f);
+    const range = dateRange(f.dates_start, f.dates_end);
+    const location = [f.city, f.country].filter(Boolean).join(", ");
+    const title = `${f.name} ${f.dates_start ? `(${range})` : ""} | BassLayer`.trim().replace(/\s+/g, " ");
+    return renderHtmlWithMeta({
+      title,
+      description: desc.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/festivales/${festivalSlug(f)}`,
+      image: f.image || `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   function renderNewsPage(n) {
     const { html: body, desc } = buildNewsPageBody(n);
     const sourceName = n.source || "BassLayer";
@@ -3141,6 +3319,22 @@ if (IS_PROD) {
       if (n) {
         res.set("Content-Type", "text/html");
         return res.send(renderNewsPage(n));
+      }
+      const seoBlock = buildSeoHtml();
+      const html = seoBlock
+        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
+        : indexHtml;
+      return res.status(404).set("Content-Type", "text/html").send(html);
+    }
+
+    // /festivales/[slug] — ficha de festival curado (SÍ indexable)
+    const festivalMatch = req.path.match(/^\/festivales\/([^/]+)\/?$/);
+    if (festivalMatch) {
+      const slug = decodeURIComponent(festivalMatch[1]);
+      const f = findFestivalBySlug(slug);
+      if (f) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderFestivalPage(f));
       }
       const seoBlock = buildSeoHtml();
       const html = seoBlock
