@@ -40,3 +40,24 @@ export function festivalSlug(f) {
   if (!f) return "";
   return f.id || slugify(f.name);
 }
+
+// Géneros: el filtro en la UI usa el nombre canónico (ej. "Tech House", "DnB"),
+// pero la URL necesita un slug. Mantenemos un map explícito en lugar de slugify
+// para que "DnB" se exponga como "drum-and-bass" (más buscable en SEO).
+export const GENRE_LIST = [
+  "Techno", "House", "Deep House", "Tech House", "Progressive",
+  "Melodic", "Minimal", "DnB", "Trance", "Disco", "Ambient", "Electronic",
+];
+const GENRE_ALIAS = { DnB: "drum-and-bass" };
+const GENRE_FROM_SLUG = {};
+for (const g of GENRE_LIST) {
+  const slug = GENRE_ALIAS[g] || slugify(g);
+  GENRE_FROM_SLUG[slug] = g;
+}
+export function genreSlug(genre) {
+  if (!genre || genre === "All") return "";
+  return GENRE_ALIAS[genre] || slugify(genre);
+}
+export function genreFromSlug(slug) {
+  return GENRE_FROM_SLUG[slug] || null;
+}

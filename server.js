@@ -248,6 +248,42 @@ function findFestivalBySlug(slug) {
   return null;
 }
 
+// ─── Géneros: slugs + descripciones evergreen ──
+// Mismo map que src/utils/slug.js para que server y cliente coincidan.
+const GENRE_LIST = [
+  "Techno", "House", "Deep House", "Tech House", "Progressive",
+  "Melodic", "Minimal", "DnB", "Trance", "Disco", "Ambient", "Electronic",
+];
+const GENRE_ALIAS = { "DnB": "drum-and-bass" };
+const GENRE_FROM_SLUG = {};
+for (const g of GENRE_LIST) {
+  const slug = GENRE_ALIAS[g] || slugify(g);
+  GENRE_FROM_SLUG[slug] = g;
+}
+function genreSlug(genre) {
+  if (!genre || genre === "All") return "";
+  return GENRE_ALIAS[genre] || slugify(genre);
+}
+function genreFromSlug(slug) {
+  return GENRE_FROM_SLUG[slug] || null;
+}
+// Blurbs evergreen — texto curado para SEO. Para géneros sin entrada explícita
+// se usa un template genérico ("X en Buenos Aires...").
+const GENRE_BLURBS = {
+  "Techno": "El techno tiene en Buenos Aires una de las escenas más fuertes de Latinoamérica. De los warehouses de Crobar y Mandarine al underground de Niceto, pasando por after-hours en zonas industriales, la ciudad respira beats 4x4 todo el año. Headliners internacionales como Adam Beyer, Charlotte de Witte, Sven Väth y Nina Kraviz visitan con regularidad; en el lado local, DJs como Hernán Cattáneo, Wehbba (BR), Pablo Bolivar y la nueva camada llenan las pistas semana tras semana.",
+  "House": "Buenos Aires ama el house en todas sus formas — del soulful clásico al deep contemporáneo. Sets que arrancan al atardecer en clubes con terraza, llenos en boliches como Bresh para el house más festivo, y residencias en venues como Crobar. Carl Cox, Solomun, Black Coffee y Damian Lazarus son visitas habituales; locales como Bárbara Boeing y Pablo Fierro empujan la escena.",
+  "Deep House": "Deep house en Buenos Aires: la versión más íntima del house, con líneas de bajo profundas y atmósferas elegantes. Se escucha en sesiones early-evening, en clubes boutique y rooftops, con DJs como Tale of Us, Mind Against y Mathame en los headliners; locales como Nicola Cruz y Sofia Kourtesis aportan la mirada sudamericana.",
+  "Tech House": "El tech house — esa mezcla de groove house con la energía mecánica del techno — es uno de los géneros más populares en la pista porteña. Solid Grooves, Hot Creations y todo el sello DC-10 aparecen en line-ups de Crobar, Jet y festivales como Creamfields. Fisher, Chris Lake, Patrick Topping y Cloonee son los nombres que mueven el público hoy.",
+  "Progressive": "Progressive en Buenos Aires tiene la firma de Hernán Cattáneo, el referente argentino que llevó al género a una escala global. Sets largos, narrativos, con climaxes lentos — se escucha en clubes como Mandarine Park, en eventos curados como Sudbeat y en festivales como Forja.",
+  "Melodic": "Melodic techno y house — el sonido emocional y atmosférico que define una era. Tale of Us, ARTBAT, Anyma, Cassian y Mathame son la columna vertebral del género; en Buenos Aires se escucha en eventos producidos por Sound Group, Polaroid y similar curaduría.",
+  "Minimal": "Minimal en Buenos Aires: la rama más purista y reducida del techno/house. Eventos chicos y curados, mucho énfasis en sound system y atmósfera. Ricardo Villalobos, Zip y Sonja Moonear son las referencias que orientan la escena local.",
+  "DnB": "Drum and bass en Buenos Aires tiene una escena fiel y de larga data — fiestas dedicadas en clubes como Liv Outside y eventos como Sun & Bass Argentina. Andy C, Sub Focus, Chase & Status, Camo & Krooked aparecen en festivales y line-ups; locales como Bratto y Sub Killaz empujan la cultura.",
+  "Trance": "Trance en Argentina: la escena más emocional y de mayor longevidad. Festivales como Forja y eventos producidos por Trance Argentina convocan a Above & Beyond, ATB, Aly & Fila y todo el universo Anjunabeats/Pure Trance. Una comunidad ferviente que llena venues con sets de 6+ horas.",
+  "Disco": "Disco y nu-disco en Buenos Aires — el groove de los 70s y 80s revisitado con producción contemporánea. Eventos como Sun & Sea, fiestas curadas en rooftops de Palermo y line-ups con Folamour, Honey Dijon, Dimitri From Paris.",
+  "Ambient": "Ambient y experimental en Buenos Aires: sesiones inmersivas, espacios alternativos, productores locales como Lucrecia Dalt y experimentación con instalaciones audio-visuales.",
+  "Electronic": "Música electrónica en Buenos Aires en todas sus formas — techno, house, trance, drum & bass, disco, melodic. La ciudad tiene una de las escenas más activas y diversas de Latinoamérica, con clubes históricos, festivales de talla mundial y una comunidad que escucha todos los días de la semana.",
+};
+
 // ─── City detection ──────────────────────────
 const CITY_PATTERNS = [
   { city: "CABA",     rx: /\b(palermo|recoleta|san telmo|microcentro|belgrano|almagro|caballito|flores|villa crespo|villa urquiza|nuñez|colegiales|barracas|la boca|congreso|abasto|chacarita|constitución|monserrat|retiro|tribunales|costanera|puerto madero)\b/i },
@@ -2695,6 +2731,25 @@ app.get("/sitemap.xml", (req, res) => {
     });
   }
 
+  // Hubs por género — solo los que tienen al menos 1 evento en caché.
+  // Captura queries de cola larga de alto volumen ("techno buenos aires").
+  const genreCounts = {};
+  for (const ev of events) {
+    const g = ev.genre;
+    if (!g || g === "Electronic") continue; // Skip catch-all genérico
+    genreCounts[g] = (genreCounts[g] || 0) + 1;
+  }
+  for (const genre of Object.keys(genreCounts)) {
+    const slug = genreSlug(genre);
+    if (!slug || !genreFromSlug(slug)) continue; // solo géneros reconocidos
+    urls.push({
+      loc: `${PROD_ORIGIN}/eventos/genero/${slug}`,
+      lastmod: today,
+      changefreq: "weekly",
+      priority: "0.7",
+    });
+  }
+
   // Festivales — curados, evergreen, sólo los no pasados
   const festivals = loadFestivals();
   for (const f of festivals) {
@@ -3268,6 +3323,121 @@ if (IS_PROD) {
     return { html: lines.join(""), desc };
   }
 
+  // Hub por género: ataca queries de cola larga de alto volumen
+  // ("techno buenos aires", "house buenos aires"). Cada hub es indexable y
+  // tiene texto evergreen + lista actualizable de eventos del género.
+  function buildGenrePageBody(genre, events) {
+    const slug = genreSlug(genre);
+    const blurb = GENRE_BLURBS[genre] || `${genre} en Buenos Aires y Argentina: agenda de eventos, fiestas y festivales del género.`;
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:880px;margin:0 auto;padding:2rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:2rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 0.75rem;color:#fff";
+    const introStyle = "color:#bcbcbc;line-height:1.65;margin:0 0 2.5rem;font-size:1rem;max-width:65ch";
+    const h2Style = "font-size:1.2rem;font-weight:500;color:#fff;margin:2rem 0 1rem;padding-bottom:0.5rem;border-bottom:1px solid #222;letter-spacing:-0.01em";
+    const ulStyle = "list-style:none;padding:0;margin:0";
+    const liStyle = "padding:0.7rem 0;border-bottom:1px solid #141414;line-height:1.5;font-size:0.95rem";
+    const linkStyle = "color:#7ec8ff;text-decoration:none";
+    const metaStyle = "color:#888;font-size:0.88em";
+    const tagRow = "display:flex;flex-wrap:wrap;gap:0.4rem;margin:1.5rem 0 2rem";
+    const tagPill = "padding:0.35rem 0.8rem;border-radius:999px;font-size:0.8rem;text-decoration:none";
+
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(genre)} en Buenos Aires">`, `<div style="${innerStyle}">`];
+
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Eventos</a> <span>›</span> <a href="/" style="${crumbLink}">Géneros</a> <span>›</span> <span>${escHtml(genre)}</span></nav>`);
+
+    lines.push(`<h1 style="${h1Style}">${escHtml(genre)} en Buenos Aires — Próximos eventos</h1>`);
+    lines.push(`<p style="${introStyle}">${escHtml(blurb)}</p>`);
+
+    // Nav cruzado a otros géneros (internal linking = autoridad temática para Google)
+    lines.push(`<nav aria-label="Otros géneros" style="${tagRow}">`);
+    for (const g of GENRE_LIST) {
+      if (g === genre || g === "Electronic") continue;
+      const isActive = false;
+      lines.push(`<a href="/eventos/genero/${escHtml(genreSlug(g))}" style="${tagPill};${isActive ? "background:#7ec8ff;color:#000" : "background:#1a1a1a;color:#bcbcbc;border:1px solid #2a2a2a"}">${escHtml(g)}</a>`);
+    }
+    lines.push(`</nav>`);
+
+    if (events.length > 0) {
+      lines.push(`<section aria-labelledby="seo-genre-events">`);
+      lines.push(`<h2 id="seo-genre-events" style="${h2Style}">Eventos de ${escHtml(genre)} próximos</h2>`);
+      lines.push(`<ul style="${ulStyle}">`);
+      for (const ev of events.slice(0, 30)) {
+        const evSlug = eventSlug(ev);
+        const artists = (ev.artists || []).slice(0, 3).map(escHtml).join(", ");
+        const name = `<a href="/eventos/${escHtml(evSlug)}" style="${linkStyle};font-weight:500">${escHtml(ev.name)}</a>`;
+        const venue = ev.venue ? ` · ${escHtml(ev.venue)}` : "";
+        const performers = artists ? ` · <span style="${metaStyle}">${artists}</span>` : "";
+        lines.push(`<li style="${liStyle}">${name} <span style="${metaStyle}">${escHtml(ev.day)} ${escHtml(ev.month)}</span>${venue}${performers}</li>`);
+      }
+      lines.push(`</ul></section>`);
+    } else {
+      lines.push(`<p style="color:#888;line-height:1.5;margin:2rem 0;padding:1rem;background:#0a0a0a;border-radius:8px">No hay eventos de ${escHtml(genre)} programados en este momento. Volvé a chequear pronto — actualizamos la agenda todos los días.</p>`);
+    }
+
+    lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${linkStyle}">← Ver toda la agenda y otros géneros</a></p>`);
+    lines.push(`</div></main>`);
+
+    // JSON-LD ItemList de eventos del género
+    if (events.length > 0) {
+      const itemList = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": `Eventos de ${genre} en Buenos Aires`,
+        "numberOfItems": Math.min(events.length, 30),
+        "itemListElement": events.slice(0, 30).map((ev, i) => ({
+          "@type": "ListItem",
+          "position": i + 1,
+          "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}`,
+          "name": ev.name
+        }))
+      };
+      lines.push(`<script type="application/ld+json">${JSON.stringify(itemList).replace(/<\//g, "<\\/")}</script>`);
+    }
+
+    // CollectionPage describe el hub mismo (no la lista)
+    const collection = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": `${genre} en Buenos Aires`,
+      "description": blurb,
+      "url": `${PROD_ORIGIN}/eventos/genero/${slug}`,
+      "inLanguage": "es-AR",
+      "isPartOf": { "@type": "WebSite", "@id": `${PROD_ORIGIN}/#website` },
+      "about": { "@type": "Thing", "name": `${genre} music` }
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(collection).replace(/<\//g, "<\\/")}</script>`);
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 2, "name": "Eventos", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 3, "name": genre, "item": `${PROD_ORIGIN}/eventos/genero/${slug}` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
+    return { html: lines.join(""), desc: blurb };
+  }
+
+  function renderGenrePage(genre) {
+    const allEvents = cached("events") || [];
+    const events = allEvents.filter(e => (e.genre || "").toLowerCase() === genre.toLowerCase());
+    const { html: body, desc } = buildGenrePageBody(genre, events);
+    const count = events.length;
+    const titleSuffix = count > 0 ? `${count} eventos próximos` : "Agenda";
+    return renderHtmlWithMeta({
+      title: `${genre} en Buenos Aires — ${titleSuffix} | BassLayer`,
+      description: desc.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/eventos/genero/${genreSlug(genre)}`,
+      image: `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   function renderFestivalPage(f) {
     const { html: body, desc } = buildFestivalPageBody(f);
     const range = dateRange(f.dates_start, f.dates_end);
@@ -3304,6 +3474,22 @@ if (IS_PROD) {
   }
 
   app.get("*", (req, res) => {
+    // /eventos/genero/[slug] — hub por género (high-volume keywords)
+    const genreMatch = req.path.match(/^\/eventos\/genero\/([^/]+)\/?$/);
+    if (genreMatch) {
+      const slug = decodeURIComponent(genreMatch[1]);
+      const genre = genreFromSlug(slug);
+      if (genre) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderGenrePage(genre));
+      }
+      const seoBlock = buildSeoHtml();
+      const html = seoBlock
+        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
+        : indexHtml;
+      return res.status(404).set("Content-Type", "text/html").send(html);
+    }
+
     // /eventos/[slug] — ficha individual indexable
     const eventMatch = req.path.match(/^\/eventos\/([^/]+)\/?$/);
     if (eventMatch) {
