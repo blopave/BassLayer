@@ -9,6 +9,8 @@
     "preview": "open preview.html || xdg-open preview.html"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.103.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -18,7 +20,8 @@
     "helmet": "^7.1.0",
     "node-fetch": "^3.3.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "satori": "^0.26.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

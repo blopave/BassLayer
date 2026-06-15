@@ -16,6 +16,7 @@ import { dirname, join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { generateEventOG, generateFestivalOG, generateNewsOG } from "./og.js";
 
 // ── Supabase ──
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -2696,6 +2697,50 @@ app.put("/api/admin/announcements/:id/pin", requireAuth, requireAdmin, async (re
   res.json(data);
 });
 
+// OG image dinámica — generada con satori + resvg-js, cacheada 1-24h.
+// Las rutas devuelven PNG 1200×630 branded por evento / festival / noticia.
+app.get("/og/event/:slug.png", async (req, res) => {
+  try {
+    const ev = findEventBySlug(req.params.slug);
+    if (!ev) return res.status(404).end();
+    const png = await generateEventOG(ev);
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    res.send(png);
+  } catch (e) {
+    console.error("[og/event] error:", e.message);
+    res.status(500).end();
+  }
+});
+
+app.get("/og/festival/:slug.png", async (req, res) => {
+  try {
+    const f = findFestivalBySlug(req.params.slug);
+    if (!f) return res.status(404).end();
+    const png = await generateFestivalOG(f);
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    res.send(png);
+  } catch (e) {
+    console.error("[og/festival] error:", e.message);
+    res.status(500).end();
+  }
+});
+
+app.get("/og/news/:slug.png", async (req, res) => {
+  try {
+    const n = findNewsBySlug(req.params.slug);
+    if (!n) return res.status(404).end();
+    const png = await generateNewsOG(n);
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    res.send(png);
+  } catch (e) {
+    console.error("[og/news] error:", e.message);
+    res.status(500).end();
+  }
+});
+
 // SEO: sitemap dinámico — home + un URL por evento en el caché
 app.get("/sitemap.xml", (req, res) => {
   const today = new Date().toISOString().split("T")[0];
@@ -3093,7 +3138,10 @@ if (IS_PROD) {
       title,
       description: desc.slice(0, 300),
       canonical: `${PROD_ORIGIN}/eventos/${slug}`,
-      image: ev.image || `${PROD_ORIGIN}/og-image.png`,
+      // OG dinámica branded por evento (vs flyer crudo que puede no tener
+      // contexto del sitio). El preload sí usa el flyer porque es el LCP
+      // del usuario que aterriza, no del crawler social.
+      image: `${PROD_ORIGIN}/og/event/${slug}.png`,
       preloadImage: ev.image || null,
       body,
     });
@@ -3441,13 +3489,13 @@ if (IS_PROD) {
   function renderFestivalPage(f) {
     const { html: body, desc } = buildFestivalPageBody(f);
     const range = dateRange(f.dates_start, f.dates_end);
-    const location = [f.city, f.country].filter(Boolean).join(", ");
+    const slug = festivalSlug(f);
     const title = `${f.name} ${f.dates_start ? `(${range})` : ""} | BassLayer`.trim().replace(/\s+/g, " ");
     return renderHtmlWithMeta({
       title,
       description: desc.slice(0, 300),
-      canonical: `${PROD_ORIGIN}/festivales/${festivalSlug(f)}`,
-      image: f.image || `${PROD_ORIGIN}/og-image.png`,
+      canonical: `${PROD_ORIGIN}/festivales/${slug}`,
+      image: `${PROD_ORIGIN}/og/festival/${slug}.png`,
       preloadImage: f.image || null,
       body,
     });
@@ -3456,19 +3504,20 @@ if (IS_PROD) {
   function renderNewsPage(n) {
     const { html: body, desc } = buildNewsPageBody(n);
     const sourceName = n.source || "BassLayer";
+    const slug = newsSlug(n);
     const title = `${n.title} — ${sourceName} | BassLayer`;
     // Canonical apunta a la fuente original cuando existe — somos derivados.
-    const canonical = n.url || `${PROD_ORIGIN}/noticias/${newsSlug(n)}`;
+    const canonical = n.url || `${PROD_ORIGIN}/noticias/${slug}`;
     return renderHtmlWithMeta({
       title,
       description: (desc || `Resumen de ${n.title}, publicado por ${sourceName}.`).slice(0, 300),
       canonical,
-      image: n.image || `${PROD_ORIGIN}/og-image.png`,
+      // OG dinámica branded para mejorar share previews en WhatsApp/redes.
+      // Aunque la página es noindex, el OG sí afecta el preview cuando
+      // alguien comparte el link de BassLayer (no el de la fuente).
+      image: `${PROD_ORIGIN}/og/news/${slug}.png`,
       preloadImage: n.image || null,
       body,
-      // noindex porque la canónica es la fuente original — no queremos competir
-      // con el medio por su propio artículo. follow para que Google siga los
-      // links internos hacia eventos/home y entienda nuestra estructura.
       robots: "noindex, follow, max-image-preview:large",
     });
   }
