@@ -12,6 +12,7 @@ export function BlThumb({ image, onImgFail }) {
           src={image}
           alt=""
           loading="lazy"
+          decoding="async"
           onError={() => { setImgFailed(true); onImgFail?.(); }}
         />
       </div>

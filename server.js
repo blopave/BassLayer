@@ -2908,6 +2908,12 @@ if (IS_PROD) {
     if (meta.robots) {
       html = html.replace(/<meta name="robots"\s+content="[^"]*"\s*\/?>/, `<meta name="robots" content="${escHtml(meta.robots)}" />`);
     }
+    if (meta.preloadImage) {
+      // Preload del LCP image: arranca el download antes de que el parser HTML
+      // llegue al <img>. Combinado con fetchpriority=high en el <img>, mejora
+      // LCP significativamente en /eventos /festivales /noticias detail.
+      html = html.replace("</head>", `  <link rel="preload" as="image" href="${escHtml(meta.preloadImage)}" fetchpriority="high" />\n</head>`);
+    }
     if (meta.body) {
       html = html.replace('<div id="root"></div>', `<div id="root">${meta.body}</div>`);
     }
@@ -2950,7 +2956,7 @@ if (IS_PROD) {
     lines.push(`<p style="${metaRow}">${escHtml(ev.day)} ${escHtml(ev.month)}${ev.venue ? ` · ${escHtml(ev.venue)}` : ""}${ev.city ? `, ${escHtml(ev.city)}` : ""}</p>`);
 
     if (ev.image) {
-      lines.push(`<img src="${escHtml(ev.image)}" alt="Flyer de ${escHtml(ev.name)}" loading="eager" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
+      lines.push(`<img src="${escHtml(ev.image)}" alt="Flyer de ${escHtml(ev.name)}" loading="eager" decoding="async" fetchpriority="high" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
     }
 
     lines.push(`<p style="color:#bcbcbc;line-height:1.6;margin:0 0 1.5rem">${escHtml(desc)}</p>`);
@@ -3033,6 +3039,7 @@ if (IS_PROD) {
       description: desc.slice(0, 300),
       canonical: `${PROD_ORIGIN}/eventos/${slug}`,
       image: ev.image || `${PROD_ORIGIN}/og-image.png`,
+      preloadImage: ev.image || null,
       body,
     });
   }
@@ -3070,7 +3077,7 @@ if (IS_PROD) {
     lines.push(`<h1 style="${h1Style}">${escHtml(n.title)}</h1>`);
 
     if (n.image) {
-      lines.push(`<img src="${escHtml(n.image)}" alt="${escHtml(n.title)}" loading="eager" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
+      lines.push(`<img src="${escHtml(n.image)}" alt="${escHtml(n.title)}" loading="eager" decoding="async" fetchpriority="high" style="width:100%;max-width:600px;height:auto;border-radius:8px;margin-bottom:1.5rem" />`);
     }
 
     if (desc) {
@@ -3179,7 +3186,7 @@ if (IS_PROD) {
     lines.push(`<p style="${subtitleStyle}">${escHtml(range)}${location ? ` · ${escHtml(location)}` : ""}</p>`);
 
     if (f.image) {
-      lines.push(`<img src="${escHtml(f.image)}" alt="Logo ${escHtml(f.name)}" loading="eager" style="width:100%;max-width:480px;height:auto;border-radius:8px;margin-bottom:1.5rem;background:#0a0a0a;padding:1rem" />`);
+      lines.push(`<img src="${escHtml(f.image)}" alt="Logo ${escHtml(f.name)}" loading="eager" decoding="async" fetchpriority="high" style="width:100%;max-width:480px;height:auto;border-radius:8px;margin-bottom:1.5rem;background:#0a0a0a;padding:1rem" />`);
     }
 
     if (f.description) {
@@ -3271,6 +3278,7 @@ if (IS_PROD) {
       description: desc.slice(0, 300),
       canonical: `${PROD_ORIGIN}/festivales/${festivalSlug(f)}`,
       image: f.image || `${PROD_ORIGIN}/og-image.png`,
+      preloadImage: f.image || null,
       body,
     });
   }
@@ -3286,6 +3294,7 @@ if (IS_PROD) {
       description: (desc || `Resumen de ${n.title}, publicado por ${sourceName}.`).slice(0, 300),
       canonical,
       image: n.image || `${PROD_ORIGIN}/og-image.png`,
+      preloadImage: n.image || null,
       body,
       // noindex porque la canónica es la fuente original — no queremos competir
       // con el medio por su propio artículo. follow para que Google siga los
