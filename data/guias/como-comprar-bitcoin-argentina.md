@@ -17,7 +17,7 @@ faqs:
   - q: "¿Conviene un exchange local o internacional?"
     a: "Local: más fácil para entrar y salir en pesos, menos fricción operativa. Internacional (Binance, Kraken): mejor liquidez, más pares de trading, fees menores en montos grandes. Para más de USD 500/mes, conviene combinar — local para on/off ramp en ARS, internacional para holdear y diversificar."
   - q: "¿Dónde guardo mis Bitcoin después de comprarlos?"
-    a: "Si son pocos meses y vas a operar, dejarlos en el exchange está bien. Si vas a holdear largo plazo (>1 año o >USD 5000), pasalos a una wallet propia. Hot wallets como Phantom, Trust, MetaMask son OK para uso diario; para reserva de valor, hardware wallet (Ledger, Trezor) es la práctica estándar."
+    a: "Si son pocos meses y vas a operar, dejarlos en el exchange está bien. Si vas a holdear largo plazo (>1 año o >USD 5000), pasalos a una wallet propia. Hot wallets BTC-compatibles como BlueWallet, Exodus o Trust Wallet son OK para uso diario; para reserva de valor, hardware wallet (Ledger, Trezor) es la práctica estándar."
   - q: "¿Qué errores evitar al empezar?"
     a: "Tres: (1) Comprar con apalancamiento sin entender qué es — perdés todo en una mecha. (2) Guardar tus claves privadas en captura de pantalla o nube — usá un papel offline o hardware. (3) FOMO comprar en máximos virales — el ciclo crypto premia paciencia, no urgencia."
 faqRich: true
@@ -53,7 +53,7 @@ Si tenés esas tres, podés empezar el mismo día.
 **Cons**:
 - Spreads más altos que exchanges internacionales (~1-2% peor que precio de mercado)
 - Menos pares de trading (solo cryptos principales)
-- Riesgo de contraparte (el exchange podría tener problemas — pasó con Ripio en 2022 por algunas semanas)
+- Riesgo de contraparte: cualquier exchange centralizado puede tener problemas operativos puntuales (withdrawals pausados, downtime), o, en el peor caso, problemas de solvencia — ha ocurrido con varios exchanges internacionalmente
 
 **Para quién**: si recién empezás, montos chicos (USD 100-1000/mes), querés simplicidad.
 
@@ -103,7 +103,7 @@ Una vez comprado, el Bitcoin queda en una "wallet". El exchange te da una por de
 **Heurística general**:
 
 - **Menos de USD 500 / corto plazo**: dejar en el exchange está bien. La probabilidad de problemas en montos chicos no justifica el costo de aprender a usar wallets propias.
-- **USD 500 – 5000 / mediano plazo**: pasá a una **hot wallet** propia (Phantom, Trust Wallet, MetaMask, Exodus). Vos controlás las claves; guardá la seed phrase en papel offline.
+- **USD 500 – 5000 / mediano plazo**: pasá a una **hot wallet** propia. Para Bitcoin específicamente: BlueWallet (BTC-native, móvil), Exodus o Trust Wallet (multi-asset, soportan BTC nativo), Electrum (puristas, desktop). Vos controlás las claves; guardá la seed phrase en papel offline.
 - **Más de USD 5000 / largo plazo**: **hardware wallet** (Ledger Nano, Trezor). USD 80-150 una vez, te ahorra dolores de cabeza serios. La seed phrase nunca toca internet.
 
 **Regla universal**: tu seed phrase es como tu cuenta bancaria entera. **Nunca** la subas a Google Drive, iCloud, ni le saques foto. Papel, en un lugar seguro físico. Si la perdés, perdés todo. Si alguien la copia, te roban todo.
@@ -149,7 +149,7 @@ Si nunca compraste Bitcoin y querés empezar mañana:
 1. Bajá Lemon o Belo, hacé KYC con tu DNI.
 2. Transferí ARS 50.000 – 200.000 desde tu banco a tu CVU del exchange.
 3. Comprá BTC desde la app.
-4. Si vas a holdear más de USD 500, descargá Phantom o Trust Wallet y transferí ahí.
+4. Si vas a holdear más de USD 500, descargá BlueWallet o Trust Wallet y transferí ahí.
 5. Anotá tu seed phrase en papel. Guardalo físicamente.
 6. Para montos mayores y largo plazo, considerá hardware wallet.
 

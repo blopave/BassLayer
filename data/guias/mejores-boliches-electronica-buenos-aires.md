@@ -11,7 +11,7 @@ heroEmoji: "🎛"
 tldr: "Buenos Aires tiene una de las escenas electrónicas más fuertes de Latinoamérica. Los clubes con más actividad hoy son Crobar (techno mainstream), Mandarine Park (open air), Niceto (alternativo), Jet (rooftop con DJs internacionales) y Bresh (house festivo). Cada uno tiene su carácter — esta guía ayuda a elegir según la noche."
 faqs:
   - q: "¿Cuáles son los mejores boliches de techno en Buenos Aires?"
-    a: "Crobar (Recoleta) sigue siendo el referente mainstream con line-ups internacionales todos los fines de semana. Para techno más underground y curado, Niceto (Palermo) y los eventos en venues alternativos como Liv Outside o los warehouses del sur. Mandarine Park funciona como gran open air en zona norte durante temporada."
+    a: "Crobar sigue siendo el referente mainstream con line-ups internacionales todos los fines de semana. Para techno más underground y curado, Niceto (Palermo) y los eventos en venues alternativos. Mandarine Park funciona como gran open air en zona norte durante temporada cálida."
   - q: "¿A qué hora abren los boliches en Buenos Aires?"
     a: "La vida nocturna porteña arranca tarde — la mayoría de los clubes abren entre la 1am y las 2am, con el pico entre 3am y 6am. Algunos eventos open air arrancan antes (10pm-12am) pero los after se extienden hasta el mediodía del día siguiente."
   - q: "¿Necesito reservar entrada con anticipación?"
@@ -37,13 +37,13 @@ Cada uno tiene su público y su voz. La mayoría de noches buenas en BA pasan en
 
 ## Los clubes más importantes
 
-### Crobar — Recoleta
+### Crobar
 
-El club mainstream por excelencia. Funciona desde fines de los 90 y sigue siendo donde aterrizan los headliners más grandes del techno y house mundial — Adam Beyer, Charlotte de Witte, Solomun, Sven Väth pasaron este último año.
+El club mainstream por excelencia, activo desde fines de los 90. Sigue siendo uno de los venues principales donde aterrizan headliners internacionales de techno y house. La cartelera rota con nombres globales habituales del circuito.
 
-**Qué esperar**: pista grande (~2500 personas), sound system contundente, line-ups de 3-4 DJs locales + 1 international headliner los fines de semana. Producción visual cuidada.
+**Qué esperar**: pista grande, sound system contundente, line-ups de 3-4 DJs locales + 1 international headliner los fines de semana. Producción visual cuidada.
 
-**Para qué noche**: si buscás un DJ internacional específico, probablemente toca acá. También para sábados de techno garantizado sin tener que investigar lineup.
+**Para qué noche**: si buscás un DJ internacional específico, frecuentemente toca acá. También para sábados de techno garantizado sin tener que investigar lineup.
 
 ### Mandarine Park — zona norte
 
@@ -61,7 +61,7 @@ El club alternativo de referencia. Dos salas (Niceto Club y Niceto Side) que rot
 
 **Para qué noche**: cuando querés sorprender con algo nuevo o seguir una escena específica (sello, colectivo, productor local).
 
-### Jet — Puerto Madero
+### Jet — costa norte
 
 Rooftop con vista al río. Funciona los viernes y sábados con line-ups de tech-house y house principalmente. Producción premium, ambiente más sophisticado/coquetón que un club tradicional.
 
@@ -79,11 +79,10 @@ Más que un club, una marca de fiestas que circula entre venues distintos (Konex
 
 ## Otros venues activos
 
-- **Konex** — Almagro. Centro cultural con la "Fiesta Bomba" los lunes (tradición porteña de electrónica) y eventos rotativos los fines de semana.
-- **Bahrein** — microcentro. Histórico, programación variada, todavía vigente.
-- **Tequila / Pacha** (formato evento) — Pacha tuvo cierre del local físico pero la marca sigue activa en eventos curados.
+- **Konex** — Almagro. Centro cultural con eventos electrónicos rotativos y residencias semanales.
+- **Bahrein** — microcentro. Histórico, programación variada.
 - **Liv Outside** — Palermo. Boutique, drum & bass, eventos curados.
-- **Warehouse-style** — eventos rotativos en zonas industriales (Barracas, Avellaneda). No tienen ubicación fija — se anuncian semanas antes vía Instagram y plataformas.
+- **Warehouse-style / formato evento** — eventos rotativos en zonas industriales (Barracas, Avellaneda) o marcas históricas que circulan entre venues. No tienen ubicación fija — se anuncian semanas antes vía Instagram y plataformas de tickets.
 
 ## Por género: dónde caer
 
@@ -100,10 +99,12 @@ Si tu prioridad es el sonido más que el venue, esta es la heurística más conf
 
 La vida nocturna porteña arranca tarde. Si llegás a un club a las 12am, vas a estar entre los primeros. El verdadero pico está entre 3am y 6am, y muchos eventos open-air van hasta las 10am-12pm del día siguiente.
 
-**Entradas** (ranges 2026):
-- Fiestas con DJ internacional headliner: ARS 25.000 – 50.000 (preventa) / ARS 35.000 – 70.000 (puerta)
-- Eventos sin headliner internacional: ARS 8.000 – 18.000
-- Open air grandes (Mandarine Park, festivales mini): ARS 30.000 – 80.000
+**Entradas** (rangos orientativos, varían fuerte con la inflación):
+- Fiestas con DJ internacional headliner: tier alto, preventa siempre por menos
+- Eventos sin headliner internacional: tier medio
+- Open air grandes (Mandarine Park, festivales mini): tier alto, frecuente venta por fases
+
+Para precios actuales puntuales lo mejor es revisar la página oficial del evento — el contexto macroeconómico hace que las cifras cambien mes a mes.
 
 **Tip**: preventa siempre es más barata. Las plataformas locales (Passline, Punto Ticket) tienen los eventos. Para internacionales grandes, plataformas oficiales del headliner o del club.
 
@@ -126,7 +127,7 @@ La actividad nocturna no es uniforme todo el año:
 
 ## Para profundizar
 
-- **Festivales 2026 en Argentina**: ver [calendario completo de festivales](/festivales) — Creamfields, Lollapalooza, Ultra, Movement y los regionales (Mar del Plata, Córdoba).
+- **Festivales 2026 en Argentina**: [Lollapalooza](/festivales/lollapalooza-ar-2026), Creamfields, Ultra, Movement y los regionales — ver agenda completa en BassLayer.
 - **DJs locales para conocer**: Hernán Cattáneo, Bárbara Boeing, Pablo Bolivar, Sofia Kourtesis, Wehbba (BR pero residencia BA).
 - **Suscribite a la agenda**: la [home de BassLayer](/) muestra todos los eventos próximos actualizados cada hora desde RA y Buenos Aliens.
 
