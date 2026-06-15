@@ -858,7 +858,12 @@
 
 .bl-word-wrap { position:relative; z-index:100; display:flex; flex-direction:column; align-items:center; gap:0; }
 .bl-word-row { display:flex; align-items:baseline; gap:clamp(8px,1.5vw,20px); }
-.bl-word-half { position:relative; cursor:pointer; display:inline-flex; overflow:hidden; }
+.bl-word-half { position:relative; cursor:pointer; display:inline-flex; overflow:hidden; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+/* Las letras son aria-hidden y se mutan en JS (textContent + transform) por la
+   animación de decode/glow. Si fueran click targets, Safari dropea el click
+   cuando textContent cambia entre mousedown y mouseup. pointer-events:none
+   delega todo el hit-testing al padre .bl-word-half (que es el botón real). */
+.bl-word-half .bl-letter { pointer-events:none; }
 
 /* ── Entrance: cinematic letter rise with blur ── */
 @keyframes letter-rise {
