@@ -17,6 +17,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { generateEventOG, generateFestivalOG, generateNewsOG } from "./og.js";
+import { marked } from "marked";
+import matter from "gray-matter";
+import { readdirSync } from "node:fs";
 
 // ── Supabase ──
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -247,6 +250,55 @@ function findFestivalBySlug(slug) {
     if (festivalSlug(f) === slug) return f;
   }
   return null;
+}
+
+// ─── Guías long-form (Markdown driven) ──────
+// Las guías son contenido editorial sustantivo (1500-2500 palabras) con
+// keyword targeting de queries informacionales de alto volumen. Tipo de
+// contenido que atrae backlinks de prensa y fortalece autoridad temática.
+const GUIAS_DIR = join(__dirname, "data", "guias");
+let guiasCache = null;
+let guiasCacheTs = 0;
+const GUIAS_CACHE_TTL = 5 * 60_000; // 5min — releva edits sin reinicio
+
+function loadGuias() {
+  const now = Date.now();
+  if (guiasCache && (now - guiasCacheTs) < GUIAS_CACHE_TTL) return guiasCache;
+  try {
+    if (!existsSync(GUIAS_DIR)) { guiasCache = []; guiasCacheTs = now; return guiasCache; }
+    const files = readdirSync(GUIAS_DIR).filter(f => f.endsWith(".md"));
+    const all = files.map(file => {
+      const raw = readFileSync(join(GUIAS_DIR, file), "utf-8");
+      const parsed = matter(raw);
+      const slug = parsed.data.slug || file.replace(/\.md$/, "");
+      return {
+        slug,
+        title: parsed.data.title || slug,
+        description: parsed.data.description || "",
+        keywords: parsed.data.keywords || [],
+        publishedAt: parsed.data.publishedAt,
+        updatedAt: parsed.data.updatedAt,
+        category: parsed.data.category || "general",
+        author: parsed.data.author || "BassLayer Editorial",
+        heroEmoji: parsed.data.heroEmoji || "",
+        tldr: parsed.data.tldr || "",
+        faqs: Array.isArray(parsed.data.faqs) ? parsed.data.faqs : [],
+        body: parsed.content,
+        bodyHtml: marked.parse(parsed.content, { mangle: false, headerIds: true }),
+      };
+    });
+    // Sort: más reciente primero
+    all.sort((a, b) => String(b.updatedAt || b.publishedAt || "").localeCompare(String(a.updatedAt || a.publishedAt || "")));
+    guiasCache = all;
+    guiasCacheTs = now;
+    return all;
+  } catch (e) {
+    console.error("[guias] load error:", e.message);
+    return [];
+  }
+}
+function findGuiaBySlug(slug) {
+  return loadGuias().find(g => g.slug === slug) || null;
 }
 
 // ─── Géneros: slugs + descripciones evergreen ──
@@ -2795,6 +2847,17 @@ app.get("/sitemap.xml", (req, res) => {
     });
   }
 
+  // Guías editoriales — máxima prioridad SEO (contenido original largo)
+  const guias = loadGuias();
+  for (const g of guias) {
+    urls.push({
+      loc: `${PROD_ORIGIN}/guias/${g.slug}`,
+      lastmod: g.updatedAt || g.publishedAt || today,
+      changefreq: "monthly",
+      priority: "0.9",
+    });
+  }
+
   // Festivales — curados, evergreen, sólo los no pasados
   const festivals = loadFestivals();
   for (const f of festivals) {
@@ -3471,6 +3534,123 @@ if (IS_PROD) {
     return { html: lines.join(""), desc: blurb };
   }
 
+  // Guía long-form — Markdown body con full SEO meta + Article JSON-LD + FAQ
+  function buildGuiaPageBody(g) {
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:720px;margin:0 auto;padding:2.5rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:2.1rem;font-weight:600;letter-spacing:-0.025em;line-height:1.15;margin:0 0 1rem;color:#fff";
+    const metaRow = "color:#888;font-size:0.85rem;margin:0 0 2rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center";
+    const tldrBox = "background:#0f0f0f;border-left:3px solid #7ec8ff;padding:1.25rem 1.5rem;margin:1.5rem 0 2.5rem;border-radius:0 6px 6px 0;color:#d0d0d0;line-height:1.6;font-size:1rem";
+    // Estilos para los nodos generados por marked (h2/h3/p/ul/li/a/strong/em)
+    const proseCss = `
+      .prose { line-height:1.7; font-size:1.05rem; color:#d5d5d5; }
+      .prose h2 { font-size:1.55rem; font-weight:600; letter-spacing:-0.015em; margin:2.5rem 0 1rem; color:#fff; padding-bottom:0.4rem; border-bottom:1px solid #1f1f1f; }
+      .prose h3 { font-size:1.2rem; font-weight:600; margin:2rem 0 0.75rem; color:#fff; }
+      .prose p { margin:0 0 1.1rem; }
+      .prose ul, .prose ol { margin:0 0 1.25rem 1.5rem; padding:0; }
+      .prose li { margin:0.35rem 0; }
+      .prose a { color:#7ec8ff; text-decoration:none; border-bottom:1px solid rgba(126,200,255,0.3); }
+      .prose a:hover { border-bottom-color:#7ec8ff; }
+      .prose strong { color:#fff; font-weight:700; }
+      .prose em { font-style:italic; color:#bcbcbc; }
+      .prose hr { border:0; border-top:1px solid #1f1f1f; margin:2.5rem 0; }
+      .prose blockquote { border-left:3px solid #2a2a2a; padding:0.5rem 1rem; margin:1.25rem 0; color:#a0a0a0; font-style:italic; }
+      .prose code { background:#1a1a1a; padding:0.15rem 0.4rem; border-radius:3px; font-size:0.92em; color:#e6c896; }
+    `;
+
+    const lines = [
+      `<style>${proseCss}</style>`,
+      `<main style="${wrapStyle}" aria-label="${escHtml(g.title)}">`,
+      `<div style="${innerStyle}">`,
+    ];
+
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Guías</a> <span>›</span> <span>${escHtml(g.title)}</span></nav>`);
+
+    lines.push(`<article>`);
+    lines.push(`<h1 style="${h1Style}">${escHtml(g.title)}</h1>`);
+    lines.push(`<p style="${metaRow}">`);
+    lines.push(`<span>Por ${escHtml(g.author)}</span>`);
+    if (g.publishedAt) lines.push(`<span>·</span><time datetime="${escHtml(g.publishedAt)}">Publicado ${escHtml(g.publishedAt)}</time>`);
+    if (g.updatedAt && g.updatedAt !== g.publishedAt) {
+      lines.push(`<span>·</span><span>Actualizado ${escHtml(g.updatedAt)}</span>`);
+    }
+    lines.push(`</p>`);
+
+    if (g.tldr) {
+      lines.push(`<aside style="${tldrBox}"><strong style="color:#7ec8ff;text-transform:uppercase;letter-spacing:0.08em;font-size:0.78rem;display:block;margin-bottom:0.5rem">TL;DR</strong>${escHtml(g.tldr)}</aside>`);
+    }
+
+    // marked.parse genera HTML seguro — los .md están en el repo (no input usuario)
+    lines.push(`<div class="prose">${g.bodyHtml}</div>`);
+
+    lines.push(`</article>`);
+    lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${crumbLink}">← Volver a BassLayer</a></p>`);
+    lines.push(`</div></main>`);
+
+    // JSON-LD Article — elegible para Top Stories y rich results
+    const articleSchema = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": g.title,
+      "description": g.description,
+      "url": `${PROD_ORIGIN}/guias/${g.slug}`,
+      "image": [`${PROD_ORIGIN}/og-image.png`],
+      "datePublished": g.publishedAt,
+      "dateModified": g.updatedAt || g.publishedAt,
+      "author": { "@type": "Organization", "name": g.author, "url": PROD_ORIGIN },
+      "publisher": {
+        "@type": "Organization",
+        "name": "BassLayer",
+        "logo": { "@type": "ImageObject", "url": `${PROD_ORIGIN}/icon-512.png`, "width": 512, "height": 512 }
+      },
+      "mainEntityOfPage": { "@type": "WebPage", "@id": `${PROD_ORIGIN}/guias/${g.slug}` },
+      "inLanguage": "es-AR",
+      "keywords": Array.isArray(g.keywords) ? g.keywords.join(", ") : "",
+      "articleSection": g.category
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(articleSchema).replace(/<\//g, "<\\/")}</script>`);
+
+    // FAQPage JSON-LD — rich result que ocupa mucho espacio en SERP
+    if (Array.isArray(g.faqs) && g.faqs.length > 0) {
+      const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": g.faqs.map(f => ({
+          "@type": "Question",
+          "name": f.q,
+          "acceptedAnswer": { "@type": "Answer", "text": f.a }
+        }))
+      };
+      lines.push(`<script type="application/ld+json">${JSON.stringify(faqSchema).replace(/<\//g, "<\\/")}</script>`);
+    }
+
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
+        { "@type": "ListItem", "position": 2, "name": "Guías", "item": `${PROD_ORIGIN}/guias` },
+        { "@type": "ListItem", "position": 3, "name": g.title, "item": `${PROD_ORIGIN}/guias/${g.slug}` }
+      ]
+    };
+    lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
+
+    return { html: lines.join(""), desc: g.description || g.tldr || g.title };
+  }
+
+  function renderGuiaPage(g) {
+    const { html: body, desc } = buildGuiaPageBody(g);
+    return renderHtmlWithMeta({
+      title: `${g.title} | BassLayer`,
+      description: desc.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/guias/${g.slug}`,
+      image: `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   function renderGenrePage(genre) {
     const allEvents = cached("events") || [];
     const events = allEvents.filter(e => (e.genre || "").toLowerCase() === genre.toLowerCase());
@@ -3563,6 +3743,22 @@ if (IS_PROD) {
       if (n) {
         res.set("Content-Type", "text/html");
         return res.send(renderNewsPage(n));
+      }
+      const seoBlock = buildSeoHtml();
+      const html = seoBlock
+        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
+        : indexHtml;
+      return res.status(404).set("Content-Type", "text/html").send(html);
+    }
+
+    // /guias/[slug] — guía editorial long-form (SÍ indexable, Article JSON-LD)
+    const guiaMatch = req.path.match(/^\/guias\/([^/]+)\/?$/);
+    if (guiaMatch) {
+      const slug = decodeURIComponent(guiaMatch[1]);
+      const g = findGuiaBySlug(slug);
+      if (g) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderGuiaPage(g));
       }
       const seoBlock = buildSeoHtml();
       const html = seoBlock
