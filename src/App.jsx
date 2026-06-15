@@ -302,13 +302,12 @@ export default function App() {
     }
   }
 
-  // Day/Night mode
+  // Day/Night mode — dark por defecto. Si el usuario alguna vez toggleó a día,
+  // respetamos esa preferencia guardada en localStorage.
   const [dayMode, setDayMode] = useState(() => {
     const saved = localStorage.getItem("bl-mode");
     if (saved) return saved === "day";
-    // Auto: day between 7am-8pm Buenos Aires time
-    const hour = new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires", hour: "numeric", hour12: false });
-    return +hour >= 7 && +hour < 20;
+    return false;
   });
   const toggleMode = useCallback(() => {
     const root = document.querySelector(".bl-root");
