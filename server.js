@@ -510,6 +510,67 @@ function detectTag(title) {
   return "Crypto";
 }
 
+// Algunos feeds "crypto" (CryptoBriefing, Cointelegraph) publican filler de
+// macro pura, M&A no-cripto y hasta sports stories. Filtro:
+//   1) Allowlist positiva: el item necesita una señal cripto/finanzas en
+//      título o descripción para sobrevivir. Esto solo descarta los items
+//      sin contexto cripto alguno (Pizza Hut M&A, SpaceX IPO, housing starts).
+//   2) Solo unos pocos patrones de deny — los que escapan la allowlist porque
+//      mencionan crypto incidentalmente. NO usamos sport leagues como deny:
+//      NBA Top Shot, fan tokens del Mundial, etc. son crypto válido.
+//
+// Polymarket queda dentro (mercado de predicciones on-chain). BlackRock,
+// Grayscale, MicroStrategy también — en estos feeds siempre son crypto.
+const OFF_TOPIC_PATTERNS = [
+  /\bnot a crypto story\b/i,         // CryptoBriefing autodelata sus filler items
+];
+
+// Señales positivas — al menos una match en title o description.
+// Convención: stems abiertos (sin \b final) para cubrir plurales/derivados.
+// Cubre español (criptomonedas, bitcóin, blockchain) y casos cripto-adjacentes.
+const CRYPTO_FINANCE_SIGNALS = [
+  // Bitcoin family — cubre bitcoin, bitcóin (es), bitcoiner, bitcoiners
+  /\bbtc\b/i, /\bbitc[oó]in/i, /\bsatoshi\b/i,
+  // Ethereum
+  /\beth\b/i, /\bethereum\b/i, /\bvitalik\b/i,
+  // Otros activos — usamos el nombre completo, no el ticker, para evitar
+  // colisión con palabras españolas (sol=sun, ada=name).
+  /\bsolana\b/i, /\bxrp\b/i, /\bripple\b/i, /\bcardano\b/i, /\bdoge(coin)?\b/i,
+  /\bavalanche\b/i, /\bchainlink\b/i, /\bpolkadot\b/i,
+  // Términos cripto generales — stems abiertos para cubrir plurales/variantes
+  /\bcrypto/i,           // crypto, cryptocurrency, cryptocurrencies
+  /\bcripto/i,           // cripto, criptomonedas, criptoactivos, criptografía
+  /\bblockchain/i,       // blockchain, blockchains
+  /\bdefi\b/i, /\bnft/i, /\bstablecoin/i, /\baltcoin/i, /\bweb3\b/i,
+  /\bon[- ]?chain\b/i, /\bairdrop/i, /\bhalving\b/i, /\bhashrate\b/i,
+  /\btokeniz/i, /\brwa\b/i, /\brollup/i,
+  // Exchanges, infra, players (en estos feeds siempre son crypto)
+  /\bbinance\b/i, /\bcoinbase\b/i, /\bkraken\b/i, /\bbybit\b/i,
+  /\bokx\b/i, /\bbitget\b/i, /\bgemini\b/i, /\buniswap\b/i,
+  /\baave\b/i, /\bopensea\b/i, /\bpolymarket\b/i, /\bhyperliquid\b/i,
+  /\barbitrum\b/i, /\boptimism\b/i, /\bzksync\b/i, /\bpolygon\b/i,
+  /\busdt\b/i, /\busdc\b/i, /\btether\b/i, /\bmicrostrategy\b/i,
+  /\bsaylor\b/i, /\bgrayscale\b/i, /\bondo\b/i, /\bblackrock\b/i,
+  // ETFs cripto y derivados — anclados al contexto cripto para evitar
+  // matchear cualquier ETF de equities
+  /\b(spot|bitcoin|eth|crypto) etf\b/i,
+  /\bperpetual/i, /\bperp futures?\b/i,
+  // Liquidaciones — anclamos a contexto cripto para no matchear
+  // "company liquidation proceedings" de notas de M&A
+  /\b(crypto|bitcoin|btc|eth|defi|leverage) liquidat/i,
+  /\bliquidat\w* (the (long|short)|on (the )?(btc|eth|crypto))/i,
+  // Mining / wallet — anclados para evitar "gold mining" o fintech wallets
+  /\b(crypto|bitcoin|btc) (mining|miner|wallet)/i,
+  /\b(crypto|bitcoin) (treasury|reserve|holdings)/i,
+];
+
+function isCryptoOrFinance(title, description) {
+  const haystack = `${title} ${description || ""}`;
+  for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(haystack)) return false;
+  for (const pat of CRYPTO_FINANCE_SIGNALS) if (pat.test(haystack)) return true;
+  return false;
+}
+
 // Common timezone abbreviations Node's Date parser doesn't accept (BST, EDT, etc.)
 const TZ_OFFSETS = {
   BST:"+0100", GMT:"+0000", UTC:"+0000",
@@ -597,7 +658,14 @@ async function fetchRSSFeed(feed) {
 app.get("/api/news", async (req, res) => {
   const rawTag = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
   const tagFilter = rawTag?.toUpperCase();
-  const applyFilter = (arr) => tagFilter && tagFilter !== "ALL" ? arr.filter((n) => n.tag === tagFilter) : arr;
+  // El caché guarda la lista sin filtrar para que findNewsBySlug pueda
+  // resolver deep links históricos aunque el item ya no clasifique como
+  // crypto/finanzas. El filtro de contenido + tag corre por request.
+  const applyFilter = (arr) => {
+    let out = arr.filter((n) => isCryptoOrFinance(n.title, n.description));
+    if (tagFilter && tagFilter !== "ALL") out = out.filter((n) => n.tag === tagFilter);
+    return out;
+  };
 
   const hit = cached("news");
   if (hit) return res.json(applyFilter(hit));
@@ -614,7 +682,7 @@ app.get("/api/news", async (req, res) => {
     res.json(applyFilter(news));
   } catch (e) {
     console.error("[news]", e.message);
-    if (cache.news.data) return res.json(cache.news.data);
+    if (cache.news.data) return res.json(applyFilter(cache.news.data));
     res.status(502).json({ error: "News unavailable" });
   }
 });
