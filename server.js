@@ -572,25 +572,41 @@ const TAG_RULES = [
   // Catch-all crypto: términos genéricos, exchanges, players, derivados.
   // Llega solo cuando ningún tag específico matcheó. Empareja "Bybit announces
   // new perpetual" → "Crypto" en vez de descartar.
-  { tag: "Crypto", pats: [
-    /\bcrypto/i,        // crypto, cryptocurrency, cryptocurrencies
-    /\bcripto/i,        // cripto, criptomonedas, criptoactivos
-    /\bblockchain/i,    // blockchain, blockchains
-    /\baltcoin/i, /\bweb3\b/i,
-    /\bon[- ]?chain\b/i, /\bairdrop/i, /\btokeniz/i, /\brwa\b/i,
-    // Exchanges / infra que no merecen tag propio
-    /\bbinance\b/i, /\bcoinbase\b/i, /\bkraken\b/i, /\bbybit\b/i,
-    /\bokx\b/i, /\bbitget\b/i, /\bgemini\b/i, /\bpolymarket\b/i, /\bhyperliquid\b/i,
-    /\bgrayscale\b/i, /\bondo\b/i, /\bblackrock\b/i,
-    /\bavalanche\b/i, /\bchainlink\b/i, /\bpolkadot\b/i,
-    // ETFs cripto (anclado a contexto para no matchear ETFs de equities)
-    /\b(spot|bitcoin|eth|crypto) etf\b/i,
-    /\bperpetual/i, /\bperp futures?\b/i,
-    // Liquidaciones anclado a contexto cripto
-    /\b(crypto|bitcoin|btc|eth|defi|leverage) liquidat/i,
-    /\bliquidat\w* (the (long|short)|on (the )?(btc|eth|crypto))/i,
-  ]},
+  //
+  // weakPats vs pats: las weak (crypto/cripto/blockchain) NO admiten por
+  // description — solo por title o categories. CryptoBriefing escribe
+  // "crypto"/"cryptocurrencies" como tag-along en cada description de notas
+  // off-topic (SpaceX IPO, ECB rates, Trump-Iran). Sin esta restricción,
+  // ~36% del feed eran items macro/equity admitidos por buzzword en desc.
+  // Items legítimos casi siempre traen el asset/exchange/protocol en title
+  // o como category del publisher.
+  { tag: "Crypto",
+    weakPats: [
+      /\bcrypto/i,        // crypto, cryptocurrency, cryptocurrencies
+      /\bcripto/i,        // cripto, criptomonedas, criptoactivos
+      /\bblockchain/i,    // blockchain, blockchains
+    ],
+    pats: [
+      /\baltcoin/i, /\bweb3\b/i,
+      /\bon[- ]?chain\b/i, /\bairdrop/i, /\btokeniz/i, /\brwa\b/i,
+      // Exchanges / infra que no merecen tag propio
+      /\bbinance\b/i, /\bcoinbase\b/i, /\bkraken\b/i, /\bbybit\b/i,
+      /\bokx\b/i, /\bbitget\b/i, /\bgemini\b/i, /\bpolymarket\b/i, /\bhyperliquid\b/i,
+      /\bgrayscale\b/i, /\bondo\b/i, /\bblackrock\b/i,
+      /\bavalanche\b/i, /\bchainlink\b/i, /\bpolkadot\b/i,
+      // ETFs cripto (anclado a contexto para no matchear ETFs de equities)
+      /\b(spot|bitcoin|eth|crypto) etf\b/i,
+      /\bperpetual/i, /\bperp futures?\b/i,
+      // Liquidaciones anclado a contexto cripto
+      /\b(crypto|bitcoin|btc|eth|defi|leverage) liquidat/i,
+      /\bliquidat\w* (the (long|short)|on (the )?(btc|eth|crypto))/i,
+    ]},
 ];
+
+// Helper: junta strong + weak patterns de una regla en un solo array
+function allPats(rule) {
+  return [...(rule.pats || []), ...(rule.weakPats || [])];
+}
 
 function detectTag(title, categories = []) {
   // Las categories del RSS son alta señal cuando el publisher las tagea
@@ -599,8 +615,8 @@ function detectTag(title, categories = []) {
   // para que items con título críptico ("Here's what happened in crypto today")
   // se beneficien de los tags del publisher.
   const haystack = `${title} ${categories.join(" ")}`;
-  for (const { tag, pats } of TAG_RULES) {
-    if (pats.some((p) => p.test(haystack))) return tag;
+  for (const rule of TAG_RULES) {
+    if (allPats(rule).some((p) => p.test(haystack))) return rule.tag;
   }
   return "Crypto";
 }
@@ -622,11 +638,16 @@ function isCryptoOrFinance(title, description = "", categories = []) {
   // tagueó la nota como "Bitcoin Price" o "DeFi", se admite aunque el
   // título sea ambiguo. NO usamos categories como deny — son ruidosas
   // ("Technology" para SpaceX, "Mercados" para petróleo).
-  const haystack = `${title} ${description} ${categories.join(" ")}`;
-  for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(haystack)) return false;
+  //
+  // Las weak patterns (crypto/cripto/blockchain) solo matchean title+cats
+  // — ver comentario en la regla "Crypto" de TAG_RULES.
+  const titleHaystack = `${title} ${categories.join(" ")}`;
+  const fullHaystack = `${titleHaystack} ${description}`;
+  for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(fullHaystack)) return false;
   for (const rule of TAG_RULES) {
     if (rule.tagOnly) continue;
-    for (const p of rule.pats) if (p.test(haystack)) return true;
+    for (const p of (rule.pats || [])) if (p.test(fullHaystack)) return true;
+    for (const p of (rule.weakPats || [])) if (p.test(titleHaystack)) return true;
   }
   return false;
 }
