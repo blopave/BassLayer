@@ -101,6 +101,33 @@ export const STRINGS = {
     "timeline.type.reg.desc": "Marco legal, fiscal o regulatorio que afecta a la actividad cripto en Argentina.",
 
     "lang.toggle": "Cambiar idioma",
+
+    "home.electronic": "Escena de música electrónica",
+    "home.blockchain": "Blockchain · Cripto · Mercados",
+    "home.city": "Buenos Aires",
+
+    "util.home": "home",
+    "util.about": "about",
+    "util.back": "Volver al inicio",
+    "util.aboutBL": "Acerca de BassLayer",
+    "util.day": "Modo diurno",
+    "util.night": "Modo nocturno",
+
+    "onboarding.welcome": "Bienvenido a BassLayer",
+    "onboarding.tip.mobile": "Toca Bass o Layer para explorar",
+    "onboarding.tip.desktop": "Pasa el mouse sobre Bass o Layer para explorar",
+    "onboarding.tip.bass": "Bass = eventos de música electrónica en Buenos Aires",
+    "onboarding.tip.layer": "Layer = crypto, precios en vivo y noticias",
+    "onboarding.cta": "Entendido",
+
+    "about.descPre": "Tu radar en tiempo real para la escena de ",
+    "about.descMid": " y el mundo ",
+    "about.descPost": " en Buenos Aires.",
+    "about.descElectronic": "música electrónica",
+    "about.descCrypto": "crypto",
+    "about.bassText": "Eventos, fiestas, DJs y venues de la escena electrónica porteña. Filtrá por género, buscá por nombre o descubrí qué hay este finde.",
+    "about.layerText": "Precios crypto en vivo, noticias del mercado, eventos y cursos crypto IRL en Buenos Aires. Todo en un solo lugar.",
+    "about.footer": "Buenos Aires — 2026",
   },
   en: {
     "common.close": "Close",
@@ -204,6 +231,33 @@ export const STRINGS = {
     "timeline.type.reg.desc": "Legal, fiscal or regulatory framework affecting crypto activity in Argentina.",
 
     "lang.toggle": "Switch language",
+
+    "home.electronic": "Electronic music scene",
+    "home.blockchain": "Blockchain · Crypto · Markets",
+    "home.city": "Buenos Aires",
+
+    "util.home": "home",
+    "util.about": "about",
+    "util.back": "Back to home",
+    "util.aboutBL": "About BassLayer",
+    "util.day": "Day mode",
+    "util.night": "Night mode",
+
+    "onboarding.welcome": "Welcome to BassLayer",
+    "onboarding.tip.mobile": "Tap Bass or Layer to explore",
+    "onboarding.tip.desktop": "Hover over Bass or Layer to explore",
+    "onboarding.tip.bass": "Bass = electronic music events in Buenos Aires",
+    "onboarding.tip.layer": "Layer = crypto, live prices and news",
+    "onboarding.cta": "Got it",
+
+    "about.descPre": "Your real-time radar for the ",
+    "about.descMid": " scene and the world of ",
+    "about.descPost": " in Buenos Aires.",
+    "about.descElectronic": "electronic music",
+    "about.descCrypto": "crypto",
+    "about.bassText": "Events, parties, DJs and venues from Buenos Aires' electronic scene. Filter by genre, search by name or discover what's on this weekend.",
+    "about.layerText": "Live crypto prices, market news, crypto IRL events and courses in Buenos Aires. All in one place.",
+    "about.footer": "Buenos Aires — 2026",
   },
 };
 

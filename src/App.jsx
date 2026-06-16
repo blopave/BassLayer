@@ -750,7 +750,7 @@ export default function App() {
           <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
           <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; 2026</div>
-          <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">Buenos Aires — {clock}</div>
+          <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
 
           <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
             <h1 className="bl-sr-only">BassLayer</h1>
@@ -779,10 +779,10 @@ export default function App() {
               </div>
             </div>
             <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>Electronic music scene</div>
+              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>{t("home.electronic")}</div>
             </div>
             <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
-              <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>Blockchain · Crypto · Markets</div>
+              <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>{t("home.blockchain")}</div>
             </div>
           </div>
 
@@ -878,23 +878,23 @@ export default function App() {
       {showOnboarding && (
         <div className="bl-onboarding" onClick={() => { localStorage.setItem("bl-onboarded", "1"); setShowOnboarding(false); }}>
           <div className="bl-onboarding-card" onClick={(e) => e.stopPropagation()}>
-            <div className="bl-onboarding-title">Bienvenido a BassLayer</div>
+            <div className="bl-onboarding-title">{t("onboarding.welcome")}</div>
             <div className="bl-onboarding-tips">
               <div className="bl-onboarding-tip">
                 <span className="bl-onboarding-num">1</span>
-                {isMobile ? "Toca Bass o Layer para explorar" : "Pasa el mouse sobre Bass o Layer para explorar"}
+                {isMobile ? t("onboarding.tip.mobile") : t("onboarding.tip.desktop")}
               </div>
               <div className="bl-onboarding-tip">
                 <span className="bl-onboarding-num">2</span>
-                Bass = eventos de musica electronica en Buenos Aires
+                {t("onboarding.tip.bass")}
               </div>
               <div className="bl-onboarding-tip">
                 <span className="bl-onboarding-num">3</span>
-                Layer = crypto, precios en vivo y noticias
+                {t("onboarding.tip.layer")}
               </div>
             </div>
             <button className="bl-onboarding-btn" onClick={() => { localStorage.setItem("bl-onboarded", "1"); setShowOnboarding(false); }}>
-              Entendido
+              {t("onboarding.cta")}
             </button>
           </div>
         </div>
@@ -903,13 +903,13 @@ export default function App() {
       {/* UTILITY CLUSTER — home / about / lang / mode */}
       <div className="bl-util-bar">
         {view === "sections" && (
-          <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label="Volver al inicio">
+          <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label={t("util.back")}>
             <span className="bl-util-arrow" aria-hidden="true">&larr;</span>
-            <span>home</span>
+            <span>{t("util.home")}</span>
           </button>
         )}
-        <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label="Acerca de BassLayer">
-          about
+        <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
+          {t("util.about")}
         </button>
         <button
           className="bl-lang-toggle"
@@ -920,7 +920,7 @@ export default function App() {
           <span className="bl-lang-sep" aria-hidden="true">/</span>
           <span className={`bl-lang-opt${locale === "en" ? " active" : ""}`}>EN</span>
         </button>
-        <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? "Modo nocturno" : "Modo diurno"}>
+        <button className="bl-mode-toggle" onClick={toggleMode} aria-label={dayMode ? t("util.night") : t("util.day")}>
           {dayMode ? (
             <svg viewBox="0 0 24 24"><path className="bl-mode-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
           ) : (
@@ -933,26 +933,26 @@ export default function App() {
       {showAbout && (
         <div className="bl-about-overlay" onClick={() => setShowAbout(false)}>
           <div className="bl-about-card" onClick={(e) => e.stopPropagation()}>
-            <button className="bl-modal-close" onClick={() => setShowAbout(false)} aria-label="Cerrar">&times;</button>
+            <button className="bl-modal-close" onClick={() => setShowAbout(false)} aria-label={t("common.close")}>&times;</button>
             <div className="bl-about-logo">
               <span className="bl-about-bass">Bass</span>
               <span className="bl-about-layer">Layer</span>
             </div>
             <p className="bl-about-desc">
-              Tu radar en tiempo real para la escena de <strong>musica electronica</strong> y el mundo <strong>crypto</strong> en Buenos Aires.
+              {t("about.descPre")}<strong>{t("about.descElectronic")}</strong>{t("about.descMid")}<strong>{t("about.descCrypto")}</strong>{t("about.descPost")}
             </p>
             <div className="bl-about-sections">
               <div className="bl-about-section">
                 <div className="bl-about-section-title">Bass</div>
-                <div className="bl-about-section-text">Eventos, fiestas, DJs y venues de la escena electronica porteña. Filtra por genero, busca por nombre o descubri que hay este finde.</div>
+                <div className="bl-about-section-text">{t("about.bassText")}</div>
               </div>
               <div className="bl-about-section">
                 <div className="bl-about-section-title">Layer</div>
-                <div className="bl-about-section-text">Precios crypto en vivo, noticias del mercado, eventos y cursos crypto IRL en Buenos Aires. Todo en un solo lugar.</div>
+                <div className="bl-about-section-text">{t("about.layerText")}</div>
               </div>
             </div>
             <div className="bl-about-footer">
-              <span className="bl-about-built">Buenos Aires — 2026</span>
+              <span className="bl-about-built">{t("about.footer")}</span>
             </div>
           </div>
         </div>

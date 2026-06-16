@@ -485,10 +485,15 @@
 }
 .bl-lang-opt {
   font-weight:700;
-  transition:color var(--duration-fast);
+  color:var(--bl-text-sec);
+  padding:3px 7px;
+  border-radius:10px;
+  transition:color .25s var(--ease-out-expo), background-color .25s var(--ease-out-expo), transform .25s var(--ease-out-expo);
 }
 .bl-lang-opt.active {
-  color:var(--bl-text);
+  color:var(--bl-bg);
+  background:var(--bl-text);
+  transform:scale(1.05);
 }
 .bl-lang-sep {
   color:var(--bl-border);
