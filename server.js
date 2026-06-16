@@ -400,19 +400,20 @@ const RSS_FEEDS = [
   { url: "https://cointelegraph.com/rss", source: "Cointelegraph" },
   { url: "https://decrypt.co/feed", source: "Decrypt" },
   { url: "https://thedefiant.io/feed", source: "The Defiant" },
-  { url: "https://www.theblock.co/rss.xml", source: "The Block" },
   { url: "https://blockworks.co/feed", source: "Blockworks" },
   { url: "https://bitcoinmagazine.com/feed", source: "Bitcoin Mag" },
-  { url: "https://unchainedcrypto.com/feed/", source: "Unchained" },
   { url: "https://cryptoslate.com/feed/", source: "CryptoSlate" },
   { url: "https://cryptobriefing.com/feed/", source: "CryptoBriefing" },
   { url: "https://u.today/rss", source: "U.Today" },
   { url: "https://dailyhodl.com/feed/", source: "Daily Hodl" },
   // Español / Latam
-  { url: "https://es.cointelegraph.com/rss", source: "CT Español" },
-  { url: "https://www.criptonoticias.com/feed/", source: "CriptoNoticias" },
   { url: "https://diariobitcoin.com/feed/", source: "DiarioBitcoin" },
   { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia" },
+  // Removidos (audit 2026-06-16):
+  //   The Block        → HTTP 403 (bloquea nuestro User-Agent)
+  //   Unchained        → timeout consistente (>15s en fetchSafe)
+  //   CT Español       → HTTP 410 Gone (feed retirado)
+  //   CriptoNoticias   → HTTP 403
 ];
 
 const xmlParser = new XMLParser({
@@ -529,6 +530,9 @@ const TAG_RULES = [
   { tag: "XRP",  pats: [/\bxrp\b/i, /\bripple\b/i] },
   { tag: "ADA",  pats: [/\bcardano\b/i] },
   { tag: "DOGE", pats: [/\bdoge(coin)?\b/i] },
+  // SHIB — Shiba Inu + Shibarium (L2 propio). Sin el tag, U.Today drop-eaba
+  // ~12 items SHIB por audit; ahora admiten y se clasifican.
+  { tag: "SHIB", pats: [/\bshib(a inu)?\b/i, /\bshibarium\b/i] },
   // DeFi: lending/yield anclados a contexto cripto para no matchear
   // "yield curve" o "consumer lending" macro
   { tag: "DeFi", pats: [
