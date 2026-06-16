@@ -493,81 +493,125 @@ function cleanNewsTitle(raw) {
   return t.slice(0, 140);
 }
 
+// ─────────────────────────────────────────────
+//  TAG_RULES — source of truth única
+// ─────────────────────────────────────────────
+// Cada entrada mapea un tag a sus patrones. El orden es la prioridad:
+// si un item matchea BTC y ETH, gana BTC (consistente con el detectTag
+// original que usaba un if-else chain).
+//
+// Esta tabla la consumen DOS funciones:
+//   - detectTag(title): elige el primer tag que matchee, default "Crypto".
+//     Iterates TODAS las reglas (incluyendo tagOnly).
+//   - isCryptoOrFinance(title, description): admite si matchea cualquier
+//     regla que NO sea tagOnly. Las reglas tagOnly (AI, Reg) solo sirven
+//     para clasificar items que ya admitieron por otra señal — sin esto,
+//     headlines como "OpenAI raises $38B" o "Regulators target X" pasarían
+//     sin contexto cripto real.
+//
+// Convención: stems abiertos (sin \b final) para cubrir plurales/derivados
+// españoles e ingleses (criptomonedas, blockchains, bitcoiner, etc.).
+const TAG_RULES = [
+  // Bitcoin family — incluye proxies institucionales (MicroStrategy, Saylor)
+  // y compuestos típicos (bitcoin mining/wallet/treasury) que antes drift-eaban
+  // a "Crypto" genérico.
+  { tag: "BTC", pats: [
+    /\bbtc\b/i, /\bbitc[oó]in/i, /\bsatoshi\b/i,
+    /\bmicrostrategy\b/i, /\bsaylor\b/i,
+    /\b(bitcoin|btc) (mining|miner|wallet|treasury|reserve|holdings)/i,
+  ]},
+  // Ethereum — vitalik incluido como proxy
+  { tag: "ETH", pats: [
+    /\beth\b/i, /\bethereum\b/i, /\bvitalik\b/i,
+  ]},
+  // Activos: usamos el nombre completo, no el ticker corto (sol=sun, ada=Ada Lovelace)
+  { tag: "SOL",  pats: [/\bsolana\b/i] },
+  { tag: "XRP",  pats: [/\bxrp\b/i, /\bripple\b/i] },
+  { tag: "ADA",  pats: [/\bcardano\b/i] },
+  { tag: "DOGE", pats: [/\bdoge(coin)?\b/i] },
+  // DeFi: lending/yield anclados a contexto cripto para no matchear
+  // "yield curve" o "consumer lending" macro
+  { tag: "DeFi", pats: [
+    /\bdefi\b/i, /\baave\b/i, /\buniswap\b/i,
+    /\b(crypto|defi) (lending|yield)/i,
+  ]},
+  // NFT
+  { tag: "NFT", pats: [/\bnft/i, /\bopensea\b/i, /\bcollectible/i] },
+  // Regulación — tagOnly: items con "SEC sues..." o "regulators target..."
+  // sin otra señal cripto no garantizan que sean crypto news. Si hay
+  // contexto cripto, otra regla los admite y este tag los clasifica.
+  { tag: "Reg", tagOnly: true, pats: [
+    /\bregulat/i, /\bsec\b/i, /\bgensler\b/i, /\bcongress\b/i,
+    /\blegislation\b/i, /\blawsuit\b/i,
+  ]},
+  // L2 / Rollups — antes "layer" suelto matcheaba "Coinbase launches new
+  // product layer"; ahora anclado a "L2", "Layer 2", "Layer2"
+  { tag: "L2", pats: [
+    /\bl(ayer)? ?2\b/i, /\brollup/i,
+    /\barbitrum\b/i, /\boptimism\b/i, /\bzksync\b/i, /\bpolygon\b/i,
+  ]},
+  // AI — tagOnly: \bai\b y \bopenai\b son demasiado amplios para admitir
+  // ("Y Combinator AI agent", "OpenAI losses"). Si el item tiene contexto
+  // cripto (Bittensor + IA descentralizada), otra regla lo admite.
+  { tag: "AI", tagOnly: true, pats: [
+    /\bai\b/i, /\bartificial intelligence\b/i, /\bmachine learn/i, /\bopenai\b/i,
+  ]},
+  // Stablecoins
+  { tag: "Stable", pats: [
+    /\bstablecoin/i, /\busdt\b/i, /\busdc\b/i, /\btether\b/i,
+  ]},
+  // Mining (sin "mining" suelto — chocaba con "gold mining"; queda en BTC
+  // via bitcoin mining)
+  { tag: "Mining", pats: [/\bhalving\b/i, /\bhashrate\b/i] },
+  // Catch-all crypto: términos genéricos, exchanges, players, derivados.
+  // Llega solo cuando ningún tag específico matcheó. Empareja "Bybit announces
+  // new perpetual" → "Crypto" en vez de descartar.
+  { tag: "Crypto", pats: [
+    /\bcrypto/i,        // crypto, cryptocurrency, cryptocurrencies
+    /\bcripto/i,        // cripto, criptomonedas, criptoactivos
+    /\bblockchain/i,    // blockchain, blockchains
+    /\baltcoin/i, /\bweb3\b/i,
+    /\bon[- ]?chain\b/i, /\bairdrop/i, /\btokeniz/i, /\brwa\b/i,
+    // Exchanges / infra que no merecen tag propio
+    /\bbinance\b/i, /\bcoinbase\b/i, /\bkraken\b/i, /\bbybit\b/i,
+    /\bokx\b/i, /\bbitget\b/i, /\bgemini\b/i, /\bpolymarket\b/i, /\bhyperliquid\b/i,
+    /\bgrayscale\b/i, /\bondo\b/i, /\bblackrock\b/i,
+    /\bavalanche\b/i, /\bchainlink\b/i, /\bpolkadot\b/i,
+    // ETFs cripto (anclado a contexto para no matchear ETFs de equities)
+    /\b(spot|bitcoin|eth|crypto) etf\b/i,
+    /\bperpetual/i, /\bperp futures?\b/i,
+    // Liquidaciones anclado a contexto cripto
+    /\b(crypto|bitcoin|btc|eth|defi|leverage) liquidat/i,
+    /\bliquidat\w* (the (long|short)|on (the )?(btc|eth|crypto))/i,
+  ]},
+];
+
 function detectTag(title) {
-  const t = title.toLowerCase();
-  if (t.includes("bitcoin") || /\bbtc\b/.test(t))  return "BTC";
-  if (t.includes("ethereum") || /\beth\b/.test(t) || t.includes("vitalik")) return "ETH";
-  if (t.includes("solana") || /\bsol\b/.test(t))    return "SOL";
-  if (t.includes("xrp") || t.includes("ripple"))     return "XRP";
-  if (t.includes("cardano") || /\bada\b/.test(t))    return "ADA";
-  if (t.includes("defi") || t.includes("aave") || t.includes("uniswap") || t.includes("lending") || t.includes("yield")) return "DeFi";
-  if (t.includes("nft") || t.includes("opensea") || t.includes("collectible")) return "NFT";
-  if (t.includes("regulat") || t.includes("sec ") || t.includes("gensler") || t.includes("congress") || t.includes("legislation") || t.includes("lawsuit")) return "Reg";
-  if (t.includes("layer") || /\bl2\b/.test(t) || t.includes("rollup") || t.includes("arbitrum") || t.includes("optimism") || t.includes("zksync")) return "L2";
-  if (/\bai\b/.test(t) || t.includes("artificial") || t.includes("machine learn") || t.includes("openai")) return "AI";
-  if (t.includes("stablecoin") || t.includes("usdt") || t.includes("usdc") || t.includes("tether")) return "Stable";
-  if (t.includes("mining") || t.includes("halving") || t.includes("hashrate")) return "Mining";
+  for (const { tag, pats } of TAG_RULES) {
+    if (pats.some((p) => p.test(title))) return tag;
+  }
   return "Crypto";
 }
 
 // Algunos feeds "crypto" (CryptoBriefing, Cointelegraph) publican filler de
 // macro pura, M&A no-cripto y hasta sports stories. Filtro:
-//   1) Allowlist positiva: el item necesita una señal cripto/finanzas en
-//      título o descripción para sobrevivir. Esto solo descarta los items
-//      sin contexto cripto alguno (Pizza Hut M&A, SpaceX IPO, housing starts).
-//   2) Solo unos pocos patrones de deny — los que escapan la allowlist porque
-//      mencionan crypto incidentalmente. NO usamos sport leagues como deny:
+//   1) Allowlist positiva (TAG_RULES): el item necesita matchear al menos
+//      un patrón en título o descripción. Esto solo descarta items sin
+//      contexto cripto (Pizza Hut M&A, SpaceX IPO, housing starts).
+//   2) Solo unos pocos patrones de deny para casos donde el publisher
+//      menciona crypto incidentalmente. NO usamos sport leagues como deny:
 //      NBA Top Shot, fan tokens del Mundial, etc. son crypto válido.
-//
-// Polymarket queda dentro (mercado de predicciones on-chain). BlackRock,
-// Grayscale, MicroStrategy también — en estos feeds siempre son crypto.
 const OFF_TOPIC_PATTERNS = [
-  /\bnot a crypto story\b/i,         // CryptoBriefing autodelata sus filler items
-];
-
-// Señales positivas — al menos una match en title o description.
-// Convención: stems abiertos (sin \b final) para cubrir plurales/derivados.
-// Cubre español (criptomonedas, bitcóin, blockchain) y casos cripto-adjacentes.
-const CRYPTO_FINANCE_SIGNALS = [
-  // Bitcoin family — cubre bitcoin, bitcóin (es), bitcoiner, bitcoiners
-  /\bbtc\b/i, /\bbitc[oó]in/i, /\bsatoshi\b/i,
-  // Ethereum
-  /\beth\b/i, /\bethereum\b/i, /\bvitalik\b/i,
-  // Otros activos — usamos el nombre completo, no el ticker, para evitar
-  // colisión con palabras españolas (sol=sun, ada=name).
-  /\bsolana\b/i, /\bxrp\b/i, /\bripple\b/i, /\bcardano\b/i, /\bdoge(coin)?\b/i,
-  /\bavalanche\b/i, /\bchainlink\b/i, /\bpolkadot\b/i,
-  // Términos cripto generales — stems abiertos para cubrir plurales/variantes
-  /\bcrypto/i,           // crypto, cryptocurrency, cryptocurrencies
-  /\bcripto/i,           // cripto, criptomonedas, criptoactivos, criptografía
-  /\bblockchain/i,       // blockchain, blockchains
-  /\bdefi\b/i, /\bnft/i, /\bstablecoin/i, /\baltcoin/i, /\bweb3\b/i,
-  /\bon[- ]?chain\b/i, /\bairdrop/i, /\bhalving\b/i, /\bhashrate\b/i,
-  /\btokeniz/i, /\brwa\b/i, /\brollup/i,
-  // Exchanges, infra, players (en estos feeds siempre son crypto)
-  /\bbinance\b/i, /\bcoinbase\b/i, /\bkraken\b/i, /\bbybit\b/i,
-  /\bokx\b/i, /\bbitget\b/i, /\bgemini\b/i, /\buniswap\b/i,
-  /\baave\b/i, /\bopensea\b/i, /\bpolymarket\b/i, /\bhyperliquid\b/i,
-  /\barbitrum\b/i, /\boptimism\b/i, /\bzksync\b/i, /\bpolygon\b/i,
-  /\busdt\b/i, /\busdc\b/i, /\btether\b/i, /\bmicrostrategy\b/i,
-  /\bsaylor\b/i, /\bgrayscale\b/i, /\bondo\b/i, /\bblackrock\b/i,
-  // ETFs cripto y derivados — anclados al contexto cripto para evitar
-  // matchear cualquier ETF de equities
-  /\b(spot|bitcoin|eth|crypto) etf\b/i,
-  /\bperpetual/i, /\bperp futures?\b/i,
-  // Liquidaciones — anclamos a contexto cripto para no matchear
-  // "company liquidation proceedings" de notas de M&A
-  /\b(crypto|bitcoin|btc|eth|defi|leverage) liquidat/i,
-  /\bliquidat\w* (the (long|short)|on (the )?(btc|eth|crypto))/i,
-  // Mining / wallet — anclados para evitar "gold mining" o fintech wallets
-  /\b(crypto|bitcoin|btc) (mining|miner|wallet)/i,
-  /\b(crypto|bitcoin) (treasury|reserve|holdings)/i,
+  /\bnot a crypto story\b/i,  // CryptoBriefing autodelata sus filler items
 ];
 
 function isCryptoOrFinance(title, description = "") {
   const haystack = `${title} ${description}`;
   for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(haystack)) return false;
-  for (const pat of CRYPTO_FINANCE_SIGNALS) if (pat.test(haystack)) return true;
+  for (const rule of TAG_RULES) {
+    if (rule.tagOnly) continue;
+    for (const p of rule.pats) if (p.test(haystack)) return true;
+  }
   return false;
 }
 
