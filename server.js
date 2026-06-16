@@ -564,8 +564,8 @@ const CRYPTO_FINANCE_SIGNALS = [
   /\b(crypto|bitcoin) (treasury|reserve|holdings)/i,
 ];
 
-function isCryptoOrFinance(title, description) {
-  const haystack = `${title} ${description || ""}`;
+function isCryptoOrFinance(title, description = "") {
+  const haystack = `${title} ${description}`;
   for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(haystack)) return false;
   for (const pat of CRYPTO_FINANCE_SIGNALS) if (pat.test(haystack)) return true;
   return false;

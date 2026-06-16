@@ -749,7 +749,7 @@ export default function App() {
           <div className="bl-scanlines" aria-hidden="true" />
           <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
-          <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; 2026</div>
+          <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
 
           <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
@@ -905,16 +905,16 @@ export default function App() {
         {view === "sections" && (
           <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label={t("util.back")}>
             <span className="bl-util-arrow" aria-hidden="true">&larr;</span>
-            <span>{t("util.home")}</span>
+            <span>home</span>
           </button>
         )}
         <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
-          {t("util.about")}
+          about
         </button>
         <button
           className="bl-lang-toggle"
           onClick={() => setLocale(locale === "es" ? "en" : "es")}
-          aria-label={t("lang.toggle")}
+          aria-label={locale === "es" ? t("lang.switchToEn") : t("lang.switchToEs")}
         >
           <span className={`bl-lang-opt${locale === "es" ? " active" : ""}`}>ES</span>
           <span className="bl-lang-sep" aria-hidden="true">/</span>
@@ -952,7 +952,7 @@ export default function App() {
               </div>
             </div>
             <div className="bl-about-footer">
-              <span className="bl-about-built">{t("about.footer")}</span>
+              <span className="bl-about-built">{t("home.city")} — {new Date().getFullYear()}</span>
             </div>
           </div>
         </div>

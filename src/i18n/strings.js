@@ -100,14 +100,13 @@ export const STRINGS = {
     "timeline.type.project.desc": "Lanzamiento, hito de empresa o iniciativa concreta dentro del ecosistema local.",
     "timeline.type.reg.desc": "Marco legal, fiscal o regulatorio que afecta a la actividad cripto en Argentina.",
 
-    "lang.toggle": "Cambiar idioma",
+    "lang.switchToEn": "Cambiar a inglés",
+    "lang.switchToEs": "Cambiar a español",
 
     "home.electronic": "Escena de música electrónica",
     "home.blockchain": "Blockchain · Cripto · Mercados",
     "home.city": "Buenos Aires",
 
-    "util.home": "home",
-    "util.about": "about",
     "util.back": "Volver al inicio",
     "util.aboutBL": "Acerca de BassLayer",
     "util.day": "Modo diurno",
@@ -127,7 +126,6 @@ export const STRINGS = {
     "about.descCrypto": "crypto",
     "about.bassText": "Eventos, fiestas, DJs y venues de la escena electrónica porteña. Filtrá por género, buscá por nombre o descubrí qué hay este finde.",
     "about.layerText": "Precios crypto en vivo, noticias del mercado, eventos y cursos crypto IRL en Buenos Aires. Todo en un solo lugar.",
-    "about.footer": "Buenos Aires — 2026",
   },
   en: {
     "common.close": "Close",
@@ -230,14 +228,13 @@ export const STRINGS = {
     "timeline.type.project.desc": "Launch, company milestone or concrete initiative within the local ecosystem.",
     "timeline.type.reg.desc": "Legal, fiscal or regulatory framework affecting crypto activity in Argentina.",
 
-    "lang.toggle": "Switch language",
+    "lang.switchToEn": "Switch to English",
+    "lang.switchToEs": "Switch to Spanish",
 
     "home.electronic": "Electronic music scene",
     "home.blockchain": "Blockchain · Crypto · Markets",
     "home.city": "Buenos Aires",
 
-    "util.home": "home",
-    "util.about": "about",
     "util.back": "Back to home",
     "util.aboutBL": "About BassLayer",
     "util.day": "Day mode",
@@ -257,7 +254,6 @@ export const STRINGS = {
     "about.descCrypto": "crypto",
     "about.bassText": "Events, parties, DJs and venues from Buenos Aires' electronic scene. Filter by genre, search by name or discover what's on this weekend.",
     "about.layerText": "Live crypto prices, market news, crypto IRL events and courses in Buenos Aires. All in one place.",
-    "about.footer": "Buenos Aires — 2026",
   },
 };
 
