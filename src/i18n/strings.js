@@ -119,9 +119,7 @@ export const STRINGS = {
     "onboarding.tip.layer": "Layer = crypto, precios en vivo y noticias",
     "onboarding.cta": "Entendido",
 
-    "about.descPre": "Tu radar en tiempo real para la escena de ",
-    "about.descMid": " y el mundo ",
-    "about.descPost": " en Buenos Aires.",
+    "about.desc": "Tu radar en tiempo real para la escena de {electronic} y el mundo {crypto} en Buenos Aires.",
     "about.descElectronic": "música electrónica",
     "about.descCrypto": "crypto",
     "about.bassText": "Eventos, fiestas, DJs y venues de la escena electrónica porteña. Filtrá por género, buscá por nombre o descubrí qué hay este finde.",
@@ -247,9 +245,7 @@ export const STRINGS = {
     "onboarding.tip.layer": "Layer = crypto, live prices and news",
     "onboarding.cta": "Got it",
 
-    "about.descPre": "Your real-time radar for the ",
-    "about.descMid": " scene and the world of ",
-    "about.descPost": " in Buenos Aires.",
+    "about.desc": "Your real-time radar for the {electronic} scene and the world of {crypto} in Buenos Aires.",
     "about.descElectronic": "electronic music",
     "about.descCrypto": "crypto",
     "about.bassText": "Events, parties, DJs and venues from Buenos Aires' electronic scene. Filter by genre, search by name or discover what's on this weekend.",

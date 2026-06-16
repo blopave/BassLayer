@@ -939,7 +939,10 @@ export default function App() {
               <span className="bl-about-layer">Layer</span>
             </div>
             <p className="bl-about-desc">
-              {t("about.descPre")}<strong>{t("about.descElectronic")}</strong>{t("about.descMid")}<strong>{t("about.descCrypto")}</strong>{t("about.descPost")}
+              {t("about.desc", {
+                electronic: <strong>{t("about.descElectronic")}</strong>,
+                crypto: <strong>{t("about.descCrypto")}</strong>,
+              })}
             </p>
             <div className="bl-about-sections">
               <div className="bl-about-section">

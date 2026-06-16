@@ -1,5 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { STRINGS } from "../i18n/strings";
+
+// Interpola placeholders {name} en un template. Si todas las vars son strings,
+// devuelve un string; si alguna es un React node, devuelve un array de
+// Fragments con keys para que React no warne. Mantenemos la API compatible
+// con t(key) sin vars (devuelve el template como antes).
+function interpolate(template, vars) {
+  if (!vars) return template;
+  const parts = String(template).split(/(\{[a-zA-Z][a-zA-Z0-9]*\})/);
+  const filled = parts.map((part) => {
+    const m = part.match(/^\{([a-zA-Z][a-zA-Z0-9]*)\}$/);
+    return m && vars[m[1]] != null ? vars[m[1]] : part;
+  });
+  if (filled.every((p) => typeof p === "string")) return filled.join("");
+  return filled.map((p, i) => <Fragment key={i}>{p}</Fragment>);
+}
 
 const LocaleContext = createContext(null);
 
@@ -25,8 +40,9 @@ export function LocaleProvider({ children }) {
     if (typeof document !== "undefined") document.documentElement.lang = locale;
   }, [locale]);
 
-  const t = useCallback((key) => {
-    return (STRINGS[locale] && STRINGS[locale][key]) || (STRINGS.es && STRINGS.es[key]) || key;
+  const t = useCallback((key, vars) => {
+    const template = (STRINGS[locale] && STRINGS[locale][key]) || (STRINGS.es && STRINGS.es[key]) || key;
+    return interpolate(template, vars);
   }, [locale]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
@@ -39,7 +55,7 @@ export function useLocale() {
     return {
       locale: "es",
       setLocale: () => {},
-      t: (k) => (STRINGS.es && STRINGS.es[k]) || k,
+      t: (k, vars) => interpolate((STRINGS.es && STRINGS.es[k]) || k, vars),
     };
   }
   return ctx;
