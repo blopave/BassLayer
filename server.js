@@ -553,8 +553,10 @@ const TAG_RULES = [
   // AI — tagOnly: \bai\b y \bopenai\b son demasiado amplios para admitir
   // ("Y Combinator AI agent", "OpenAI losses"). Si el item tiene contexto
   // cripto (Bittensor + IA descentralizada), otra regla lo admite.
+  // \bia\b cubre la abreviación española (Inteligencia Artificial).
   { tag: "AI", tagOnly: true, pats: [
-    /\bai\b/i, /\bartificial intelligence\b/i, /\bmachine learn/i, /\bopenai\b/i,
+    /\bai\b/i, /\bia\b/i, /\bartificial intelligence\b/i,
+    /\binteligencia artificial\b/i, /\bmachine learn/i, /\bopenai\b/i,
   ]},
   // Stablecoins
   { tag: "Stable", pats: [
@@ -586,9 +588,15 @@ const TAG_RULES = [
   ]},
 ];
 
-function detectTag(title) {
+function detectTag(title, categories = []) {
+  // Las categories del RSS son alta señal cuando el publisher las tagea
+  // semánticamente (Cointelegraph manda "Bitcoin Price", "CFTC", "Robinhood";
+  // CoinDesk manda "Prices", "News"). Las incluimos en el haystack del tagger
+  // para que items con título críptico ("Here's what happened in crypto today")
+  // se beneficien de los tags del publisher.
+  const haystack = `${title} ${categories.join(" ")}`;
   for (const { tag, pats } of TAG_RULES) {
-    if (pats.some((p) => p.test(title))) return tag;
+    if (pats.some((p) => p.test(haystack))) return tag;
   }
   return "Crypto";
 }
@@ -605,8 +613,12 @@ const OFF_TOPIC_PATTERNS = [
   /\bnot a crypto story\b/i,  // CryptoBriefing autodelata sus filler items
 ];
 
-function isCryptoOrFinance(title, description = "") {
-  const haystack = `${title} ${description}`;
+function isCryptoOrFinance(title, description = "", categories = []) {
+  // Las categories del RSS son señal positiva adicional: si el publisher
+  // tagueó la nota como "Bitcoin Price" o "DeFi", se admite aunque el
+  // título sea ambiguo. NO usamos categories como deny — son ruidosas
+  // ("Technology" para SpaceX, "Mercados" para petróleo).
+  const haystack = `${title} ${description} ${categories.join(" ")}`;
   for (const pat of OFF_TOPIC_PATTERNS) if (pat.test(haystack)) return false;
   for (const rule of TAG_RULES) {
     if (rule.tagOnly) continue;
@@ -646,6 +658,25 @@ function timeToMins(t) {
   return 99999;
 }
 
+// Extrae las categories de un item RSS/Atom como array de strings normalizado.
+// Cubre los 3 formatos comunes que emiten los publishers:
+//   1) string suelto: <category>Technology</category>
+//   2) array de strings: múltiples <category> tags
+//   3) array de objetos: Atom-style <category term="..." /> o RSS con attrs
+function extractCategories(item) {
+  const raw = item.category ?? item["dc:subject"];
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : [raw];
+  return arr
+    .map((c) => {
+      if (typeof c === "string") return c.trim();
+      if (c && typeof c === "object") return String(c["#text"] || c["@_term"] || "").trim();
+      return "";
+    })
+    .filter(Boolean)
+    .slice(0, 12);  // cap para evitar haystacks gigantes
+}
+
 async function fetchRSSFeed(feed) {
   try {
     const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
@@ -682,12 +713,14 @@ async function fetchRSSFeed(feed) {
         .replace(/\s*Der Beitrag\s+.+?\s+erschien zuerst auf\s+.+?\.?\s*$/i, "")
         .replace(/\s*(?:Continue reading|Read more|Seguir leyendo|Leer más|Suite|Weiterlesen)\.{0,3}\s*$/i, "")
         .slice(0, 320);
+      const categories = extractCategories(item);
       return {
         time: rel,
         _mins: timeToMins(rel),
-        tag: detectTag(title),
+        tag: detectTag(title, categories),
         title,
         description,
+        categories,
         image: image ? sanitizeUrl(image) : null,
         source: feed.source,
         url,
@@ -706,7 +739,7 @@ app.get("/api/news", async (req, res) => {
   // resolver deep links históricos aunque el item ya no clasifique como
   // crypto/finanzas. El filtro de contenido + tag corre por request.
   const applyFilter = (arr) => {
-    let out = arr.filter((n) => isCryptoOrFinance(n.title, n.description));
+    let out = arr.filter((n) => isCryptoOrFinance(n.title, n.description, n.categories));
     if (tagFilter && tagFilter !== "ALL") out = out.filter((n) => n.tag === tagFilter);
     return out;
   };
