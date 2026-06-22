@@ -75,6 +75,19 @@ const rateLimitSweep = setInterval(() => {
   }
 }, 120_000);
 
+// Supabase keep-alive: free-tier projects auto-pause after ~7 días sin queries.
+async function pingSupabase() {
+  try {
+    await supabase.from("venue_events").select("id").limit(1);
+    console.log("[keepalive] supabase ping ok");
+  } catch (e) {
+    console.warn("[keepalive] supabase ping failed:", e?.message || e);
+  }
+}
+const supabaseKeepAlive = supabase
+  ? (pingSupabase(), setInterval(pingSupabase, 48 * 60 * 60 * 1000))
+  : null;
+
 app.use("/api", (req, res, next) => {
   const now = Date.now();
   const ip = req.ip || req.socket?.remoteAddress || "unknown";
@@ -3997,6 +4010,7 @@ const server = app.listen(PORT, () => console.log(`
 function shutdown(signal) {
   console.log(`\n[${signal}] Shutting down gracefully...`);
   clearInterval(rateLimitSweep);
+  if (supabaseKeepAlive) clearInterval(supabaseKeepAlive);
   server.close(() => {
     console.log("Server closed.");
     process.exit(0);
