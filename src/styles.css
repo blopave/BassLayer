@@ -1082,10 +1082,10 @@
 }
 .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
 .bl-ev-meta-row { display:flex; align-items:center; gap:6px; }
-.bl-ev-venue-inline { font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.4px; text-transform:none; color:var(--bl-text-sec); transition:color var(--duration-med); }
-.bl-ev-item:hover .bl-ev-venue-inline { color:var(--bl-200); }
+.bl-ev-venue-inline { font-family:var(--font-mono); font-size:11.5px; font-weight:400; letter-spacing:1.8px; text-transform:uppercase; color:var(--bl-200); transition:color var(--duration-med); }
+.bl-ev-item:hover .bl-ev-venue-inline { color:var(--bl-100); }
 .bl-ev-meta-dot { color:var(--bl-450); font-size:9px; }
-.bl-ev-time-inline { font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.4px; color:var(--bl-text-sec); }
+.bl-ev-time-inline { font-family:var(--font-mono); font-size:11.5px; font-weight:400; letter-spacing:1.8px; text-transform:uppercase; color:var(--bl-200); }
 .bl-ev-end { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; width:88px; }
 /* Genre badge — voz de flyer: Bodoni italic, sin border-box,
    underline manuscrito en tono Bass. Reemplaza el chip mono uppercase. */
