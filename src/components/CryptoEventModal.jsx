@@ -93,7 +93,7 @@ export function CryptoEventModal({ item, onClose }) {
           </div>
           <div className="bl-modal-title-area">
             <h2 className="bl-modal-name">{item.title}</h2>
-            {item.source && <span className="bl-modal-genre">{item.source === "luma" ? "Luma" : item.source === "community" ? "Comunidad" : item.source}</span>}
+            {item.source && <span className="bl-modal-genre">{item.source === "luma" ? "Luma" : item.source === "community" ? "Comunidad" : item.source === "curated" ? "Destacado" : item.source}</span>}
           </div>
         </div>
 

@@ -1,0 +1,280 @@
+{
+  "_comment": "Eventos curados crypto/web3 y tech global. Revisar fechas anualmente en sitio oficial — patrones de cadencia anual pueden moverse.",
+  "events": [
+    {
+      "id": "ethcc-2026",
+      "title": "EthCC[9]",
+      "organizer": "Ethereum Community Conference",
+      "date": "2026-07-06",
+      "location": "Cannes, Francia",
+      "url": "https://ethcc.io",
+      "description": "La conferencia europea más grande del ecosistema Ethereum. Talks técnicas, side events y hackathons durante una semana.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "korea-blockchain-week-2026",
+      "title": "Korea Blockchain Week 2026",
+      "organizer": "Factblock",
+      "date": "2026-09-07",
+      "location": "Seúl, Corea del Sur",
+      "url": "https://koreablockchainweek.com",
+      "description": "Semana central del ecosistema crypto asiático. Conferencia principal + decenas de side events en toda Seúl.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "mainnet-2026",
+      "title": "Mainnet 2026",
+      "organizer": "Messari",
+      "date": "2026-09-22",
+      "location": "Nueva York, EE.UU.",
+      "url": "https://mainnet.events",
+      "description": "Encuentro institucional del ecosistema crypto organizado por Messari. Foco en research, infra y mercado.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "token2049-singapore-2026",
+      "title": "TOKEN2049 Singapore",
+      "organizer": "TOKEN2049",
+      "date": "2026-09-30",
+      "location": "Singapur",
+      "url": "https://www.token2049.com/singapore",
+      "description": "La conferencia crypto más grande de Asia. Reúne fundadores, fondos y exchanges del ecosistema global.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "permissionless-2026",
+      "title": "Permissionless IV",
+      "organizer": "Blockworks",
+      "date": "2026-10-06",
+      "location": "Brooklyn, EE.UU.",
+      "url": "https://blockworks.co/permissionless",
+      "description": "Conferencia DeFi organizada por Blockworks. Fechas estimadas — confirmar en sitio oficial.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "bitcoin-amsterdam-2026",
+      "title": "Bitcoin Amsterdam 2026",
+      "organizer": "BTC Inc",
+      "date": "2026-10-14",
+      "location": "Ámsterdam, Países Bajos",
+      "url": "https://b.tc/conference/amsterdam",
+      "description": "Edición europea de la Bitcoin Conference. Foco maximalista, libertad financiera y privacidad.",
+      "free": false,
+      "category": "crypto"
+    },
+    {
+      "id": "gitex-2026",
+      "title": "GITEX Global 2026",
+      "organizer": "Dubai World Trade Centre",
+      "date": "2026-10-13",
+      "location": "Dubai, EAU",
+      "url": "https://www.gitex.com",
+      "description": "La feria tech más grande de Medio Oriente y África. AI, web3, hardware, enterprise.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "techcrunch-disrupt-2026",
+      "title": "TechCrunch Disrupt 2026",
+      "organizer": "TechCrunch",
+      "date": "2026-10-27",
+      "location": "San Francisco, EE.UU.",
+      "url": "https://techcrunch.com/events/tc-disrupt-2026",
+      "description": "Conferencia clásica de startups y VC. Battlefield de pitching y keynotes con fundadores top.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "money2020-usa-2026",
+      "title": "Money 20/20 USA",
+      "organizer": "Money 20/20",
+      "date": "2026-10-25",
+      "location": "Las Vegas, EE.UU.",
+      "url": "https://us.money2020.com",
+      "description": "El encuentro principal del mundo fintech y payments. Bridge entre finanzas tradicionales y crypto.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "web-summit-2026",
+      "title": "Web Summit 2026",
+      "organizer": "Web Summit",
+      "date": "2026-11-09",
+      "location": "Lisboa, Portugal",
+      "url": "https://websummit.com",
+      "description": "Una de las conferencias tech más grandes del mundo. 70.000+ asistentes, todas las verticales.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "eth-argentina-2026",
+      "title": "ETH Argentina 2026",
+      "organizer": "ETH Argentina",
+      "date": "2026-11-12",
+      "location": "Buenos Aires, Argentina",
+      "url": "https://ethargentina.org",
+      "description": "Hackathon + conferencia del ecosistema Ethereum en LatAm. Fechas estimadas según cadencia anual.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "slush-2026",
+      "title": "Slush 2026",
+      "organizer": "Slush",
+      "date": "2026-11-18",
+      "location": "Helsinki, Finlandia",
+      "url": "https://www.slush.org",
+      "description": "La conferencia de startups más importante de Europa. Pitching, VCs y founders de toda la región.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "labitconf-2026",
+      "title": "LABITCONF 2026",
+      "organizer": "LABITCONF",
+      "date": "2026-11-20",
+      "location": "Por confirmar — LatAm",
+      "url": "https://labitconf.com",
+      "description": "La conferencia Bitcoin más antigua de Latinoamérica. Rota de país cada edición. Fechas/sede a confirmar.",
+      "free": false,
+      "category": "crypto"
+    },
+    {
+      "id": "aws-reinvent-2026",
+      "title": "AWS re:Invent 2026",
+      "organizer": "Amazon Web Services",
+      "date": "2026-11-30",
+      "location": "Las Vegas, EE.UU.",
+      "url": "https://reinvent.awsevents.com",
+      "description": "El evento anual de AWS. Anuncios de cloud, AI, infra y herramientas para developers.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "ces-2027",
+      "title": "CES 2027",
+      "organizer": "Consumer Technology Association",
+      "date": "2027-01-06",
+      "location": "Las Vegas, EE.UU.",
+      "url": "https://www.ces.tech",
+      "description": "La feria de consumer tech más grande del mundo. Hardware, AI, automotriz, gadgets.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "web-summit-qatar-2027",
+      "title": "Web Summit Qatar 2027",
+      "organizer": "Web Summit",
+      "date": "2027-02-22",
+      "location": "Doha, Qatar",
+      "url": "https://qatar.websummit.com",
+      "description": "Edición de Medio Oriente del Web Summit. Foco en innovación regional y conexión con Asia.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "ethdenver-2027",
+      "title": "ETHDenver 2027",
+      "organizer": "SporkDAO",
+      "date": "2027-02-26",
+      "location": "Denver, EE.UU.",
+      "url": "https://www.ethdenver.com",
+      "description": "El festival anual de Ethereum más grande de EE.UU. Hackathon, talks, side events durante 10 días.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "mwc-2027",
+      "title": "MWC Barcelona 2027",
+      "organizer": "GSMA",
+      "date": "2027-03-01",
+      "location": "Barcelona, España",
+      "url": "https://www.mwcbarcelona.com",
+      "description": "Mobile World Congress. Telcos, 5G/6G, devices y conectividad a escala global.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "sxsw-2027",
+      "title": "SXSW 2027",
+      "organizer": "SXSW",
+      "date": "2027-03-12",
+      "location": "Austin, EE.UU.",
+      "url": "https://www.sxsw.com",
+      "description": "Festival multi-track de tech, música y cine. Cruce único entre cultura, startups y AI.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "aleph-2027",
+      "title": "Aleph / Crecimiento 2027",
+      "organizer": "Crecimiento",
+      "date": "2027-03-15",
+      "location": "Buenos Aires, Argentina",
+      "url": "https://crecimiento.build",
+      "description": "Mes de pop-up city en BA: builders, founders y comunidad crypto LatAm. Fechas estimadas.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "token2049-dubai-2027",
+      "title": "TOKEN2049 Dubai",
+      "organizer": "TOKEN2049",
+      "date": "2027-04-28",
+      "location": "Dubai, EAU",
+      "url": "https://www.token2049.com/dubai",
+      "description": "Edición de Medio Oriente de TOKEN2049. Capital MENA, fondos y exchanges globales.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "web-summit-rio-2027",
+      "title": "Web Summit Rio 2027",
+      "organizer": "Web Summit",
+      "date": "2027-04-27",
+      "location": "Río de Janeiro, Brasil",
+      "url": "https://rio.websummit.com",
+      "description": "Edición latinoamericana del Web Summit. Punto de encuentro para founders e inversores de LatAm.",
+      "free": false,
+      "category": "tech"
+    },
+    {
+      "id": "bitcoin-conference-2027",
+      "title": "Bitcoin 2027",
+      "organizer": "BTC Inc",
+      "date": "2027-04-28",
+      "location": "Las Vegas, EE.UU.",
+      "url": "https://b.tc/conference",
+      "description": "La conferencia Bitcoin más grande del mundo. Maximalismo, mining, soberanía financiera.",
+      "free": false,
+      "category": "crypto"
+    },
+    {
+      "id": "consensus-2027",
+      "title": "Consensus 2027",
+      "organizer": "CoinDesk",
+      "date": "2027-05-06",
+      "location": "EE.UU. — sede por confirmar",
+      "url": "https://www.coindesk.com/consensus",
+      "description": "La conferencia crypto institucional de referencia, organizada por CoinDesk desde 2015.",
+      "free": false,
+      "category": "web3"
+    },
+    {
+      "id": "vivatech-2027",
+      "title": "VivaTech 2027",
+      "organizer": "Publicis Groupe & Les Echos",
+      "date": "2027-06-16",
+      "location": "París, Francia",
+      "url": "https://vivatechnology.com",
+      "description": "La feria tech más grande de Europa continental. Startups, AI, deep tech y corporate innovation.",
+      "free": false,
+      "category": "tech"
+    }
+  ]
+}

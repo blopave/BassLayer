@@ -2346,25 +2346,48 @@ async function fetchCryptoEvents() {
   return unique;
 }
 
+const CRYPTO_CURATED_FILE = join(__dirname, "data", "crypto-events-curated.json");
+let curatedEventsCache = null;
+
+function loadCuratedEvents() {
+  if (curatedEventsCache) return curatedEventsCache;
+  try {
+    const raw = readFileSync(CRYPTO_CURATED_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    curatedEventsCache = Array.isArray(parsed.events) ? parsed.events : [];
+  } catch (err) {
+    console.error("[crypto-events] curated load:", err.message);
+    curatedEventsCache = [];
+  }
+  return curatedEventsCache;
+}
+
 app.get("/api/crypto-events", async (req, res) => {
+  const today = new Date().toISOString().split("T")[0];
+  const curated = loadCuratedEvents()
+    .filter(e => !e.date || e.date >= today)
+    .map(e => ({ ...e, source: "curated" }));
+
   try {
     const scraped = await fetchCryptoEvents();
-    // Merge with manually submitted events
     const manual = loadCryptoIrl();
     const manualEvents = (manual.events || [])
       .filter(e => e.status === "approved")
       .map(e => ({ ...e, source: "community" }));
 
-    const all = [...manualEvents, ...scraped];
-    // Sort by date
+    const all = [...manualEvents, ...curated, ...scraped];
     all.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
 
     res.json(all);
   } catch (err) {
     console.error("[crypto-events] Error:", err.message);
-    // Return at least manual events
     const manual = loadCryptoIrl();
-    res.json((manual.events || []).filter(e => e.status === "approved"));
+    const manualEvents = (manual.events || [])
+      .filter(e => e.status === "approved")
+      .map(e => ({ ...e, source: "community" }));
+    const fallback = [...manualEvents, ...curated];
+    fallback.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
+    res.json(fallback);
   }
 });
 

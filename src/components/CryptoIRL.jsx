@@ -15,6 +15,7 @@ function formatDate(dateStr) {
 const SOURCE_LABELS = {
   luma: "Luma",
   community: "Comunidad",
+  curated: "Destacado",
 };
 
 export function CryptoIRL() {

@@ -5,8 +5,31 @@ import { CryptoDashboard } from "./CryptoDashboard";
 import { CryptoBATimeline } from "./CryptoBATimeline";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
+import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
+
+function LayerNewsItem({ item, idx, onSelect }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showPill = !!(item.tag && item.image && !imgFailed);
+  return (
+    <article
+      className="bl-layer-news-item bl-reveal"
+      onClick={() => onSelect?.(item)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(item))}
+      tabIndex={0}
+      role="button"
+      aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
+      style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
+    >
+      <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
+      <div className="bl-layer-news-body">
+        <h3 className="bl-layer-news-title">{item.title}</h3>
+        {showPill && <span className="bl-layer-news-tag-pill">{item.tag}</span>}
+      </div>
+    </article>
+  );
+}
 
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
@@ -63,20 +86,14 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
                 </div>
               </div>
             )
-            : <div className="bl-feed" role="feed" aria-label="Noticias crypto" ref={listRef}>
+            : <div className="bl-layer-news-list" role="feed" aria-label="Noticias crypto" ref={listRef}>
                 {filtered.map((item, idx) => (
-                  <article
-                    className="bl-feed-item bl-reveal"
+                  <LayerNewsItem
                     key={`${item.source}-${(item.title || "").slice(0,40)}-${idx}`}
-                    onClick={() => onSelectNews?.(item)}
-                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelectNews?.(item))}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={item.title}
-                    style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.03, 0.25)}s` }}
-                  >
-                    <span className="bl-feed-title">{item.title}</span>
-                  </article>
+                    item={item}
+                    idx={idx}
+                    onSelect={onSelectNews}
+                  />
                 ))}
                 <div className="bl-end-of-feed" aria-hidden="true">
                   <span>{t("feed.endOfFeed")}</span>
