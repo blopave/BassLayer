@@ -1057,10 +1057,10 @@
 .bl-root[data-section="bass"] .bl-ev-item[data-genre="Trance"]       { --genre-tint:#D6A87A; }
 .bl-root[data-section="bass"] .bl-ev-item[data-genre="Festival"]     { --genre-tint:#B36850; }
 .bl-root[data-section="bass"] .bl-ev-item[data-genre="Electronic"]   { --genre-tint:#B68870; }
-.bl-ev-date { min-width:56px; text-align:center; flex-shrink:0; }
-.bl-ev-date-d { font-family:var(--font-bass); font-weight:900; font-style:italic; font-size:28px; letter-spacing:-1px; color:var(--bl-100); line-height:1; font-feature-settings:"onum" 1; transition:color var(--duration-med); }
+.bl-ev-date { min-width:60px; text-align:center; flex-shrink:0; }
+.bl-ev-date-d { font-family:var(--font-bass); font-weight:900; font-style:normal; font-size:32px; letter-spacing:-1.5px; color:var(--bl-white); line-height:1; font-feature-settings:"onum" 1; transition:color var(--duration-med); }
 .bl-ev-item:hover .bl-ev-date-d { color:var(--bl-white); }
-.bl-ev-date-m { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-indicator); margin-top:3px; }
+.bl-ev-date-m { font-family:var(--font-bass); font-weight:700; font-size:11px; letter-spacing:1.8px; text-transform:uppercase; color:var(--bl-200); margin-top:6px; }
 .bl-ev-sep { width:1px; height:32px; background:var(--bl-border); flex-shrink:0; transition:background var(--duration-med); }
 .bl-ev-item:hover .bl-ev-sep { background:var(--bl-accent-bass); }
 .bl-ev-body { flex:1; min-width:0; }
@@ -1582,7 +1582,9 @@
   .bl-feed, .bl-ev-list, .bl-skeleton { padding:0 16px; }
   .bl-ev-item { gap:12px; }
   .bl-ev-end { gap:4px; }
-  .bl-ev-date { min-width:44px; }
+  .bl-ev-date { min-width:50px; }
+  .bl-ev-date-d { font-size:28px; letter-spacing:-1.2px; }
+  .bl-ev-date-m { font-size:10px; margin-top:5px; }
   .bl-ev-name { font-size:20px; letter-spacing:-0.5px; line-height:1.18; }
   .bl-choose-text { font-size:8px; letter-spacing:3px; }
   .bl-price-item { padding:12px 16px; gap:6px; }
@@ -4017,19 +4019,7 @@ select.bl-venue-input { cursor:pointer; }
    La fecha es el ancla visual; el thumb da contexto sin robar atención.
    ═══════════════════════════════════════════ */
 
-.bl-root[data-section="bass"] .bl-ev-date-d {
-  font-size:36px;
-  font-style:italic;
-  letter-spacing:-1.5px;
-  line-height:0.95;
-}
-.bl-root[data-section="bass"] .bl-ev-date-m {
-  font-size:10.5px;
-  letter-spacing:2px;
-  margin-top:5px;
-}
 @media (max-width:768px) {
-  .bl-root[data-section="bass"] .bl-ev-date-d { font-size:30px; letter-spacing:-1.2px; }
   .bl-ev-end { width:72px; gap:4px; }
   .bl-ev-genre-badge { font-size:11.5px; letter-spacing:-0.1px; padding:1px 2px 2px; }
 }
