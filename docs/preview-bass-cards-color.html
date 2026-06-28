@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bass cards — color de tipografías (3 opciones)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" />
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  :root{
+    --bg:#000;
+    --surface:#141414;
+    --surface-alt:#1A1A1A;
+    --border:#2A2A2A;
+    --border-sub:#1E1E1E;
+    --text:#E5E5E5;
+    --text-50:#E5E5E5;
+    --text-100:#CCCCCC;
+    --text-150:#BBBBBB;
+    --text-200:#AAAAAA;
+    --text-250:#999999;
+    --text-350:#666666;
+    --text-450:#4A4A4A;
+    --accent:#C49070;
+    --accent-soft:rgba(196,144,112,0.72);
+    --white:#FFFFFF;
+
+    --font-bass:'Bodoni Moda', Georgia, serif;
+    --font-mono:'Space Mono', monospace;
+    --font-body:'DM Sans', sans-serif;
+  }
+
+  html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh}
+
+  .page{max-width:1680px;margin:0 auto;padding:40px 32px 80px}
+  .page-header{margin-bottom:24px}
+  .page-title{font-family:var(--font-bass);font-style:italic;font-weight:700;font-size:28px;color:var(--white);letter-spacing:-0.5px}
+  .page-sub{font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-350);margin-top:6px}
+  .page-note{font-family:var(--font-body);font-size:13px;line-height:1.6;color:var(--text-200);margin-top:14px;max-width:780px}
+  .page-note strong{color:var(--text);font-weight:600}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:36px}
+  @media (max-width:1100px){.grid{grid-template-columns:1fr;gap:28px}}
+
+  .col-header{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 14px;border-bottom:1px solid var(--border-sub);margin-bottom:8px;gap:12px}
+  .col-title{font-family:var(--font-bass);font-style:italic;font-weight:600;font-size:18px;color:var(--white);letter-spacing:-0.3px}
+  .col-tag{font-family:var(--font-mono);font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--accent);text-align:right;line-height:1.5}
+  .col-tag em{font-style:normal;color:var(--text-350)}
+
+  /* ── Day header (idéntico a prod) ── */
+  .day-header{display:flex;align-items:center;gap:12px;padding:18px 0 8px}
+  .day-label{font-family:var(--font-body);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:600}
+  .day-line{flex:1;height:1px;background:linear-gradient(to right, var(--border), transparent)}
+
+  /* ── Card base (mismo layout que .bl-ev-item del prod) ── */
+  .card{display:flex;align-items:center;gap:18px;padding:18px 14px;border-bottom:1px solid var(--border-sub);border-left:2px solid var(--border-sub);border-radius:6px;transition:all .4s cubic-bezier(.16,1,.3,1);cursor:pointer}
+  .card:hover{background:var(--surface-alt);border-left-color:var(--accent);box-shadow:inset 0 0 32px -10px rgba(196,144,112,0.16)}
+
+  .date{min-width:54px;text-align:center;flex-shrink:0}
+  .date-d{font-family:var(--font-bass);font-weight:900;font-size:30px;letter-spacing:-1.4px;line-height:1;font-feature-settings:"onum" 1;transition:color .3s}
+  .date-m{font-family:var(--font-bass);font-weight:700;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;margin-top:6px;transition:color .3s}
+
+  .sep{width:1px;height:32px;background:var(--border);flex-shrink:0;transition:background .3s}
+  .card:hover .sep{background:var(--accent)}
+
+  .body{flex:1;min-width:0}
+  .name{font-family:var(--font-bass);font-weight:800;font-size:22px;letter-spacing:-0.55px;line-height:1.15;color:var(--white);margin-bottom:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .meta{display:flex;align-items:center;gap:6px}
+  .venue{font-family:var(--font-mono);font-size:11px;font-weight:400;letter-spacing:1.8px;text-transform:uppercase;transition:color .3s}
+
+  .thumb{width:60px;height:60px;border-radius:8px;background:radial-gradient(circle at center, rgba(196,144,112,0.13) 0%, transparent 62%),linear-gradient(180deg,#1c1a18 0%,#141414 100%);border:1px solid var(--border-sub);flex-shrink:0}
+
+  .end{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;width:84px}
+  .genre{font-family:var(--font-bass);font-style:italic;font-weight:500;font-size:13px;letter-spacing:-0.15px;padding:1px 2px 3px;border:none;border-bottom:1px solid rgba(196,144,112,0.32);background:transparent;white-space:nowrap;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;transition:color .25s, border-bottom-color .25s, transform .25s cubic-bezier(.16,1,.3,1)}
+  .card:hover .genre{transform:translateY(-1px)}
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPCIÓN 0 — ACTUAL (baseline, paleta de prod hoy)
+     ═══════════════════════════════════════════════════════════════ */
+  .opt-current .date-d{color:var(--white)}
+  .opt-current .date-m{color:var(--text-200)}      /* #AAA */
+  .opt-current .venue{color:var(--text-200)}       /* #AAA */
+  .opt-current .genre{color:var(--text-350)}       /* #666 — el más débil */
+  .opt-current .card:hover .genre{color:var(--accent);border-bottom-color:var(--accent)}
+  .opt-current .card:hover .venue{color:var(--text-100)}
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPCIÓN 1 — CONTRASTE MÍNIMO (sube el piso de gris, sin cálidos)
+     · mes y venue: #AAA → #BBB
+     · género: #666 → #999  (sigue gris, pero leíble)
+     · mantiene paleta neutra actual, solo gana lectura
+     ═══════════════════════════════════════════════════════════════ */
+  .opt-1 .date-d{color:var(--white)}
+  .opt-1 .date-m{color:var(--text-150)}            /* #BBB */
+  .opt-1 .venue{color:var(--text-150)}             /* #BBB */
+  .opt-1 .genre{color:var(--text-250)}             /* #999 — antes era #666 */
+  .opt-1 .card:hover .genre{color:var(--accent);border-bottom-color:var(--accent)}
+  .opt-1 .card:hover .venue{color:var(--text-50)}
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPCIÓN 2 — ANCLAS CÁLIDAS (mes en accent, género en accent suave)
+     · mes en accent-bass → repite la lógica del day-label, da temperatura
+     · venue gris claro #BBB → contexto, no compite
+     · género en accent-bass al 72% → siempre visible, identidad cálida
+     · jerarquía clara: blanco (principal) + cálido (anclas) + gris (contexto)
+     ═══════════════════════════════════════════════════════════════ */
+  .opt-2 .date-d{color:var(--white)}
+  .opt-2 .date-m{color:var(--accent)}              /* #C49070 — temperatura */
+  .opt-2 .venue{color:var(--text-150)}             /* #BBB */
+  .opt-2 .genre{color:var(--accent-soft);border-bottom-color:rgba(196,144,112,0.42)}
+  .opt-2 .card:hover .genre{color:var(--accent);border-bottom-color:var(--accent)}
+  .opt-2 .card:hover .venue{color:var(--text-50)}
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPCIÓN 3 — GENRE-TINT SIEMPRE VISIBLE (cada card con su color)
+     · mes en accent-bass (igual que opción 2)
+     · venue gris claro
+     · género usa --genre-tint específico, no solo en hover → cada card tiñe levemente
+     · más expresivo · más chroma · riesgo de ruido si hay muchos géneros mezclados
+     ═══════════════════════════════════════════════════════════════ */
+  .opt-3 .date-d{color:var(--white)}
+  .opt-3 .date-m{color:var(--accent)}
+  .opt-3 .venue{color:var(--text-150)}
+  .opt-3 .card[data-genre="Techno"]      { --genre-tint:#C49070 }
+  .opt-3 .card[data-genre="House"]       { --genre-tint:#D4A574 }
+  .opt-3 .card[data-genre="Deep House"]  { --genre-tint:#A88B6E }
+  .opt-3 .card[data-genre="Melodic"]     { --genre-tint:#C49072 }
+  .opt-3 .card[data-genre="Progressive"] { --genre-tint:#B0805C }
+  .opt-3 .card[data-genre="Festival"]    { --genre-tint:#B36850 }
+  .opt-3 .card[data-genre="Tech House"]  { --genre-tint:#C8956A }
+  .opt-3 .genre{color:var(--genre-tint);border-bottom-color:rgba(255,255,255,0.08)}
+  .opt-3 .card:hover .genre{border-bottom-color:var(--genre-tint);transform:translateY(-1px)}
+  .opt-3 .card:hover .venue{color:var(--text-50)}
+
+  /* ── Notas debajo de cada columna ── */
+  .col-note{font-family:var(--font-body);font-size:12px;line-height:1.55;color:var(--text-200);margin-top:18px;padding:14px 16px;background:rgba(255,255,255,0.025);border-left:2px solid var(--border-sub);border-radius:0 4px 4px 0}
+  .col-note strong{color:var(--text);font-weight:600}
+  .col-note .pro,.col-note .con{display:block;margin-top:4px;font-size:11.5px}
+  .col-note .pro{color:#9ab896}
+  .col-note .con{color:#b89696}
+
+  @media (max-width:600px){
+    .page{padding:24px 14px 60px}
+    .name{font-size:19px;letter-spacing:-0.3px}
+    .date-d{font-size:26px}
+    .end{width:72px}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">Bass cards — color de tipografías</div>
+    <div class="page-sub">Side-by-side · Actual + 3 opciones · misma data, mismo layout</div>
+    <p class="page-note">
+      Cada columna muestra los <strong>mismos 6 eventos</strong> con la <strong>misma estructura y tipografía</strong>. Lo único que cambia son los <strong>colores</strong> de mes, venue y género — y, en algunos casos, el comportamiento del badge de género en hover. La estructura del prod (date · separator · name + venue · thumb · genre) se conserva intacta. Hacé hover para ver transiciones.
+    </p>
+  </div>
+
+  <div class="grid">
+
+    <!-- ═══════════════════ ACTUAL ═══════════════════ -->
+    <div class="opt-current">
+      <div class="col-header">
+        <div class="col-title">Actual — baseline</div>
+        <div class="col-tag">prod hoy<br><em>mes #AAA · venue #AAA · género #666</em></div>
+      </div>
+
+      <div class="day-header"><span class="day-label">Sábado 12/07</span><span class="day-line"></span></div>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">12</div><div class="date-m">23:30</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Boris Brejcha</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Melodic">
+        <div class="date"><div class="date-d">18</div><div class="date-m">00:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Tale Of Us + Mind Against</div>
+          <div class="meta"><span class="venue">Crobar</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Melodic</span></div>
+      </article>
+
+      <article class="card" data-genre="Progressive">
+        <div class="date"><div class="date-d">25</div><div class="date-m">22:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Hernán Cattáneo b2b Nick Warren</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Progressive</span></div>
+      </article>
+
+      <article class="card" data-genre="House">
+        <div class="date"><div class="date-d">02</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Solomun</div>
+          <div class="meta"><span class="venue">Mute</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">House</span></div>
+      </article>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">09</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Charlotte de Witte presents KNTXT</div>
+          <div class="meta"><span class="venue">Costa Salguero</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Festival">
+        <div class="date"><div class="date-d">06</div><div class="date-m">Sep</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Creamfields BA 2026</div>
+          <div class="meta"><span class="venue">Costanera Sur</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Festival</span></div>
+      </article>
+
+      <div class="col-note">
+        <strong>Problema:</strong> mes, venue y género viven en el mismo rango de gris medio. El género (#666) casi desaparece sobre negro. La jerarquía es plana: blanco → gris → gris → gris.
+        <span class="con">– género casi invisible hasta el hover</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ OPCIÓN 1 ═══════════════════ -->
+    <div class="opt-1">
+      <div class="col-header">
+        <div class="col-title">Opción 1 — Contraste mínimo</div>
+        <div class="col-tag">paleta neutra<br><em>mes #BBB · venue #BBB · género #999</em></div>
+      </div>
+
+      <div class="day-header"><span class="day-label">Sábado 12/07</span><span class="day-line"></span></div>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">12</div><div class="date-m">23:30</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Boris Brejcha</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Melodic">
+        <div class="date"><div class="date-d">18</div><div class="date-m">00:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Tale Of Us + Mind Against</div>
+          <div class="meta"><span class="venue">Crobar</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Melodic</span></div>
+      </article>
+
+      <article class="card" data-genre="Progressive">
+        <div class="date"><div class="date-d">25</div><div class="date-m">22:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Hernán Cattáneo b2b Nick Warren</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Progressive</span></div>
+      </article>
+
+      <article class="card" data-genre="House">
+        <div class="date"><div class="date-d">02</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Solomun</div>
+          <div class="meta"><span class="venue">Mute</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">House</span></div>
+      </article>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">09</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Charlotte de Witte presents KNTXT</div>
+          <div class="meta"><span class="venue">Costa Salguero</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Festival">
+        <div class="date"><div class="date-d">06</div><div class="date-m">Sep</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Creamfields BA 2026</div>
+          <div class="meta"><span class="venue">Costanera Sur</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Festival</span></div>
+      </article>
+
+      <div class="col-note">
+        <strong>Cambio mínimo:</strong> sube el piso de gris para que nada quede por debajo del umbral de lectura. Mantiene la paleta neutra actual sin sumar cálidos.
+        <span class="pro">+ no toca identidad, solo accesibilidad</span>
+        <span class="con">– sigue siendo "blanco + grises", jerarquía algo plana</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ OPCIÓN 2 ═══════════════════ -->
+    <div class="opt-2">
+      <div class="col-header">
+        <div class="col-title">Opción 2 — Anclas cálidas</div>
+        <div class="col-tag">recomendada<br><em>mes accent · venue #BBB · género accent 72%</em></div>
+      </div>
+
+      <div class="day-header"><span class="day-label">Sábado 12/07</span><span class="day-line"></span></div>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">12</div><div class="date-m">23:30</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Boris Brejcha</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Melodic">
+        <div class="date"><div class="date-d">18</div><div class="date-m">00:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Tale Of Us + Mind Against</div>
+          <div class="meta"><span class="venue">Crobar</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Melodic</span></div>
+      </article>
+
+      <article class="card" data-genre="Progressive">
+        <div class="date"><div class="date-d">25</div><div class="date-m">22:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Hernán Cattáneo b2b Nick Warren</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Progressive</span></div>
+      </article>
+
+      <article class="card" data-genre="House">
+        <div class="date"><div class="date-d">02</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Solomun</div>
+          <div class="meta"><span class="venue">Mute</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">House</span></div>
+      </article>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">09</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Charlotte de Witte presents KNTXT</div>
+          <div class="meta"><span class="venue">Costa Salguero</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Festival">
+        <div class="date"><div class="date-d">06</div><div class="date-m">Sep</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Creamfields BA 2026</div>
+          <div class="meta"><span class="venue">Costanera Sur</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Festival</span></div>
+      </article>
+
+      <div class="col-note">
+        <strong>Tres niveles claros:</strong> blanco (nombre + día) → accent cálido (mes + género, anclas de identidad Bass) → gris claro (venue, contexto). Aprovecha el accent que ya existe en day-label.
+        <span class="pro">+ identidad Bass más presente, jerarquía leíble en 1s</span>
+        <span class="con">– más cálido visualmente; si Layer comparte cards en el futuro, divergencia más fuerte</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ OPCIÓN 3 ═══════════════════ -->
+    <div class="opt-3">
+      <div class="col-header">
+        <div class="col-title">Opción 3 — Genre-tint siempre visible</div>
+        <div class="col-tag">expresiva<br><em>género tiñe cada card según su tinte</em></div>
+      </div>
+
+      <div class="day-header"><span class="day-label">Sábado 12/07</span><span class="day-line"></span></div>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">12</div><div class="date-m">23:30</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Boris Brejcha</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Melodic">
+        <div class="date"><div class="date-d">18</div><div class="date-m">00:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Tale Of Us + Mind Against</div>
+          <div class="meta"><span class="venue">Crobar</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Melodic</span></div>
+      </article>
+
+      <article class="card" data-genre="Progressive">
+        <div class="date"><div class="date-d">25</div><div class="date-m">22:00</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Hernán Cattáneo b2b Nick Warren</div>
+          <div class="meta"><span class="venue">Mandarine Park</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Progressive</span></div>
+      </article>
+
+      <article class="card" data-genre="House">
+        <div class="date"><div class="date-d">02</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Solomun</div>
+          <div class="meta"><span class="venue">Mute</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">House</span></div>
+      </article>
+
+      <article class="card" data-genre="Techno">
+        <div class="date"><div class="date-d">09</div><div class="date-m">Ago</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Charlotte de Witte presents KNTXT</div>
+          <div class="meta"><span class="venue">Costa Salguero</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Techno</span></div>
+      </article>
+
+      <article class="card" data-genre="Festival">
+        <div class="date"><div class="date-d">06</div><div class="date-m">Sep</div></div>
+        <div class="sep"></div>
+        <div class="body">
+          <div class="name">Creamfields BA 2026</div>
+          <div class="meta"><span class="venue">Costanera Sur</span></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="end"><span class="genre">Festival</span></div>
+      </article>
+
+      <div class="col-note">
+        <strong>Color como identidad del género:</strong> cada card muestra su tinte siempre, no solo en hover. Techno frío-cálido, House dorado, Festival rojizo. Más vivo, más editorial, más cerca de un flyer.
+        <span class="pro">+ scanneable por género sin leer texto</span>
+        <span class="con">– más chroma; con muchos géneros mezclados puede leerse ruidoso</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
