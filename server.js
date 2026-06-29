@@ -1574,6 +1574,44 @@ function deduplicateEvents(events) {
   return list.filter(ev => !dropped.has(ev));
 }
 
+// ── Title cleanup ──
+// Limpia ruido de scrapers (RA + Buenos Aliens): brackets, "- by VENUE",
+// "& MORE ARTISTS", sufijo "y más", coma entre artistas → ·, y title-case
+// cuando el scraper devuelve todo en mayúsculas.
+function titleCaseEs(s) {
+  return s.toLowerCase().split(/(\s+|[·:\-–—])/).map(w => {
+    if (!w || /^\s+$/.test(w) || /^[·:\-–—]$/.test(w)) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join("");
+}
+
+function cleanEventName(raw, source) {
+  if (!raw) return "";
+  let n = String(raw);
+  // Strip "- by VENUE, CITY" (patrón RA)
+  n = n.replace(/\s*[-–—]\s*by\s+.+$/i, "");
+  // Strip "[ANNIVERSARY]", "[DIA DEL AMIGO]" y similares
+  n = n.replace(/\s*\[[^\]]*\]/g, "");
+  // Strip "& MORE ARTISTS" / "and MORE ARTISTS"
+  n = n.replace(/\s*(?:&|and)\s+MORE\s+ARTISTS\b/gi, "");
+  // Strip sufijo " y más"
+  n = n.replace(/\s+y\s+más\s*$/i, "");
+  // Trim conectores colgando al final
+  n = n.replace(/[\s,+&·\-–—]+$/g, "");
+  // Title-case si vino todo en mayúsculas desde un scraper
+  if (source === "ra" || source === "buenosaliens") {
+    const letters = n.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+    if (letters.length >= 6 && letters === letters.toUpperCase()) {
+      n = titleCaseEs(n);
+    }
+  }
+  // Coma entre artistas → middot
+  n = n.replace(/,\s+/g, " · ");
+  // Colapsar espacios
+  n = n.replace(/\s{2,}/g, " ").trim();
+  return n;
+}
+
 // ─────────────────────────────────────────────
 //  GET /api/festivals — Curaduría manual de festivales
 //  Foco electrónica. Datos en data/festivals.json.
@@ -1863,6 +1901,9 @@ app.get("/api/events", async (req, res) => {
 
   // Deduplicate (same day+venue = same event)
   const deduped = deduplicateEvents(allEvents);
+
+  // Limpiar nombres ruidosos de scrapers
+  deduped.forEach(ev => { ev.name = cleanEventName(ev.name, ev.source); });
 
   // Filter out past events and sort by actual date (handles year boundaries)
   const now = new Date();

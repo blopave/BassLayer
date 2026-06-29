@@ -301,21 +301,21 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 >
                   <div className="bl-ev-date">
                     <div className="bl-ev-date-d">{ev.day}</div>
-                    <div className="bl-ev-date-m">{ev.time || ev.month}</div>
+                    <div className="bl-ev-date-m">{ev.month}</div>
                   </div>
-                  <div className="bl-ev-sep" aria-hidden="true" />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
                     <div className="bl-ev-meta-row">
                       <span className="bl-ev-venue-inline">{ev.venue}</span>
+                      {ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
+                      {ev.genre && ev.genre !== "Electronic" && (
+                        <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
+                      )}
                       {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
                       {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
                     </div>
                   </div>
                   <BlThumb image={ev.image} />
-                  <div className="bl-ev-end">
-                    <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
-                  </div>
                 </article>
               );
             })}
@@ -476,7 +476,6 @@ function FestivalItem({ f, idx, onSelect }) {
         <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
         <div className="bl-ev-date-m">{festivalMonth(f.dates_start)}</div>
       </div>
-      <div className="bl-ev-sep" aria-hidden="true" />
       <div className="bl-ev-body">
         <div className="bl-ev-name">
           {f.name}
@@ -487,16 +486,11 @@ function FestivalItem({ f, idx, onSelect }) {
         <div className="bl-ev-artists">{f.city}, {f.country}</div>
         <div className="bl-ev-meta-row">
           <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end)}</span>
-          {f.status === "live" && <>
-            <span className="bl-ev-meta-dot" aria-hidden="true">&middot;</span>
-            <span className="bl-festival-live-dot">EN CURSO</span>
-          </>}
+          {f.region && <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>}
+          {f.status === "live" && <span className="bl-festival-live-dot">EN CURSO</span>}
         </div>
       </div>
       <BlThumb image={f.image} />
-      <div className="bl-ev-end">
-        <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>
-      </div>
     </article>
   );
 }
