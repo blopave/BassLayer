@@ -83,21 +83,21 @@ export function FestivalModal({ festival, onClose }) {
             {festival.country && <span className="bl-festival-modal-country">{festival.country}</span>}
           </div>
 
-          <h2 className="bl-festival-modal-name">{festival.name}</h2>
+          <h2 className="bl-festival-modal-name bl-bass-t-display-title">{festival.name}</h2>
 
           <div className="bl-festival-modal-info">
             <div className="bl-festival-modal-info-row">
-              <span className="bl-festival-modal-info-key">{locale === "en" ? "When" : "Cuándo"}</span>
-              <span className="bl-festival-modal-info-val">{dateRange}</span>
+              <span className="bl-festival-modal-info-key bl-bass-t-label">{locale === "en" ? "When" : "Cuándo"}</span>
+              <span className="bl-festival-modal-info-val bl-bass-t-body">{dateRange}</span>
             </div>
             <div className="bl-festival-modal-info-row">
-              <span className="bl-festival-modal-info-key">{locale === "en" ? "Where" : "Dónde"}</span>
-              <span className="bl-festival-modal-info-val">{festival.city}{festival.country ? `, ${festival.country}` : ""}</span>
+              <span className="bl-festival-modal-info-key bl-bass-t-label">{locale === "en" ? "Where" : "Dónde"}</span>
+              <span className="bl-festival-modal-info-val bl-bass-t-body">{festival.city}{festival.country ? `, ${festival.country}` : ""}</span>
             </div>
           </div>
 
           {festival.description && (
-            <p className="bl-festival-modal-desc">{festival.description}</p>
+            <p className="bl-festival-modal-desc bl-bass-t-body">{festival.description}</p>
           )}
 
           {festival.tags && festival.tags.length > 0 && (

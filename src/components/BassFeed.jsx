@@ -383,8 +383,8 @@ function BassNewsItem({ item, idx, onSelect }) {
     >
       <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
       <div className="bl-bass-news-body">
-        <h3 className="bl-bass-news-title">{item.title}</h3>
-        {showPill && <span className="bl-bass-news-tag-pill">{item.tag}</span>}
+        <h3 className="bl-bass-news-title bl-bass-t-heading">{item.title}</h3>
+        {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}
       </div>
     </article>
   );

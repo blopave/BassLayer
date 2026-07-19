@@ -187,7 +187,7 @@ export function EventModal({ event, onClose, onShare }) {
         <div className="bl-modal-body">
           {artists.length > 0 && (
             <div className="bl-modal-section">
-              <div className="bl-modal-label">
+              <div className="bl-modal-label bl-bass-t-label">
                 {t("event.lineup")} · {artists.length} {artists.length === 1 ? t("event.lineupSingle") : t("event.lineupPlural")}
               </div>
               {headliner && (
@@ -230,33 +230,33 @@ export function EventModal({ event, onClose, onShare }) {
           )}
 
           <div className="bl-modal-section">
-            <div className="bl-modal-label">{t("event.info")}</div>
+            <div className="bl-modal-label bl-bass-t-label">{t("event.info")}</div>
             <div className="bl-em-info">
               <div className="bl-em-info-row">
-                <span className="bl-em-info-key">{t("event.when")}</span>
-                <span className="bl-em-info-val">{longDate}{event.time ? `, ${event.time} ${t("event.hoursShort")}` : ""}</span>
+                <span className="bl-em-info-key bl-bass-t-label">{t("event.when")}</span>
+                <span className="bl-em-info-val bl-bass-t-body">{longDate}{event.time ? `, ${event.time} ${t("event.hoursShort")}` : ""}</span>
               </div>
               <div className="bl-em-info-row">
-                <span className="bl-em-info-key">{t("event.where")}</span>
-                <span className="bl-em-info-val">{event.venue}</span>
+                <span className="bl-em-info-key bl-bass-t-label">{t("event.where")}</span>
+                <span className="bl-em-info-val bl-bass-t-body">{event.venue}</span>
               </div>
               {event.address && (
                 <div className="bl-em-info-row">
-                  <span className="bl-em-info-key">{t("event.address")}</span>
-                  <span className="bl-em-info-val">{event.address}</span>
+                  <span className="bl-em-info-key bl-bass-t-label">{t("event.address")}</span>
+                  <span className="bl-em-info-val bl-bass-t-body">{event.address}</span>
                 </div>
               )}
               {event.genre && (
                 <div className="bl-em-info-row">
-                  <span className="bl-em-info-key">{t("event.genre")}</span>
-                  <span className="bl-em-info-val">{event.genre}</span>
+                  <span className="bl-em-info-key bl-bass-t-label">{t("event.genre")}</span>
+                  <span className="bl-em-info-val bl-bass-t-body">{event.genre}</span>
                 </div>
               )}
             </div>
           </div>
 
           <div className="bl-modal-section">
-            <div className="bl-modal-label">{t("event.location")}</div>
+            <div className="bl-modal-label bl-bass-t-label">{t("event.location")}</div>
             <div className="bl-em-loc-card">
               <div className="bl-em-loc-pin" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6">

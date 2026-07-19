@@ -136,6 +136,79 @@
   --bl-transition:  all .45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ═══════════════════════════════════════════
+   Bass · Typography System
+   Roles semánticos — usar SIEMPRE estas clases
+   en la sección Bass. Regla: nada de Bodoni en
+   body chico (<20px). Bodoni queda para display
+   grande y stamps editoriales trackeados.
+   Las clases no imponen color: el color sigue
+   siendo decisión de cada sub-sección.
+
+   TODO pendiente (decisiones de identidad):
+   - Container de .bl-bass-section-btn (border+bg)
+     podría removerse ahora que la tipografía sola
+     hace toda la jerarquía visual.
+   - .bl-modal-name (Syne 20px) es el único display
+     Syne dentro de Bass. Evaluar si unificar a
+     .bl-bass-t-display-title (Bodoni italic 28px).
+   - Fase 2 DRY: reemplazar font-* inline en
+     .bl-ev-date-d/m, .bl-ev-name, .bl-ev-venue-inline,
+     .bl-ev-genre-badge por las utility classes.
+   ═══════════════════════════════════════════ */
+
+/* Display numérico grande — fechas 26px+ */
+.bl-bass-t-display-num {
+  font-family:var(--font-bass), 'Bodoni Moda', serif;
+  font-weight:800; font-style:normal;
+  font-size:30px; letter-spacing:-1.2px; line-height:1;
+  font-feature-settings:"onum" 1;
+}
+
+/* Display heading modal — nombres de modal grandes */
+.bl-bass-t-display-title {
+  font-family:var(--font-bass), 'Bodoni Moda', serif;
+  font-weight:700; font-style:italic;
+  font-size:28px; letter-spacing:-0.8px; line-height:1.1;
+}
+
+/* Stamp editorial — month dividers, region labels trackeadas */
+.bl-bass-t-stamp {
+  font-family:var(--font-bass), 'Bodoni Moda', serif;
+  font-weight:700; font-style:italic;
+  font-size:14px; letter-spacing:0.22em;
+  text-transform:uppercase;
+}
+
+/* Heading — nombres de card, títulos chicos/medios */
+.bl-bass-t-heading {
+  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-weight:600;
+  font-size:17px; letter-spacing:-0.15px; line-height:1.3;
+}
+
+/* Body — descripciones, párrafos, info values */
+.bl-bass-t-body {
+  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-weight:400;
+  font-size:14px; line-height:1.55;
+}
+
+/* Meta — venue inline, subtítulos chicos */
+.bl-bass-t-meta {
+  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-weight:400;
+  font-size:11.5px; letter-spacing:0;
+}
+
+/* Label — badges, keys, mono stamps */
+.bl-bass-t-label {
+  font-family:var(--font-mono);
+  font-weight:600;
+  font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
 /* Layer world: cool, digital, precise — terminal at midnight */
 .bl-root[data-section="layer"] {
   --bl-section-bg:  #0F1418;
@@ -1486,7 +1559,8 @@
 .bl-modal-body { padding:0 28px 24px; }
 
 .bl-modal-section { margin-bottom:20px; }
-.bl-modal-label { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-indicator); margin-bottom:8px; }
+/* Section label — hereda tipografía de .bl-bass-t-label */
+.bl-modal-label { color:var(--bl-indicator); margin-bottom:8px; }
 .bl-modal-artists { display:flex; flex-wrap:wrap; gap:6px; }
 .bl-modal-artist {
   font-family:var(--font-body); font-size:13px; color:var(--bl-150); padding:4px 10px;
@@ -1829,14 +1903,10 @@ button.bl-modal-artist:hover {
   align-items:baseline;
 }
 .bl-em-info-row:first-child { border-top:none; }
-.bl-em-info-key {
-  font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px;
-  text-transform:uppercase; color:var(--bl-text-sec);
-}
-.bl-em-info-val {
-  font-family:var(--font-body); font-size:13.5px;
-  color:var(--bl-150); line-height:1.4;
-}
+/* Info key — hereda tipografía de .bl-bass-t-label */
+.bl-em-info-key { color:var(--bl-text-sec); }
+/* Info value — hereda tipografía de .bl-bass-t-body */
+.bl-em-info-val { color:var(--bl-150); }
 
 /* Location card — designed alternative to a generic map embed */
 .bl-em-loc-card {
@@ -3679,10 +3749,15 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-bass-section-label {
   font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:normal;
-  font-weight:500;
-  font-size:16px;
-  letter-spacing:-0.2px;
+  font-style:italic;
+  font-weight:700;
+  font-size:22px;
+  letter-spacing:-0.3px;
+  line-height:1;
+  color:var(--bl-text-ter);
+  transition:color var(--duration-med);
+}
+.bl-bass-section-btn:hover .bl-bass-section-label {
   color:var(--bl-text-sec);
 }
 .bl-bass-section-btn.active .bl-bass-section-label {
@@ -3692,7 +3767,7 @@ select.bl-venue-input { cursor:pointer; }
 @media (max-width:768px) {
   .bl-bass-sections { padding:10px 16px 4px; gap:6px; }
   .bl-bass-section-btn { padding:12px 10px; }
-  .bl-bass-section-label { font-size:14.5px; }
+  .bl-bass-section-label { font-size:19px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -3729,28 +3804,19 @@ select.bl-venue-input { cursor:pointer; }
   display:flex; flex-direction:column; gap:10px;
   align-items:flex-start;
 }
+/* Título de noticia — hereda tipografía de .bl-bass-t-heading */
 .bl-bass-news-title {
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:normal;
-  font-size:19px; line-height:1.25;
-  font-weight:500;
   color:var(--bl-text);
   margin:0;
-  letter-spacing:-0.3px;
   display:-webkit-box;
   -webkit-line-clamp:3;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
+/* Tag/pill — hereda tipografía de .bl-bass-t-label */
 .bl-bass-news-tag-pill {
   display:inline-block;
   padding:0;
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:italic;
-  font-size:12px;
-  letter-spacing:0;
-  text-transform:none;
-  font-weight:500;
   color:var(--bl-accent-bass);
   background:transparent;
   border:none;
@@ -3767,8 +3833,7 @@ select.bl-venue-input { cursor:pointer; }
 @media (max-width:768px) {
   .bl-bass-news-list { padding:6px 16px 20px; gap:12px; }
   .bl-bass-news-item { padding:16px; gap:14px; }
-  .bl-bass-news-title { font-size:16.5px; -webkit-line-clamp:3; }
-  .bl-bass-news-tag-pill { font-size:11px; }
+  .bl-bass-news-title { font-size:16px; -webkit-line-clamp:3; }
   .bl-bass-news-item .bl-thumb { flex-basis:60px; width:60px; height:60px; border-radius:8px; }
 }
 
@@ -4203,14 +4268,9 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-festival-modal-region { color:var(--bl-accent-bass); font-weight:700; }
 .bl-festival-modal-country { color:var(--bl-text-ter); }
+/* Festival name — hereda tipografía de .bl-bass-t-display-title */
 .bl-festival-modal-name {
-  font-family:var(--font-bass);
-  font-weight:700;
-  font-style:italic;
-  font-size:28px;
-  letter-spacing:-0.8px;
   color:var(--bl-text);
-  line-height:1.1;
   margin:0;
 }
 .bl-festival-modal-info {
@@ -4226,22 +4286,18 @@ select.bl-venue-input { cursor:pointer; }
   align-items:baseline;
   gap:14px;
 }
+/* Info key — hereda tipografía de .bl-bass-t-label */
 .bl-festival-modal-info-key {
-  font-family:var(--font-mono);
-  font-size:10px;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
   color:var(--bl-text-ter);
   flex:0 0 70px;
 }
+/* Info value — hereda tipografía de .bl-bass-t-body */
 .bl-festival-modal-info-val {
   color:var(--bl-text);
-  font-size:14px;
   flex:1;
 }
+/* Description — hereda tipografía de .bl-bass-t-body */
 .bl-festival-modal-desc {
-  font-size:14.5px;
-  line-height:1.55;
   color:var(--bl-text-sec);
   margin:0;
 }
