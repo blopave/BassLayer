@@ -1013,6 +1013,27 @@
 .bl-concept-text { font-family:var(--font-heading); font-weight:300; font-size:clamp(10px,1vw,14px); letter-spacing:2.5px; text-transform:uppercase; color:var(--bl-550); opacity:0; transform:translateY(8px); transition:opacity .4s var(--ease-out-expo), transform .5s var(--ease-out-expo); }
 .bl-concept-text.show { opacity:1; transform:translateY(0); }
 
+/* Mobile — stacked debajo del row, color semántico por sección */
+@media (max-width:768px) {
+  .bl-concepts {
+    position:static;
+    display:block;
+    text-align:center;
+    white-space:normal;
+    margin-top:14px;
+  }
+  .bl-concepts-bass, .bl-concepts-layer { left:auto; right:auto; }
+  .bl-concepts-bass { margin-top:20px; }
+  .bl-concept-text {
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:10.5px;
+    letter-spacing:1.5px;
+  }
+  .bl-concepts-bass .bl-concept-text { color:var(--bl-accent-bass); }
+  .bl-concepts-layer .bl-concept-text { color:var(--bl-accent-layer); }
+}
+
 @keyframes info-fade {
   from { opacity:0; transform:translateY(6px); }
   to   { opacity:1; transform:translateY(0); }
