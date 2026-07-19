@@ -1602,7 +1602,6 @@
 .bl-modal-body { padding:0 28px 24px; }
 
 .bl-modal-section { margin-bottom:20px; }
-/* Section label — hereda tipografía de .bl-bass-t-label */
 .bl-modal-label { color:var(--bl-indicator); margin-bottom:8px; }
 .bl-modal-artists { display:flex; flex-wrap:wrap; gap:6px; }
 .bl-modal-artist {
@@ -1946,9 +1945,7 @@ button.bl-modal-artist:hover {
   align-items:baseline;
 }
 .bl-em-info-row:first-child { border-top:none; }
-/* Info key — hereda tipografía de .bl-bass-t-label */
 .bl-em-info-key { color:var(--bl-text-sec); }
-/* Info value — hereda tipografía de .bl-bass-t-body */
 .bl-em-info-val { color:var(--bl-150); }
 
 /* Location card — designed alternative to a generic map embed */
@@ -3847,7 +3844,6 @@ select.bl-venue-input { cursor:pointer; }
   display:flex; flex-direction:column; gap:10px;
   align-items:flex-start;
 }
-/* Título de noticia — hereda tipografía de .bl-bass-t-heading */
 .bl-bass-news-title {
   color:var(--bl-text);
   margin:0;
@@ -3856,7 +3852,6 @@ select.bl-venue-input { cursor:pointer; }
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
-/* Tag/pill — hereda tipografía de .bl-bass-t-label */
 .bl-bass-news-tag-pill {
   display:inline-block;
   padding:0;
@@ -4148,10 +4143,7 @@ select.bl-venue-input { cursor:pointer; }
   padding:32px 0 24px;
   opacity:0.55;
 }
-/* Instagram link — mismo tratamiento mono, hover sube a accent-bass */
 .bl-end-of-set-ig {
-  font-family:var(--font-mono);
-  font-size:10px;
   letter-spacing:2px;
   text-transform:lowercase;
   color:var(--bl-text-ter);
@@ -4330,7 +4322,6 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-festival-modal-region { color:var(--bl-accent-bass); font-weight:700; }
 .bl-festival-modal-country { color:var(--bl-text-ter); }
-/* Festival name — hereda tipografía de .bl-bass-t-display-title */
 .bl-festival-modal-name {
   color:var(--bl-text);
   margin:0;
@@ -4348,17 +4339,14 @@ select.bl-venue-input { cursor:pointer; }
   align-items:baseline;
   gap:14px;
 }
-/* Info key — hereda tipografía de .bl-bass-t-label */
 .bl-festival-modal-info-key {
   color:var(--bl-text-ter);
   flex:0 0 70px;
 }
-/* Info value — hereda tipografía de .bl-bass-t-body */
 .bl-festival-modal-info-val {
   color:var(--bl-text);
   flex:1;
 }
-/* Description — hereda tipografía de .bl-bass-t-body */
 .bl-festival-modal-desc {
   color:var(--bl-text-sec);
   margin:0;

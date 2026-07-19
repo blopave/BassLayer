@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 
+export const IG_HANDLE = "@basslayerworld";
+export const IG_URL = "https://instagram.com/basslayerworld";
+
 // Static fallback for non-React contexts (server, initial render)
 export const isMobileStatic = typeof window !== "undefined" && (window.innerWidth <= 768 || "ontouchstart" in window);
 

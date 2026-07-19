@@ -6,22 +6,24 @@ import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
+import { IG_HANDLE, IG_URL } from "../utils/constants";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 
-function EndOfSet({ t }) {
+function EndOfSet() {
+  const { t } = useLocale();
   return (
     <div className="bl-end-of-set">
       <div aria-hidden="true">{t("feed.endOfSet")}</div>
       <a
         className="bl-end-of-set-ig"
-        href="https://instagram.com/basslayerworld"
+        href={IG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Instagram — @basslayerworld"
+        aria-label={`Instagram — ${IG_HANDLE}`}
       >
-        → seguí en @basslayerworld
+        → seguí en {IG_HANDLE}
       </a>
     </div>
   );
@@ -337,7 +339,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               );
             })}
             {filtered.length > 0 && (
-              <EndOfSet t={t} />
+              <EndOfSet />
             )}
           </div>}
         </>
@@ -380,7 +382,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
           onSelect={onSelect}
         />
       ))}
-      <EndOfSet t={t} />
+      <EndOfSet />
     </div>
   );
 }
@@ -471,7 +473,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
            {festivals.map((f, idx) => (
              <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
            ))}
-           <EndOfSet t={t} />
+           <EndOfSet />
          </div>
        )}
     </>

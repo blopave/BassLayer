@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug } from "./utils/slug";
-import { useIsMobile } from "./utils/constants";
+import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
 import { Preloader } from "./components/Preloader";
@@ -753,13 +753,13 @@ export default function App() {
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
           <a
             className="bl-info bl-info-br bl-info-ig"
-            href="https://instagram.com/basslayerworld"
+            href={IG_URL}
             target="_blank"
             rel="noopener noreferrer"
             ref={(el) => (parallaxRefs.current.br = el)}
-            aria-label="Instagram — @basslayerworld"
+            aria-label={`Instagram — ${IG_HANDLE}`}
           >
-            @basslayerworld →
+            {IG_HANDLE} →
           </a>
 
           <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
