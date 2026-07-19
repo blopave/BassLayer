@@ -10,6 +10,23 @@ import { api } from "../utils/api";
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 
+function EndOfSet({ t }) {
+  return (
+    <div className="bl-end-of-set">
+      <div aria-hidden="true">{t("feed.endOfSet")}</div>
+      <a
+        className="bl-end-of-set-ig"
+        href="https://instagram.com/basslayerworld"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Instagram — @basslayerworld"
+      >
+        → seguí en @basslayerworld
+      </a>
+    </div>
+  );
+}
+
 function getEventDate(ev) {
   const m = MONTHS_MAP[ev.month?.toLowerCase()];
   if (m === undefined) return null;
@@ -320,7 +337,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               );
             })}
             {filtered.length > 0 && (
-              <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+              <EndOfSet t={t} />
             )}
           </div>}
         </>
@@ -363,7 +380,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
           onSelect={onSelect}
         />
       ))}
-      <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+      <EndOfSet t={t} />
     </div>
   );
 }
@@ -454,7 +471,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
            {festivals.map((f, idx) => (
              <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
            ))}
-           <div className="bl-end-of-set" aria-hidden="true">{t("feed.endOfSet")}</div>
+           <EndOfSet t={t} />
          </div>
        )}
     </>

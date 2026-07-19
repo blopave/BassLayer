@@ -751,6 +751,16 @@ export default function App() {
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
           <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
+          <a
+            className="bl-info bl-info-br bl-info-ig"
+            href="https://instagram.com/basslayerworld"
+            target="_blank"
+            rel="noopener noreferrer"
+            ref={(el) => (parallaxRefs.current.br = el)}
+            aria-label="Instagram — @basslayerworld"
+          >
+            @basslayerworld →
+          </a>
 
           <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
             <h1 className="bl-sr-only">BassLayer</h1>

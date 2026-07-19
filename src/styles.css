@@ -1043,8 +1043,30 @@
 .bl-info-tl { top:32px; left:40px; animation-delay:1.2s!important; }
 .bl-info-tr { top:32px; right:40px; animation-delay:1.35s!important; }
 .bl-info-bl { bottom:32px; left:40px; animation-delay:1.5s!important; }
-.bl-info-br { bottom:32px; right:40px; animation-delay:1.65s!important; }
+/* corner br: elevado por encima del .bl-util-bar fixed (24 + 44 + 20 gap) */
+.bl-info-br { bottom:88px; right:40px; animation-delay:1.65s!important; }
 .bl-home:hover .bl-info { color:var(--bl-600); }
+/* Instagram link en corner br — hereda .bl-info, sube en hover */
+.bl-info-ig {
+  text-decoration:none;
+  cursor:pointer;
+  transition:color .3s var(--ease-out-expo);
+}
+.bl-info-ig:hover, .bl-info-ig:focus-visible {
+  color:var(--bl-accent-bass);
+  outline:none;
+}
+@media (max-width:768px) {
+  .bl-info-tl, .bl-info-tr { top:20px; }
+  .bl-info-tl, .bl-info-bl { left:20px; }
+  .bl-info-tr, .bl-info-br { right:20px; }
+  .bl-info-bl { bottom:20px; }
+  /* corner br mobile: elevado por encima del util-bar (20 + 44 + 12 gap) */
+  .bl-info-br { bottom:76px; }
+  /* excepción a "display:none" de info en mobile — el link IG sí se muestra
+     porque cumple rol de call-to-action, no de metadata ambient */
+  .bl-info.bl-info-ig { display:block; }
+}
 .bl-choose { position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:50; text-align:center; display:none; }
 .bl-choose-text { font-family:var(--font-mono); font-size:9px; letter-spacing:4px; text-transform:uppercase; color:var(--bl-650); }
 .bl-choose-line { width:1px; height:20px; background:var(--bl-surface); margin:10px auto 0; position:relative; overflow:hidden; }
@@ -4113,6 +4135,10 @@ select.bl-venue-input { cursor:pointer; }
    ═══════════════════════════════════════════ */
 
 .bl-end-of-set {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
   font-family:var(--font-mono);
   font-size:10px;
   letter-spacing:3px;
@@ -4121,6 +4147,21 @@ select.bl-venue-input { cursor:pointer; }
   text-align:center;
   padding:32px 0 24px;
   opacity:0.55;
+}
+/* Instagram link — mismo tratamiento mono, hover sube a accent-bass */
+.bl-end-of-set-ig {
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:lowercase;
+  color:var(--bl-text-ter);
+  text-decoration:none;
+  transition:color .3s var(--ease-out-expo);
+}
+.bl-end-of-set:has(.bl-end-of-set-ig:hover) { opacity:1; }
+.bl-end-of-set-ig:hover, .bl-end-of-set-ig:focus-visible {
+  color:var(--bl-accent-bass);
+  outline:none;
 }
 
 /* ═══════════════════════════════════════════
