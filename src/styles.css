@@ -472,7 +472,7 @@
 }
 
 .bl-util-toggle {
-  height:40px;
+  height:44px;
   padding:0 14px;
   border-radius:20px;
   background:var(--bl-surface);
@@ -505,9 +505,20 @@
 }
 .bl-util-home:hover .bl-util-arrow { transform:translateX(-2px); }
 
+/* IG en la util-bar — comparte estilo con .bl-util-toggle. Muestra `@handle`
+   full en desktop y `IG` corto en mobile — cambio hecho por CSS, sin JS. */
+a.bl-util-ig { text-decoration:none; text-transform:none; letter-spacing:0.4px; font-size:12px; }
+a.bl-util-ig:hover { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); }
+a.bl-util-ig .bl-util-ig-short { display:none; }
+a.bl-util-ig .bl-util-ig-full  { display:inline; }
+@media (max-width:768px) {
+  a.bl-util-ig .bl-util-ig-short { display:inline; font-weight:600; letter-spacing:1px; }
+  a.bl-util-ig .bl-util-ig-full  { display:none; }
+}
+
 /* ── Language Toggle (ES / EN) ───────────── */
 .bl-lang-toggle {
-  height:40px;
+  height:44px;
   padding:0 14px;
   border-radius:20px;
   background:var(--bl-surface);
@@ -542,11 +553,13 @@
 }
 @media (max-width:768px) {
   .bl-util-bar { right:14px; gap:6px; bottom:max(18px, env(safe-area-inset-bottom, 0px) + 10px); }
-  .bl-util-toggle { height:34px; padding:0 11px; font-size:9px; gap:5px; }
-  .bl-util-arrow { font-size:11px; }
-  .bl-lang-toggle { height:34px; padding:0 11px; font-size:10px; }
-  .bl-mode-toggle { width:36px; height:36px; }
-  .bl-mode-toggle svg { width:15px; height:15px; }
+  /* Áreas táctiles ≥44px (auditoría P3.1) — antes 34px, sub-tap. */
+  .bl-util-toggle { height:44px; padding:0 12px; font-size:10px; gap:5px; }
+  .bl-util-arrow { font-size:12px; }
+  .bl-lang-toggle { height:44px; padding:0 12px; font-size:11px; }
+  .bl-mode-toggle { width:44px; height:44px; }
+  .bl-mode-toggle svg { width:16px; height:16px; }
+  a.bl-util-ig { font-size:12px; }
 }
 
 
@@ -724,6 +737,12 @@
 }
 .bl-header-half:not(.is-active) { flex-basis:30%; cursor:pointer; }
 .bl-header-half.is-active { flex-basis:70%; cursor:default; }
+/* Brújula de mundo (P3.5) — el world-name del lado inactivo baja a 40% de
+   opacidad para reforzar el énfasis del panel actual, además del cambio de
+   tamaño/color. Transición sincronizada con el resto del header. */
+.bl-header-half:not(.is-active) .bl-header-world-name { opacity:0.4; }
+.bl-header-half.is-active .bl-header-world-name       { opacity:1; }
+.bl-header-half:not(.is-active):hover .bl-header-world-name { opacity:0.8; }
 .bl-header-half:focus-visible { box-shadow:inset 0 0 0 2px rgba(255,255,255,0.15); }
 .bl-header-half > * { position:relative; z-index:2; }
 
@@ -750,7 +769,7 @@
   font-style:italic;
   letter-spacing:-0.5px;
   line-height:1;
-  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), font-weight .4s, color .4s, text-shadow .4s;
+  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), font-weight .4s, color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
 }
 .bl-header-half-bass:not(.is-active) .bl-header-world-name {
   font-size:22px; font-weight:700;
@@ -776,7 +795,7 @@
   font-family:var(--font-layer), 'Space Grotesk', sans-serif;
   text-transform:uppercase;
   line-height:1;
-  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .55s cubic-bezier(0.16, 1, 0.3, 1), color .4s, text-shadow .4s;
+  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .55s cubic-bezier(0.16, 1, 0.3, 1), color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
 }
 .bl-header-half-layer:not(.is-active) .bl-header-world-name {
   font-size:14px; letter-spacing:4.5px; font-weight:400;
@@ -864,6 +883,44 @@
 @media (prefers-reduced-motion: reduce) {
   .bl-header-half { transition:flex-basis 200ms, background 200ms; }
   .bl-header.is-wiping .bl-header-half::before { animation:none; }
+}
+
+/* ── Cross-panel signature (P3.6) ─────────
+   Línea de 2px justo bajo el header que barre del tinte del mundo saliente
+   al del entrante cuando el user cambia panel. Solo transform/opacity — sin
+   layout thrash. Respeta prefers-reduced-motion. */
+.bl-cross-signature {
+  position:absolute; left:0; right:0; top:120px; height:2px;
+  pointer-events:none; z-index:60;
+  opacity:0;
+  transform:scaleX(0);
+  transform-origin:left center;
+  background:linear-gradient(90deg, var(--bl-accent-bass) 0%, var(--bl-accent-layer) 100%);
+}
+.bl-cross-signature.active.wiping-layer {
+  transform-origin:left center;
+  animation:bl-cross-sig-l 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bl-cross-signature.active.wiping-bass {
+  transform-origin:right center;
+  background:linear-gradient(90deg, var(--bl-accent-layer) 0%, var(--bl-accent-bass) 100%);
+  animation:bl-cross-sig-r 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes bl-cross-sig-l {
+  0%   { opacity:0.9; transform:scaleX(0); }
+  60%  { opacity:0.9; transform:scaleX(1); }
+  100% { opacity:0;   transform:scaleX(1); }
+}
+@keyframes bl-cross-sig-r {
+  0%   { opacity:0.9; transform:scaleX(0); }
+  60%  { opacity:0.9; transform:scaleX(1); }
+  100% { opacity:0;   transform:scaleX(1); }
+}
+@media (max-width:768px) {
+  .bl-cross-signature { top:72px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bl-cross-signature.active { animation:none; opacity:0; }
 }
 
 /* ── Swipe Dots ─────────────────────────── */
@@ -1010,7 +1067,9 @@
 
 .bl-concepts { position:absolute; top:calc(100% + 16px); pointer-events:none; white-space:nowrap; }
 .bl-concepts-bass { left:0; } .bl-concepts-layer { right:0; }
-.bl-concept-text { font-family:var(--font-heading); font-weight:300; font-size:clamp(10px,1vw,14px); letter-spacing:2.5px; text-transform:uppercase; color:var(--bl-550); opacity:0; transform:translateY(8px); transition:opacity .4s var(--ease-out-expo), transform .5s var(--ease-out-expo); }
+/* Contraste sobre negro: --bl-250 (#999) da ~5.5:1 — supera AA (4.5:1).
+   Antes usábamos --bl-550 (#333) y quedaba ilegible (~2.4:1). */
+.bl-concept-text { font-family:var(--font-heading); font-weight:300; font-size:clamp(10px,1vw,14px); letter-spacing:2.5px; text-transform:uppercase; color:var(--bl-250); opacity:0; transform:translateY(8px); transition:opacity .4s var(--ease-out-expo), transform .5s var(--ease-out-expo); }
 .bl-concept-text.show { opacity:1; transform:translateY(0); }
 
 /* Mobile — stacked debajo del row, color semántico por sección */
@@ -1043,29 +1102,11 @@
 .bl-info-tl { top:32px; left:40px; animation-delay:1.2s!important; }
 .bl-info-tr { top:32px; right:40px; animation-delay:1.35s!important; }
 .bl-info-bl { bottom:32px; left:40px; animation-delay:1.5s!important; }
-/* corner br: elevado por encima del .bl-util-bar fixed (24 + 44 + 20 gap) */
-.bl-info-br { bottom:88px; right:40px; animation-delay:1.65s!important; }
 .bl-home:hover .bl-info { color:var(--bl-600); }
-/* Instagram link en corner br — hereda .bl-info, sube en hover */
-.bl-info-ig {
-  text-decoration:none;
-  cursor:pointer;
-  transition:color .3s var(--ease-out-expo);
-}
-.bl-info-ig:hover, .bl-info-ig:focus-visible {
-  color:var(--bl-accent-bass);
-  outline:none;
-}
 @media (max-width:768px) {
   .bl-info-tl, .bl-info-tr { top:20px; }
   .bl-info-tl, .bl-info-bl { left:20px; }
-  .bl-info-tr, .bl-info-br { right:20px; }
   .bl-info-bl { bottom:20px; }
-  /* corner br mobile: elevado por encima del util-bar (20 + 44 + 12 gap) */
-  .bl-info-br { bottom:76px; }
-  /* excepción a "display:none" de info en mobile — el link IG sí se muestra
-     porque cumple rol de call-to-action, no de metadata ambient */
-  .bl-info.bl-info-ig { display:block; }
 }
 .bl-choose { position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:50; text-align:center; display:none; }
 .bl-choose-text { font-family:var(--font-mono); font-size:9px; letter-spacing:4px; text-transform:uppercase; color:var(--bl-650); }
@@ -1081,9 +1122,13 @@
 .bl-filter-chip:hover { color:var(--bl-text); border-color:var(--bl-400); }
 .bl-filter-chip.active { color:var(--bl-white); border-color:var(--bl-300); background:var(--bl-subtle-hover); }
 .bl-filters.bass-filters .bl-filter-chip.active {
-  border-color:var(--bl-accent-bass); color:var(--bl-accent-bass);
-  background:rgba(196,144,112,0.1);
-  box-shadow:0 0 12px rgba(196,144,112,0.08);
+  /* Tinte del género — --bl-genre-tint viene inline como "r,g,b" (FilterBar.jsx).
+     Fallback al accent bass si el género no tiene tinte propio (ej. "All"). */
+  --bl-tint: var(--bl-genre-tint, 196,144,112);
+  border-color:rgb(var(--bl-tint));
+  color:rgb(var(--bl-tint));
+  background:rgba(var(--bl-tint), 0.12);
+  box-shadow:0 0 12px rgba(var(--bl-tint), 0.08);
 }
 .bl-filters.layer-filters .bl-filter-chip.active {
   border-color:var(--bl-accent-layer); color:var(--bl-accent-layer);
@@ -1114,6 +1159,72 @@
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
   border-bottom:none;
+}
+
+/* ── Bass line dentro de Layer (P3.7) — espejo del ticker crypto
+   Muestra el próximo evento musical con label ESTA NOCHE / ESTE FINDE,
+   clickeable → abre el modal del evento. Estilo alineado con .bl-price-bar
+   pero con acento tan en el label y tipografía Bodoni en el nombre. */
+.bl-bass-line {
+  display:flex; align-items:center; gap:10px;
+  width:100%;
+  padding:12px 32px;
+  border:none;
+  border-bottom:1px solid rgba(196,144,112,0.15);
+  background:linear-gradient(90deg, rgba(196,144,112,0.06) 0%, transparent 100%);
+  color:var(--bl-text);
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.8px;
+  cursor:pointer;
+  text-align:left;
+  transition:background .3s var(--ease-out-expo), border-color .3s var(--ease-out-expo);
+}
+.bl-bass-line:hover, .bl-bass-line:focus-visible {
+  background:linear-gradient(90deg, rgba(196,144,112,0.12) 0%, rgba(196,144,112,0.02) 100%);
+  border-bottom-color:rgba(196,144,112,0.3);
+  outline:none;
+}
+.bl-bass-line-label {
+  font-weight:700;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--bl-accent-bass);
+  flex-shrink:0;
+}
+.bl-bass-line-sep { color:var(--bl-text-ter); flex-shrink:0; }
+.bl-bass-line-artist {
+  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
+  font-style:italic;
+  font-weight:500;
+  font-size:14px;
+  letter-spacing:-0.2px;
+  color:var(--bl-text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width:0;
+}
+.bl-bass-line-venue, .bl-bass-line-time {
+  color:var(--bl-text-sec);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.bl-bass-line-arrow {
+  margin-left:auto;
+  color:var(--bl-accent-bass);
+  font-size:13px;
+  transition:transform .25s var(--ease-out-expo);
+  flex-shrink:0;
+}
+.bl-bass-line:hover .bl-bass-line-arrow { transform:translateX(3px); }
+@media (max-width:768px) {
+  .bl-bass-line { padding:10px 16px; gap:8px; font-size:10px; }
+  .bl-bass-line-artist { font-size:13px; }
+  /* En mobile hay poco espacio: escondemos el venue si el título es largo — el
+     label + artista + arrow siguen legibles y el click abre la ficha completa. */
+  .bl-bass-line-venue { display:none; }
 }
 
 /* ── Price Ticker ───────────────────────── */
@@ -1288,8 +1399,11 @@
 }
 
 /* ── Day headers (timeline) ─────────── */
+/* Etiqueta semántica h2 en el JSX (SEO), pero visualmente mantiene el estilo
+   de divisor de agrupación: el peso tipográfico viene de .bl-day-label. */
 .bl-day-header {
   display:flex; align-items:center; gap:12px; padding:22px 0 10px;
+  font-size:inherit; font-weight:400; margin:0;
 }
 .bl-day-label {
   font-family:var(--font-body); font-size:11px; letter-spacing:1px; text-transform:uppercase;
@@ -1330,6 +1444,22 @@
   z-index:1;
   user-select:none;
 }
+/* Línea de "lectura del día" — bajo el status bar del terminal, misma tipografía
+   Space Mono. Sin protagonismo: color secundario, borde inferior sutil, misma
+   altura de línea que el header. */
+.bl-terminal-reading {
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.4px;
+  color:var(--bl-text-sec);
+  padding:6px 14px;
+  border-bottom:1px solid var(--bl-border-sub);
+  background:rgba(108,184,200,0.015);
+  user-select:none;
+  position:relative;
+  z-index:1;
+}
+
 .bl-terminal-prompt-user { color:var(--bl-accent-layer); font-weight:600; }
 .bl-terminal-prompt-sep  { color:var(--bl-text-ter); }
 .bl-terminal-prompt-path { color:var(--bl-text-sec); }
@@ -1446,6 +1576,15 @@
   text-transform:uppercase;
   font-weight:600;
   align-self:center;
+}
+/* Sparkline F&G últimos 30d — monocromo, sin ejes, ancho fijo. */
+.bl-term-cell-spark {
+  width:60px;
+  height:18px;
+  color:var(--bl-text-ter);
+  opacity:0.7;
+  margin-left:auto;
+  flex-shrink:0;
 }
 .bl-term-cell-bar {
   margin-top:auto;
@@ -1640,6 +1779,24 @@
 }
 .bl-modal-btn-calendar:hover { background:var(--bl-surface-alt); border-color:var(--bl-text-ter); color:var(--bl-white); }
 .bl-cal-icon { width:14px; height:14px; flex-shrink:0; }
+
+/* Wrapper del botón de calendario para anclarle el menú desplegable. */
+.bl-cal-menu-wrap { flex:1; position:relative; display:flex; }
+.bl-cal-menu-wrap .bl-modal-btn { flex:1; }
+.bl-cal-menu {
+  position:absolute; bottom:calc(100% + 6px); left:0; right:0;
+  background:var(--bl-surface); border:1px solid var(--bl-border); border-radius:6px;
+  z-index:20; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,0.35);
+  display:flex; flex-direction:column;
+}
+.bl-cal-menu-item {
+  background:transparent; border:none; color:var(--bl-text-sec);
+  font-family:var(--font-mono); font-size:11px; letter-spacing:1.2px; text-transform:uppercase;
+  padding:12px 14px; text-align:left; cursor:pointer; text-decoration:none;
+  transition:background .2s var(--ease-out-expo), color .2s var(--ease-out-expo);
+}
+.bl-cal-menu-item + .bl-cal-menu-item { border-top:1px solid var(--bl-border); }
+.bl-cal-menu-item:hover, .bl-cal-menu-item:focus-visible { background:var(--bl-surface-alt); color:var(--bl-white); outline:none; }
 .bl-modal-btn-secondary {
   background:transparent; border:1px solid var(--bl-border); color:var(--bl-text-sec);
 }
@@ -2205,9 +2362,12 @@ button.bl-modal-artist:hover {
 
 .bl-weekend-picker-trigger {
   padding:16px 32px 0;
+  display:flex;
+  align-items:stretch;
+  gap:10px;
 }
 .bl-wp-trigger-btn {
-  width:100%;
+  flex:1;
   padding:14px 20px;
   background:transparent;
   border:1px solid rgba(196,144,112,0.22);
@@ -2235,6 +2395,39 @@ button.bl-modal-artist:hover {
   border-color:var(--bl-accent-bass);
   box-shadow:0 0 0 2px rgba(196,144,112,0.18);
 }
+
+/* Chip "Hoy" al lado del trigger de finde — mismo lenguaje visual, más compacto. */
+.bl-hoy-chip {
+  padding:0 16px;
+  background:transparent;
+  border:1px solid rgba(196,144,112,0.22);
+  border-radius:8px;
+  color:var(--bl-text-sec);
+  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
+  font-weight:500;
+  font-size:14px;
+  letter-spacing:-0.1px;
+  cursor:pointer;
+  transition:border-color .25s var(--ease-out-expo),
+             background-color .25s var(--ease-out-expo),
+             color .25s var(--ease-out-expo);
+}
+.bl-hoy-chip:hover {
+  background:rgba(196,144,112,0.05);
+  border-color:rgba(196,144,112,0.45);
+  color:var(--bl-text);
+}
+.bl-hoy-chip.active {
+  color:var(--bl-accent-bass);
+  border-color:var(--bl-accent-bass);
+  background:rgba(196,144,112,0.1);
+}
+.bl-hoy-chip:focus-visible {
+  outline:none;
+  border-color:var(--bl-accent-bass);
+  box-shadow:0 0 0 2px rgba(196,144,112,0.18);
+}
+
 .bl-wp-trigger-arrow {
   font-family:var(--font-mono); font-size:14px;
   color:var(--bl-accent-bass);
@@ -4162,9 +4355,9 @@ select.bl-venue-input { cursor:pointer; }
 
 .bl-end-of-feed {
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:center;
-  gap:6px;
+  gap:10px;
   padding:36px 0 28px;
   font-family:var(--font-mono);
   font-size:10px;
@@ -4172,7 +4365,9 @@ select.bl-venue-input { cursor:pointer; }
   color:var(--bl-text-ter);
   opacity:0.7;
   user-select:none;
+  transition:opacity .3s var(--ease-out-expo);
 }
+.bl-end-of-feed:has(.bl-end-of-feed-ig:hover) { opacity:1; }
 .bl-end-cursor {
   display:inline-block;
   width:9px; height:2px;
@@ -4180,6 +4375,17 @@ select.bl-venue-input { cursor:pointer; }
   vertical-align:baseline;
   animation:bl-blink 1s step-end infinite;
   box-shadow:0 0 6px rgba(108,184,200,0.35);
+}
+.bl-end-of-feed-ig {
+  letter-spacing:2px;
+  text-transform:lowercase;
+  color:var(--bl-text-ter);
+  text-decoration:none;
+  transition:color .3s var(--ease-out-expo);
+}
+.bl-end-of-feed-ig:hover, .bl-end-of-feed-ig:focus-visible {
+  color:var(--bl-accent-layer);
+  outline:none;
 }
 
 /* ═══════════════════════════════════════════
@@ -4376,3 +4582,56 @@ select.bl-venue-input { cursor:pointer; }
   .bl-festival-modal-body { padding:18px 20px 22px; gap:12px; }
   .bl-festival-modal-name { font-size:24px; }
 }
+
+/* ═══════════════════════════════════════════
+   Auditoría P1 · Mobile
+   Touch targets ≥44px y tipografía funcional ≥11px.
+   Sube el área táctil sin agrandar el texto (padding en vez de font-size).
+   ═══════════════════════════════════════════ */
+@media (max-width:480px) {
+  /* Píldoras de filtro: género, ciudad, "este finde", tags de Layer.
+     Se apilan como inline-flex para poder aplicar min-height sin partir
+     el layout horizontal scrollable. */
+  .bl-filter-chip,
+  .bl-city-chip,
+  .bl-finde-btn {
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    padding-left:14px;
+    padding-right:14px;
+  }
+  /* Texto legible mínimo 11px en labels de filtro (antes 9.5px).
+     Especificidad alta para ganarle a .bl-filters.bass-filters .bl-filter-chip. */
+  .bl-filters .bl-filter-chip,
+  .bl-filters.bass-filters .bl-filter-chip,
+  .bl-filters.layer-filters .bl-filter-chip { font-size:11px; }
+  .bl-city-chip { font-size:11px; }
+  .bl-finde-btn { font-size:11px; }
+
+  /* Botón de "agregar al calendario" y otros CTA del modal:
+     ya suelen tener padding grande, pero forzamos mínimo por si acaso. */
+  .bl-modal-btn { min-height:44px; }
+
+  /* Metadata funcional de eventos: día abreviado, hora, badges — antes 9.5-10.5px. */
+  .bl-ev-date-m { font-size:11px; }
+  .bl-ev-time-inline { font-size:11px; }
+  .bl-ev-genre-badge { font-size:11px; padding:3px 8px; }
+
+  /* Píldora de género del modal: era 8px, la subimos a 11px. */
+  .bl-modal-genre { font-size:11px; padding:4px 10px; }
+
+  /* Mes abreviado en la card del modal — funcional. */
+  .bl-modal-date-m { font-size:11px; }
+
+  /* Precios en el ticker (símbolo BTC/ETH y valor) — funcional. */
+  .bl-price-sym { font-size:11px; }
+
+  /* Mensajes de error / vacío del feed — el usuario los lee para saber qué hacer. */
+  .bl-error, .bl-empty { font-size:11px; }
+
+  /* Countdown del evento destacado del hero. */
+  .bl-featured-countdown { font-size:11px; }
+}
+
+

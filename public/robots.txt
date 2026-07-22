@@ -1,4 +1,4 @@
-# robots.txt — BassLayer (https://basslayer.app)
+# robots.txt — BassLayer (https://basslayer.io)
 
 User-agent: *
 Allow: /
@@ -23,4 +23,4 @@ User-agent: Google-Extended
 Allow: /
 
 # Sitemap dinámico
-Sitemap: https://basslayer.app/sitemap.xml
+Sitemap: https://basslayer.io/sitemap.xml

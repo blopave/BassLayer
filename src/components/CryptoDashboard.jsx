@@ -51,7 +51,23 @@ function StatCell({ label, value, change, tickValue, onClick, ariaLabel }) {
   );
 }
 
-function FearGreedCell({ value, label, onClick, t }) {
+function FngSparkline({ history }) {
+  if (!Array.isArray(history) || history.length < 2) return null;
+  // 60x18 viewBox — línea monocroma, sin ejes ni librerías. El path se calcula
+  // normalizando los valores 0-100 al alto del SVG.
+  const w = 60, h = 18, pad = 1;
+  const max = 100, min = 0;
+  const step = (w - pad * 2) / (history.length - 1);
+  const y = (v) => h - pad - ((v - min) / (max - min)) * (h - pad * 2);
+  const d = history.map((v, i) => `${i === 0 ? "M" : "L"}${(pad + i * step).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  return (
+    <svg className="bl-term-cell-spark" viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FearGreedCell({ value, label, history, onClick, t }) {
   const flash = useTickFlash(value);
   if (value == null) return null;
   const hue = (value / 100) * 120;
@@ -72,12 +88,36 @@ function FearGreedCell({ value, label, onClick, t }) {
       <div className="bl-term-cell-value">
         <span className="bl-term-cell-value-num" style={{ color }}>{value}</span>
         <span className="bl-term-cell-fng-tag" style={{ color }}>{label}</span>
+        <FngSparkline history={history} />
       </div>
       <div className="bl-term-cell-bar" aria-hidden="true">
         <span className="bl-term-cell-bar-fill" style={{ width: `${value}%`, background: color, boxShadow: `0 0 6px ${color}` }} />
       </div>
     </div>
   );
+}
+
+// Lectura del día — se compone con reglas simples sobre los datos ya en pantalla.
+// Sin lookup extra: usa marketCapChange24h y fearGreed.value. Si en el futuro
+// tenemos btcChange vs alts change, se puede refinar sin cambiar el shape.
+function readingOfTheDay(data) {
+  if (!data) return null;
+  const mc = data.marketCapChange24h;
+  const fg = data.fearGreed?.value;
+
+  let base;
+  if (mc == null) base = "sin señal clara";
+  else if (mc >= 1.5) base = "día verde";
+  else if (mc <= -1.5) base = "día rojo";
+  else if (mc >= 0.5) base = "mercado sube tímido";
+  else if (mc <= -0.5) base = "mercado baja tímido";
+  else base = "mercado plancha";
+
+  const flags = [];
+  if (fg != null && fg < 25) flags.push("miedo extremo");
+  else if (fg != null && fg > 75) flags.push("euforia");
+
+  return `> lectura: ${base}${flags.length ? " · " + flags.join(" · ") : ""}`;
 }
 
 function GasCell({ gas, onClick, t }) {
@@ -167,6 +207,7 @@ export function CryptoDashboard() {
           <span className="bl-terminal-status-code">[200]</span>
         </span>
       </div>
+      <div className="bl-terminal-reading" aria-live="polite">{readingOfTheDay(data)}</div>
       <div className="bl-terminal-grid">
         {data.btcDominance != null && (
           <StatCell
@@ -199,6 +240,7 @@ export function CryptoDashboard() {
         <FearGreedCell
           value={data.fearGreed?.value}
           label={data.fearGreed?.label}
+          history={data.fearGreed?.history}
           onClick={() => openIndicator("fearGreed", data.fearGreed?.value, data.fearGreed?.value)}
           t={t}
         />

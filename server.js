@@ -35,7 +35,7 @@ const app = express();
 app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3001;
 const IS_PROD = process.env.NODE_ENV === "production";
-const PROD_ORIGIN = process.env.ORIGIN || "https://basslayer.app";
+const PROD_ORIGIN = process.env.ORIGIN || "https://basslayer.io";
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -1992,7 +1992,7 @@ async function tryWikipediaLang(name, lang) {
     const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`;
     try {
       const r = await fetchSafe(url, {
-        headers: { "User-Agent": "BassLayer/1.0 (basslayer.app)" },
+        headers: { "User-Agent": "BassLayer/1.0 (basslayer.io)" },
       }, 8000);
       if (!r.ok) continue;
       const text = await safeText(r);
@@ -2087,7 +2087,7 @@ async function tryMusicBrainz(name) {
   try {
     const r = await fetchSafe(url, {
       headers: {
-        "User-Agent": "BassLayer/1.0 (basslayer.app)",
+        "User-Agent": "BassLayer/1.0 (basslayer.io)",
         "Accept": "application/json",
       },
     }, 7000);
@@ -2174,7 +2174,7 @@ app.get("/api/dashboard", async (req, res) => {
   try {
     const results = await Promise.allSettled([
       fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-      fetchSafe("https://api.alternative.me/fng/?limit=1").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.alternative.me/fng/?limit=30").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
       fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     ]);
 
@@ -2196,6 +2196,12 @@ app.get("/api/dashboard", async (req, res) => {
       fearGreed: fngData?.data?.[0] ? {
         value: parseInt(fngData.data[0].value),
         label: fngData.data[0].value_classification,
+        // Últimos 30 días (más reciente primero) — usados por el sparkline en el
+        // dashboard de Layer. Invertimos a orden cronológico ascendente para que
+        // el SVG del cliente pueda dibujar en la dirección natural.
+        history: Array.isArray(fngData.data)
+          ? fngData.data.slice(0, 30).map(d => parseInt(d.value)).filter(v => !isNaN(v)).reverse()
+          : [],
       } : null,
       ethGas: gasData?.result?.ProposeGasPrice ? {
         low: parseInt(gasData.result.SafeGasPrice) || null,
@@ -2309,6 +2315,21 @@ app.get("/api/health", (req, res) => {
 
 const LUMA_CATEGORIES = ["crypto", "blockchain", "web3"];
 
+// Keywords para filtrar el feed de Luma. La categoría del endpoint no basta:
+// muchos meetups genéricos (clubes de lectura, cerámica, fútbol) se cuelan y
+// ensucian la agenda cripto. Nos quedamos solo con lo que tenga alguna de estas
+// palabras en título / descripción / organizador (case-insensitive).
+const LUMA_CRYPTO_KEYWORDS = [
+  "crypto", "cripto", "bitcoin", "btc", "ethereum", "eth", "web3", "blockchain",
+  "token", "defi", "nft", "stablecoin", "solana", "dao", "onchain", "wallet", "staking",
+];
+const LUMA_CRYPTO_REGEX = new RegExp(`\\b(${LUMA_CRYPTO_KEYWORDS.join("|")})\\b`, "i");
+
+function lumaMatchesCrypto(ev) {
+  const haystack = `${ev.title || ""} ${ev.description || ""} ${ev.organizer || ""}`;
+  return LUMA_CRYPTO_REGEX.test(haystack);
+}
+
 async function fetchLumaEvents() {
   const events = [];
   for (const category of LUMA_CATEGORIES) {
@@ -2367,7 +2388,9 @@ async function fetchCryptoEvents() {
   if (hit) return hit;
 
   console.log("[crypto-events] Fetching from Luma...");
-  const lumaEvents = await fetchLumaEvents().catch(() => []);
+  const lumaEventsRaw = await fetchLumaEvents().catch(() => []);
+  const lumaEvents = lumaEventsRaw.filter(lumaMatchesCrypto);
+  const filteredOut = lumaEventsRaw.length - lumaEvents.length;
 
   // Deduplicate by title similarity
   const seen = new Set();
@@ -2382,7 +2405,7 @@ async function fetchCryptoEvents() {
   // Sort by date
   unique.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
 
-  console.log(`[crypto-events] Luma: ${lumaEvents.length}, Total unique: ${unique.length}`);
+  console.log(`[crypto-events] Luma raw: ${lumaEventsRaw.length}, matched crypto keywords: ${lumaEvents.length} (filtered ${filteredOut}), unique: ${unique.length}`);
   setCache("cryptoEvents", unique);
   return unique;
 }
@@ -3349,13 +3372,15 @@ if (IS_PROD) {
 
     const artists = (ev.artists || []).filter(a => a && a !== "TBA").slice(0, 8);
     const artistsLine = artists.map(escHtml).join(", ");
+    const headliner = artists[0] || ev.name;
+    const venueLabel = ev.venue || "Buenos Aires";
+    const cityLabel = ev.city || "Buenos Aires";
 
-    const desc = [
-      `${ev.name} se realiza el ${ev.day} de ${ev.month} en ${ev.venue || "Buenos Aires"}.`,
-      ev.genre ? `Género: ${ev.genre}.` : "",
-      artistsLine ? `Lineup: ${artistsLine}.` : "",
-      "Más información, próximos eventos y agenda completa de música electrónica en Buenos Aires en BassLayer.",
-    ].filter(Boolean).join(" ");
+    // Descripción en el formato pedido por la auditoría — informa al usuario en
+    // los rich snippets de Google: quién toca, dónde, cuándo, género.
+    const timePart = ev.time ? ` a las ${ev.time}` : "";
+    const genrePart = ev.genre ? ` Género: ${ev.genre}.` : "";
+    const desc = `${headliner} se presenta en ${venueLabel}, ${cityLabel}, el ${ev.day} de ${ev.month}${timePart}.${genrePart} Entradas e info en BassLayer.`;
 
     const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(ev.name)}">`, `<div style="${innerStyle}">`];
 
@@ -3443,7 +3468,11 @@ if (IS_PROD) {
   function renderEventPage(ev) {
     const { html: body, desc } = buildEventPageBody(ev);
     const slug = eventSlug(ev);
-    const title = `${ev.name} — ${ev.day} ${ev.month}${ev.venue ? ` en ${ev.venue}` : ""} | BassLayer`;
+    const artists = (ev.artists || []).filter(a => a && a !== "TBA");
+    const headliner = artists[0] || ev.name;
+    // Título compacto (headliner en venue · fecha) — mismo patrón que usa el cliente
+    // al abrir el modal, así share previews y title del navegador son coherentes.
+    const title = `${headliner}${ev.venue ? ` en ${ev.venue}` : ""} · ${ev.day} ${ev.month} | BassLayer`;
     return renderHtmlWithMeta({
       title,
       description: desc.slice(0, 300),

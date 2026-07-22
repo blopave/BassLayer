@@ -181,7 +181,7 @@ async function eventTemplate(event) {
           }, event.genre)
         : null,
       el("div", { style: { fontSize: "16px", color: C.inkMuted, letterSpacing: "0.08em", textTransform: "uppercase" } },
-        "basslayer.app"),
+        "basslayer.io"),
     ),
   );
 
@@ -316,7 +316,7 @@ async function festivalTemplate(festival) {
           textTransform: "uppercase",
           marginLeft: "auto",
         },
-      }, "basslayer.app"),
+      }, "basslayer.io"),
     ),
   );
 }
@@ -390,7 +390,7 @@ async function newsTemplate(news) {
         letterSpacing: "0.08em",
         textTransform: "uppercase",
       },
-    }, "basslayer.app · curado"),
+    }, "basslayer.io · curado"),
   );
 
   if (!img) {

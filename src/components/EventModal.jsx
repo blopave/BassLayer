@@ -6,15 +6,42 @@ import { formatLongDateLocale } from "../i18n/strings";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 
-function buildICS(event) {
+// Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
+// para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
+// fija America/Argentina/Buenos_Aires (offset -03:00 sin DST).
+function eventTimes(event) {
   const m = MONTHS_MAP[event.month?.toLowerCase()];
   if (m === undefined) return null;
-
   const now = new Date();
   const year = now.getFullYear();
   const [h, min] = (event.time || "23:00").split(":").map(Number);
   const start = new Date(year, m, parseInt(event.day), h || 23, min || 0);
   if (start < now - 30 * 86400000) start.setFullYear(year + 1);
+  return start;
+}
+
+function buildEventDescription(event) {
+  const artistStr = event.artists?.filter(a => a && a !== "TBA").join(", ") || "";
+  return [
+    artistStr ? `Line-up: ${artistStr}` : "",
+    event.genre ? `Género: ${event.genre}` : "",
+    event.url ? `Info: ${event.url}` : "",
+    `https://basslayer.io/eventos/${eventPageSlug(event)}`,
+  ].filter(Boolean).join("\n");
+}
+
+// Slug estilo server (mismo formato usado por App.jsx para deep links)
+function eventPageSlug(event) {
+  const slugify = (s) => String(s || "").normalize("NFD").replace(/\p{Mn}/gu, "").toLowerCase()
+    .replace(/&/g, " y ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+  const namePart = slugify(event.name);
+  const datePart = slugify(`${event.day || ""}-${event.month || ""}`);
+  return [namePart, datePart].filter(Boolean).join("-");
+}
+
+function buildICS(event) {
+  const start = eventTimes(event);
+  if (!start) return null;
   const end = new Date(start.getTime() + 5 * 3600000);
 
   const fmtLocal = (d) => {
@@ -26,13 +53,9 @@ function buildICS(event) {
     const ss = String(d.getSeconds()).padStart(2, "0");
     return `${y}${mo}${dd}T${hh}${mm}${ss}`;
   };
-  const artistStr = event.artists?.filter(a => a && a !== "TBA").join(", ") || "";
   const location = event.address || event.venue || "";
-  const description = [
-    artistStr ? `Line-up: ${artistStr}` : "",
-    event.genre ? `Genero: ${event.genre}` : "",
-    event.url ? `Info: ${event.url}` : "",
-  ].filter(Boolean).join("\\n");
+  // Escapado RFC-5545 para líneas TEXT: barra invertida, coma, punto y coma, saltos
+  const esc = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 
   return [
     "BEGIN:VCALENDAR",
@@ -42,14 +65,33 @@ function buildICS(event) {
     "BEGIN:VEVENT",
     `DTSTART;TZID=America/Argentina/Buenos_Aires:${fmtLocal(start)}`,
     `DTEND;TZID=America/Argentina/Buenos_Aires:${fmtLocal(end)}`,
-    `SUMMARY:${event.name}`,
-    `LOCATION:${location}`,
-    `DESCRIPTION:${description}`,
+    `SUMMARY:${esc(event.name)}`,
+    `LOCATION:${esc(location)}`,
+    `DESCRIPTION:${esc(buildEventDescription(event))}`,
     "STATUS:CONFIRMED",
-    `UID:${start.getTime()}-${event.venue}@basslayer`,
+    `UID:${start.getTime()}-${esc(event.venue || "basslayer")}@basslayer`,
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
+}
+
+// Formato UTC compacto YYYYMMDDTHHMMSSZ para el link de Google Calendar.
+function googleCalendarUrl(event) {
+  const start = eventTimes(event);
+  if (!start) return null;
+  const end = new Date(start.getTime() + 6 * 3600000);
+  const fmtUtc = (d) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  };
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.name || "Evento",
+    dates: `${fmtUtc(start)}/${fmtUtc(end)}`,
+    details: buildEventDescription(event),
+    location: [event.venue, event.address, event.city].filter(Boolean).join(", ") || "Buenos Aires",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 function downloadICS(event) {
@@ -77,15 +119,26 @@ export function EventModal({ event, onClose, onShare }) {
   const [artistInfo, setArtistInfo] = useState(null);
   const [artistLoading, setArtistLoading] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     if (!event) return;
     setImageFailed(false);
+    setCalOpen(false);
     document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
     return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
   }, [event, onClose]);
+
+  useEffect(() => {
+    if (!calOpen) return;
+    const handler = (e) => {
+      if (!e.target.closest(".bl-cal-menu-wrap")) setCalOpen(false);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [calOpen]);
 
   // Pre-select headliner when modal opens / event changes
   useEffect(() => {
@@ -154,7 +207,7 @@ export function EventModal({ event, onClose, onShare }) {
             <div className="bl-modal-date-m">{event.month}</div>
           </div>
           <div className="bl-modal-title-area">
-            <h2 className="bl-modal-name">{event.name}</h2>
+            <h1 className="bl-modal-name">{event.name}</h1>
             <div className="bl-em-meta">
               {event.time && <span className="bl-em-meta-time">{event.time} hs</span>}
               {event.genre && <span className="bl-modal-genre">{event.genre}</span>}
@@ -296,15 +349,44 @@ export function EventModal({ event, onClose, onShare }) {
           <a className={`bl-modal-btn bl-modal-btn-primary${hasDirectLink ? "" : " bl-modal-btn-search"}`} href={ticketUrl()} target="_blank" rel="noopener noreferrer">
             {hasDirectLink ? `${t("event.buyTickets")} →` : `${t("event.searchTickets")} →`}
           </a>
-          <button className="bl-modal-btn bl-modal-btn-calendar" onClick={() => downloadICS(event)} aria-label={t("common.calendar")}>
-            <svg className="bl-cal-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="2" y="4" width="16" height="14" rx="2" />
-              <line x1="2" y1="9" x2="18" y2="9" />
-              <line x1="6" y1="2" x2="6" y2="6" />
-              <line x1="14" y1="2" x2="14" y2="6" />
-            </svg>
-            {t("common.calendar")}
-          </button>
+          <div className="bl-cal-menu-wrap">
+            <button
+              className="bl-modal-btn bl-modal-btn-calendar"
+              onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
+              aria-label={t("common.calendar")}
+              aria-haspopup="menu"
+              aria-expanded={calOpen}
+            >
+              <svg className="bl-cal-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="4" width="16" height="14" rx="2" />
+                <line x1="2" y1="9" x2="18" y2="9" />
+                <line x1="6" y1="2" x2="6" y2="6" />
+                <line x1="14" y1="2" x2="14" y2="6" />
+              </svg>
+              {t("common.calendar")}
+            </button>
+            {calOpen && (
+              <div className="bl-cal-menu" role="menu">
+                <a
+                  className="bl-cal-menu-item"
+                  href={googleCalendarUrl(event) || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  role="menuitem"
+                  onClick={() => setCalOpen(false)}
+                >
+                  Google Calendar
+                </a>
+                <button
+                  className="bl-cal-menu-item"
+                  onClick={() => { downloadICS(event); setCalOpen(false); }}
+                  role="menuitem"
+                >
+                  Descargar .ics
+                </button>
+              </div>
+            )}
+          </div>
           <button className="bl-modal-btn bl-modal-btn-secondary" onClick={() => onShare?.(event)} aria-label={t("common.share")}>
             {t("common.share")}
           </button>

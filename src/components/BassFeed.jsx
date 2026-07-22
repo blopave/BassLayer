@@ -23,7 +23,7 @@ function EndOfSet() {
         rel="noopener noreferrer"
         aria-label={`Instagram — ${IG_HANDLE}`}
       >
-        → seguí en {IG_HANDLE}
+        La agenda también en Instagram → {IG_HANDLE}
       </a>
     </div>
   );
@@ -82,6 +82,27 @@ function getDayLabel(eventDate) {
   return `${dayName} ${dd}/${mm}`;
 }
 
+// Fecha "hoy" en BsAs (America/Argentina/Buenos_Aires, offset fijo -03:00).
+// Retorna un Date en la medianoche local del cliente que representa el YMD
+// actual en BsAs — así comparaciones de igualdad por fecha son directas
+// con getEventDate() (que también usa horario local del cliente).
+function todayInBA() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
+  return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+}
+
+function isToday(eventDate) {
+  if (!eventDate) return false;
+  const today = todayInBA();
+  return eventDate.getFullYear() === today.getFullYear()
+    && eventDate.getMonth() === today.getMonth()
+    && eventDate.getDate() === today.getDate();
+}
+
 function isThisWeekend(eventDate) {
   if (!eventDate) return false;
   const now = new Date();
@@ -106,6 +127,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
   const [cityFilter, setCityFilter] = useState("Todas");
   const [esteFinde, setEsteFinde] = useState(false);
+  const [hoyOnly, setHoyOnly] = useState(false);
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
 
   // Bass news — lazy loaded on first toggle to "noticias"
@@ -173,6 +195,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   if (esteFinde) {
     filtered = filtered.filter((e) => isThisWeekend(getEventDate(e)));
   }
+  if (hoyOnly) {
+    filtered = filtered.filter((e) => isToday(getEventDate(e)));
+  }
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter((e) =>
@@ -211,6 +236,19 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   function emptyMessage() {
     if (search) {
       return <>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
+    }
+    if (hoyOnly) {
+      // Con el chip "Hoy" activo pero sin eventos: mostramos la próxima fecha
+      // con eventos para que el usuario no se quede en un dead end.
+      const today = todayInBA();
+      const upcoming = events
+        .map((ev) => ({ ev, date: getEventDate(ev) }))
+        .filter((x) => x.date && x.date >= today)
+        .sort((a, b) => a.date - b.date)[0];
+      if (!upcoming) return <>Nada hoy — próximamente sin fecha confirmada.</>;
+      const dayName = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"][upcoming.date.getDay()];
+      const dd = String(upcoming.date.getDate()).padStart(2, "0");
+      return <>Nada hoy — lo próximo: {dayName} {dd}</>;
     }
     if (esteFinde) {
       return <>{t("feed.empty.weekend")}</>;
@@ -269,6 +307,14 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           {t("event.weekendButton")}
           <span className="bl-wp-trigger-arrow">&rarr;</span>
         </button>
+        <button
+          type="button"
+          className={`bl-hoy-chip${hoyOnly ? " active" : ""}`}
+          onClick={() => setHoyOnly((v) => !v)}
+          aria-pressed={hoyOnly}
+        >
+          Hoy
+        </button>
       </div>
       <FilterBar items={genres} active={filter} onChange={onFilter} className="bass-filters" />
       <div className="bl-sub-filters">
@@ -297,10 +343,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               }
               if (item.type === "header") {
                 return (
-                  <div className="bl-day-header bl-reveal" key={`h-${item.label}`} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
+                  <h2 className="bl-day-header bl-reveal" key={`h-${item.label}`} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
                     <span className="bl-day-label">{item.label}</span>
                     <span className="bl-day-line" aria-hidden="true" />
-                  </div>
+                  </h2>
                 );
               }
               const ev = item.data;

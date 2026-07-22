@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug } from "./utils/slug";
+import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
@@ -112,6 +113,8 @@ export default function App() {
           window.history.pushState({}, "", url);
         }
       }
+      applyEventMeta(ev, slug);
+      applyEventJsonLd(ev, slug);
     }
   }, []);
 
@@ -120,6 +123,8 @@ export default function App() {
     if (window.location.pathname.startsWith("/eventos/")) {
       window.history.pushState({}, "", "/");
     }
+    resetMeta();
+    removeEventJsonLd();
   }, []);
 
   const openNews = useCallback((n) => {
@@ -232,7 +237,11 @@ export default function App() {
         const slug = decodeURIComponent(em[1]);
         setEvents((curr) => {
           const ev = curr.find((e) => eventSlug(e) === slug);
-          if (ev) setSelectedEvent(ev);
+          if (ev) {
+            setSelectedEvent(ev);
+            applyEventMeta(ev, slug);
+            applyEventJsonLd(ev, slug);
+          }
           return curr;
         });
         setSelectedNews(null);
@@ -260,6 +269,8 @@ export default function App() {
         setSelectedEvent(null);
         setSelectedNews(null);
         setSelectedFestival(null);
+        resetMeta();
+        removeEventJsonLd();
         // Si la URL volvió a "/" desde un hub de género, resetear el filtro
         if (p === "/" || p === "") setEventsFilter("All");
       }
@@ -273,7 +284,11 @@ export default function App() {
     const slug = pendingEventSlugRef.current;
     if (slug && events.length > 0) {
       const found = events.find((e) => eventSlug(e) === slug);
-      if (found) setSelectedEvent(found);
+      if (found) {
+        setSelectedEvent(found);
+        applyEventMeta(found, slug);
+        applyEventJsonLd(found, slug);
+      }
       pendingEventSlugRef.current = null;
     }
   }, [events]);
@@ -751,19 +766,10 @@ export default function App() {
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
           <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
-          <a
-            className="bl-info bl-info-br bl-info-ig"
-            href={IG_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            ref={(el) => (parallaxRefs.current.br = el)}
-            aria-label={`Instagram — ${IG_HANDLE}`}
-          >
-            {IG_HANDLE} →
-          </a>
 
           <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
-            <h1 className="bl-sr-only">BassLayer</h1>
+            {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
+            {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : <h1 className="bl-sr-only">BassLayer</h1>}
             <div className="bl-word-row">
               <div className="bl-word-half bl-word-bass"
                 onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
@@ -801,6 +807,9 @@ export default function App() {
 
       {/* SECTIONS */}
       <section className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`} aria-label="Contenido principal">
+        {/* Firma visual del cruce (P3.6): línea 2px bajo el header que barre
+            del tinte del mundo saliente al del nuevo cuando cambia el panel. */}
+        <div className={`bl-cross-signature${wiping ? " active wiping-" + wiping : ""}`} aria-hidden="true" />
         <nav className={`bl-header${wiping ? " is-wiping wiping-" + wiping : ""}`} aria-label="Navegaci&oacute;n principal">
           <div className="bl-header-duo" role="tablist">
             <button
@@ -855,7 +864,7 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />
+            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} events={events} onSelectEvent={openEvent} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -921,6 +930,16 @@ export default function App() {
         <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
           about
         </button>
+        <a
+          className="bl-util-toggle bl-util-ig"
+          href={IG_URL}
+          target="_blank"
+          rel="noopener"
+          aria-label="Instagram de BassLayer"
+        >
+          <span className="bl-util-ig-short" aria-hidden="true">IG</span>
+          <span className="bl-util-ig-full" aria-hidden="true">{IG_HANDLE}</span>
+        </a>
         <button
           className="bl-lang-toggle"
           onClick={() => setLocale(locale === "es" ? "en" : "es")}
