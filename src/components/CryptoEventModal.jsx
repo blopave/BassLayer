@@ -52,7 +52,7 @@ function downloadICS(item) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${item.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}.ics`;
+  a.download = `${String(item.title || "evento").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

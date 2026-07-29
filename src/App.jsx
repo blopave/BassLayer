@@ -120,8 +120,10 @@ export default function App() {
 
   const closeEvent = useCallback(() => {
     setSelectedEvent(null);
+    // replaceState (no pushState): evita dejar una entrada "/" fantasma que
+    // haría que el botón Atrás reabra el modal recién cerrado.
     if (window.location.pathname.startsWith("/eventos/")) {
-      window.history.pushState({}, "", "/");
+      window.history.replaceState({}, "", "/");
     }
     resetMeta();
     removeEventJsonLd();
@@ -143,7 +145,7 @@ export default function App() {
   const closeNews = useCallback(() => {
     setSelectedNews(null);
     if (window.location.pathname.startsWith("/noticias/")) {
-      window.history.pushState({}, "", "/");
+      window.history.replaceState({}, "", "/");
     }
   }, []);
 
@@ -163,7 +165,7 @@ export default function App() {
   const closeFestival = useCallback(() => {
     setSelectedFestival(null);
     if (window.location.pathname.startsWith("/festivales/")) {
-      window.history.pushState({}, "", "/");
+      window.history.replaceState({}, "", "/");
     }
   }, []);
 
@@ -530,6 +532,7 @@ export default function App() {
       setScrollProgress(scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0);
     };
     panel.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // sincronizar el fill al panel actual (evita progreso stale al cambiar de mundo)
     return () => panel.removeEventListener("scroll", onScroll);
   }, [view, activePanel]);
 
@@ -640,11 +643,15 @@ export default function App() {
     }, 500);
   }, [view, dayMode]);
 
+  const wipeTimerRef = useRef(null);
   const swipeTo = useCallback((panel) => {
     setActivePanel((prev) => {
       if (panel !== prev) {
         setWiping(panel === 0 ? "bass" : "layer");
-        setTimeout(() => setWiping(null), 600);
+        // Un switch rápido encadenado no debe dejar que el timer anterior corte
+        // el flash del nuevo wipe: cancelamos el pendiente antes de reprogramar.
+        if (wipeTimerRef.current) clearTimeout(wipeTimerRef.current);
+        wipeTimerRef.current = setTimeout(() => setWiping(null), 600);
       }
       return panel;
     });
@@ -691,12 +698,17 @@ export default function App() {
     if (!isDragging.current) return;
     isDragging.current = false;
     const threshold = innerWidth * 0.2;
-    if (touchDelta.current > threshold && activePanel === 1) swipeTo(0);
-    else if (touchDelta.current < -threshold && activePanel === 0) swipeTo(1);
-    else swipeTo(activePanel);
+    let target = activePanel;
+    if (touchDelta.current > threshold && activePanel === 1) target = 0;
+    else if (touchDelta.current < -threshold && activePanel === 0) target = 1;
+    swipeTo(target);
     if (containerRef.current) {
       containerRef.current.classList.remove("dragging");
-      containerRef.current.style.transform = "";
+      // Fijamos el transform al panel destino explícitamente. En un snap-back
+      // (target === activePanel) swipeTo no cambia el state → React no
+      // re-renderiza ni reaplica el style, así que limpiar a "" dejaba el
+      // container en translateX(0) (mostraba Bass estando en Layer).
+      containerRef.current.style.transform = `translateX(${-(target * 50)}%)`;
     }
   }, [activePanel, swipeTo]);
 
@@ -794,11 +806,13 @@ export default function App() {
                 {"Layer".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (layerLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
               </div>
             </div>
+            {/* Hover-reveal solo en desktop: en mobile .bl-concepts está en
+                display:none (no hay hover que asocie el concepto a cada palabra). */}
             <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov || isMobile ? " show" : ""}`}>{t("home.electronic")}</div>
+              <div className={`bl-concept-text${bassHov ? " show" : ""}`}>{t("home.electronic")}</div>
             </div>
             <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
-              <div className={`bl-concept-text${layerHov || isMobile ? " show" : ""}`}>{t("home.blockchain")}</div>
+              <div className={`bl-concept-text${layerHov ? " show" : ""}`}>{t("home.blockchain")}</div>
             </div>
           </div>
 
@@ -864,7 +878,7 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} events={events} onSelectEvent={openEvent} />
+            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>

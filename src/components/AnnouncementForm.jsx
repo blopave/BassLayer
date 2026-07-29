@@ -54,8 +54,9 @@ export function AnnouncementForm({ announcement, onSave, onBack }) {
 
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
-        const userId = (await supabase.auth.getUser()).data.user.id;
-        const path = `venues/${userId}/ann-${Date.now()}.${ext}`;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sesión expirada, iniciá sesión de nuevo");
+        const path = `venues/${user.id}/ann-${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("media")
           .upload(path, imageFile, { upsert: true });

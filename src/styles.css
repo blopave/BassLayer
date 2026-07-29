@@ -1072,25 +1072,11 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-concept-text { font-family:var(--font-heading); font-weight:300; font-size:clamp(10px,1vw,14px); letter-spacing:2.5px; text-transform:uppercase; color:var(--bl-250); opacity:0; transform:translateY(8px); transition:opacity .4s var(--ease-out-expo), transform .5s var(--ease-out-expo); }
 .bl-concept-text.show { opacity:1; transform:translateY(0); }
 
-/* Mobile — stacked debajo del row, color semántico por sección */
+/* Mobile — los conceptos de esquina se ocultan. Apilados y centrados bajo el
+   wordmark quedaban apretados y sin asociarse a cada palabra. En desktop se
+   mantiene el hover-reveal (uno a la vez). */
 @media (max-width:768px) {
-  .bl-concepts {
-    position:static;
-    display:block;
-    text-align:center;
-    white-space:normal;
-    margin-top:14px;
-  }
-  .bl-concepts-bass, .bl-concepts-layer { left:auto; right:auto; }
-  .bl-concepts-bass { margin-top:20px; }
-  .bl-concept-text {
-    font-family:var(--font-mono);
-    font-weight:600;
-    font-size:10.5px;
-    letter-spacing:1.5px;
-  }
-  .bl-concepts-bass .bl-concept-text { color:var(--bl-accent-bass); }
-  .bl-concepts-layer .bl-concept-text { color:var(--bl-accent-layer); }
+  .bl-concepts { display:none; }
 }
 
 @keyframes info-fade {
@@ -1159,72 +1145,6 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
   border-bottom:none;
-}
-
-/* ── Bass line dentro de Layer (P3.7) — espejo del ticker crypto
-   Muestra el próximo evento musical con label ESTA NOCHE / ESTE FINDE,
-   clickeable → abre el modal del evento. Estilo alineado con .bl-price-bar
-   pero con acento tan en el label y tipografía Bodoni en el nombre. */
-.bl-bass-line {
-  display:flex; align-items:center; gap:10px;
-  width:100%;
-  padding:12px 32px;
-  border:none;
-  border-bottom:1px solid rgba(196,144,112,0.15);
-  background:linear-gradient(90deg, rgba(196,144,112,0.06) 0%, transparent 100%);
-  color:var(--bl-text);
-  font-family:var(--font-mono);
-  font-size:11px;
-  letter-spacing:0.8px;
-  cursor:pointer;
-  text-align:left;
-  transition:background .3s var(--ease-out-expo), border-color .3s var(--ease-out-expo);
-}
-.bl-bass-line:hover, .bl-bass-line:focus-visible {
-  background:linear-gradient(90deg, rgba(196,144,112,0.12) 0%, rgba(196,144,112,0.02) 100%);
-  border-bottom-color:rgba(196,144,112,0.3);
-  outline:none;
-}
-.bl-bass-line-label {
-  font-weight:700;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--bl-accent-bass);
-  flex-shrink:0;
-}
-.bl-bass-line-sep { color:var(--bl-text-ter); flex-shrink:0; }
-.bl-bass-line-artist {
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:italic;
-  font-weight:500;
-  font-size:14px;
-  letter-spacing:-0.2px;
-  color:var(--bl-text);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  min-width:0;
-}
-.bl-bass-line-venue, .bl-bass-line-time {
-  color:var(--bl-text-sec);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.bl-bass-line-arrow {
-  margin-left:auto;
-  color:var(--bl-accent-bass);
-  font-size:13px;
-  transition:transform .25s var(--ease-out-expo);
-  flex-shrink:0;
-}
-.bl-bass-line:hover .bl-bass-line-arrow { transform:translateX(3px); }
-@media (max-width:768px) {
-  .bl-bass-line { padding:10px 16px; gap:8px; font-size:10px; }
-  .bl-bass-line-artist { font-size:13px; }
-  /* En mobile hay poco espacio: escondemos el venue si el título es largo — el
-     label + artista + arrow siguen legibles y el click abre la ficha completa. */
-  .bl-bass-line-venue { display:none; }
 }
 
 /* ── Price Ticker ───────────────────────── */
@@ -1837,7 +1757,6 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-word-layer .bl-letter { font-size:clamp(36px,12vw,62px)!important; letter-spacing:3px!important; }
   .bl-word-row { gap:8px!important; }
   .bl-info { display:none; }
-  .bl-concept-text { font-size:10px!important; letter-spacing:1.5px!important; }
   .bl-home-sub-text { font-size:8px!important; letter-spacing:2px!important; }
   .bl-home-sub { top:calc(50% + 50px)!important; }
   .bl-header-duo { height:72px; }

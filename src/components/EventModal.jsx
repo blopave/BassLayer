@@ -101,7 +101,7 @@ function downloadICS(event) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${event.name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}.ics`;
+  a.download = `${String(event.name || "evento").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30)}.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

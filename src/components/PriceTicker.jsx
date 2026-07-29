@@ -23,7 +23,7 @@ function Sparkline({ data, up }) {
 }
 
 export function PriceTicker({ prices, onSelect }) {
-  if (!prices.length) return null;
+  if (!prices?.length) return null;
   const renderItem = (p, suffix) => (
     <div className="bl-price-item bl-price-clickable" key={`${p.id}-${suffix}`} onClick={() => onSelect?.(p)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onSelect?.(p)}>
       <span className="bl-price-sym">{p.sym}</span>

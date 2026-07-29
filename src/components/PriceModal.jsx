@@ -19,13 +19,17 @@ export function PriceModal({ price, onClose }) {
 
   useEffect(() => {
     if (!price) return;
+    // Guard contra respuestas fuera de orden: al cambiar de moneda en el mismo
+    // modal, la respuesta lenta de la anterior no debe pisar el chart actual.
+    let cancelled = false;
     setLoading(true);
     setChartData(null);
     setChartError(false);
     fetch(`/api/prices/${price.id}/chart`)
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then((d) => { setChartData(d.prices || []); setLoading(false); })
-      .catch(() => { setChartError(true); setLoading(false); });
+      .then((d) => { if (cancelled) return; setChartData(d.prices || []); setLoading(false); })
+      .catch(() => { if (cancelled) return; setChartError(true); setLoading(false); });
+    return () => { cancelled = true; };
   }, [price]);
 
   useEffect(() => {

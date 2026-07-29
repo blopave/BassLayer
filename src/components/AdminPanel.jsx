@@ -222,7 +222,7 @@ export function AdminPanel({ onBack }) {
 
       {/* Reject modal */}
       {rejectId && (
-        <div className="bl-modal-overlay open" onClick={() => setRejectId(null)}>
+        <div className="bl-modal-overlay open" onClick={() => { setRejectId(null); setRejectNote(""); }}>
           <div className="bl-venue-auth-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="bl-venue-auth-title">Rechazar {rejectType === "announcement" ? "anuncio" : "evento"}</div>
             <textarea
@@ -233,7 +233,7 @@ export function AdminPanel({ onBack }) {
               rows={3}
             />
             <div className="bl-venue-form-actions" style={{ marginTop: 12 }}>
-              <button className="bl-venue-btn-sm" onClick={() => setRejectId(null)}>Cancelar</button>
+              <button className="bl-venue-btn-sm" onClick={() => { setRejectId(null); setRejectNote(""); }}>Cancelar</button>
               <button className="bl-venue-btn bl-venue-btn-danger" onClick={handleReject}>Rechazar</button>
             </div>
           </div>

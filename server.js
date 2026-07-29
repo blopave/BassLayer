@@ -88,7 +88,7 @@ const supabaseKeepAlive = supabase
   ? (pingSupabase(), setInterval(pingSupabase, 48 * 60 * 60 * 1000))
   : null;
 
-app.use("/api", (req, res, next) => {
+function rateLimit(req, res, next) {
   const now = Date.now();
   const ip = req.ip || req.socket?.remoteAddress || "unknown";
   const entry = rateLimitMap.get(ip);
@@ -114,7 +114,12 @@ app.use("/api", (req, res, next) => {
     rateLimitMap.set(ip, { count: 1, start: now });
   }
   next();
-});
+}
+app.use("/api", rateLimit);
+// /og también: los endpoints de OG image son CPU-intensivos (satori+resvg) y sus
+// slugs son enumerables desde el sitemap → sin límite, un loop puede saturar el
+// event loop y tumbar el proceso. Comparten el mismo presupuesto por IP.
+app.use("/og", rateLimit);
 
 if (IS_PROD) {
   app.use(express.static(join(__dirname, "dist"), { index: false }));
@@ -469,11 +474,13 @@ function decodeHtmlEntities(s) {
   return String(s)
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => {
       const n = parseInt(h, 16);
-      return Number.isFinite(n) ? String.fromCodePoint(n) : _;
+      // fromCodePoint tira RangeError si n > 0x10FFFF: acotamos al rango válido
+      // Unicode o devolvemos la entidad literal para no abortar el parse del feed.
+      return n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : _;
     })
     .replace(/&#(\d+);/g, (_, n) => {
       const c = parseInt(n, 10);
-      return Number.isFinite(c) ? String.fromCodePoint(c) : _;
+      return c >= 0 && c <= 0x10ffff ? String.fromCodePoint(c) : _;
     })
     .replace(/&([a-zA-Z]+);/g, (m, name) => {
       const lower = name.toLowerCase();
@@ -793,8 +800,12 @@ app.get("/api/news", async (req, res) => {
       .sort((a, b) => a._mins - b._mins)
       .slice(0, 50)
       .map(({ _mins, ...rest }) => rest);
-    setCache("news", news);
-    res.json(applyFilter(news));
+    // Cache negativo: si TODOS los feeds fallaron, allSettled no lanza y news
+    // queda []. No lo guardamos como hit válido (taparía 5 min los datos buenos);
+    // servimos el último cache bueno si existe.
+    if (news.length) setCache("news", news);
+    const serve = news.length ? news : (cache.news.data || news);
+    res.json(applyFilter(serve));
   } catch (e) {
     console.error("[news]", e.message);
     if (cache.news.data) return res.json(applyFilter(cache.news.data));
@@ -1135,8 +1146,11 @@ app.get("/api/bass-news", async (req, res) => {
     const news = quotaApplied
       .slice(0, 40)
       .map(({ _mins, _pubDate, ...rest }) => rest);
-    setCache("bassNews", news);
-    res.json(applyFilter(news));
+    // No cachear vacío como hit válido (taparía el último cache bueno); si el
+    // scrape volvió vacío, servimos el último bueno disponible.
+    if (news.length) setCache("bassNews", news);
+    const serve = news.length ? news : (cache.bassNews.data || news);
+    res.json(applyFilter(serve));
   } catch (e) {
     console.error("[bass-news]", e.message);
     if (cache.bassNews.data) return res.json(cache.bassNews.data);
@@ -2406,7 +2420,9 @@ async function fetchCryptoEvents() {
   unique.sort((a, b) => (a.date || "9999") > (b.date || "9999") ? 1 : -1);
 
   console.log(`[crypto-events] Luma raw: ${lumaEventsRaw.length}, matched crypto keywords: ${lumaEvents.length} (filtered ${filteredOut}), unique: ${unique.length}`);
-  setCache("cryptoEvents", unique);
+  // No pinnear un scrape vacío 1h: solo cacheamos si hubo resultados (el caller
+  // igual mergea con los eventos curados, así que devolver [] no rompe nada).
+  if (unique.length) setCache("cryptoEvents", unique);
   return unique;
 }
 
@@ -3021,11 +3037,34 @@ app.put("/api/admin/announcements/:id/pin", requireAuth, requireAdmin, async (re
 
 // OG image dinámica — generada con satori + resvg-js, cacheada 1-24h.
 // Las rutas devuelven PNG 1200×630 branded por evento / festival / noticia.
+//
+// Cache LRU acotado en memoria: la generación (satori+resvg) es CPU-bound, así
+// que guardamos el PNG ya renderizado por slug para no re-generar en cada hit
+// (defensa contra el amplification/DoS descrito arriba). Bounded → sin fuga.
+const OG_CACHE_MAX = 200;
+const ogCache = new Map(); // key -> { buf, exp }
+function ogCacheGet(key) {
+  const e = ogCache.get(key);
+  if (!e) return null;
+  if (e.exp < Date.now()) { ogCache.delete(key); return null; }
+  ogCache.delete(key); ogCache.set(key, e); // bump LRU
+  return e.buf;
+}
+function ogCacheSet(key, buf, ttlMs) {
+  if (ogCache.size >= OG_CACHE_MAX) ogCache.delete(ogCache.keys().next().value);
+  ogCache.set(key, { buf, exp: Date.now() + ttlMs });
+}
+
 app.get("/og/event/:slug.png", async (req, res) => {
   try {
-    const ev = findEventBySlug(req.params.slug);
-    if (!ev) return res.status(404).end();
-    const png = await generateEventOG(ev);
+    const key = `event:${req.params.slug}`;
+    let png = ogCacheGet(key);
+    if (!png) {
+      const ev = findEventBySlug(req.params.slug);
+      if (!ev) return res.status(404).end();
+      png = await generateEventOG(ev);
+      ogCacheSet(key, png, 3600_000);
+    }
     res.set("Content-Type", "image/png");
     res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
     res.send(png);
@@ -3037,9 +3076,14 @@ app.get("/og/event/:slug.png", async (req, res) => {
 
 app.get("/og/festival/:slug.png", async (req, res) => {
   try {
-    const f = findFestivalBySlug(req.params.slug);
-    if (!f) return res.status(404).end();
-    const png = await generateFestivalOG(f);
+    const key = `festival:${req.params.slug}`;
+    let png = ogCacheGet(key);
+    if (!png) {
+      const f = findFestivalBySlug(req.params.slug);
+      if (!f) return res.status(404).end();
+      png = await generateFestivalOG(f);
+      ogCacheSet(key, png, 86400_000);
+    }
     res.set("Content-Type", "image/png");
     res.set("Cache-Control", "public, max-age=86400, s-maxage=86400");
     res.send(png);
@@ -3051,9 +3095,14 @@ app.get("/og/festival/:slug.png", async (req, res) => {
 
 app.get("/og/news/:slug.png", async (req, res) => {
   try {
-    const n = findNewsBySlug(req.params.slug);
-    if (!n) return res.status(404).end();
-    const png = await generateNewsOG(n);
+    const key = `news:${req.params.slug}`;
+    let png = ogCacheGet(key);
+    if (!png) {
+      const n = findNewsBySlug(req.params.slug);
+      if (!n) return res.status(404).end();
+      png = await generateNewsOG(n);
+      ogCacheSet(key, png, 3600_000);
+    }
     res.set("Content-Type", "image/png");
     res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
     res.send(png);
@@ -3316,42 +3365,46 @@ if (IS_PROD) {
   // title/description/canonical/OG para que Google indexe la pieza correcta.
   function renderHtmlWithMeta(meta) {
     let html = indexHtml;
+    // IMPORTANTE: los reemplazos usan replacers de FUNCIÓN (() => ...) en vez de
+    // strings. Con un string, los patrones $&, $$, $`, $', $n del valor externo
+    // (títulos/nombres con "$", frecuentes en crypto) se interpretan como
+    // referencias de reemplazo y corrompen el HTML. escHtml no neutraliza "$".
     if (meta.title) {
       const t = escHtml(meta.title);
-      html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${t}</title>`);
-      html = html.replace(/<meta property="og:title"\s+content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${t}" />`);
-      html = html.replace(/<meta name="twitter:title"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${t}" />`);
+      html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${t}</title>`);
+      html = html.replace(/<meta property="og:title"\s+content="[^"]*"\s*\/?>/, () => `<meta property="og:title" content="${t}" />`);
+      html = html.replace(/<meta name="twitter:title"\s+content="[^"]*"\s*\/?>/, () => `<meta name="twitter:title" content="${t}" />`);
     }
     if (meta.description) {
       const d = escHtml(meta.description);
-      html = html.replace(/<meta name="description"\s+content="[^"]*"\s*\/?>/, `<meta name="description" content="${d}" />`);
-      html = html.replace(/<meta property="og:description"\s+content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${d}" />`);
-      html = html.replace(/<meta name="twitter:description"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${d}" />`);
+      html = html.replace(/<meta name="description"\s+content="[^"]*"\s*\/?>/, () => `<meta name="description" content="${d}" />`);
+      html = html.replace(/<meta property="og:description"\s+content="[^"]*"\s*\/?>/, () => `<meta property="og:description" content="${d}" />`);
+      html = html.replace(/<meta name="twitter:description"\s+content="[^"]*"\s*\/?>/, () => `<meta name="twitter:description" content="${d}" />`);
     }
     if (meta.canonical) {
       const c = escHtml(meta.canonical);
-      html = html.replace(/<link rel="canonical"\s+href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${c}" />`);
-      html = html.replace(/<meta property="og:url"\s+content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${c}" />`);
+      html = html.replace(/<link rel="canonical"\s+href="[^"]*"\s*\/?>/, () => `<link rel="canonical" href="${c}" />`);
+      html = html.replace(/<meta property="og:url"\s+content="[^"]*"\s*\/?>/, () => `<meta property="og:url" content="${c}" />`);
     }
     if (meta.image) {
       const img = escHtml(meta.image);
-      html = html.replace(/<meta property="og:image"\s+content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${img}" />`);
-      html = html.replace(/<meta name="twitter:image"\s+content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${img}" />`);
+      html = html.replace(/<meta property="og:image"\s+content="[^"]*"\s*\/?>/, () => `<meta property="og:image" content="${img}" />`);
+      html = html.replace(/<meta name="twitter:image"\s+content="[^"]*"\s*\/?>/, () => `<meta name="twitter:image" content="${img}" />`);
     }
     if (meta.robots) {
-      html = html.replace(/<meta name="robots"\s+content="[^"]*"\s*\/?>/, `<meta name="robots" content="${escHtml(meta.robots)}" />`);
+      html = html.replace(/<meta name="robots"\s+content="[^"]*"\s*\/?>/, () => `<meta name="robots" content="${escHtml(meta.robots)}" />`);
     }
     if (meta.preloadImage) {
       // Preload del LCP image: arranca el download antes de que el parser HTML
       // llegue al <img>. Combinado con fetchpriority=high en el <img>, mejora
       // LCP significativamente en /eventos /festivales /noticias detail.
-      html = html.replace("</head>", `  <link rel="preload" as="image" href="${escHtml(meta.preloadImage)}" fetchpriority="high" />\n</head>`);
+      html = html.replace("</head>", () => `  <link rel="preload" as="image" href="${escHtml(meta.preloadImage)}" fetchpriority="high" />\n</head>`);
     }
     if (meta.body) {
-      html = html.replace('<div id="root"></div>', `<div id="root">${meta.body}</div>`);
+      html = html.replace('<div id="root"></div>', () => `<div id="root">${meta.body}</div>`);
     }
     if (meta.extraHead) {
-      html = html.replace("</head>", `${meta.extraHead}\n</head>`);
+      html = html.replace("</head>", () => `${meta.extraHead}\n</head>`);
     }
     return html;
   }
@@ -3978,94 +4031,84 @@ if (IS_PROD) {
     });
   }
 
+  // Inserta el SEO block en el template con replacer de FUNCIÓN: evita que un "$"
+  // en nombres de eventos/títulos active patrones de reemplazo ($&, $$, $n) y
+  // rompa el HTML (mismo motivo que en renderHtmlWithMeta).
+  const injectSeo = (seoBlock) => seoBlock
+    ? indexHtml.replace('<div id="root"></div>', () => `<div id="root">${seoBlock}</div>`)
+    : indexHtml;
+
   app.get("*", (req, res) => {
-    // /eventos/genero/[slug] — hub por género (high-volume keywords)
-    const genreMatch = req.path.match(/^\/eventos\/genero\/([^/]+)\/?$/);
-    if (genreMatch) {
-      const slug = decodeURIComponent(genreMatch[1]);
-      const genre = genreFromSlug(slug);
-      if (genre) {
-        res.set("Content-Type", "text/html");
-        return res.send(renderGenrePage(genre));
+    try {
+      // /eventos/genero/[slug] — hub por género (high-volume keywords)
+      const genreMatch = req.path.match(/^\/eventos\/genero\/([^/]+)\/?$/);
+      if (genreMatch) {
+        const slug = decodeURIComponent(genreMatch[1]);
+        const genre = genreFromSlug(slug);
+        if (genre) {
+          res.set("Content-Type", "text/html");
+          return res.send(renderGenrePage(genre));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }
-      const seoBlock = buildSeoHtml();
-      const html = seoBlock
-        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-        : indexHtml;
-      return res.status(404).set("Content-Type", "text/html").send(html);
-    }
 
-    // /eventos/[slug] — ficha individual indexable
-    const eventMatch = req.path.match(/^\/eventos\/([^/]+)\/?$/);
-    if (eventMatch) {
-      const slug = decodeURIComponent(eventMatch[1]);
-      const ev = findEventBySlug(slug);
-      if (ev) {
-        res.set("Content-Type", "text/html");
-        return res.send(renderEventPage(ev));
+      // /eventos/[slug] — ficha individual indexable
+      const eventMatch = req.path.match(/^\/eventos\/([^/]+)\/?$/);
+      if (eventMatch) {
+        const slug = decodeURIComponent(eventMatch[1]);
+        const ev = findEventBySlug(slug);
+        if (ev) {
+          res.set("Content-Type", "text/html");
+          return res.send(renderEventPage(ev));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }
-      const seoBlock = buildSeoHtml();
-      const html = seoBlock
-        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-        : indexHtml;
-      return res.status(404).set("Content-Type", "text/html").send(html);
-    }
 
-    // /noticias/[slug] — ficha de noticia (noindex, canonical a la fuente)
-    const newsMatch = req.path.match(/^\/noticias\/([^/]+)\/?$/);
-    if (newsMatch) {
-      const slug = decodeURIComponent(newsMatch[1]);
-      const n = findNewsBySlug(slug);
-      if (n) {
-        res.set("Content-Type", "text/html");
-        return res.send(renderNewsPage(n));
+      // /noticias/[slug] — ficha de noticia (noindex, canonical a la fuente)
+      const newsMatch = req.path.match(/^\/noticias\/([^/]+)\/?$/);
+      if (newsMatch) {
+        const slug = decodeURIComponent(newsMatch[1]);
+        const n = findNewsBySlug(slug);
+        if (n) {
+          res.set("Content-Type", "text/html");
+          return res.send(renderNewsPage(n));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }
-      const seoBlock = buildSeoHtml();
-      const html = seoBlock
-        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-        : indexHtml;
-      return res.status(404).set("Content-Type", "text/html").send(html);
-    }
 
-    // /guias/[slug] — guía editorial long-form (SÍ indexable, Article JSON-LD)
-    const guiaMatch = req.path.match(/^\/guias\/([^/]+)\/?$/);
-    if (guiaMatch) {
-      const slug = decodeURIComponent(guiaMatch[1]);
-      const g = findGuiaBySlug(slug);
-      if (g) {
-        res.set("Content-Type", "text/html");
-        return res.send(renderGuiaPage(g));
+      // /guias/[slug] — guía editorial long-form (SÍ indexable, Article JSON-LD)
+      const guiaMatch = req.path.match(/^\/guias\/([^/]+)\/?$/);
+      if (guiaMatch) {
+        const slug = decodeURIComponent(guiaMatch[1]);
+        const g = findGuiaBySlug(slug);
+        if (g) {
+          res.set("Content-Type", "text/html");
+          return res.send(renderGuiaPage(g));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }
-      const seoBlock = buildSeoHtml();
-      const html = seoBlock
-        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-        : indexHtml;
-      return res.status(404).set("Content-Type", "text/html").send(html);
-    }
 
-    // /festivales/[slug] — ficha de festival curado (SÍ indexable)
-    const festivalMatch = req.path.match(/^\/festivales\/([^/]+)\/?$/);
-    if (festivalMatch) {
-      const slug = decodeURIComponent(festivalMatch[1]);
-      const f = findFestivalBySlug(slug);
-      if (f) {
-        res.set("Content-Type", "text/html");
-        return res.send(renderFestivalPage(f));
+      // /festivales/[slug] — ficha de festival curado (SÍ indexable)
+      const festivalMatch = req.path.match(/^\/festivales\/([^/]+)\/?$/);
+      if (festivalMatch) {
+        const slug = decodeURIComponent(festivalMatch[1]);
+        const f = findFestivalBySlug(slug);
+        if (f) {
+          res.set("Content-Type", "text/html");
+          return res.send(renderFestivalPage(f));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }
-      const seoBlock = buildSeoHtml();
-      const html = seoBlock
-        ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-        : indexHtml;
-      return res.status(404).set("Content-Type", "text/html").send(html);
-    }
 
-    // Home + cualquier otra ruta SPA
-    const seoBlock = buildSeoHtml();
-    const html = seoBlock
-      ? indexHtml.replace('<div id="root"></div>', `<div id="root">${seoBlock}</div>`)
-      : indexHtml;
-    res.set("Content-Type", "text/html");
-    res.send(html);
+      // Home + cualquier otra ruta SPA
+      res.set("Content-Type", "text/html");
+      res.send(injectSeo(buildSeoHtml()));
+    } catch (e) {
+      // Un fallo puntual (p.ej. fecha inválida en un item cacheado) no debe
+      // tumbar el SSR de todo el sitio: servimos el shell SPA sin prerender.
+      console.error("[ssr]", req.path, e.message);
+      res.set("Content-Type", "text/html").send(indexHtml);
+    }
   });
 }
 

@@ -73,7 +73,9 @@ export function VenueEventForm({ event, onSave, onBack }) {
 
       if (flyerFile) {
         const ext = flyerFile.name.split(".").pop();
-        const path = `venues/${(await supabase.auth.getUser()).data.user.id}/flyer-${Date.now()}.${ext}`;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sesión expirada, iniciá sesión de nuevo");
+        const path = `venues/${user.id}/flyer-${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("media")
           .upload(path, flyerFile, { upsert: true });
@@ -86,7 +88,7 @@ export function VenueEventForm({ event, onSave, onBack }) {
         ...form,
         artists,
         flyer_url: flyerUrl,
-        min_age: parseInt(form.min_age) || 18,
+        min_age: Number.isFinite(parseInt(form.min_age, 10)) ? parseInt(form.min_age, 10) : 18,
         status: asDraft ? "draft" : "pending",
       };
 

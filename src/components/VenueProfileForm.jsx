@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { venueApi } from "../utils/api";
 import { supabase } from "../utils/supabase";
+import { slugify } from "../utils/slug";
 
 const VENUE_TYPES = [
   { value: "club", label: "Club / Disco" },
@@ -74,12 +75,10 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
       else updates.capacity = null;
       if (logoUrl) updates.logo_url = logoUrl;
 
-      // Auto-generate slug if empty
+      // Auto-generate slug if empty — usamos el slugify canónico (con folding de
+      // acentos/ñ) para no perder caracteres: "Núñez" → "nunez", no "n-e-z".
       if (!updates.slug) {
-        updates.slug = updates.display_name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
+        updates.slug = slugify(updates.display_name);
       }
 
       await venueApi.updateProfile(updates);

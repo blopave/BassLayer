@@ -10,88 +10,6 @@ import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { IG_HANDLE, IG_URL } from "../utils/constants";
 
-// ── P3.7 · línea espejo del ticker: próximo evento musical dentro de Layer ──
-const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
-
-function eventDateOf(ev) {
-  const m = MONTHS_MAP[ev.month?.toLowerCase()];
-  if (m === undefined) return null;
-  const now = new Date();
-  const [h, min] = (ev.time || "23:00").split(":").map(Number);
-  const d = new Date(now.getFullYear(), m, parseInt(ev.day), h || 23, min || 0);
-  if (d < now - 30 * 86400000) d.setFullYear(now.getFullYear() + 1);
-  return d;
-}
-
-function todayInBA() {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(now).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
-  return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
-}
-
-function isThisWeekendDate(d) {
-  const today = todayInBA();
-  const dow = today.getDay();
-  let fridayOffset;
-  if (dow === 5) fridayOffset = 0;
-  else if (dow === 6) fridayOffset = -1;
-  else if (dow === 0) fridayOffset = -2;
-  else fridayOffset = 5 - dow;
-  const fri = new Date(today);
-  fri.setDate(fri.getDate() + fridayOffset);
-  const mon = new Date(fri);
-  mon.setDate(mon.getDate() + 3);
-  const evDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  return evDay >= fri && evDay < mon;
-}
-
-function NextBassLine({ events, onSelect }) {
-  if (!Array.isArray(events) || events.length === 0) return null;
-  const today = todayInBA();
-  const upcoming = events
-    .map((ev) => ({ ev, date: eventDateOf(ev) }))
-    .filter((x) => x.date && x.date >= today)
-    .sort((a, b) => a.date - b.date)[0];
-  if (!upcoming) return null;
-
-  const { ev, date } = upcoming;
-  const evDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const isTodayEv = evDay.getTime() === today.getTime();
-  const isWeekendEv = !isTodayEv && isThisWeekendDate(date);
-
-  let label;
-  if (isTodayEv) label = "ESTA NOCHE";
-  else if (isWeekendEv) label = "ESTE FINDE";
-  else return null;
-
-  const artists = (ev.artists || []).filter((a) => a && a !== "TBA");
-  const headliner = artists[0] || ev.name;
-
-  return (
-    <button
-      className="bl-bass-line"
-      onClick={() => onSelect?.(ev)}
-      aria-label={`${label}: ${headliner} en ${ev.venue || "Buenos Aires"}${ev.time ? ` a las ${ev.time}` : ""}`}
-    >
-      <span className="bl-bass-line-label">{label}</span>
-      <span className="bl-bass-line-sep" aria-hidden="true">·</span>
-      <span className="bl-bass-line-artist">{headliner}</span>
-      {ev.venue && (<>
-        <span className="bl-bass-line-sep" aria-hidden="true">·</span>
-        <span className="bl-bass-line-venue">{ev.venue}</span>
-      </>)}
-      {isTodayEv && ev.time && (<>
-        <span className="bl-bass-line-sep" aria-hidden="true">·</span>
-        <span className="bl-bass-line-time">{ev.time}</span>
-      </>)}
-      <span className="bl-bass-line-arrow" aria-hidden="true">→</span>
-    </button>
-  );
-}
-
 function LayerNewsItem({ item, idx, onSelect }) {
   const [imgFailed, setImgFailed] = useState(false);
   const showPill = !!(item.tag && item.image && !imgFailed);
@@ -114,7 +32,7 @@ function LayerNewsItem({ item, idx, onSelect }) {
   );
 }
 
-export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews, events, onSelectEvent }) {
+export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
   const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones"
@@ -125,7 +43,6 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
 
   return (
     <>
-      <NextBassLine events={events} onSelect={onSelectEvent} />
       <CryptoDashboard />
       <div className="bl-layer-tools">
         <CryptoBATimeline />

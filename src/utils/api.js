@@ -6,7 +6,9 @@ function authHeaders() {
 function authFetch(url, opts = {}) {
   return fetch(url, { ...opts, headers: { ...authHeaders(), ...opts.headers } })
     .then(r => {
-      if (r.ok) return r.json();
+      // 204 / cuerpo vacío (p.ej. DELETE): no hacer r.json() directo o rompe con
+      // "Unexpected end of JSON input" aunque la operación haya sido exitosa.
+      if (r.ok) return r.text().then(t => (t ? JSON.parse(t) : null));
       return r.json().catch(() => ({ error: `Error ${r.status}` })).then(e => Promise.reject(e.error || `Error ${r.status}`));
     });
 }

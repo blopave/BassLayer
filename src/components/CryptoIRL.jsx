@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../utils/api";
 import { CryptoEventModal } from "./CryptoEventModal";
 
@@ -28,6 +28,8 @@ export function CryptoIRL() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const successTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(successTimerRef.current), []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -58,7 +60,8 @@ export function CryptoIRL() {
       setSuccess(true);
       setForm({ type: "event", title: "", organizer: "", date: "", time: "", location: "", url: "", description: "", free: true });
       load();
-      setTimeout(() => { setSuccess(false); setShowForm(false); }, 2000);
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => { setSuccess(false); setShowForm(false); }, 2000);
     } catch (err) {
       setError(typeof err === "string" ? err : "Error al enviar");
     } finally {
