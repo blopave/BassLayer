@@ -6,3 +6,5 @@ dist/
 .vscode/
 .claude/
 .playwright-mcp/
+# Screenshots de auditoría/review en la raíz (los assets viven en public/)
+/*.png
