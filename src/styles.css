@@ -1291,6 +1291,18 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 .bl-city-chip:hover { border-color:var(--bl-450); color:var(--bl-text); }
 .bl-city-chip.active { border-color:var(--bl-accent-bass); color:var(--bl-accent-bass); background:rgba(196,144,112,0.06); }
+
+/* Región: filtro primario (Argentina / LatAm / Mundo). Ocupa su propia fila
+   y usa un tratamiento segmentado más marcado que los chips de ciudad. */
+.bl-region-filter { display:flex; gap:0; flex-basis:100%; border:1px solid var(--bl-border); border-radius:4px; width:max-content; overflow:hidden; }
+.bl-region-chip {
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+  padding:6px 16px; border:0; border-right:1px solid var(--bl-border);
+  background:transparent; color:var(--bl-text-sec); cursor:pointer; transition:all var(--duration-fast);
+}
+.bl-region-chip:last-child { border-right:0; }
+.bl-region-chip:hover { color:var(--bl-text); background:rgba(255,255,255,0.03); }
+.bl-region-chip.active { color:var(--bl-accent-bass); background:rgba(196,144,112,0.10); }
 .bl-finde-btn {
   font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
   padding:5px 14px; border:1px solid var(--bl-border); border-radius:2px;
@@ -1379,6 +1391,35 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   position:relative;
   z-index:1;
 }
+
+/* Trending — fila horizontal bajo el grid, mismo lenguaje terminal. */
+.bl-term-trending {
+  display:flex; align-items:center; gap:12px;
+  padding:9px 14px;
+  border-top:1px solid var(--bl-border-sub);
+  font-family:var(--font-mono);
+  position:relative; z-index:1;
+  background:rgba(108,184,200,0.015);
+}
+.bl-term-trending-label {
+  display:flex; align-items:center; gap:5px;
+  font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--bl-text-sec); white-space:nowrap; flex-shrink:0;
+}
+.bl-term-trending-list {
+  display:flex; gap:16px; align-items:center;
+  overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+}
+.bl-term-trending-list::-webkit-scrollbar { display:none; }
+.bl-term-trending-item {
+  display:inline-flex; align-items:baseline; gap:5px;
+  white-space:nowrap; font-size:11px;
+}
+.bl-term-trending-rank { color:var(--bl-text-ter); font-size:9px; }
+.bl-term-trending-sym { color:var(--bl-text); font-weight:600; letter-spacing:0.5px; }
+.bl-term-trending-chg { font-size:10px; }
+.bl-term-trending-chg.up   { color:var(--bl-up); }
+.bl-term-trending-chg.down { color:var(--bl-down); }
 
 .bl-terminal-prompt-user { color:var(--bl-accent-layer); font-weight:600; }
 .bl-terminal-prompt-sep  { color:var(--bl-text-ter); }
@@ -1799,6 +1840,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-search-wrap { padding:12px 16px; }
   .bl-sub-filters { padding:10px 16px 0; gap:8px; }
   .bl-city-chip { font-size:9.5px; padding:4px 10px; }
+  .bl-region-chip { font-size:9.5px; padding:5px 13px; }
   .bl-finde-btn { font-size:9.5px; padding:4px 12px; }
   .bl-day-header { padding:12px 0 6px; }
   .bl-featured-hero { margin:12px 0 4px; padding:18px 16px; }

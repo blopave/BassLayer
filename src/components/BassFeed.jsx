@@ -125,6 +125,10 @@ function isThisWeekend(eventDate) {
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival }) {
   const { t } = useLocale();
   const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
+  // Región: filtro primario. Arranca en Argentina para mantener el foco local
+  // — la data global (RA multi-ciudad) queda a un tap sin diluir el default.
+  const REGIONS = [{ label: "Argentina", code: "AR" }, { label: "LatAm", code: "LatAm" }, { label: "Mundo", code: "World" }];
+  const [regionFilter, setRegionFilter] = useState("AR");
   const [cityFilter, setCityFilter] = useState("Todas");
   const [esteFinde, setEsteFinde] = useState(false);
   const [hoyOnly, setHoyOnly] = useState(false);
@@ -179,13 +183,29 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [festivalsRegion]);
 
-  // Detect available cities from events
-  const cities = useMemo(() => {
-    const set = new Set(events.map(e => e.city).filter(Boolean));
-    return ["Todas", ...Array.from(set).sort()];
+  // Eventos de la región activa. Festivales quedan fuera del filtro de región
+  // (son curados aparte y viven en su propia sección).
+  const regionEvents = useMemo(
+    () => events.filter(e => (e.region || "AR") === regionFilter),
+    [events, regionFilter]
+  );
+
+  // Qué regiones tienen eventos (para no mostrar chips vacíos)
+  const availableRegions = useMemo(() => {
+    const set = new Set(events.map(e => e.region || "AR"));
+    return REGIONS.filter(r => set.has(r.code));
   }, [events]);
 
-  let filtered = events;
+  // Ciudades disponibles dentro de la región activa
+  const cities = useMemo(() => {
+    const set = new Set(regionEvents.map(e => e.city).filter(Boolean));
+    return ["Todas", ...Array.from(set).sort()];
+  }, [regionEvents]);
+
+  // Al cambiar de región, reseteamos la ciudad (una ciudad de AR no existe en Mundo)
+  const changeRegion = (code) => { setRegionFilter(code); setCityFilter("Todas"); };
+
+  let filtered = regionEvents;
   if (filter !== "All") {
     filtered = filtered.filter((e) => e.genre === filter);
   }
@@ -318,6 +338,19 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       </div>
       <FilterBar items={genres} active={filter} onChange={onFilter} className="bass-filters" />
       <div className="bl-sub-filters">
+        {availableRegions.length > 1 && (
+          <div className="bl-region-filter" role="tablist" aria-label="Regi&oacute;n">
+            {availableRegions.map((r) => (
+              <button
+                key={r.code}
+                className={`bl-region-chip${regionFilter === r.code ? " active" : ""}`}
+                onClick={() => changeRegion(r.code)}
+                role="tab"
+                aria-selected={regionFilter === r.code}
+              >{r.label}</button>
+            ))}
+          </div>
+        )}
         {cities.length > 2 && (
           <div className="bl-city-filter">
             {cities.map((c) => (

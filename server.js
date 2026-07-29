@@ -427,11 +427,14 @@ const RSS_FEEDS = [
   // Español / Latam
   { url: "https://diariobitcoin.com/feed/", source: "DiarioBitcoin" },
   { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia" },
-  // Removidos (audit 2026-06-16):
+  { url: "https://news.bit2me.com/feed/", source: "Bit2Me" },
+  { url: "https://es.beincrypto.com/feed/", source: "BeInCrypto" },
+  { url: "https://observatorioblockchain.com/feed/", source: "Observatorio Blockchain" },
+  // Removidos (audit 2026-06-16 / re-verificado 2026-07-29):
   //   The Block        → HTTP 403 (bloquea nuestro User-Agent)
   //   Unchained        → timeout consistente (>15s en fetchSafe)
   //   CT Español       → HTTP 410 Gone (feed retirado)
-  //   CriptoNoticias   → HTTP 403
+  //   CriptoNoticias   → HTTP 403 aun con browser-UA (Cloudflare bloquea IPs de datacenter)
 ];
 
 const xmlParser = new XMLParser({
@@ -1370,8 +1373,34 @@ async function fetchBuenosAliens() {
 // ── Strategy 2: RA GraphQL ──
 
 const RA_GRAPHQL = "https://ra.co/graphql";
-// Buenos Aires area id changed to 395 (was 218; 218 is now San Francisco/Oakland).
-const RA_AREAS = [395];
+// Áreas RA verificadas en vivo contra la GraphQL (2026-07-29). Cada evento
+// hereda `region` (AR | LatAm | World) para poder filtrar sin diluir el foco
+// local: el feed arranca en AR y el usuario opta a LatAm/World.
+//   - AR usa el área 45 ("toda Argentina") en vez de 395 (solo Buenos Aires):
+//     cubre CABA + Córdoba/Rosario/etc. La ciudad real la infiere detectCity
+//     del area.name que devuelve RA. Córdoba/Rosario NO existen como áreas RA.
+//   - LatAm/World: RA no expone la ciudad de forma fiable para detectCity
+//     (defaultearía a CABA), así que la fijamos explícita desde `city`.
+// `cap` limita cuántos eventos aporta cada ciudad para que los hubs grandes
+// (Berlín, Londres) no tapen al resto; AR va sin tope.
+const RA_AREAS = [
+  { id: 45,  region: "AR" },
+  { id: 400, region: "LatAm", city: "São Paulo",        cap: 40 },
+  { id: 401, region: "LatAm", city: "Río de Janeiro",   cap: 40 },
+  { id: 385, region: "LatAm", city: "Santiago",         cap: 40 },
+  { id: 373, region: "LatAm", city: "Bogotá",           cap: 40 },
+  { id: 374, region: "LatAm", city: "Medellín",         cap: 40 },
+  { id: 399, region: "LatAm", city: "Ciudad de México", cap: 40 },
+  { id: 384, region: "LatAm", city: "Montevideo",       cap: 40 },
+  { id: 34,  region: "World", city: "Berlín",           cap: 25 },
+  { id: 13,  region: "World", city: "Londres",          cap: 25 },
+  { id: 29,  region: "World", city: "Ámsterdam",        cap: 25 },
+  { id: 20,  region: "World", city: "Barcelona",        cap: 25 },
+  { id: 25,  region: "World", city: "Ibiza",            cap: 25 },
+  { id: 8,   region: "World", city: "Nueva York",       cap: 25 },
+  { id: 19,  region: "World", city: "Detroit",          cap: 25 },
+  { id: 523, region: "World", city: "Tulum",            cap: 25 },
+];
 // RA dropped sortOrder/sortField args and moved flyer URLs from `flyerFront` (now always null)
 // to `images[]` with `type: "FLYERFRONT"`. Filter syntax also changed: `areas:{eq:N}` returns 0,
 // must use `areas:{any:[N]}`.
@@ -1391,20 +1420,26 @@ function extractRATime(t) {
   return t;
 }
 
-function formatRAEvent(ev) {
+function formatRAEvent(ev, areaMeta = { region: "AR" }) {
   const date = new Date(ev.date);
   const artists = (ev.artists || []).map(a => a.name);
   const venueName = (ev.venue?.name || "TBA").slice(0, 50);
   const areaName = ev.venue?.area?.name || "";
   const genre = detectGenre((ev.title || "") + " " + artists.join(" "));
   const fullAddress = areaName ? `${venueName}, ${areaName}` : venueName;
+  // Cada área foránea trae su ciudad fija en areaMeta.city; solo el área AR
+  // ("todo el país", sin city) la infiere detectCity del area.name
+  // (CABA/Córdoba/etc.). Clavamos en la presencia de city, no en la etiqueta
+  // de región, para no acoplar la resolución al taxonomía de región.
+  const city = areaMeta.city || detectCity(venueName, fullAddress);
   return {
     day: String(date.getDate()).padStart(2, "0"),
     month: MONTHS_ES[date.getMonth()],
     name: (ev.title || "Event").slice(0, 60),
     venue: venueName,
     address: fullAddress,
-    city: detectCity(venueName, fullAddress),
+    city,
+    region: areaMeta.region,
     artists,
     time: extractRATime(ev.startTime),
     genre,
@@ -1414,7 +1449,7 @@ function formatRAEvent(ev) {
   };
 }
 
-async function fetchRAGraphQL(areaId) {
+async function fetchRAGraphQL(area) {
   const today = new Date().toISOString().split("T")[0];
   // Ventana 60 días: diagnóstico mostró que RA tiene ~58 eventos en 60d para
   // CABA, contra ~30 en 30d. pageSize 100 cubre el total con margen sin paginar.
@@ -1422,14 +1457,16 @@ async function fetchRAGraphQL(areaId) {
   try {
     const r = await fetchSafe(RA_GRAPHQL, {
       method: "POST",
-      headers: { ...BROWSER_HEADERS, "Content-Type":"application/json", Referer:"https://ra.co/events/ar/buenosaires", Origin:"https://ra.co", Accept:"application/json" },
-      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[areaId]}, listingDate:{gte:today,lte:windowEnd} }, pageSize:100 } }),
+      headers: { ...BROWSER_HEADERS, "Content-Type":"application/json", Referer:"https://ra.co/events", Origin:"https://ra.co", Accept:"application/json" },
+      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[area.id]}, listingDate:{gte:today,lte:windowEnd} }, pageSize:100 } }),
     }, 12000);
     if (!r.ok) return [];
     const json = JSON.parse(await safeText(r));
-    return (json?.data?.eventListings?.data || []).map(l => formatRAEvent(l.event));
+    let listings = json?.data?.eventListings?.data || [];
+    if (area.cap) listings = listings.slice(0, area.cap);
+    return listings.map(l => formatRAEvent(l.event, area));
   } catch (e) {
-    console.error(`[events] RA GraphQL (${areaId}):`, e.message);
+    console.error(`[events] RA GraphQL (${area.id}):`, e.message);
     return [];
   }
 }
@@ -1521,9 +1558,11 @@ function deduplicateEvents(events) {
     }
   };
 
+  // La ciudad entra en la key: dos venues homónimos en ciudades distintas
+  // (multi-área RA) no son el mismo evento.
   const byVenue = new Map();
   for (const ev of events) {
-    const key = `${ev.day}-${ev.month}-${normVenue(ev.venue)}`;
+    const key = `${ev.day}-${ev.month}-${ev.city || ""}-${normVenue(ev.venue)}`;
     const existing = byVenue.get(key);
     if (!existing) byVenue.set(key, ev);
     else mergeFields(existing, ev);
@@ -1559,7 +1598,10 @@ function deduplicateEvents(events) {
   const list = [...byVenue.values()];
   const byDay = new Map();
   for (const ev of list) {
-    const dKey = `${ev.day}-${ev.month}`;
+    // La ciudad entra en la key: el pass de solape de line-up solo compara
+    // eventos de la misma ciudad (un DJ en Berlín y otro set en Londres la
+    // misma noche no deben colapsar en uno).
+    const dKey = `${ev.day}-${ev.month}-${ev.city || ""}`;
     if (!byDay.has(dKey)) byDay.set(dKey, []);
     byDay.get(dKey).push(ev);
   }
@@ -1835,8 +1877,15 @@ app.get("/api/festivals", async (req, res) => {
 
 app.get("/api/events", async (req, res) => {
   const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
-  const applyFilter = (arr) => genreFilter && genreFilter.toLowerCase() !== "all"
-    ? arr.filter(e => e.genre.toLowerCase() === genreFilter.toLowerCase()) : arr;
+  const regionFilter = Array.isArray(req.query.region) ? req.query.region[0] : req.query.region;
+  const applyFilter = (arr) => {
+    let out = arr;
+    if (genreFilter && genreFilter.toLowerCase() !== "all")
+      out = out.filter(e => e.genre.toLowerCase() === genreFilter.toLowerCase());
+    if (regionFilter && regionFilter.toLowerCase() !== "all")
+      out = out.filter(e => e.region.toLowerCase() === regionFilter.toLowerCase());
+    return out;
+  };
 
   const hit = cached("events");
   if (hit) return res.json(applyFilter(hit));
@@ -1850,15 +1899,18 @@ app.get("/api/events", async (req, res) => {
     allEvents.push(...baEvents);
   }
 
-  // Try RA as supplement (parallel)
+  // Try RA as supplement (parallel, todas las áreas). Antes había un `break`
+  // que cortaba tras la primera área con datos — con multi-ciudad hay que
+  // agregar TODAS, no solo la primera. El dedup posterior maneja solapes.
   const raResults = await Promise.allSettled(RA_AREAS.map(fetchRAGraphQL));
+  let raCount = 0;
   for (const r of raResults) {
     if (r.status === "fulfilled" && r.value.length > 0) {
-      console.log(`[events] RA GraphQL: ${r.value.length} events loaded`);
       allEvents.push(...r.value);
-      break;
+      raCount += r.value.length;
     }
   }
+  if (raCount > 0) console.log(`[events] RA GraphQL: ${raCount} events loaded (${RA_AREAS.length} áreas)`);
 
   // Try RA HTML if GraphQL failed
   if (!allEvents.some(e => e.source === "ra")) {
@@ -1889,6 +1941,7 @@ app.get("/api/events", async (req, res) => {
           venue: ve.profiles?.display_name || "TBA",
           address: "",
           city: "CABA",
+          region: "AR",
           artists: ve.artists || [],
           time: ve.time_start?.slice(0, 5) || "",
           genre: ve.genre || "Electronic",
@@ -1913,7 +1966,11 @@ app.get("/api/events", async (req, res) => {
     allEvents = generateFallbackEvents();
   }
 
-  // Deduplicate (same day+venue = same event)
+  // Toda fuente local (Buenos Aliens, RA HTML, fallback) es Argentina por
+  // definición; solo RA GraphQL multi-área trae otras regiones.
+  allEvents.forEach(ev => { if (!ev.region) ev.region = "AR"; });
+
+  // Deduplicate (same day+city+venue = same event)
   const deduped = deduplicateEvents(allEvents);
 
   // Limpiar nombres ruidosos de scrapers
@@ -2190,11 +2247,13 @@ app.get("/api/dashboard", async (req, res) => {
       fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
       fetchSafe("https://api.alternative.me/fng/?limit=30").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
       fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.coingecko.com/api/v3/search/trending").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     ]);
 
     const globalData = results[0].status === "fulfilled" ? results[0].value : null;
     const fngData = results[1].status === "fulfilled" ? results[1].value : null;
     const gasData = results[2].status === "fulfilled" ? results[2].value : null;
+    const trendingData = results[3].status === "fulfilled" ? results[3].value : null;
 
     const dashboard = {
       btcDominance: globalData?.data?.market_cap_percentage?.btc
@@ -2222,6 +2281,17 @@ app.get("/api/dashboard", async (req, res) => {
         avg: parseInt(gasData.result.ProposeGasPrice) || null,
         high: parseInt(gasData.result.FastGasPrice) || null,
       } : null,
+      // Trending: monedas más buscadas ahora en CoinGecko (top 7).
+      trending: Array.isArray(trendingData?.coins)
+        ? trendingData.coins.slice(0, 7).map(c => ({
+            symbol: (c.item?.symbol || "").toUpperCase().slice(0, 8),
+            name: c.item?.name || "",
+            rank: c.item?.market_cap_rank ?? null,
+            change24h: typeof c.item?.data?.price_change_percentage_24h?.usd === "number"
+              ? Math.round(c.item.data.price_change_percentage_24h.usd * 10) / 10
+              : null,
+          })).filter(c => c.symbol)
+        : [],
     };
 
     setCache("dashboard", dashboard);

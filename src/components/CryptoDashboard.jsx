@@ -10,6 +10,10 @@ function formatMarketCap(n) {
   return `$${(n / 1e6).toFixed(0)}M`;
 }
 
+// Cambio porcentual con signo: 5 → "+5%", -2 → "-2%". Compartido por StatCell
+// (grid) y TrendingRow.
+const signedPct = (n) => `${n > 0 ? "+" : ""}${n}%`;
+
 function useTickFlash(value) {
   const [flash, setFlash] = useState(null);
   const prevRef = useRef(value);
@@ -43,7 +47,7 @@ function StatCell({ label, value, change, tickValue, onClick, ariaLabel }) {
         <span className="bl-term-cell-value-num">{value}</span>
         {change != null && (
           <span className={`bl-term-cell-change ${change >= 0 ? "up" : "down"}`}>
-            <span aria-hidden="true">{change >= 0 ? "▲" : "▼"}</span> {change > 0 ? "+" : ""}{change}%
+            <span aria-hidden="true">{change >= 0 ? "▲" : "▼"}</span> {signedPct(change)}
           </span>
         )}
       </div>
@@ -155,6 +159,33 @@ function GasCell({ gas, onClick, t }) {
   );
 }
 
+// Trending: monedas más buscadas ahora (CoinGecko). Fila horizontal en el
+// mismo lenguaje terminal del dashboard — display-only, scroll en mobile.
+function TrendingRow({ trending }) {
+  if (!Array.isArray(trending) || trending.length === 0) return null;
+  return (
+    <div className="bl-term-trending" role="region" aria-label="Trending ahora">
+      <div className="bl-term-trending-label" aria-hidden="true">
+        <span className="bl-term-prompt">&gt;</span>
+        <span className="bl-term-cell-label-text">trending</span>
+      </div>
+      <div className="bl-term-trending-list">
+        {trending.map((c, i) => (
+          <span className="bl-term-trending-item" key={`${c.symbol}-${i}`} title={c.name}>
+            <span className="bl-term-trending-rank" aria-hidden="true">{i + 1}</span>
+            <span className="bl-term-trending-sym">{c.symbol}</span>
+            {c.change24h != null && (
+              <span className={`bl-term-trending-chg ${c.change24h >= 0 ? "up" : "down"}`}>
+                {signedPct(c.change24h)}
+              </span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function contextualCommand(date) {
   const baHour = parseInt(date.toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", hour12: false }), 10);
   if (baHour < 7)  return "markets --watch";       // madrugada — tape silenciosa
@@ -250,6 +281,7 @@ export function CryptoDashboard() {
           t={t}
         />
       </div>
+      <TrendingRow trending={data.trending} />
       <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
     </div>
   );
