@@ -4595,4 +4595,89 @@ select.bl-venue-input { cursor:pointer; }
   .bl-featured-countdown { font-size:11px; }
 }
 
+/* ═══════════════════════════════════════════
+   Layer · BTC Cycles (BtcCycles) — POC
+   Timeline de fases + confluencia on-chain, mismo lenguaje terminal
+   ═══════════════════════════════════════════ */
+.bl-cyc-grid-stats { border-top:1px solid var(--bl-border-sub); }
+.bl-cyc-cell-sub {
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.3px;
+  color:var(--bl-text-ter); margin-top:6px;
+}
+.bl-cyc-tone-down  { color:#c56b6b; }
+.bl-cyc-tone-build { color:var(--bl-accent-layer); }
+.bl-cyc-tone-saved { color:var(--bl-saved); }
+.bl-cyc-arrow { color:#c56b6b; }
+
+.bl-cyc-section-title {
+  font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  color:var(--bl-text-sec); padding:13px 14px 2px;
+  position:relative; z-index:1; display:flex; align-items:center; gap:6px;
+}
+
+/* Timeline — divs absolutos sobre eje común, sin librería de charts */
+.bl-cyc-chart { padding:10px 14px 8px; position:relative; z-index:1; overflow-x:auto; }
+.bl-cyc-rows { position:relative; padding-bottom:26px; min-width:440px; }
+.bl-cyc-axis { position:absolute; inset:0; pointer-events:none; z-index:0; }
+.bl-cyc-grid { position:absolute; top:0; bottom:26px; width:1px; background:var(--bl-border-sub); }
+.bl-cyc-grid-zero { background:var(--bl-saved); opacity:0.4; }
+.bl-cyc-yr {
+  position:absolute; top:100%; margin-top:6px; left:0; transform:translateX(-50%);
+  font-family:var(--font-mono); font-size:9px; color:var(--bl-text-ter); white-space:nowrap;
+}
+.bl-cyc-row { position:relative; z-index:1; height:40px; }
+.bl-cyc-row-label { position:absolute; left:0; top:0; display:flex; align-items:baseline; gap:6px; z-index:2; }
+.bl-cyc-cy { font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--bl-text); }
+.bl-cyc-cy-date { font-family:var(--font-mono); font-size:9px; color:var(--bl-text-ter); }
+.bl-cyc-track { position:absolute; left:0; right:0; top:16px; height:18px; }
+.bl-cyc-seg {
+  position:absolute; top:0; height:18px; border-radius:2px;
+  display:flex; align-items:center; justify-content:center;
+}
+.bl-cyc-seg.up    { background:rgba(45,107,63,0.16);  border:1px solid var(--bl-up); }
+.bl-cyc-seg.down  { background:rgba(107,45,45,0.22);  border:1px solid #8a3a3a; }
+.bl-cyc-seg.build { background:rgba(108,184,200,0.12); border:1px solid var(--bl-accent-layer); }
+.bl-cyc-seg.proj  { background:repeating-linear-gradient(135deg, rgba(107,45,45,0.20) 0 4px, transparent 4px 8px); border:1px dashed #8a3a3a; }
+.bl-cyc-d { font-family:var(--font-mono); font-size:9px; font-weight:600; letter-spacing:0.2px; color:var(--bl-text-sec); white-space:nowrap; }
+.bl-cyc-mk { position:absolute; top:13px; width:9px; height:9px; border-radius:50%; transform:translateX(-50%); z-index:3; border:1.5px solid var(--bl-surface); }
+.bl-cyc-mk.hv { background:var(--bl-saved); }
+.bl-cyc-mk.pk { background:#c56b6b; }
+.bl-cyc-mk.bt { background:var(--bl-accent-layer); }
+.bl-cyc-now { position:absolute; top:11px; width:2px; height:26px; background:var(--bl-saved); opacity:0.65; transform:translateX(-50%); z-index:2; }
+.bl-cyc-legend { display:flex; flex-wrap:wrap; gap:9px 15px; margin-top:12px; padding-top:10px; border-top:1px solid var(--bl-border-sub); }
+.bl-cyc-lg { display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:9.5px; color:var(--bl-text-ter); }
+.bl-cyc-sw { width:14px; height:8px; border-radius:2px; flex-shrink:0; }
+.bl-cyc-sw.hv { background:var(--bl-saved); border-radius:50%; width:9px; height:9px; }
+.bl-cyc-sw.up { background:rgba(45,107,63,0.4); border:1px solid var(--bl-up); }
+.bl-cyc-sw.down { background:rgba(107,45,45,0.5); border:1px solid #8a3a3a; }
+.bl-cyc-sw.build { background:rgba(108,184,200,0.3); border:1px solid var(--bl-accent-layer); }
+.bl-cyc-sw.proj { background:repeating-linear-gradient(135deg,#6b2d2d 0 3px,transparent 3px 6px); border:1px dashed #8a3a3a; }
+
+/* Confluencia — tira de indicadores compacta */
+.bl-cyc-ind-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); position:relative; z-index:1; }
+.bl-cyc-ind { padding:12px 14px 13px; border-right:1px solid var(--bl-border-sub); border-top:1px solid var(--bl-border-sub); }
+.bl-cyc-ind-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.bl-cyc-ind-name { font-family:var(--font-mono); font-size:10px; letter-spacing:0.5px; color:var(--bl-text-sec); }
+.bl-cyc-ind-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.bl-cyc-dot-green { background:#3f9e5f; box-shadow:0 0 5px rgba(63,158,95,0.5); }
+.bl-cyc-dot-amber { background:var(--bl-saved); box-shadow:0 0 5px rgba(212,160,23,0.4); }
+.bl-cyc-dot-red   { background:#c56b6b; }
+.bl-cyc-ind-val { font-family:var(--font-mono); font-size:16px; font-weight:600; color:var(--bl-text); font-variant-numeric:tabular-nums; margin-bottom:10px; }
+.bl-cyc-ind-scale {
+  position:relative; height:4px; border-radius:2px;
+  background:linear-gradient(90deg, rgba(63,158,95,0.55), var(--bl-border) 52%, rgba(197,107,107,0.55));
+}
+.bl-cyc-ind-mk { position:absolute; top:-3px; width:10px; height:10px; border-radius:50%; background:var(--bl-text); border:2px solid var(--bl-surface); transform:translateX(-50%); }
+
+/* Postura */
+.bl-cyc-posture {
+  display:flex; align-items:flex-start; gap:9px; padding:12px 14px 14px;
+  border-top:1px solid var(--bl-border-sub);
+  font-family:var(--font-mono); font-size:11px; color:var(--bl-text-sec);
+  position:relative; z-index:1; line-height:1.55;
+}
+.bl-cyc-posture-dot { width:8px; height:8px; border-radius:50%; background:#3f9e5f; box-shadow:0 0 6px rgba(63,158,95,0.5); margin-top:4px; flex-shrink:0; }
+.bl-cyc-posture-txt b { color:var(--bl-text); }
+.bl-cyc-inval { color:var(--bl-text-ter); }
+
 

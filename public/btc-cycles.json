@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "updated": "2026-08-01",
+    "source": "poc-static",
+    "note": "Prueba de concepto. Datos curados + snapshot on-chain al 1 ago 2026. En la version viva, precio/200W/dias se computan en server.js; el tablero on-chain se refresca periodico."
+  },
+  "current": {
+    "phase": "markdown",
+    "phaseLabel": "Markdown",
+    "price": 64000,
+    "support200w": 61000,
+    "priceVs200wPct": 4.5,
+    "confluence": 15,
+    "confluenceLabel": "zona de acumulacion",
+    "posture": "Acumular lento. Tramos 1-2 activos; el grueso del capital espera. Ninguna metrica confirmo el piso todavia.",
+    "invalidationPrice": 126000
+  },
+  "keyDates": {
+    "halving": "2024-04-20",
+    "peak": "2025-10-06",
+    "avgPeakToBottomDays": 383,
+    "peakToBottomRange": [363, 410],
+    "nextHalving": "2028-04-20"
+  },
+  "averages": { "halvingToPeak": 480, "peakToBottom": 383, "bottomToHalving": 524 },
+  "cycles": [
+    { "n": 1, "halvingDate": "28 nov 2012", "halvingPrice": "$12", "peakDate": "30 nov 2013", "peakPrice": "$1.163", "bottomDate": "14 ene 2015", "bottomPrice": "$164", "markup": 367, "markdown": 410, "recovery": 542, "roi": "95x", "drawdown": "-86%", "ongoing": false },
+    { "n": 2, "halvingDate": "09 jul 2016", "halvingPrice": "$650", "peakDate": "17 dic 2017", "peakPrice": "$19.783", "bottomDate": "15 dic 2018", "bottomPrice": "$3.122", "markup": 526, "markdown": 363, "recovery": 513, "roi": "30x", "drawdown": "-84%", "ongoing": false },
+    { "n": 3, "halvingDate": "11 may 2020", "halvingPrice": "$8.700", "peakDate": "10 nov 2021", "peakPrice": "$69.000", "bottomDate": "21 nov 2022", "bottomPrice": "$15.480", "markup": 548, "markdown": 376, "recovery": 516, "roi": "7,9x", "drawdown": "-78%", "ongoing": false },
+    { "n": 4, "halvingDate": "20 abr 2024", "halvingPrice": "$64.260", "peakDate": "06 oct 2025", "peakPrice": "$126.198", "markup": 534, "markdownSoFar": 298, "projMax": 410, "roi": "2,0x", "drawdown": "-53%", "ongoing": true }
+  ],
+  "indicators": [
+    { "key": "MVRV",  "name": "MVRV.Z",    "value": "0.34",  "pos": 5,  "status": "green",  "note": "fondo <0 / techo >7" },
+    { "key": "P200W", "name": "200W.MA",   "value": "+4.5%", "pos": 4,  "status": "green",  "note": "precio vs media 200s" },
+    { "key": "PUELL", "name": "PUELL",     "value": "0.65",  "pos": 11, "status": "green",  "note": "fondo <0.5 / techo >4" },
+    { "key": "NUPL",  "name": "NUPL",      "value": "0.16",  "pos": 38, "status": "amber",  "note": "capitulacion <0" },
+    { "key": "RPRICE","name": "RLZ.PRICE", "value": "1.16x", "pos": 16, "status": "amber",  "note": "fondo si precio < realized" },
+    { "key": "STH",   "name": "STH.COST",  "value": "0.93x", "pos": 18, "status": "green",  "note": "precio bajo costo base STH" }
+  ]
+}

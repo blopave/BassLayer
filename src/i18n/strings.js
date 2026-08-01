@@ -21,6 +21,7 @@ export const STRINGS = {
     "section.news": "Noticias",
     "section.events": "Eventos",
     "section.predictions": "Predicciones",
+    "section.cycles": "Ciclos",
     "section.festivals": "Festivales",
 
     "event.lineup": "Line-up",
@@ -147,6 +148,7 @@ export const STRINGS = {
     "section.news": "News",
     "section.events": "Events",
     "section.predictions": "Predictions",
+    "section.cycles": "Cycles",
     "section.festivals": "Festivals",
 
     "event.lineup": "Line-up",

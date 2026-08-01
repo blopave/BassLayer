@@ -5,6 +5,7 @@ import { CryptoDashboard } from "./CryptoDashboard";
 import { CryptoBATimeline } from "./CryptoBATimeline";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
+import { BtcCycles } from "./BtcCycles";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
@@ -35,7 +36,7 @@ function LayerNewsItem({ item, idx, onSelect }) {
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
-  const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones"
+  const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones" | "ciclos"
 
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
@@ -70,6 +71,13 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
           onClick={() => setSection("predicciones")}
         >
           <span className="bl-layer-section-label">{t("section.predictions")}</span>
+          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+        </button>
+        <button
+          className={`bl-layer-section-btn${section === "ciclos" ? " active" : ""}`}
+          onClick={() => setSection("ciclos")}
+        >
+          <span className="bl-layer-section-label">{t("section.cycles")}</span>
           <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
         </button>
       </div>
@@ -127,6 +135,14 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         <div className="bl-layer-content">
           <h2 className="bl-sr-only">{t("section.predictions")}</h2>
           <PredictionMarkets />
+        </div>
+      )}
+
+      {/* Ciclos section — POC dashboard de ciclos de halving BTC */}
+      {section === "ciclos" && (
+        <div className="bl-layer-content">
+          <h2 className="bl-sr-only">{t("section.cycles")}</h2>
+          <BtcCycles />
         </div>
       )}
     </>
