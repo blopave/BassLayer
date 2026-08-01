@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 
 // Prueba de concepto — Dashboard de ciclos de halving de BTC en estética
@@ -131,8 +132,7 @@ export function BtcCycles() {
 
   useEffect(() => {
     let mounted = true;
-    const load = () => fetch("/btc-cycles.json")
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    const load = () => api.btcCycles()
       .then((d) => { if (mounted) { setData(d); setError(false); } })
       .catch(() => { if (mounted) setError(true); });
     load();
@@ -188,7 +188,7 @@ export function BtcCycles() {
 
       <div className="bl-terminal-grid bl-cyc-grid-stats">
         <Cell label="FASE" value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {current.phaseLabel}</>} sub={`día ${daysSincePeak} del pico`} tone="down" />
-        <Cell label="PRECIO" value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (+${current.priceVs200wPct}%)`} />
+        <Cell label="PRECIO" value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`} />
         <Cell label="CONFLUENCIA" value={`${current.confluence}/100`} sub={current.confluenceLabel} tone="build" />
         <Cell label="FONDO.PROY" value={windowLabel} sub={countdownLabel} tone="saved" />
       </div>

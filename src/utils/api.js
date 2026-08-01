@@ -52,6 +52,7 @@ export const api = {
   bassNews:  () => fetch("/api/bass-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   festivals: (region) => fetch(`/api/festivals${region && region !== "All" ? `?region=${encodeURIComponent(region)}` : ""}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   dashboard: () => fetch("/api/dashboard").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  btcCycles: () => fetch("/api/btc-cycles").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   artist:    (name, locale = "es") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),

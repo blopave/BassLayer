@@ -137,6 +137,7 @@ const cache = {
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
   predictions: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — Polymarket trending
+  btcCycles:   { data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — ciclos halving (precio+200W en vivo, resto curado)
 };
 
 function cached(key) {
@@ -2300,6 +2301,105 @@ app.get("/api/dashboard", async (req, res) => {
     console.error("[dashboard]", e.message);
     if (cache.dashboard?.data) return res.json(cache.dashboard.data);
     res.status(500).json({ error: "Dashboard data unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/btc-cycles — Dashboard de ciclos de halving
+//  Mergea datos curados (data/btc-cycles.json: histórico, lecturas on-chain,
+//  proyección) con precio + media de 200 semanas EN VIVO. Precio: CoinGecko.
+//  200W: SMA de 200 closes semanales de Binance (CoinGecko free no da ~4 años
+//  de history). Fase A del dashboard dinámico.
+// ─────────────────────────────────────────────
+const BTC_CYCLES_FILE = join(__dirname, "data", "btc-cycles.json");
+let btcCyclesFileCache = null;
+let btcCyclesFileTs = 0;
+const BTC_CYCLES_FILE_TTL = 5 * 60_000; // relee el JSON curado cada 5min
+
+function loadBtcCyclesCurated() {
+  const now = Date.now();
+  if (btcCyclesFileCache && (now - btcCyclesFileTs) < BTC_CYCLES_FILE_TTL) return btcCyclesFileCache;
+  try {
+    if (existsSync(BTC_CYCLES_FILE)) {
+      btcCyclesFileCache = JSON.parse(readFileSync(BTC_CYCLES_FILE, "utf-8"));
+      btcCyclesFileTs = now;
+      return btcCyclesFileCache;
+    }
+  } catch (e) {
+    console.error("[btc-cycles] load error:", e.message);
+  }
+  return null;
+}
+
+app.get("/api/btc-cycles", async (req, res) => {
+  const hit = cached("btcCycles");
+  if (hit) return res.json(hit);
+
+  const curated = loadBtcCyclesCurated();
+  if (!curated) return res.status(500).json({ error: "btc-cycles data unavailable" });
+
+  try {
+    const [priceRes, klinesRes] = await Promise.allSettled([
+      fetchSafe("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+        .then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=201")
+        .then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+    ]);
+
+    const priceData = priceRes.status === "fulfilled" ? priceRes.value : null;
+    const klines = klinesRes.status === "fulfilled" ? klinesRes.value : null;
+
+    const price = typeof priceData?.bitcoin?.usd === "number" ? priceData.bitcoin.usd : null;
+
+    // SMA de 200 semanas: promedio de los closes de las 200 semanas CERRADAS
+    // (descartamos la última vela, que es la semana en formación).
+    let sma200w = null;
+    if (Array.isArray(klines) && klines.length >= 2) {
+      const closes = klines.slice(0, -1).slice(-200).map(k => parseFloat(k[4])).filter(v => !isNaN(v));
+      if (closes.length) sma200w = closes.reduce((a, b) => a + b, 0) / closes.length;
+    }
+
+    const live = {
+      ok: price != null || sma200w != null,
+      price: price != null ? Math.round(price) : null,
+      support200w: sma200w != null ? Math.round(sma200w) : null,
+      priceVs200wPct: (price != null && sma200w) ? Math.round((price / sma200w - 1) * 1000) / 10 : null,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    // El indicador 200W del tablero también refleja el valor en vivo, para que
+    // no contradiga al header. pos: mapa aproximado -10%..+200% -> 0..100 (fondo→techo).
+    const indicators = Array.isArray(curated.indicators)
+      ? curated.indicators.map((ind) => {
+          if (ind.key === "P200W" && live.priceVs200wPct != null) {
+            const p = live.priceVs200wPct;
+            const pos = Math.min(98, Math.max(2, Math.round(((p + 10) / 210) * 100)));
+            return { ...ind, value: `${p >= 0 ? "+" : ""}${p}%`, pos };
+          }
+          return ind;
+        })
+      : curated.indicators;
+
+    // Merge: si hay dato en vivo pisa el snapshot curado; si no, se mantiene.
+    const merged = {
+      ...curated,
+      meta: { ...curated.meta, updated: live.fetchedAt.slice(0, 10), source: live.ok ? "live+curated" : "curated" },
+      current: {
+        ...curated.current,
+        price: live.price ?? curated.current.price,
+        support200w: live.support200w ?? curated.current.support200w,
+        priceVs200wPct: live.priceVs200wPct ?? curated.current.priceVs200wPct,
+      },
+      indicators,
+      live,
+    };
+
+    setCache("btcCycles", merged);
+    res.json(merged);
+  } catch (e) {
+    console.error("[btc-cycles]", e.message);
+    if (cache.btcCycles?.data) return res.json(cache.btcCycles.data);
+    res.json({ ...curated, live: { ok: false } });
   }
 });
 
