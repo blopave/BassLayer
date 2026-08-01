@@ -4599,6 +4599,10 @@ select.bl-venue-input { cursor:pointer; }
    Layer · BTC Cycles (BtcCycles) — POC
    Timeline de fases + confluencia on-chain, mismo lenguaje terminal
    ═══════════════════════════════════════════ */
+.bl-cyc-head { padding:16px 32px 2px; }
+.bl-cyc-title { font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:-0.4px; color:var(--bl-text); margin:0; }
+.bl-cyc-subtitle { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-ter); margin-top:4px; }
+
 .bl-cyc-grid-stats { border-top:1px solid var(--bl-border-sub); }
 .bl-cyc-cell-sub {
   font-family:var(--font-mono); font-size:10px; letter-spacing:0.3px;

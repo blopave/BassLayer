@@ -162,7 +162,12 @@ export function BtcCycles() {
   const syncTime = parseISO(data.meta.updated).toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).replace(".", "");
 
   return (
-    <div className="bl-terminal bl-cyc-terminal" role="region" aria-label="Dashboard de ciclos de halving de Bitcoin">
+    <>
+    <div className="bl-cyc-head">
+      <h3 className="bl-cyc-title">{t("cycles.title")}</h3>
+      <div className="bl-cyc-subtitle">{t("cycles.subtitle")}</div>
+    </div>
+    <div className="bl-terminal bl-cyc-terminal" role="region" aria-label={t("cycles.title")}>
       <div className="bl-terminal-header" aria-hidden="true">
         <span className="bl-terminal-prompt-user">bl@layer</span>
         <span className="bl-terminal-prompt-sep">:</span>
@@ -203,5 +208,6 @@ export function BtcCycles() {
         <span className="bl-cyc-posture-txt"><b>Postura:</b> {current.posture} <span className="bl-cyc-inval">· invalida la tesis: nuevo ATH &gt; ${(current.invalidationPrice / 1000).toFixed(0)}k</span></span>
       </div>
     </div>
+    </>
   );
 }

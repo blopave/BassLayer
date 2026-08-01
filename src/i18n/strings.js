@@ -22,6 +22,8 @@ export const STRINGS = {
     "section.events": "Eventos",
     "section.predictions": "Predicciones",
     "section.cycles": "Ciclos",
+    "cycles.title": "Ciclos de halving de Bitcoin",
+    "cycles.subtitle": "El reloj de 4 años · medido día a día",
     "section.festivals": "Festivales",
 
     "event.lineup": "Line-up",
@@ -149,6 +151,8 @@ export const STRINGS = {
     "section.events": "Events",
     "section.predictions": "Predictions",
     "section.cycles": "Cycles",
+    "cycles.title": "Bitcoin halving cycles",
+    "cycles.subtitle": "The 4-year clock · measured day by day",
     "section.festivals": "Festivals",
 
     "event.lineup": "Line-up",
