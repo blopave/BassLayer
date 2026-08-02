@@ -10,6 +10,9 @@ export function AdminPanel({ onBack }) {
   const [rejectId, setRejectId] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
   const [rejectType, setRejectType] = useState("event"); // "event" | "announcement"
+  const [cyclesData, setCyclesData] = useState(null);
+  const [cyclesSaving, setCyclesSaving] = useState(false);
+  const [cyclesMsg, setCyclesMsg] = useState("");
 
   const loadEvents = useCallback(async (status) => {
     setLoading(true);
@@ -38,11 +41,40 @@ export function AdminPanel({ onBack }) {
     setLoading(false);
   }, []);
 
+  const loadCycles = useCallback(async () => {
+    setLoading(true);
+    setCyclesMsg("");
+    try {
+      const data = await adminApi.getBtcCycles();
+      setCyclesData(data);
+    } catch { setCyclesData(null); }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (tab === "venues") loadVenues();
+    else if (tab === "cycles") loadCycles();
     else if (tab.startsWith("ann_")) loadAnnouncements(tab.replace("ann_", ""));
     else loadEvents(tab);
-  }, [tab, loadEvents, loadVenues, loadAnnouncements]);
+  }, [tab, loadEvents, loadVenues, loadAnnouncements, loadCycles]);
+
+  function setCur(field, value) {
+    setCyclesData((d) => ({ ...d, current: { ...d.current, [field]: value } }));
+  }
+  function setInd(i, field, value) {
+    setCyclesData((d) => ({ ...d, indicators: d.indicators.map((ind, idx) => idx === i ? { ...ind, [field]: value } : ind) }));
+  }
+  async function handleSaveCycles() {
+    setCyclesSaving(true); setCyclesMsg("");
+    try {
+      const saved = await adminApi.updateBtcCycles(cyclesData);
+      setCyclesData(saved);
+      setCyclesMsg("Guardado ✓");
+    } catch (e) {
+      setCyclesMsg("Error: " + (e || "no se pudo guardar"));
+    }
+    setCyclesSaving(false);
+  }
 
   async function handleApprove(id) {
     try { await adminApi.approve(id); } catch { /* ignore */ }
@@ -131,6 +163,16 @@ export function AdminPanel({ onBack }) {
         ))}
       </div>
 
+      <div className="bl-admin-section-label">Ciclos BTC (Layer)</div>
+      <div className="bl-admin-tabs">
+        <button
+          className={`bl-admin-tab${tab === "cycles" ? " active" : ""}`}
+          onClick={() => setTab("cycles")}
+        >
+          Editar dashboard
+        </button>
+      </div>
+
       {loading ? (
         <div className="bl-venue-loading">Cargando...</div>
       ) : tab === "venues" ? (
@@ -185,6 +227,55 @@ export function AdminPanel({ onBack }) {
             </div>
           ))}
           {announcements.length === 0 && <div className="bl-venue-empty">No hay anuncios en esta categoría.</div>}
+        </div>
+      ) : tab === "cycles" ? (
+        <div className="bl-cycles-editor">
+          {!cyclesData ? (
+            <div className="bl-venue-empty">No se pudo cargar el estado de ciclos.</div>
+          ) : (
+            <>
+              <div className="bl-admin-section-label">Estado actual</div>
+              <div className="bl-cycles-grid">
+                <label className="bl-cycles-field"><span>Fase (label)</span>
+                  <input className="bl-venue-input" value={cyclesData.current.phaseLabel || ""} onChange={e => setCur("phaseLabel", e.target.value)} /></label>
+                <label className="bl-cycles-field"><span>Fase (key)</span>
+                  <input className="bl-venue-input" value={cyclesData.current.phase || ""} onChange={e => setCur("phase", e.target.value)} /></label>
+                <label className="bl-cycles-field"><span>Confluencia 0–100</span>
+                  <input className="bl-venue-input" type="number" value={cyclesData.current.confluence ?? ""} onChange={e => setCur("confluence", Number(e.target.value))} /></label>
+                <label className="bl-cycles-field"><span>Confluencia (label)</span>
+                  <input className="bl-venue-input" value={cyclesData.current.confluenceLabel || ""} onChange={e => setCur("confluenceLabel", e.target.value)} /></label>
+                <label className="bl-cycles-field"><span>Invalidación ATH (USD)</span>
+                  <input className="bl-venue-input" type="number" value={cyclesData.current.invalidationPrice ?? ""} onChange={e => setCur("invalidationPrice", Number(e.target.value))} /></label>
+              </div>
+              <label className="bl-cycles-field"><span>Postura sugerida</span>
+                <textarea className="bl-venue-input bl-venue-textarea" rows={2} value={cyclesData.current.posture || ""} onChange={e => setCur("posture", e.target.value)} /></label>
+
+              <div className="bl-admin-section-label" style={{ marginTop: 18 }}>Indicadores on-chain</div>
+              <div className="bl-cycles-inds">
+                {(cyclesData.indicators || []).map((ind, i) => (
+                  <div className="bl-cycles-ind-row" key={ind.key}>
+                    <span className="bl-cycles-ind-name">{ind.name}</span>
+                    <input className="bl-venue-input" value={ind.value} onChange={e => setInd(i, "value", e.target.value)} placeholder="valor" />
+                    <select className="bl-venue-input" value={ind.status} onChange={e => setInd(i, "status", e.target.value)}>
+                      <option value="green">green</option>
+                      <option value="amber">amber</option>
+                      <option value="red">red</option>
+                    </select>
+                    <input className="bl-venue-input" type="number" value={ind.pos} onChange={e => setInd(i, "pos", Number(e.target.value))} placeholder="pos" />
+                    <input className="bl-venue-input" value={ind.note || ""} onChange={e => setInd(i, "note", e.target.value)} placeholder="nota" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="bl-venue-form-actions" style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <button className="bl-venue-btn bl-venue-btn-approve" onClick={handleSaveCycles} disabled={cyclesSaving}>
+                  {cyclesSaving ? "Guardando..." : "Guardar cambios"}
+                </button>
+                {cyclesMsg && <span className="bl-cycles-msg">{cyclesMsg}</span>}
+                <span className="bl-cycles-hint">El precio y la 200W son en vivo (CoinGecko/Binance); acá editás lo curado: fase, confluencia, postura e indicadores on-chain.</span>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="bl-venue-event-list">

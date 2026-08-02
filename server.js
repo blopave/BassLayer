@@ -2312,30 +2312,61 @@ app.get("/api/dashboard", async (req, res) => {
 //  de history). Fase A del dashboard dinámico.
 // ─────────────────────────────────────────────
 const BTC_CYCLES_FILE = join(__dirname, "data", "btc-cycles.json");
-let btcCyclesFileCache = null;
-let btcCyclesFileTs = 0;
-const BTC_CYCLES_FILE_TTL = 5 * 60_000; // relee el JSON curado cada 5min
+let btcCuratedCache = null;
+let btcCuratedTs = 0;
+const BTC_CURATED_TTL = 5 * 60_000;
 
-function loadBtcCyclesCurated() {
-  const now = Date.now();
-  if (btcCyclesFileCache && (now - btcCyclesFileTs) < BTC_CYCLES_FILE_TTL) return btcCyclesFileCache;
+function readBtcCyclesFile() {
   try {
-    if (existsSync(BTC_CYCLES_FILE)) {
-      btcCyclesFileCache = JSON.parse(readFileSync(BTC_CYCLES_FILE, "utf-8"));
-      btcCyclesFileTs = now;
-      return btcCyclesFileCache;
-    }
-  } catch (e) {
-    console.error("[btc-cycles] load error:", e.message);
-  }
+    if (existsSync(BTC_CYCLES_FILE)) return JSON.parse(readFileSync(BTC_CYCLES_FILE, "utf-8"));
+  } catch (e) { console.error("[btc-cycles] file read error:", e.message); }
   return null;
+}
+
+// Estado curado del dashboard: Supabase (editable desde el AdminPanel) con el
+// JSON del repo como seed y fallback. En el primer arranque siembra la tabla
+// desde el archivo; después manda lo que haya en Supabase. Fase B.
+async function loadBtcCyclesCurated() {
+  const now = Date.now();
+  if (btcCuratedCache && (now - btcCuratedTs) < BTC_CURATED_TTL) return btcCuratedCache;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from("btc_cycles").select("data").eq("id", 1).maybeSingle();
+      if (!error && data?.data) {
+        btcCuratedCache = data.data; btcCuratedTs = now;
+        return btcCuratedCache;
+      }
+      if (!error && !data) {
+        // Vacío → sembrar desde el archivo del repo
+        const seed = readBtcCyclesFile();
+        if (seed) {
+          await supabase.from("btc_cycles").upsert({ id: 1, data: seed, updated_at: new Date().toISOString() });
+          btcCuratedCache = seed; btcCuratedTs = now;
+          return btcCuratedCache;
+        }
+      }
+    } catch (e) {
+      console.error("[btc-cycles] supabase load error:", e.message);
+    }
+  }
+
+  // Fallback: archivo del repo
+  const file = readBtcCyclesFile();
+  if (file) { btcCuratedCache = file; btcCuratedTs = now; }
+  return btcCuratedCache;
+}
+
+function invalidateBtcCyclesCache() {
+  btcCuratedCache = null; btcCuratedTs = 0;
+  cache.btcCycles = { ...cache.btcCycles, data: null, ts: 0 };
 }
 
 app.get("/api/btc-cycles", async (req, res) => {
   const hit = cached("btcCycles");
   if (hit) return res.json(hit);
 
-  const curated = loadBtcCyclesCurated();
+  const curated = await loadBtcCyclesCurated();
   if (!curated) return res.status(500).json({ error: "btc-cycles data unavailable" });
 
   try {
@@ -2401,6 +2432,32 @@ app.get("/api/btc-cycles", async (req, res) => {
     if (cache.btcCycles?.data) return res.json(cache.btcCycles.data);
     res.json({ ...curated, live: { ok: false } });
   }
+});
+
+// Admin: leer/editar el estado curado de los ciclos (sin redeploy). Fase B.
+app.get("/api/admin/btc-cycles", requireAuth, requireAdmin, async (req, res) => {
+  const curated = await loadBtcCyclesCurated();
+  if (!curated) return res.status(500).json({ error: "No hay datos de ciclos" });
+  res.json(curated);
+});
+
+app.put("/api/admin/btc-cycles", requireAuth, requireAdmin, async (req, res) => {
+  const data = req.body?.data ?? req.body;
+  if (!data || typeof data !== "object" || Array.isArray(data) || !data.current || !Array.isArray(data.cycles)) {
+    return res.status(400).json({ error: "Payload inválido: se esperaba un objeto con current y cycles" });
+  }
+  const { data: saved, error } = await supabase
+    .from("btc_cycles")
+    .upsert({ id: 1, data, updated_at: new Date().toISOString(), updated_by: req.user.id })
+    .select("data")
+    .single();
+  if (error) return res.status(400).json({ error: error.message });
+
+  invalidateBtcCyclesCache();
+  await supabase.from("admin_log").insert({
+    admin_id: req.user.id, action: "update", target_type: "btc_cycles", target_id: "1",
+  });
+  res.json(saved.data);
 });
 
 // ─────────────────────────────────────────────
