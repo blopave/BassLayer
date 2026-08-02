@@ -76,6 +76,7 @@ export const STRINGS = {
     "indicator.whatIs": "Qué es",
     "indicator.howToRead": "Cómo leerlo",
     "indicator.whyMatters": "Por qué importa",
+    "indicator.tapInfo": "tocá para ver qué es",
 
     "dashboard.btcDominance": "BTC Dominance",
     "dashboard.ethDominance": "ETH Dominance",
@@ -205,6 +206,7 @@ export const STRINGS = {
     "indicator.whatIs": "What it is",
     "indicator.howToRead": "How to read it",
     "indicator.whyMatters": "Why it matters",
+    "indicator.tapInfo": "tap to see what it is",
 
     "dashboard.btcDominance": "BTC Dominance",
     "dashboard.ethDominance": "ETH Dominance",

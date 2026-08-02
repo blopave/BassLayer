@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../utils/api";
+import { IndicatorModal } from "./IndicatorModal";
 import { useLocale } from "../hooks/useLocale";
 
 // Prueba de concepto — Dashboard de ciclos de halving de BTC en estética
@@ -89,9 +90,16 @@ function PhaseTimeline({ cycles }) {
   );
 }
 
-function Cell({ label, value, sub, tone }) {
+function Cell({ label, value, sub, tone, onClick, hint }) {
   return (
-    <div className="bl-term-cell">
+    <div
+      className={`bl-term-cell${onClick ? " bl-term-cell-clickable" : ""}`}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onClick()) : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      title={hint}
+    >
       <div className="bl-term-cell-label">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span>
         <span className="bl-term-cell-label-text">{label}</span>
@@ -106,11 +114,19 @@ function Cell({ label, value, sub, tone }) {
 
 // Tira de indicadores on-chain — versión compacta del tablero de confluencia.
 // Cada uno con su barra fondo→techo y el marcador en la posición actual.
-function IndicatorStrip({ indicators }) {
+function IndicatorStrip({ indicators, onOpen, t }) {
   return (
     <div className="bl-cyc-ind-strip">
       {indicators.map((ind) => (
-        <div className="bl-cyc-ind" key={ind.key} title={ind.note}>
+        <div
+          className="bl-cyc-ind bl-cyc-ind-clickable"
+          key={ind.key}
+          onClick={() => onOpen(ind)}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(ind))}
+          role="button"
+          tabIndex={0}
+          title={`${ind.note} · ${t("indicator.tapInfo")}`}
+        >
           <div className="bl-cyc-ind-top">
             <span className="bl-cyc-ind-name">{ind.name}</span>
             <span className={`bl-cyc-ind-dot bl-cyc-dot-${ind.status}`} aria-hidden="true" />
@@ -129,6 +145,7 @@ export function BtcCycles() {
   const { t } = useLocale();
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
+  const [selected, setSelected] = useState(null); // indicador abierto en el modal
 
   useEffect(() => {
     let mounted = true;
@@ -161,6 +178,12 @@ export function BtcCycles() {
 
   const syncTime = parseISO(data.meta.updated).toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).replace(".", "");
 
+  // Contexto al clickear: abre el IndicatorModal con la explicación (qué es /
+  // cómo leerlo / por qué importa) y resalta la zona donde cae el valor actual.
+  const openInd = (key, displayValue, matchValue) => setSelected({ key, displayValue, matchValue });
+  const numVal = (v) => { const n = parseFloat(String(v).replace(/[^0-9.-]/g, "")); return isNaN(n) ? null : n; };
+  const phaseIdx = { markup: 0.5, markdown: 1.5, accumulation: 2.5, acumulacion: 2.5 }[current.phase] ?? null;
+
   return (
     <>
     <div className="bl-cyc-head">
@@ -187,10 +210,14 @@ export function BtcCycles() {
       </div>
 
       <div className="bl-terminal-grid bl-cyc-grid-stats">
-        <Cell label="FASE" value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {current.phaseLabel}</>} sub={`día ${daysSincePeak} del pico`} tone="down" />
-        <Cell label="PRECIO" value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`} />
-        <Cell label="CONFLUENCIA" value={`${current.confluence}/100`} sub={current.confluenceLabel} tone="build" />
-        <Cell label="FONDO.PROY" value={windowLabel} sub={countdownLabel} tone="saved" />
+        <Cell label="FASE" value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {current.phaseLabel}</>} sub={`día ${daysSincePeak} del pico`} tone="down"
+          onClick={() => openInd("PHASE", current.phaseLabel, phaseIdx)} hint={t("indicator.tapInfo")} />
+        <Cell label="PRECIO" value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`}
+          onClick={() => openInd("PRICE", `~$${(current.price / 1000).toFixed(0)}k`, current.priceVs200wPct)} hint={t("indicator.tapInfo")} />
+        <Cell label="CONFLUENCIA" value={`${current.confluence}/100`} sub={current.confluenceLabel} tone="build"
+          onClick={() => openInd("CONFLUENCE", `${current.confluence}/100`, current.confluence)} hint={t("indicator.tapInfo")} />
+        <Cell label="FONDO.PROY" value={windowLabel} sub={countdownLabel} tone="saved"
+          onClick={() => openInd("PROJBOTTOM", windowLabel, null)} hint={t("indicator.tapInfo")} />
       </div>
 
       <div className="bl-cyc-section-title">
@@ -201,13 +228,14 @@ export function BtcCycles() {
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> confluencia --on-chain
       </div>
-      <IndicatorStrip indicators={indicators} />
+      <IndicatorStrip indicators={indicators} onOpen={(ind) => openInd(ind.key, ind.value, numVal(ind.value))} t={t} />
 
       <div className="bl-cyc-posture">
         <span className="bl-cyc-posture-dot" aria-hidden="true" />
         <span className="bl-cyc-posture-txt"><b>Postura:</b> {current.posture} <span className="bl-cyc-inval">· invalida la tesis: nuevo ATH &gt; ${(current.invalidationPrice / 1000).toFixed(0)}k</span></span>
       </div>
     </div>
+    <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
     </>
   );
 }
