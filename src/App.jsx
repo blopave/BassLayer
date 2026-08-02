@@ -54,6 +54,7 @@ export default function App() {
   const [venueUser, setVenueUser] = useState(null);
   const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
   const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
+  const [authReady, setAuthReady] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
@@ -64,6 +65,7 @@ export default function App() {
         setVenueUser(session.user);
         localStorage.setItem("bl-token", session.access_token);
       }
+      setAuthReady(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
@@ -76,6 +78,16 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Acceso al panel: /admin abre el login (o el dashboard si ya hay sesión).
+  // El botón "Panel admin" del dashboard (gateado por rol) lleva al AdminPanel.
+  useEffect(() => {
+    if (!authReady) return;
+    if (window.location.pathname === "/admin") {
+      setVenueView(venueUser ? "dashboard" : "auth");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady]);
 
   // Feed loaders — defined early since PTR, navigateToSections, and auto-refresh depend on them
   const loadNews = useCallback(async () => {
@@ -1020,6 +1032,7 @@ export default function App() {
                 user={venueUser}
                 onLogout={() => { setVenueUser(null); setVenueView(null); }}
                 onBack={() => setVenueView(null)}
+                onAdmin={() => setVenueView("admin")}
               />
             )}
             {venueView === "admin" && (

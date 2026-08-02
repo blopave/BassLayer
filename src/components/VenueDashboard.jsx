@@ -15,7 +15,7 @@ function StatusBadge({ status }) {
   return <span className={`bl-venue-status bl-venue-status-${status}`}>{STATUS_LABELS[status]}</span>;
 }
 
-export function VenueDashboard({ user, onLogout, onBack }) {
+export function VenueDashboard({ user, onLogout, onBack, onAdmin }) {
   const [profile, setProfile] = useState(null);
   const [events, setEvents] = useState([]);
   const [view, setView] = useState("list"); // list | profile | new-event | edit-event
@@ -93,6 +93,9 @@ export function VenueDashboard({ user, onLogout, onBack }) {
           {profile?.verified && <span className="bl-venue-verified" title="Verificado">&#10003;</span>}
         </div>
         <div className="bl-venue-dash-actions">
+          {profile?.role === "admin" && onAdmin && (
+            <button className="bl-venue-btn-sm" onClick={onAdmin}>Panel admin</button>
+          )}
           <button className="bl-venue-btn-sm" onClick={() => setView("profile")}>Editar perfil</button>
           <button className="bl-venue-btn-sm bl-venue-btn-logout" onClick={handleLogout}>Salir</button>
         </div>
