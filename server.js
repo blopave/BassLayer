@@ -2370,15 +2370,18 @@ app.get("/api/btc-cycles", async (req, res) => {
   if (!curated) return res.status(500).json({ error: "btc-cycles data unavailable" });
 
   try {
-    const [priceRes, klinesRes] = await Promise.allSettled([
+    const [priceRes, klinesRes, monthlyRes] = await Promise.allSettled([
       fetchSafe("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
         .then(r => r.ok ? safeText(r).then(JSON.parse) : null),
       fetchSafe("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=201")
+        .then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1M&limit=200")
         .then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     ]);
 
     const priceData = priceRes.status === "fulfilled" ? priceRes.value : null;
     const klines = klinesRes.status === "fulfilled" ? klinesRes.value : null;
+    const monthly = monthlyRes.status === "fulfilled" ? monthlyRes.value : null;
 
     const price = typeof priceData?.bitcoin?.usd === "number" ? priceData.bitcoin.usd : null;
 
@@ -2397,6 +2400,21 @@ app.get("/api/btc-cycles", async (req, res) => {
       priceVs200wPct: (price != null && sma200w) ? Math.round((price / sma200w - 1) * 1000) / 10 : null,
       fetchedAt: new Date().toISOString(),
     };
+
+    // Curva de precio (escala log): historial temprano curado (Bitstamp, fijo,
+    // 2012→2017) + mensuales en vivo de Binance (2017→hoy). Merge por mes.
+    const fileRef = readBtcCyclesFile() || {};
+    const milestones = Array.isArray(fileRef.milestones) ? fileRef.milestones : [];
+    const monthMap = new Map((fileRef.priceHistoryEarly || []).map(pt => [pt.t, pt.p]));
+    if (Array.isArray(monthly)) {
+      for (const k of monthly) {
+        const d = new Date(Number(k[0]));
+        const t = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        const p = parseFloat(k[4]);
+        if (!isNaN(p)) monthMap.set(t, Math.round(p));
+      }
+    }
+    const priceHistory = [...monthMap.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([t, p]) => ({ t, p }));
 
     // El indicador 200W del tablero también refleja el valor en vivo, para que
     // no contradiga al header. pos: mapa aproximado -10%..+200% -> 0..100 (fondo→techo).
@@ -2422,6 +2440,8 @@ app.get("/api/btc-cycles", async (req, res) => {
         priceVs200wPct: live.priceVs200wPct ?? curated.current.priceVs200wPct,
       },
       indicators,
+      priceHistory,
+      milestones,
       live,
     };
 

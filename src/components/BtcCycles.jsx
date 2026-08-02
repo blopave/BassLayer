@@ -141,6 +141,58 @@ function IndicatorStrip({ indicators, onOpen, t }) {
   );
 }
 
+// Curva de precio en escala logarítmica (2012→hoy) con halvings, picos y fondos
+// marcados. Historial mensual real; SVG a mano, sin librería de charts.
+function PriceCurve({ history, milestones }) {
+  if (!Array.isArray(history) || history.length < 2) return null;
+  const W = 1000, H = 240, padL = 46, padR = 12, padT = 12, padB = 22;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const mi = (t) => { const [y, m] = t.split("-").map(Number); return y * 12 + (m - 1); };
+  const iMin = mi(history[0].t), iMax = mi(history[history.length - 1].t);
+  const x = (t) => padL + ((mi(t) - iMin) / (iMax - iMin)) * plotW;
+  const allP = history.map((h) => h.p).concat((milestones || []).map((m) => m.price)).filter((v) => v > 0);
+  const lo = Math.log10(Math.min(...allP)) - 0.08;
+  const hi = Math.log10(Math.max(...allP)) + 0.08;
+  const y = (p) => padT + (1 - (Math.log10(p) - lo) / (hi - lo)) * plotH;
+  const decades = [];
+  for (let d = Math.ceil(lo); d <= Math.floor(hi); d++) decades.push(Math.pow(10, d));
+  const fmtP = (v) => (v >= 1000 ? `$${v / 1000 >= 10 ? Math.round(v / 1000) : v / 1000}k` : `$${v}`);
+  const years = [];
+  for (let yr = Math.ceil(iMin / 12); yr * 12 <= iMax; yr += 2) years.push(yr);
+  const linePts = history.map((h) => `${x(h.t).toFixed(1)},${y(h.p).toFixed(1)}`).join(" ");
+  const mkColor = { halving: "var(--bl-saved)", peak: "#c56b6b", bottom: "var(--bl-accent-layer)" };
+  return (
+    <div className="bl-cyc-curve">
+      <svg viewBox={`0 0 ${W} ${H}`} className="bl-cyc-curve-svg" role="img" aria-label="Precio de Bitcoin en escala logarítmica con halvings, picos y fondos">
+        {decades.map((d) => (
+          <g key={d}>
+            <line x1={padL} y1={y(d)} x2={W - padR} y2={y(d)} className="bl-cyc-curve-grid" />
+            <text x={padL - 6} y={y(d) + 3} className="bl-cyc-curve-ylab" textAnchor="end">{fmtP(d)}</text>
+          </g>
+        ))}
+        {years.map((yr) => (
+          <text key={yr} x={x(`${yr}-01`)} y={H - 6} className="bl-cyc-curve-xlab" textAnchor="middle">{yr}</text>
+        ))}
+        {(milestones || []).filter((m) => m.type === "halving").map((m, i) => (
+          <line key={"hv" + i} x1={x(m.t)} y1={padT} x2={x(m.t)} y2={H - padB} className="bl-cyc-curve-hv" />
+        ))}
+        <polyline points={linePts} className="bl-cyc-curve-line" />
+        {(milestones || []).map((m, i) => (
+          <circle key={i} cx={x(m.t)} cy={y(m.price)} r="3.6" fill={mkColor[m.type]} className="bl-cyc-curve-mk">
+            <title>{`${m.label} · ${m.t} · $${m.price.toLocaleString("es-AR")}`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="bl-cyc-curve-legend">
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw hv" /> halving</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-curve-dot" style={{ background: "#c56b6b" }} /> pico</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-curve-dot" style={{ background: "var(--bl-accent-layer)" }} /> fondo</span>
+        <span className="bl-cyc-curve-hint">escala logarítmica · pasá el cursor por un punto</span>
+      </div>
+    </div>
+  );
+}
+
 export function BtcCycles() {
   const { t } = useLocale();
   const [data, setData] = useState(null);
@@ -224,6 +276,11 @@ export function BtcCycles() {
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> ciclos --alineados-al-halving
       </div>
       <PhaseTimeline cycles={cycles} />
+
+      <div className="bl-cyc-section-title">
+        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> precio --escala-log
+      </div>
+      <PriceCurve history={data.priceHistory} milestones={data.milestones} />
 
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> confluencia --on-chain
