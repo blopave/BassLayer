@@ -2401,8 +2401,10 @@ app.get("/api/btc-cycles", async (req, res) => {
       fetchedAt: new Date().toISOString(),
     };
 
-    // Curva de precio (escala log): historial temprano curado (Bitstamp, fijo,
-    // 2012→2017) + mensuales en vivo de Binance (2017→hoy). Merge por mes.
+    // Curva de precio (escala log): serie mensual curada completa (2012→hoy,
+    // horneada en el JSON) como base, refrescada con los mensuales en vivo de
+    // Binance sobre los últimos meses. Merge por mes: el live pisa al curado
+    // cuando responde; si falla, la curva igual muestra toda la historia.
     const fileRef = readBtcCyclesFile() || {};
     const milestones = Array.isArray(fileRef.milestones) ? fileRef.milestones : [];
     const newsEvents = Array.isArray(fileRef.newsEvents) ? fileRef.newsEvents : [];
