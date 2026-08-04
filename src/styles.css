@@ -4621,7 +4621,7 @@ select.bl-venue-input { cursor:pointer; }
 
 /* Timeline — divs absolutos sobre eje común, sin librería de charts */
 .bl-cyc-chart { padding:10px 14px 8px; position:relative; z-index:1; overflow-x:auto; }
-.bl-cyc-rows { position:relative; padding-bottom:26px; min-width:440px; }
+.bl-cyc-rows { position:relative; padding-bottom:26px; min-width:560px; }
 .bl-cyc-axis { position:absolute; inset:0; pointer-events:none; z-index:0; }
 .bl-cyc-grid { position:absolute; top:0; bottom:26px; width:1px; background:var(--bl-border-sub); }
 .bl-cyc-grid-zero { background:var(--bl-saved); opacity:0.4; }
@@ -4629,11 +4629,20 @@ select.bl-venue-input { cursor:pointer; }
   position:absolute; top:100%; margin-top:6px; left:0; transform:translateX(-50%);
   font-family:var(--font-mono); font-size:9px; color:var(--bl-text-ter); white-space:nowrap;
 }
-.bl-cyc-row { position:relative; z-index:1; height:40px; }
-.bl-cyc-row-label { position:absolute; left:0; top:0; display:flex; align-items:baseline; gap:6px; z-index:2; }
+.bl-cyc-row { position:relative; z-index:1; height:46px; }
+.bl-cyc-row-label { position:absolute; left:0; top:0; display:flex; align-items:baseline; gap:6px; z-index:5; }
 .bl-cyc-cy { font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--bl-text); }
 .bl-cyc-cy-date { font-family:var(--font-mono); font-size:9px; color:var(--bl-text-ter); }
-.bl-cyc-track { position:absolute; left:0; right:0; top:16px; height:18px; }
+.bl-cyc-cy-price { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--bl-saved); }
+.bl-cyc-track { position:absolute; left:0; right:0; top:22px; height:18px; }
+/* Precio en pico / fondo, flotando sobre el marcador correspondiente */
+.bl-cyc-pr {
+  position:absolute; top:-15px; transform:translateX(-50%);
+  font-family:var(--font-mono); font-size:8.5px; font-weight:700;
+  letter-spacing:0.2px; white-space:nowrap; z-index:4; pointer-events:none;
+}
+.bl-cyc-pr.pk { color:#c56b6b; }
+.bl-cyc-pr.bt { color:var(--bl-accent-layer); }
 .bl-cyc-seg {
   position:absolute; top:0; height:18px; border-radius:2px;
   display:flex; align-items:center; justify-content:center;
@@ -4668,7 +4677,25 @@ select.bl-venue-input { cursor:pointer; }
 .bl-cyc-curve-mk:hover { r:5; }
 .bl-cyc-curve-legend { display:flex; flex-wrap:wrap; gap:9px 15px; margin-top:8px; align-items:center; }
 .bl-cyc-curve-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.bl-cyc-curve-dot-news { background:var(--bl-text-ter); }
 .bl-cyc-curve-hint { font-family:var(--font-mono); font-size:9.5px; color:var(--bl-text-ter); opacity:0.7; margin-left:auto; }
+/* Hitos históricos sobre la curva */
+.bl-cyc-curve-news-g { cursor:pointer; outline:none; }
+.bl-cyc-curve-news-hit { fill:transparent; }
+.bl-cyc-curve-news { fill:var(--bl-text-ter); stroke:var(--bl-surface); stroke-width:1.2; transition:r .12s ease-out, fill .12s; }
+.bl-cyc-curve-news-g:hover .bl-cyc-curve-news,
+.bl-cyc-curve-news.active { fill:var(--bl-text); }
+.bl-cyc-curve-news.active { filter:drop-shadow(0 0 5px var(--bl-accent-layer)); }
+.bl-cyc-curve-news-g:focus-visible .bl-cyc-curve-news { fill:var(--bl-text); filter:drop-shadow(0 0 5px var(--bl-accent-layer)); }
+.bl-cyc-curve-guide { stroke:var(--bl-text-ter); stroke-width:1; opacity:0.4; stroke-dasharray:2 3; }
+.bl-cyc-curve-caption {
+  margin-top:8px; padding-top:8px; border-top:1px solid var(--bl-border-sub);
+  font-family:var(--font-mono); font-size:11px; color:var(--bl-text-sec);
+  min-height:1.5em; line-height:1.5;
+}
+.bl-cyc-curve-cap-date { color:var(--bl-saved); font-weight:700; }
+.bl-cyc-curve-cap-text { color:var(--bl-text); }
+.bl-cyc-curve-cap-empty { color:var(--bl-text-ter); opacity:0.75; }
 
 /* Confluencia — tira de indicadores compacta */
 .bl-cyc-ind-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); position:relative; z-index:1; }

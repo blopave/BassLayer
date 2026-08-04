@@ -2405,6 +2405,7 @@ app.get("/api/btc-cycles", async (req, res) => {
     // 2012→2017) + mensuales en vivo de Binance (2017→hoy). Merge por mes.
     const fileRef = readBtcCyclesFile() || {};
     const milestones = Array.isArray(fileRef.milestones) ? fileRef.milestones : [];
+    const newsEvents = Array.isArray(fileRef.newsEvents) ? fileRef.newsEvents : [];
     const monthMap = new Map((fileRef.priceHistoryEarly || []).map(pt => [pt.t, pt.p]));
     if (Array.isArray(monthly)) {
       for (const k of monthly) {
@@ -2442,6 +2443,7 @@ app.get("/api/btc-cycles", async (req, res) => {
       indicators,
       priceHistory,
       milestones,
+      newsEvents,
       live,
     };
 
