@@ -8,3 +8,6 @@ dist/
 .playwright-mcp/
 # Screenshots de auditoría/review en la raíz (los assets viven en public/)
 /*.png
+
+# MusicBrainz family classification cache (runtime, se regenera)
+data/mb-family-cache.json

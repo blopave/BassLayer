@@ -10,7 +10,11 @@
     "url": "https://www.lollapaloozaar.com",
     "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Lollapalooza_logo.svg/512px-Lollapalooza_logo.svg.png",
     "description": "El festival mainstream más grande del país. Pista electrónica con cabezas como Skrillex, Dom Dolla, John Summit y un main de pop global.",
-    "tags": ["EDM", "Mainstream", "Multi-genre"]
+    "tags": [
+      "EDM",
+      "Mainstream",
+      "Multi-genre"
+    ]
   },
   {
     "id": "creamfields-bsas-2026",
@@ -23,7 +27,11 @@
     "url": "https://creamfieldsba.com",
     "image": "https://upload.wikimedia.org/wikipedia/en/thumb/5/55/Creamfields_logo.svg/512px-Creamfields_logo.svg.png",
     "description": "Marca histórica de la electrónica en Argentina. Techno, trance y house en formato mega-festival.",
-    "tags": ["Techno", "Trance", "House"]
+    "tags": [
+      "Techno",
+      "Trance",
+      "House"
+    ]
   },
   {
     "id": "ultra-bsas-2026",
@@ -36,7 +44,10 @@
     "url": "https://ultrabsas.com",
     "image": null,
     "description": "Franquicia del Ultra Music Festival de Miami. Big-room, EDM y headliners globales.",
-    "tags": ["EDM", "Big Room"]
+    "tags": [
+      "EDM",
+      "Big Room"
+    ]
   },
   {
     "id": "tomorrowland-brasil-2026",
@@ -49,7 +60,11 @@
     "url": "https://www.tomorrowland.com/brasil",
     "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Tomorrowland_logo_2017.svg/512px-Tomorrowland_logo_2017.svg.png",
     "description": "La edición sudamericana del festival belga. Producción brutal, lineup global y la atmósfera Tomorrowland en cono sur.",
-    "tags": ["EDM", "Mainstage", "Multi-genre"]
+    "tags": [
+      "EDM",
+      "Mainstage",
+      "Multi-genre"
+    ]
   },
   {
     "id": "time-warp-brasil-2026",
@@ -62,7 +77,10 @@
     "url": "https://www.time-warp.de/en/brazil",
     "image": null,
     "description": "Versión brasilera del referente alemán de techno. Una sola noche, lineup ultra-curado, foco purista.",
-    "tags": ["Techno", "Underground"]
+    "tags": [
+      "Techno",
+      "Underground"
+    ]
   },
   {
     "id": "warung-day-brasil-2026",
@@ -75,7 +93,11 @@
     "url": "https://www.warungbeach.com.br",
     "image": null,
     "description": "Open air en la playa frente al club Warung. House y techno melódico al amanecer brasilero.",
-    "tags": ["House", "Melodic", "Open Air"]
+    "tags": [
+      "House",
+      "Melodic",
+      "Open Air"
+    ]
   },
   {
     "id": "dgtl-bsas-2026",
@@ -88,7 +110,11 @@
     "url": "https://dgtl.com",
     "image": null,
     "description": "Edición porteña del festival holandés. Techno y house con foco en arte audiovisual y sostenibilidad.",
-    "tags": ["Techno", "House", "Art"]
+    "tags": [
+      "Techno",
+      "House",
+      "Art"
+    ]
   },
   {
     "id": "sonar-bogota-2026",
@@ -101,7 +127,11 @@
     "url": "https://sonar.es",
     "image": null,
     "description": "El Sónar barcelonés en su versión latinoamericana: música avanzada, arte digital y conferencia.",
-    "tags": ["Techno", "Experimental", "Conference"]
+    "tags": [
+      "Techno",
+      "Experimental",
+      "Conference"
+    ]
   },
   {
     "id": "movement-ar-2026",
@@ -114,7 +144,10 @@
     "url": "https://movement.us",
     "image": null,
     "description": "La franquicia argentina del festival de Detroit. Techno purista en cono sur.",
-    "tags": ["Techno", "Detroit"]
+    "tags": [
+      "Techno",
+      "Detroit"
+    ]
   },
   {
     "id": "mar-de-musica-2026",
@@ -127,7 +160,10 @@
     "url": null,
     "image": null,
     "description": "Festival de verano costero. Electrónica, indie y producción local en formato playa.",
-    "tags": ["Open Air", "Multi-genre"]
+    "tags": [
+      "Open Air",
+      "Multi-genre"
+    ]
   },
   {
     "id": "tomorrowland-2026",
@@ -140,7 +176,11 @@
     "url": "https://www.tomorrowland.com",
     "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Tomorrowland_logo_2017.svg/512px-Tomorrowland_logo_2017.svg.png",
     "description": "La meca del EDM mundial. Dos fines de semana, escenarios surrealistas y producción que define el estándar global.",
-    "tags": ["EDM", "Mainstage", "Multi-genre"]
+    "tags": [
+      "EDM",
+      "Mainstage",
+      "Multi-genre"
+    ]
   },
   {
     "id": "time-warp-de-2026",
@@ -153,7 +193,10 @@
     "url": "https://www.time-warp.de",
     "image": null,
     "description": "Templo del techno europeo. 30+ años de historia, lineups irrepetibles y la noche más larga del año.",
-    "tags": ["Techno", "Underground"]
+    "tags": [
+      "Techno",
+      "Underground"
+    ]
   },
   {
     "id": "sonar-bcn-2026",
@@ -166,7 +209,11 @@
     "url": "https://sonar.es",
     "image": null,
     "description": "Música avanzada y arte multimedia desde 1994. Sónar by Day y Sónar by Night, más conferencia +D.",
-    "tags": ["Techno", "Experimental", "Art"]
+    "tags": [
+      "Techno",
+      "Experimental",
+      "Art"
+    ]
   },
   {
     "id": "dgtl-amsterdam-2026",
@@ -179,7 +226,11 @@
     "url": "https://dgtl.com",
     "image": null,
     "description": "Festival sostenible en el puerto NDSM. Techno/house de alto calibre con foco circular.",
-    "tags": ["Techno", "House", "Sustainability"]
+    "tags": [
+      "Techno",
+      "House",
+      "Sustainability"
+    ]
   },
   {
     "id": "awakenings-2026",
@@ -192,7 +243,10 @@
     "url": "https://www.awakenings.com",
     "image": null,
     "description": "El festival de techno por excelencia en Países Bajos. 3 días, 8 escenarios, lineup que define el estado del techno.",
-    "tags": ["Techno", "Open Air"]
+    "tags": [
+      "Techno",
+      "Open Air"
+    ]
   },
   {
     "id": "dekmantel-2026",
@@ -205,7 +259,11 @@
     "url": "https://www.dekmantelfestival.com",
     "image": null,
     "description": "Festival/sello de culto. Curaduría editorial impecable: techno, house, ambient y electrónica de autor en el bosque Amsterdamse Bos.",
-    "tags": ["Techno", "Curated", "Forest"]
+    "tags": [
+      "Techno",
+      "Curated",
+      "Forest"
+    ]
   },
   {
     "id": "sunwaves-2026",
@@ -218,7 +276,11 @@
     "url": "https://sunwaves-festival.com",
     "image": null,
     "description": "10 días non-stop en la costa del Mar Negro. Foco minimal/microhouse rumano. Una experiencia de resistencia y trance.",
-    "tags": ["Minimal", "Microhouse", "Beach"]
+    "tags": [
+      "Minimal",
+      "Microhouse",
+      "Beach"
+    ]
   },
   {
     "id": "junction-2-2026",
@@ -231,7 +293,10 @@
     "url": "https://junction2.london",
     "image": null,
     "description": "Festival de techno bajo un puente de autopista en West London. Una de las mejores propuestas urbanas de la escena UK.",
-    "tags": ["Techno", "Urban"]
+    "tags": [
+      "Techno",
+      "Urban"
+    ]
   },
   {
     "id": "parklife-2026",
@@ -244,7 +309,11 @@
     "url": "https://www.parklife.uk.com",
     "image": null,
     "description": "Festival de Manchester con cruce de electrónica, hip-hop y indie. Heaton Park, dos días, multitud joven.",
-    "tags": ["House", "Multi-genre", "UK"]
+    "tags": [
+      "House",
+      "Multi-genre",
+      "UK"
+    ]
   },
   {
     "id": "lost-village-2026",
@@ -257,7 +326,11 @@
     "url": "https://lostvillagefestival.com",
     "image": null,
     "description": "Boutique festival en un bosque inglés abandonado. Curaduría exquisita y atmósfera narrativa.",
-    "tags": ["Curated", "Forest", "Boutique"]
+    "tags": [
+      "Curated",
+      "Forest",
+      "Boutique"
+    ]
   },
   {
     "id": "houghton-2026",
@@ -270,7 +343,11 @@
     "url": "https://houghtonfestival.co.uk",
     "image": null,
     "description": "Festival 24 horas curado por Craig Richards. Lo más selectivo de UK: house, techno, ambient en formato sin reloj.",
-    "tags": ["Techno", "House", "24h"]
+    "tags": [
+      "Techno",
+      "House",
+      "24h"
+    ]
   },
   {
     "id": "movement-detroit-2026",
@@ -283,7 +360,11 @@
     "url": "https://www.movementfestival.com",
     "image": null,
     "description": "El festival oficial de techno en su ciudad cuna. Hart Plaza, Memorial Day weekend, lineup 100% electrónica con fuerte presencia local.",
-    "tags": ["Techno", "Detroit", "Heritage"]
+    "tags": [
+      "Techno",
+      "Detroit",
+      "Heritage"
+    ]
   },
   {
     "id": "edc-vegas-2026",
@@ -296,7 +377,11 @@
     "url": "https://lasvegas.electricdaisycarnival.com",
     "image": null,
     "description": "El festival EDM más grande de Norteamérica. Las Vegas Motor Speedway, 8 escenarios, lineup mainstream global.",
-    "tags": ["EDM", "Mainstage", "Big Room"]
+    "tags": [
+      "EDM",
+      "Mainstage",
+      "Big Room"
+    ]
   },
   {
     "id": "lightning-bottle-2026",
@@ -309,7 +394,11 @@
     "url": "https://lightninginabottle.org",
     "image": null,
     "description": "Festival transformacional en California. Mezcla bass music, arte experiencial, wellness y comunidad.",
-    "tags": ["Bass", "Transformational", "Art"]
+    "tags": [
+      "Bass",
+      "Transformational",
+      "Art"
+    ]
   },
   {
     "id": "burning-man-2026",
@@ -322,7 +411,11 @@
     "url": "https://burningman.org",
     "image": null,
     "description": "No es un festival per se, pero Robot Heart y otras camp parties lo convierten en una de las experiencias de música electrónica más singulares del planeta.",
-    "tags": ["Underground", "Art", "Desert"]
+    "tags": [
+      "Underground",
+      "Art",
+      "Desert"
+    ]
   },
   {
     "id": "fuji-rock-2026",
@@ -335,7 +428,11 @@
     "url": "https://www.fujirockfestival.com",
     "image": null,
     "description": "Festival multi-género en las montañas de Niigata. Su escenario Red Marquee es referente mundial de electrónica curada.",
-    "tags": ["Multi-genre", "Mountain", "Curated"]
+    "tags": [
+      "Multi-genre",
+      "Mountain",
+      "Curated"
+    ]
   },
   {
     "id": "primavera-sound-bcn-2026",
@@ -348,7 +445,11 @@
     "url": "https://www.primaverasound.com",
     "image": null,
     "description": "El festival pop/indie/electrónica más prestigioso de Europa del sur. Parc del Fòrum, lineups que definen el año en música.",
-    "tags": ["Multi-genre", "Indie", "Curated"]
+    "tags": [
+      "Multi-genre",
+      "Indie",
+      "Curated"
+    ]
   },
   {
     "id": "kappa-futur-2026",
@@ -361,7 +462,11 @@
     "url": "https://www.kappafuturfestival.it",
     "image": null,
     "description": "Festival italiano en Parco Dora con techno y house de calibre internacional. Industrial chic.",
-    "tags": ["Techno", "House", "Open Air"]
+    "tags": [
+      "Techno",
+      "House",
+      "Open Air"
+    ]
   },
   {
     "id": "exit-2026",
@@ -374,7 +479,11 @@
     "url": "https://www.exitfest.org",
     "image": null,
     "description": "Festival en una fortaleza del siglo XVII. Su Dance Arena es uno de los escenarios de techno más legendarios del verano europeo.",
-    "tags": ["Techno", "Multi-genre", "Heritage"]
+    "tags": [
+      "Techno",
+      "Multi-genre",
+      "Heritage"
+    ]
   },
   {
     "id": "decibel-open-air-2026",
@@ -387,6 +496,112 @@
     "url": "https://www.decibelopenair.com",
     "image": null,
     "description": "Open air italiano que cierra el verano europeo de electrónica. Lineup ambicioso, ubicación toscana.",
-    "tags": ["Techno", "House", "Open Air"]
+    "tags": [
+      "Techno",
+      "House",
+      "Open Air"
+    ]
+  },
+  {
+    "id": "primavera-sound-ba-2026",
+    "name": "Primavera Sound Buenos Aires",
+    "country": "Argentina",
+    "city": "Buenos Aires",
+    "region": "BA",
+    "dates_start": "2026-11-28",
+    "dates_end": "2026-11-29",
+    "url": "https://www.primaverasound.com/es/buenos-aires",
+    "image": null,
+    "description": "El regreso del festival multi-género más celebrado a Buenos Aires. Headliners: Gorillaz, The Strokes y FKA twigs, con Yung Lean, Lily Allen y Juana Molina. Club Ciudad de Buenos Aires.",
+    "tags": [
+      "Multi-genre",
+      "Indie",
+      "Curated"
+    ]
+  },
+  {
+    "id": "rock-in-rio-2026",
+    "name": "Rock in Rio",
+    "country": "Brasil",
+    "city": "Río de Janeiro",
+    "region": "Sudamérica",
+    "dates_start": "2026-09-04",
+    "dates_end": "2026-09-13",
+    "url": "https://rockinrio.com",
+    "image": null,
+    "description": "Uno de los festivales más grandes del mundo: dos fines de semana en la Cidade do Rock con rock, pop, funk y trap a escala gigante.",
+    "tags": [
+      "Rock",
+      "Pop",
+      "Multi-genre"
+    ]
+  },
+  {
+    "id": "coachella-2027",
+    "name": "Coachella",
+    "country": "Estados Unidos",
+    "city": "Indio, California",
+    "region": "Norteamérica",
+    "dates_start": "2027-04-09",
+    "dates_end": "2027-04-18",
+    "url": "https://www.coachella.com",
+    "image": null,
+    "description": "El festival más comentado del mundo: dos fines de semana en el desierto de California con pop, hip-hop, indie y electrónica de cabecera global.",
+    "tags": [
+      "Multi-genre",
+      "Mainstream",
+      "Desert"
+    ]
+  },
+  {
+    "id": "sziget-2026",
+    "name": "Sziget Festival",
+    "country": "Hungría",
+    "city": "Budapest",
+    "region": "Europa",
+    "dates_start": "2026-08-11",
+    "dates_end": "2026-08-15",
+    "url": "https://szigetfestival.com",
+    "image": null,
+    "description": "La Isla de la Libertad en el Danubio: una semana de rock, pop, electrónica y cultura, una de las citas más grandes de Europa.",
+    "tags": [
+      "Multi-genre",
+      "Island",
+      "Europe"
+    ]
+  },
+  {
+    "id": "reading-leeds-2026",
+    "name": "Reading & Leeds",
+    "country": "Reino Unido",
+    "city": "Reading / Leeds",
+    "region": "Europa",
+    "dates_start": "2026-08-27",
+    "dates_end": "2026-08-30",
+    "url": "https://www.readingandleedsfestival.com",
+    "image": null,
+    "description": "El clásico británico de fin de verano: rock, punk, indie y hip-hop en dos sedes simultáneas durante el bank holiday.",
+    "tags": [
+      "Rock",
+      "Indie",
+      "UK"
+    ]
+  },
+  {
+    "id": "acl-2026",
+    "name": "Austin City Limits",
+    "country": "Estados Unidos",
+    "city": "Austin, Texas",
+    "region": "Norteamérica",
+    "dates_start": "2026-10-02",
+    "dates_end": "2026-10-11",
+    "url": "https://www.aclfestival.com",
+    "image": null,
+    "description": "Dos fines de semana en Zilker Park: multi-género (rock, pop, hip-hop, country), uno de los grandes de Estados Unidos.",
+    "tags": [
+      "Multi-genre",
+      "Rock",
+      "USA"
+    ]
   }
 ]

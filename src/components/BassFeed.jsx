@@ -1,15 +1,19 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { FilterBar } from "./FilterBar";
-import { SearchBar } from "./SearchBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
 import { IG_HANDLE, IG_URL } from "../utils/constants";
+import { DAYS_LONG } from "../i18n/strings";
 
 const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
-const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+// Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
+// La familia la asigna el backend (classifyFamily). Los items son KEYS estables
+// (para estado/URL); el label visible sale de i18n (family.*), EN/ES.
+const FAMILY_FILTER_ITEMS = ["All", "club", "live", "festival", "urbano", "raiz"];
 
 function EndOfSet() {
   const { t } = useLocale();
@@ -68,15 +72,15 @@ function EventCountdown({ event }) {
   return <span className="bl-ev-countdown">{countdown}</span>;
 }
 
-function getDayLabel(eventDate) {
-  if (!eventDate) return "Próximamente";
+function getDayLabel(eventDate, t, dayNames) {
+  if (!eventDate) return t("day.upcoming");
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const evDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
   const diff = Math.round((evDay - today) / 86400000);
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  const dayName = DAY_NAMES[evDay.getDay()];
+  if (diff === 0) return t("day.today");
+  if (diff === 1) return t("day.tomorrow");
+  const dayName = dayNames[evDay.getDay()];
   const dd = String(evDay.getDate()).padStart(2, "0");
   const mm = String(evDay.getMonth() + 1).padStart(2, "0");
   return `${dayName} ${dd}/${mm}`;
@@ -123,15 +127,20 @@ function isThisWeekend(eventDate) {
 }
 
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival }) {
-  const { t } = useLocale();
-  const genres = ["All", "Techno", "House", "Deep House", "Tech House", "Progressive", "Melodic", "Minimal", "Trance", "Festival", "Electronic"];
+  const { t, locale } = useLocale();
+  const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
+  const familyLabels = useMemo(() => ({
+    club: t("family.club"), live: t("family.live"), festival: t("family.festival"),
+    urbano: t("family.urbano"), raiz: t("family.raiz"),
+  }), [t]);
   // Región: filtro primario. Arranca en Argentina para mantener el foco local
   // — la data global (RA multi-ciudad) queda a un tap sin diluir el default.
-  const REGIONS = [{ label: "Argentina", code: "AR" }, { label: "LatAm", code: "LatAm" }, { label: "Mundo", code: "World" }];
+  const REGIONS = [{ label: "Argentina", code: "AR" }, { label: "LatAm", code: "LatAm" }, { label: t("region.world"), code: "World" }];
   const [regionFilter, setRegionFilter] = useState("AR");
   const [cityFilter, setCityFilter] = useState("Todas");
-  const [esteFinde, setEsteFinde] = useState(false);
-  const [hoyOnly, setHoyOnly] = useState(false);
+  const [when, setWhen] = useState("");   // "" | "hoy" | "finde" — filtro temporal
+  const hoyOnly = when === "hoy";
+  const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
 
   // Bass news — lazy loaded on first toggle to "noticias"
@@ -205,27 +214,32 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Al cambiar de región, reseteamos la ciudad (una ciudad de AR no existe en Mundo)
   const changeRegion = (code) => { setRegionFilter(code); setCityFilter("Todas"); };
 
-  let filtered = regionEvents;
-  if (filter !== "All") {
-    filtered = filtered.filter((e) => e.genre === filter);
-  }
-  if (cityFilter !== "Todas") {
-    filtered = filtered.filter((e) => e.city === cityFilter);
-  }
-  if (esteFinde) {
-    filtered = filtered.filter((e) => isThisWeekend(getEventDate(e)));
-  }
-  if (hoyOnly) {
-    filtered = filtered.filter((e) => isToday(getEventDate(e)));
-  }
-  if (search) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter((e) =>
-      (e.name || "").toLowerCase().includes(q) ||
-      (e.venue || "").toLowerCase().includes(q) ||
-      (e.artists || []).some((a) => (a || "").toLowerCase().includes(q))
-    );
-  }
+  // Segmento "Cuándo" — un solo estado; "explore" abre el weekend-picker.
+  const onWhenChange = (v) => {
+    if (v === "explore") { onOpenPicker && onOpenPicker(); return; }
+    setWhen(v);
+  };
+
+  // Contexto (todo menos familia) → conteos por familia → filtrado final.
+  // Memoizado: sólo recomputa cuando cambia una entrada real, no en cada render.
+  const { filtered, familyCounts } = useMemo(() => {
+    let ctx = regionEvents;
+    if (cityFilter !== "Todas") ctx = ctx.filter((e) => e.city === cityFilter);
+    if (esteFinde) ctx = ctx.filter((e) => isThisWeekend(getEventDate(e)));
+    if (hoyOnly) ctx = ctx.filter((e) => isToday(getEventDate(e)));
+    if (search) {
+      const q = search.toLowerCase();
+      ctx = ctx.filter((e) =>
+        (e.name || "").toLowerCase().includes(q) ||
+        (e.venue || "").toLowerCase().includes(q) ||
+        (e.artists || []).some((a) => (a || "").toLowerCase().includes(q))
+      );
+    }
+    const counts = { all: ctx.length };
+    for (const e of ctx) { const f = e.family || "other"; counts[f] = (counts[f] || 0) + 1; }
+    const list = filter === "All" ? ctx : ctx.filter((e) => (e.family || "") === filter);
+    return { filtered: list, familyCounts: counts };
+  }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter]);
 
   // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
@@ -237,7 +251,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         groups.push({ type: "month", label: ev.month });
       }
       currentMonth = ev.month;
-      const label = getDayLabel(getEventDate(ev));
+      const label = getDayLabel(getEventDate(ev), t, dayNames);
       if (label !== currentLabel) {
         groups.push({ type: "header", label });
         currentLabel = label;
@@ -245,7 +259,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       groups.push({ type: "event", data: ev });
     }
     return groups;
-  }, [filtered]);
+  }, [filtered, t, dayNames]);
 
   const MONTH_FULL = { Ene:"Enero", Feb:"Febrero", Mar:"Marzo", Abr:"Abril", May:"Mayo", Jun:"Junio", Jul:"Julio", Ago:"Agosto", Sep:"Septiembre", Oct:"Octubre", Nov:"Noviembre", Dic:"Diciembre" };
 
@@ -266,7 +280,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         .filter((x) => x.date && x.date >= today)
         .sort((a, b) => a.date - b.date)[0];
       if (!upcoming) return <>Nada hoy — próximamente sin fecha confirmada.</>;
-      const dayName = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"][upcoming.date.getDay()];
+      const dayName = (dayNames[upcoming.date.getDay()] || "").slice(0, 3).toUpperCase();
       const dd = String(upcoming.date.getDate()).padStart(2, "0");
       return <>Nada hoy — lo próximo: {dayName} {dd}</>;
     }
@@ -322,48 +336,61 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         />
       ) : (
         <>
-      <div className="bl-weekend-picker-trigger">
-        <button className="bl-wp-trigger-btn" onClick={onOpenPicker}>
-          {t("event.weekendButton")}
-          <span className="bl-wp-trigger-arrow">&rarr;</span>
-        </button>
-        <button
-          type="button"
-          className={`bl-hoy-chip${hoyOnly ? " active" : ""}`}
-          onClick={() => setHoyOnly((v) => !v)}
-          aria-pressed={hoyOnly}
-        >
-          Hoy
-        </button>
-      </div>
-      <FilterBar items={genres} active={filter} onChange={onFilter} className="bass-filters" />
-      <div className="bl-sub-filters">
-        {availableRegions.length > 1 && (
-          <div className="bl-region-filter" role="tablist" aria-label="Regi&oacute;n">
-            {availableRegions.map((r) => (
-              <button
-                key={r.code}
-                className={`bl-region-chip${regionFilter === r.code ? " active" : ""}`}
-                onClick={() => changeRegion(r.code)}
-                role="tab"
-                aria-selected={regionFilter === r.code}
-              >{r.label}</button>
-            ))}
+      {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
+      <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
+
+      {/* Barra unificada de contexto: Cuándo · Dónde · Buscar (una sola forma) */}
+      <div className="bl-ctrl-bar">
+        <label className="bl-ctrl-seg">
+          <span className="bl-ctrl-k">{t("filter.when")}</span>
+          <select className="bl-ctrl-select" value={when} onChange={(e) => onWhenChange(e.target.value)} aria-label={t("filter.when")}>
+            <option value="">{t("filter.anytime")}</option>
+            <option value="hoy">{t("day.today")}</option>
+            <option value="finde">{t("filter.thisWeekend")}</option>
+            <option value="explore">{t("filter.exploreWeekend")}</option>
+          </select>
+        </label>
+        {(availableRegions.length > 1 || cities.length > 2) && (
+          <div className="bl-ctrl-seg">
+            <span className="bl-ctrl-k">{t("filter.where")}</span>
+            <div className="bl-ctrl-where">
+              {availableRegions.length > 1 && (
+                <select className="bl-ctrl-select" value={regionFilter} onChange={(e) => changeRegion(e.target.value)} aria-label={t("filter.where")}>
+                  {availableRegions.map((r) => (<option key={r.code} value={r.code}>{r.label}</option>))}
+                </select>
+              )}
+              {cities.length > 2 && (
+                <select className="bl-ctrl-select" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} aria-label={t("filter.allCities")}>
+                  {cities.map((c) => (<option key={c} value={c}>{c === "Todas" ? t("filter.allCities") : c}</option>))}
+                </select>
+              )}
+            </div>
           </div>
         )}
-        {cities.length > 2 && (
-          <div className="bl-city-filter">
-            {cities.map((c) => (
-              <button key={c} className={`bl-city-chip${cityFilter === c ? " active" : ""}`} onClick={() => setCityFilter(c)}>{c}</button>
-            ))}
-          </div>
-        )}
+        <div className="bl-ctrl-seg bl-ctrl-search-seg">
+          <span className="bl-ctrl-mag" aria-hidden="true">&#8981;</span>
+          <input
+            className="bl-ctrl-search"
+            type="search"
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder={t("filter.searchPlaceholder")}
+            aria-label={t("filter.searchPlaceholder")}
+          />
+        </div>
       </div>
-      <SearchBar value={search} onChange={onSearch} />
+
+      {/* Header editorial del listado */}
+      {!loading && !error && filtered.length > 0 && (
+        <div className="bl-feed-head">
+          <span className="bl-feed-head-n">{filtered.length}</span>
+          <span className="bl-feed-head-ctx">{t("feed.eventsWord")}{cityFilter !== "Todas" ? ` · ${cityFilter}` : ""}</span>
+        </div>
+      )}
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
-        : <div className="bl-ev-list" role="feed" aria-label="Eventos de m&uacute;sica electr&oacute;nica" ref={listRef}>
+        : <div className="bl-ev-list" role="feed" aria-label={t("section.events")} ref={listRef}>
             {grouped.map((item, gIdx) => {
               if (item.type === "month") {
                 return (
@@ -384,6 +411,11 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               }
               const ev = item.data;
               const idx = itemIdx++;
+              // Stamp editorial: subgénero real para electrónica (Techno/House),
+              // etiqueta de familia para el resto (En vivo/Urbano/Raíz/Festival).
+              const stamp = ev.family === "club"
+                ? (ev.genre && ev.genre !== "Electronic" ? ev.genre : null)
+                : (ev.family ? t(`family.${ev.family}`) : null);
               return (
                 <article
                   className="bl-ev-item bl-reveal"
@@ -406,8 +438,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                     <div className="bl-ev-meta-row">
                       <span className="bl-ev-venue-inline">{ev.venue}</span>
                       {ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
-                      {ev.genre && ev.genre !== "Electronic" && (
-                        <span className="bl-ev-genre-badge" title={ev.genre}>{ev.genre}</span>
+                      {stamp && (
+                        <span className="bl-ev-genre-badge" title={stamp}>{stamp}</span>
                       )}
                       {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
                       {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
@@ -452,7 +484,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   }
 
   return (
-    <div className="bl-bass-news-list" role="feed" aria-label="Noticias de música electrónica" ref={listRef}>
+    <div className="bl-bass-news-list" role="feed" aria-label={t("section.news")} ref={listRef}>
       {news.map((item, idx) => (
         <BassNewsItem
           key={`${item.source_slug || item.source}-${item.url || idx}`}
@@ -548,7 +580,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
          </div>
        )
        : (
-         <div className="bl-ev-list" role="feed" aria-label="Festivales de música electrónica" ref={listRef}>
+         <div className="bl-ev-list" role="feed" aria-label={t("section.festivals")} ref={listRef}>
            {festivals.map((f, idx) => (
              <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
            ))}

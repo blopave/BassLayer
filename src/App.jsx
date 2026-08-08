@@ -803,7 +803,7 @@ export default function App() {
                 onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 0); } : undefined}
                 role="button"
                 tabIndex={0}
-                aria-label="Ir a Bass - Eventos de música electrónica">
+                aria-label="Ir a Bass — agenda de fiestas, shows y festivales">
                 {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
               </div>
               <div className="bl-word-half bl-word-layer"
@@ -821,7 +821,7 @@ export default function App() {
             {/* Hover-reveal solo en desktop: en mobile .bl-concepts está en
                 display:none (no hay hover que asocie el concepto a cada palabra). */}
             <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov ? " show" : ""}`}>{t("home.electronic")}</div>
+              <div className={`bl-concept-text${bassHov ? " show" : ""}`}>{t("home.bass")}</div>
             </div>
             <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
               <div className={`bl-concept-text${layerHov ? " show" : ""}`}>{t("home.blockchain")}</div>

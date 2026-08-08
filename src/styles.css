@@ -61,7 +61,8 @@
 
   /* Typography */
   --font-display:   'Syne', sans-serif;
-  --font-bass:      'Bodoni Moda', Georgia, serif;
+  --font-bass:      'Geist', system-ui, -apple-system, sans-serif;
+  --font-bass-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
   --font-layer:     'Space Grotesk', sans-serif;
   --font-heading:   'Plus Jakarta Sans', sans-serif;
   --font-mono:      'Space Mono', monospace;
@@ -137,75 +138,69 @@
 }
 
 /* ═══════════════════════════════════════════
-   Bass · Typography System
-   Roles semánticos — usar SIEMPRE estas clases
-   en la sección Bass. Regla: nada de Bodoni en
-   body chico (<20px). Bodoni queda para display
-   grande y stamps editoriales trackeados.
-   Las clases no imponen color: el color sigue
-   siendo decisión de cada sub-sección.
-
-   TODO pendiente (decisiones de identidad):
-   - Container de .bl-bass-section-btn (border+bg)
-     podría removerse ahora que la tipografía sola
-     hace toda la jerarquía visual.
-   - .bl-modal-name (Syne 20px) es el único display
-     Syne dentro de Bass. Evaluar si unificar a
-     .bl-bass-t-display-title (Bodoni italic 28px).
-   - Fase 2 DRY: reemplazar font-* inline en
-     .bl-ev-date-d/m, .bl-ev-name, .bl-ev-venue-inline,
-     .bl-ev-genre-badge por las utility classes.
+   Bass · Typography System — Dirección C
+   Grotesca cálida (Geist, --font-bass) para
+   nombres y títulos + monoespaciada (Geist Mono,
+   --font-bass-mono) para la data: fechas, venues,
+   labels, índice de familias. Mono cálido y
+   puntual — distinto del mono frío de terminal
+   de Layer. Las clases no imponen color: eso lo
+   decide cada sub-sección.
    ═══════════════════════════════════════════ */
 
-/* Display numérico grande — fechas 26px+ */
+/* Dirección C · Grotesca (Geist) + Mono cálido (Geist Mono).
+   La data (fechas, venues, labels) va en mono; los nombres/títulos en grotesca.
+   Mono cálido y puntual — distinto del mono frío de terminal de Layer. */
+
+/* Display numérico — fechas. Mono. */
 .bl-bass-t-display-num {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-weight:800; font-style:normal;
-  font-size:30px; letter-spacing:-1.2px; line-height:1;
-  font-feature-settings:"onum" 1;
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:600; font-style:normal;
+  font-size:28px; letter-spacing:-1px; line-height:1;
+  font-feature-settings:"tnum" 1;
 }
 
-/* Display heading modal — nombres de modal grandes */
+/* Display heading modal — nombres grandes. Grotesca. */
 .bl-bass-t-display-title {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-weight:700; font-style:italic;
-  font-size:28px; letter-spacing:-0.8px; line-height:1.1;
+  font-family:var(--font-bass), sans-serif;
+  font-weight:700; font-style:normal;
+  font-size:26px; letter-spacing:-0.5px; line-height:1.12;
 }
 
-/* Stamp editorial — month dividers, region labels trackeadas */
+/* Stamp — dividers, labels trackeadas. Mono uppercase. */
 .bl-bass-t-stamp {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-weight:700; font-style:italic;
-  font-size:14px; letter-spacing:0.22em;
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:500; font-style:normal;
+  font-size:12px; letter-spacing:0.14em;
   text-transform:uppercase;
 }
 
-/* Heading — nombres de card, títulos chicos/medios */
+/* Heading — nombres de card, títulos chicos/medios. Grotesca. */
 .bl-bass-t-heading {
-  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-family:var(--font-bass), sans-serif;
   font-weight:600;
-  font-size:17px; letter-spacing:-0.15px; line-height:1.3;
+  font-size:17px; letter-spacing:-0.2px; line-height:1.3;
 }
 
-/* Body — descripciones, párrafos, info values */
+/* Body — descripciones, párrafos, info values. Grotesca. */
 .bl-bass-t-body {
-  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-family:var(--font-bass), sans-serif;
   font-weight:400;
   font-size:14px; line-height:1.55;
 }
 
-/* Meta — venue inline, subtítulos chicos */
+/* Meta — venue inline, subtítulos. Mono (la data en mono). */
 .bl-bass-t-meta {
-  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-family:var(--font-bass-mono), monospace;
   font-weight:400;
-  font-size:11.5px; letter-spacing:0;
+  font-size:11px; letter-spacing:0;
 }
 
-/* Label — badges, keys, mono stamps */
+/* Label — badges, keys. Mono. */
 .bl-bass-t-label {
-  font-family:var(--font-mono);
-  font-weight:600;
-  font-size:9px; letter-spacing:1.5px;
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:500;
+  font-size:10px; letter-spacing:0.12em;
   text-transform:uppercase;
 }
 
@@ -401,8 +396,8 @@
 
 /* ── World-specific Day Headers (Bass) ── */
 .bl-root[data-section="bass"] .bl-day-label {
-  font-family:var(--font-bass); font-style:italic; font-weight:700;
-  font-size:15px; letter-spacing:0;
+  font-family:var(--font-bass-mono), monospace; font-style:normal; font-weight:600;
+  font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
 }
 .bl-root[data-section="bass"] .bl-day-line {
   background:linear-gradient(to right, rgba(196,144,112,0.3), transparent);
@@ -581,8 +576,8 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:flex; align-items:baseline; gap:4px; margin-bottom:20px;
 }
 .bl-about-bass {
-  font-family:var(--font-bass); font-weight:900; font-style:italic;
-  font-size:28px; letter-spacing:-0.5px; color:var(--bl-text);
+  font-family:var(--font-bass); font-weight:800; font-style:normal;
+  font-size:28px; letter-spacing:-1px; color:var(--bl-text);
 }
 .bl-about-layer {
   font-family:var(--font-layer); font-weight:300; font-size:20px;
@@ -664,7 +659,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-pre-bar-inner { height:100%; background:var(--bl-white); transition:width .04s; }
 .bl-pre-canvas { position:absolute; inset:0; pointer-events:none; }
 .bl-pre-brand { display:flex; align-items:baseline; gap:5px; margin-top:4px; }
-.bl-pre-bass { font-family:var(--font-bass); font-weight:900; font-style:italic; font-size:14px; letter-spacing:-0.01em; color:var(--bl-text-sec); }
+.bl-pre-bass { font-family:var(--font-bass); font-weight:800; font-style:normal; font-size:14px; letter-spacing:-0.02em; color:var(--bl-text-sec); }
 .bl-pre-layer { font-family:var(--font-layer); font-weight:300; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--bl-text-ter); }
 
 /* ── Circle Transition ──────────────────── */
@@ -765,9 +760,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   background:linear-gradient(135deg, rgba(196,144,112,0.10) 0%, transparent 60%);
 }
 .bl-header-half-bass .bl-header-world-name {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-style:italic;
-  letter-spacing:-0.5px;
+  font-family:var(--font-bass), sans-serif;
+  font-style:normal;
+  letter-spacing:-1px;
   line-height:1;
   transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), font-weight .4s, color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
 }
@@ -776,7 +771,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   color:var(--bl-text-ter);
 }
 .bl-header-half-bass.is-active .bl-header-world-name {
-  font-size:54px; font-weight:900;
+  font-size:48px; font-weight:800;
   color:var(--bl-accent-bass);
   text-shadow:0 0 28px rgba(196,144,112,0.28);
 }
@@ -1016,16 +1011,16 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   animation:letter-exit 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards !important;
 }
 
-/* ── BASS — Bodoni Moda: extreme contrast serif, italic, brutal at scale ── */
+/* ── BASS — Geist: grotesca cálida, recta, contundente a gran escala ── */
 .bl-word-bass .bl-letter {
   display:inline-block;
   font-family:var(--font-bass);
-  font-weight:900;
-  font-style:italic;
+  font-weight:700;
+  font-style:normal;
   font-optical-sizing:auto;
-  font-size:clamp(72px,15vw,220px);
-  letter-spacing:-0.02em;
-  line-height:0.82;
+  font-size:clamp(54px,11vw,172px);
+  letter-spacing:-0.03em;
+  line-height:0.9;
   color:var(--bl-text);
   will-change:transform,color,opacity;
   transition:color .4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow .5s;
@@ -1036,9 +1031,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:inline-block;
   font-family:var(--font-layer);
   font-weight:300;
-  font-size:clamp(48px,9.5vw,148px);
-  letter-spacing:clamp(4px,0.8vw,14px);
-  line-height:0.85;
+  font-size:clamp(43px,8.8vw,138px);
+  letter-spacing:clamp(2px,0.45vw,7px);
+  line-height:0.9;
   color:var(--bl-text);
   will-change:transform,color,opacity;
   transition:color .4s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .6s cubic-bezier(0.16, 1, 0.3, 1), opacity .4s;
@@ -1107,23 +1102,27 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-filter-chip { font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-text-sec); padding:6px 14px; border:1px solid var(--bl-border); border-radius:20px; cursor:pointer; background:transparent; white-space:nowrap; transition:all .25s var(--ease-out-expo); flex-shrink:0; }
 .bl-filter-chip:hover { color:var(--bl-text); border-color:var(--bl-400); }
 .bl-filter-chip.active { color:var(--bl-white); border-color:var(--bl-300); background:var(--bl-subtle-hover); }
+/* Bass · índice editorial — familias en Bodoni, SIN pills. Voz propia (revista),
+   no la terminal de Layer. Activo en itálica + cobre, sin caja ni borde. */
+.bl-filters.bass-filters .bl-filter-chip {
+  font-family:var(--font-bass-mono), monospace;
+  font-style:normal; font-weight:500;
+  font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--bl-text-ter);
+  padding:4px 0; border:none; border-radius:0; background:transparent;
+}
+.bl-filters.bass-filters .bl-filter-chip:hover {
+  color:var(--bl-text-sec); border:none; background:transparent;
+}
 .bl-filters.bass-filters .bl-filter-chip.active {
-  /* Tinte del género — --bl-genre-tint viene inline como "r,g,b" (FilterBar.jsx).
-     Fallback al accent bass si el género no tiene tinte propio (ej. "All"). */
-  --bl-tint: var(--bl-genre-tint, 196,144,112);
-  border-color:rgb(var(--bl-tint));
-  color:rgb(var(--bl-tint));
-  background:rgba(var(--bl-tint), 0.12);
-  box-shadow:0 0 12px rgba(var(--bl-tint), 0.08);
+  font-weight:600;
+  color:var(--bl-accent-bass);
+  border:none; background:transparent; box-shadow:none;
 }
 .bl-filters.layer-filters .bl-filter-chip.active {
   border-color:var(--bl-accent-layer); color:var(--bl-accent-layer);
   background:rgba(108,184,200,0.08);
   box-shadow:0 0 8px rgba(108,184,200,0.06);
-}
-.bl-filters.bass-filters .bl-filter-chip {
-  font-family:var(--font-body); letter-spacing:0.8px; text-transform:none; font-size:10px;
-  border-radius:20px;
 }
 .bl-filters.layer-filters .bl-filter-chip {
   font-family:var(--font-mono); letter-spacing:1.5px;
@@ -1138,13 +1137,10 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   background:transparent;
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
-}
-.bl-root[data-section="bass"] .bl-search-wrap {
-  position:static;
-  background:transparent;
-  backdrop-filter:none;
-  -webkit-backdrop-filter:none;
-  border-bottom:none;
+  gap:clamp(16px, 3vw, 28px);
+  padding:14px 32px 6px;
+  align-items:baseline;
+  flex-wrap:wrap;   /* que las familias envuelvan en pantallas chicas, no se corten */
 }
 
 /* ── Price Ticker ───────────────────────── */
@@ -1203,15 +1199,15 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   border-right:1px solid var(--bl-border-sub);
 }
 .bl-ev-date-d {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-weight:800; font-style:normal;
-  font-size:30px; letter-spacing:-1.2px;
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:600; font-style:normal;
+  font-size:27px; letter-spacing:-1px;
   color:#F0EDE6;
   line-height:1;
-  font-feature-settings:"onum" 1;
+  font-feature-settings:"tnum" 1;
 }
 .bl-ev-date-m {
-  font-family:var(--font-mono);
+  font-family:var(--font-bass-mono), monospace;
   font-weight:400; font-size:10px;
   letter-spacing:2px; text-transform:uppercase;
   color:var(--bl-text-sec);
@@ -1222,9 +1218,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:flex; flex-direction:column; justify-content:center; gap:8px;
 }
 .bl-ev-name {
-  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-family:var(--font-bass), sans-serif;
   font-style:normal; font-weight:600;
-  font-size:17px; letter-spacing:-0.15px; line-height:1.3;
+  font-size:17px; letter-spacing:-0.2px; line-height:1.3;
   color:#F0EDE6;
   text-decoration:none;
   display:-webkit-box;
@@ -1235,26 +1231,26 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
 .bl-ev-meta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .bl-ev-venue-inline {
-  font-family:var(--font-body), 'DM Sans', sans-serif;
+  font-family:var(--font-bass-mono), monospace;
   font-weight:400;
-  font-size:11.5px; letter-spacing:0; text-transform:none;
+  font-size:11px; letter-spacing:0; text-transform:none;
   color:var(--bl-150);
 }
 .bl-ev-time-inline {
-  font-family:var(--font-mono); font-weight:400;
+  font-family:var(--font-bass-mono), monospace; font-weight:400;
   font-size:11px; letter-spacing:0.4px;
   color:var(--bl-text-sec);
 }
 .bl-ev-meta-dot { color:var(--bl-text-ter); font-size:9px; }
 .bl-ev-genre-badge {
-  font-family:var(--font-mono);
-  font-size:8.5px; font-weight:600;
-  letter-spacing:1px; text-transform:uppercase;
+  font-family:var(--font-bass-mono), monospace;
+  font-style:normal; font-weight:500;
+  font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase;
   color:var(--bl-accent-bass);
-  background:rgba(196,144,112,0.06);
-  border:1px solid rgba(196,144,112,0.22);
-  border-radius:10px;
-  padding:2px 8px;
+  background:transparent;
+  border:none;
+  border-radius:0;
+  padding:0;
   white-space:nowrap;
 }
 .bl-ev-item .bl-thumb {
@@ -1281,36 +1277,55 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-loading-text span:nth-child(3) { animation-delay:.4s; }
 .bl-error { color:var(--bl-text-sec); font-family:var(--font-mono); font-size:10px; padding:40px 24px; text-align:center; cursor:pointer; line-height:1.6; }
 .bl-empty { color:var(--bl-text-sec); font-family:var(--font-mono); font-size:10px; padding:40px 24px; text-align:center; line-height:1.8; }
-/* ── Sub-filters (city + este finde) ───── */
-.bl-sub-filters { display:flex; align-items:center; gap:12px; padding:14px 32px 0; flex-wrap:wrap; }
-.bl-city-filter { display:flex; gap:6px; flex-wrap:wrap; }
-.bl-city-chip {
-  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
-  padding:5px 12px; border:1px solid var(--bl-border); border-radius:3px;
-  background:transparent; color:var(--bl-text-sec); cursor:pointer; transition:all var(--duration-fast);
-}
-.bl-city-chip:hover { border-color:var(--bl-450); color:var(--bl-text); }
-.bl-city-chip.active { border-color:var(--bl-accent-bass); color:var(--bl-accent-bass); background:rgba(196,144,112,0.06); }
 
-/* Región: filtro primario (Argentina / LatAm / Mundo). Ocupa su propia fila
-   y usa un tratamiento segmentado más marcado que los chips de ciudad. */
-.bl-region-filter { display:flex; gap:0; flex-basis:100%; border:1px solid var(--bl-border); border-radius:4px; width:max-content; overflow:hidden; }
-.bl-region-chip {
-  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
-  padding:6px 16px; border:0; border-right:1px solid var(--bl-border);
-  background:transparent; color:var(--bl-text-sec); cursor:pointer; transition:all var(--duration-fast);
+/* ═══ Zona de filtros elevada — género (primario) + barra unificada + header ═══ */
+/* Conteo por familia en el índice de género (transparencia à la Booking) */
+.bl-filters.bass-filters .bl-filter-count {
+  font-family:var(--font-bass-mono), monospace; font-size:10px; font-weight:400;
+  letter-spacing:0; text-transform:none; color:var(--bl-text-ter); margin-left:5px; vertical-align:baseline;
 }
-.bl-region-chip:last-child { border-right:0; }
-.bl-region-chip:hover { color:var(--bl-text); background:rgba(255,255,255,0.03); }
-.bl-region-chip.active { color:var(--bl-accent-bass); background:rgba(196,144,112,0.10); }
-.bl-finde-btn {
-  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
-  padding:5px 14px; border:1px solid var(--bl-border); border-radius:2px;
-  background:transparent; color:var(--bl-text-sec); cursor:pointer; transition:all var(--duration-fast);
-  margin-left:auto;
+.bl-filters.bass-filters .bl-filter-chip.active .bl-filter-count { color:var(--bl-accent-bass); opacity:.7; }
+
+/* Barra unificada: Cuándo · Dónde · Buscar (una sola forma segmentada) */
+.bl-ctrl-bar {
+  display:flex; align-items:stretch; margin:18px 32px 0;
+  border:1px solid var(--bl-border); border-radius:var(--bl-radius);
+  background:var(--bl-surface); overflow:hidden;
 }
-.bl-finde-btn:hover { border-color:var(--bl-450); color:var(--bl-text); }
-.bl-finde-btn.active { border-color:var(--bl-text); color:var(--bl-black); background:var(--bl-text); }
+.bl-ctrl-seg { display:flex; flex-direction:column; justify-content:center; gap:3px; padding:11px 18px; position:relative; min-width:0; }
+.bl-ctrl-seg + .bl-ctrl-seg::before { content:""; position:absolute; left:0; top:12px; bottom:12px; width:1px; background:var(--bl-border); }
+.bl-ctrl-k { font-family:var(--font-bass-mono), monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-ctrl-where { display:flex; gap:16px; }
+.bl-ctrl-select {
+  font-family:var(--font-bass), sans-serif; font-size:15px; font-weight:500; color:var(--bl-text);
+  background:transparent; border:none; padding:0 16px 0 0; cursor:pointer; max-width:100%;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 9 6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' stroke='%2383745F' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right center;
+}
+.bl-ctrl-select:hover, .bl-ctrl-select:focus-visible { color:var(--bl-accent-bass); outline:none; }
+.bl-ctrl-select option { background:var(--bl-surface); color:var(--bl-text); }
+.bl-ctrl-search-seg { flex:1; flex-direction:row; align-items:center; gap:9px; }
+.bl-ctrl-mag { color:var(--bl-text-ter); font-size:14px; line-height:1; }
+.bl-ctrl-search {
+  flex:1; min-width:0; background:transparent; border:none; outline:none; padding:0;
+  font-family:var(--font-bass-mono), monospace; font-size:12.5px; letter-spacing:.02em; color:var(--bl-text);
+}
+.bl-ctrl-search::placeholder { color:var(--bl-text-ter); }
+.bl-ctrl-search::-webkit-search-cancel-button { -webkit-appearance:none; }
+
+/* Header editorial del listado */
+.bl-feed-head { display:flex; align-items:baseline; gap:12px; margin:22px 32px 2px; padding-bottom:12px; border-bottom:1px solid var(--bl-border); }
+.bl-feed-head-n { font-family:var(--font-bass), sans-serif; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--bl-text); font-variant-numeric:tabular-nums; }
+.bl-feed-head-ctx { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-ter); }
+
+@media (max-width:768px) {
+  .bl-ctrl-bar { margin:16px 16px 0; flex-wrap:wrap; }
+  .bl-ctrl-search-seg { flex-basis:100%; order:3; border-top:1px solid var(--bl-border); }
+  .bl-ctrl-search-seg::before { display:none; }
+  .bl-feed-head { margin:20px 16px 2px; }
+}
+
 
 /* ── Month divider — editorial cabecera entre meses (Bass) ── */
 .bl-month-divider {
@@ -1322,9 +1337,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   background:linear-gradient(to right, transparent, var(--bl-border) 50%, transparent);
 }
 .bl-month-label {
-  font-family:var(--font-bass), 'Bodoni Moda', serif;
-  font-style:italic; font-weight:700;
-  font-size:14px; letter-spacing:0.22em;
+  font-family:var(--font-bass-mono), monospace;
+  font-style:normal; font-weight:500;
+  font-size:12px; letter-spacing:0.16em;
   text-transform:uppercase;
   color:var(--bl-accent-bass);
   flex-shrink:0;
@@ -1764,15 +1779,6 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-modal-btn-secondary:hover { color:var(--bl-white); border-color:var(--bl-400); }
 
 /* ── Search Bar ─────────────────────────── */
-.bl-search-wrap { position:sticky; top:0; z-index:897; padding:12px 32px; background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--bl-border); }
-.bl-search-inner { position:relative; }
-.bl-search-input { width:100%; background:var(--bl-subtle-03); border:1px solid var(--bl-border); border-radius:6px; padding:10px 36px 10px 32px; font-family:var(--font-mono); font-size:12.5px; letter-spacing:0.5px; color:var(--bl-text); outline:none; transition:border-color .25s var(--ease-out-expo); }
-.bl-search-input::placeholder { color:var(--bl-text-sec); }
-.bl-search-input:focus { border-color:var(--bl-accent-bass); box-shadow:0 0 0 1px rgba(196,144,112,0.1), 0 0 16px rgba(196,144,112,0.05); }
-.bl-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--bl-text-sec); font-size:12px; pointer-events:none; }
-.bl-search-clear { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--bl-text-sec); font-size:14px; cursor:pointer; padding:2px 6px; line-height:1; transition:color var(--duration-fast); display:none; }
-.bl-search-clear.visible { display:block; }
-.bl-search-clear:hover { color:var(--bl-text); }
 
 /* ── Toast ──────────────────────────────── */
 .bl-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(10px); z-index:9950; background:var(--bl-white); color:var(--bl-black); font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; padding:10px 20px; border-radius:4px; opacity:0; visibility:hidden; transition:all .3s var(--ease-out-expo); }
@@ -1837,11 +1843,6 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-modal-name { font-size:18px; }
   .bl-modal-info-grid { grid-template-columns:1fr; }
   .bl-modal-info-item:nth-child(odd) { max-width:none; border-right:none; }
-  .bl-search-wrap { padding:12px 16px; }
-  .bl-sub-filters { padding:10px 16px 0; gap:8px; }
-  .bl-city-chip { font-size:9.5px; padding:4px 10px; }
-  .bl-region-chip { font-size:9.5px; padding:5px 13px; }
-  .bl-finde-btn { font-size:9.5px; padding:4px 12px; }
   .bl-day-header { padding:12px 0 6px; }
   .bl-featured-hero { margin:12px 0 4px; padding:18px 16px; }
   .bl-featured-date-d { font-size:28px; }
@@ -1959,8 +1960,8 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 /* Headliner: click reveals inline info panel below */
 .bl-em-headliner { margin-bottom:10px; }
 .bl-em-headliner-name {
-  font-family:var(--font-bass); font-weight:700; font-style:italic;
-  font-size:22px; letter-spacing:-0.3px; color:var(--bl-text);
+  font-family:var(--font-bass); font-weight:700; font-style:normal;
+  font-size:22px; letter-spacing:-0.4px; color:var(--bl-text);
   background:none; border:none; padding:0 0 2px;
   cursor:pointer; text-align:left;
   border-bottom:1px solid transparent;
@@ -2011,7 +2012,7 @@ button.bl-modal-artist:hover {
 }
 .bl-em-artist-body { flex:1; min-width:0; }
 .bl-em-artist-name {
-  font-family:var(--font-bass); font-weight:700; font-style:italic;
+  font-family:var(--font-bass); font-weight:600; font-style:normal;
   font-size:17px; letter-spacing:-0.2px;
   color:var(--bl-text); margin-bottom:3px;
 }
@@ -2039,7 +2040,7 @@ button.bl-modal-artist:hover {
 
 .bl-em-artist-loading {
   display:flex; flex-direction:column; gap:4px;
-  font-family:var(--font-bass); font-style:italic;
+  font-family:var(--font-bass); font-style:normal;
 }
 .bl-em-artist-pulse {
   font-size:17px; font-weight:700; color:var(--bl-text-sec);
@@ -2084,7 +2085,7 @@ button.bl-modal-artist:hover {
 }
 .bl-em-loc-body { flex:1; min-width:0; }
 .bl-em-loc-venue {
-  font-family:var(--font-bass); font-weight:700; font-style:italic;
+  font-family:var(--font-bass); font-weight:600; font-style:normal;
   font-size:18px; letter-spacing:-0.2px;
   color:var(--bl-text); margin-bottom:2px; line-height:1.2;
 }
@@ -2317,91 +2318,6 @@ button.bl-modal-artist:hover {
   .bl-pulse { margin:12px 16px 8px; }
 }
 
-/* ═══════════════════════════════════════════
-   Weekend Picker Trigger Button
-   ═══════════════════════════════════════════ */
-
-.bl-weekend-picker-trigger {
-  padding:16px 32px 0;
-  display:flex;
-  align-items:stretch;
-  gap:10px;
-}
-.bl-wp-trigger-btn {
-  flex:1;
-  padding:14px 20px;
-  background:transparent;
-  border:1px solid rgba(196,144,112,0.22);
-  border-radius:8px;
-  color:var(--bl-text);
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:normal;
-  font-weight:500;
-  font-size:16.5px;
-  letter-spacing:-0.2px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  transition:border-color .25s var(--ease-out-expo),
-             background-color .25s var(--ease-out-expo);
-}
-.bl-wp-trigger-btn:hover {
-  background:rgba(196,144,112,0.05);
-  border-color:rgba(196,144,112,0.45);
-}
-.bl-wp-trigger-btn:focus-visible {
-  outline:none;
-  border-color:var(--bl-accent-bass);
-  box-shadow:0 0 0 2px rgba(196,144,112,0.18);
-}
-
-/* Chip "Hoy" al lado del trigger de finde — mismo lenguaje visual, más compacto. */
-.bl-hoy-chip {
-  padding:0 16px;
-  background:transparent;
-  border:1px solid rgba(196,144,112,0.22);
-  border-radius:8px;
-  color:var(--bl-text-sec);
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-weight:500;
-  font-size:14px;
-  letter-spacing:-0.1px;
-  cursor:pointer;
-  transition:border-color .25s var(--ease-out-expo),
-             background-color .25s var(--ease-out-expo),
-             color .25s var(--ease-out-expo);
-}
-.bl-hoy-chip:hover {
-  background:rgba(196,144,112,0.05);
-  border-color:rgba(196,144,112,0.45);
-  color:var(--bl-text);
-}
-.bl-hoy-chip.active {
-  color:var(--bl-accent-bass);
-  border-color:var(--bl-accent-bass);
-  background:rgba(196,144,112,0.1);
-}
-.bl-hoy-chip:focus-visible {
-  outline:none;
-  border-color:var(--bl-accent-bass);
-  box-shadow:0 0 0 2px rgba(196,144,112,0.18);
-}
-
-.bl-wp-trigger-arrow {
-  font-family:var(--font-mono); font-size:14px;
-  color:var(--bl-accent-bass);
-  transition:transform .25s var(--ease-out-expo);
-}
-.bl-wp-trigger-btn:hover .bl-wp-trigger-arrow {
-  transform:translateX(3px);
-}
-
-@media (max-width:768px) {
-  .bl-weekend-picker-trigger { padding:14px 16px 0; }
-  .bl-wp-trigger-btn { padding:12px 16px; font-size:15px; }
-}
 
 /* ═══════════════════════════════════════════
    Weekend Picker — Lista limpia de eventos
@@ -3908,45 +3824,44 @@ select.bl-venue-input { cursor:pointer; }
    Bass section toggle (Eventos / Noticias)
    ═══════════════════════════════════════════ */
 
+/* Tabs editoriales — sin caja. La tipografía Bodoni hace toda la jerarquía;
+   el activo se marca con subrayado cobre (masthead de revista), no con un box. */
 .bl-bass-sections {
   display:flex;
-  gap:8px;
-  padding:12px 32px 6px;
+  gap:clamp(20px, 4vw, 40px);
+  padding:18px 32px 0;
+  margin-bottom:4px;
+  border-bottom:1px solid var(--bl-border-sub);
 }
 .bl-bass-section-btn {
-  flex:1;
+  flex:0 0 auto;
   display:flex;
   align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:12px 16px;
-  border-radius:8px;
-  background:var(--bl-subtle-bg);
-  border:1px solid var(--bl-border-sub);
+  padding:2px 0 12px;
+  margin-bottom:-1px;
+  background:transparent;
+  border:none;
+  border-bottom:2px solid transparent;
+  border-radius:0;
   cursor:pointer;
-  transition:all .25s var(--ease-out-expo);
+  transition:all .3s var(--ease-out-expo);
   position:relative;
 }
 .bl-bass-section-btn:hover {
-  background:var(--bl-subtle);
-  border-color:var(--bl-450);
+  background:transparent;
 }
 .bl-bass-section-btn.active {
-  background:var(--bl-surface);
-  border-color:var(--bl-accent-bass);
-  box-shadow:0 0 12px rgba(196,144,112,0.10);
+  background:transparent;
+  border-bottom-color:var(--bl-accent-bass);
+  box-shadow:none;
 }
-.bl-bass-section-btn.active::after {
-  content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
-  width:20px; height:2px; background:var(--bl-accent-bass); border-radius:1px;
-  box-shadow:0 0 8px rgba(196,144,112,0.35);
-}
+.bl-bass-section-btn.active::after { display:none; }
 .bl-bass-section-label {
-  font-family:var(--font-bass), 'Bodoni Moda', Georgia, serif;
-  font-style:italic;
-  font-weight:700;
-  font-size:22px;
-  letter-spacing:-0.3px;
+  font-family:var(--font-bass), sans-serif;
+  font-style:normal;
+  font-weight:600;
+  font-size:24px;
+  letter-spacing:-0.4px;
   line-height:1;
   color:var(--bl-text-ter);
   transition:color var(--duration-med);
@@ -3959,9 +3874,9 @@ select.bl-venue-input { cursor:pointer; }
 }
 
 @media (max-width:768px) {
-  .bl-bass-sections { padding:10px 16px 4px; gap:6px; }
-  .bl-bass-section-btn { padding:12px 10px; }
-  .bl-bass-section-label { font-size:19px; }
+  .bl-bass-sections { padding:14px 16px 0; gap:22px; }
+  .bl-bass-section-btn { padding:2px 0 10px; }
+  .bl-bass-section-label { font-size:23px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -4550,12 +4465,8 @@ select.bl-venue-input { cursor:pointer; }
    Sube el área táctil sin agrandar el texto (padding en vez de font-size).
    ═══════════════════════════════════════════ */
 @media (max-width:480px) {
-  /* Píldoras de filtro: género, ciudad, "este finde", tags de Layer.
-     Se apilan como inline-flex para poder aplicar min-height sin partir
-     el layout horizontal scrollable. */
-  .bl-filter-chip,
-  .bl-city-chip,
-  .bl-finde-btn {
+  /* Píldoras de filtro (género · tags de Layer): min-height para touch. */
+  .bl-filter-chip {
     min-height:44px;
     display:inline-flex;
     align-items:center;
@@ -4567,8 +4478,8 @@ select.bl-venue-input { cursor:pointer; }
   .bl-filters .bl-filter-chip,
   .bl-filters.bass-filters .bl-filter-chip,
   .bl-filters.layer-filters .bl-filter-chip { font-size:11px; }
-  .bl-city-chip { font-size:11px; }
-  .bl-finde-btn { font-size:11px; }
+  /* Bass · índice mono mantiene tamaño legible con touch target vía min-height. */
+  .bl-filters.bass-filters .bl-filter-chip { font-size:12.5px; padding:11px 0; }
 
   /* Botón de "agregar al calendario" y otros CTA del modal:
      ya suelen tener padding grande, pero forzamos mínimo por si acaso. */

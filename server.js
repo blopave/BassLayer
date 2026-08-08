@@ -320,24 +320,28 @@ function findGuiaBySlug(slug) {
   return loadGuias().find(g => g.slug === slug) || null;
 }
 
-// ─── Géneros: slugs + descripciones evergreen ──
-// Mismo map que src/utils/slug.js para que server y cliente coincidan.
-const GENRE_LIST = [
-  "Techno", "House", "Deep House", "Tech House", "Progressive",
-  "Melodic", "Minimal", "DnB", "Trance", "Disco", "Ambient", "Electronic",
-];
-const GENRE_ALIAS = { "DnB": "drum-and-bass" };
-const GENRE_FROM_SLUG = {};
-for (const g of GENRE_LIST) {
-  const slug = GENRE_ALIAS[g] || slugify(g);
-  GENRE_FROM_SLUG[slug] = g;
-}
-function genreSlug(genre) {
-  if (!genre || genre === "All") return "";
-  return GENRE_ALIAS[genre] || slugify(genre);
+// ─── Familias: slugs + descripciones evergreen ──
+// IDÉNTICO a src/utils/slug.js para que server (prerender SEO) y cliente coincidan.
+// El filtro usa la key de familia (club/live/festival/urbano/raiz), ya slug-safe.
+const GENRE_LIST = ["club", "live", "festival", "urbano", "raiz"];
+const FAMILY_SET = new Set(GENRE_LIST);
+// Compat SEO: URLs viejas de subgénero electrónico → familia "club".
+const LEGACY_SLUG_TO_FAMILY = {
+  "techno": "club", "house": "club", "deep-house": "club", "tech-house": "club",
+  "progressive": "club", "melodic": "club", "minimal": "club", "drum-and-bass": "club",
+  "trance": "club", "disco": "club", "ambient": "club", "electronic": "club",
+};
+// Label legible por familia para los hubs de género (prerender ES para SEO).
+const FAMILY_LABEL_ES = { club: "Club", live: "Música en vivo", festival: "Festivales", urbano: "Urbano", raiz: "Raíz" };
+function genreLabel(family) { return FAMILY_LABEL_ES[family] || family; }
+function genreSlug(filter) {
+  if (!filter || filter === "All") return "";
+  return slugify(filter);
 }
 function genreFromSlug(slug) {
-  return GENRE_FROM_SLUG[slug] || null;
+  if (!slug) return null;
+  if (FAMILY_SET.has(slug)) return slug;
+  return LEGACY_SLUG_TO_FAMILY[slug] || null;
 }
 // Blurbs evergreen — texto curado para SEO. Para géneros sin entrada explícita
 // se usa un template genérico ("X en Buenos Aires...").
@@ -1184,6 +1188,245 @@ function detectGenre(text) {
   return "Electronic";
 }
 
+// ─────────────────────────────────────────────
+//  Taxonomía de familias (rediseño Bass multi-género)
+//  Familias: club · live · festival · urbano · raiz · exp
+//  Unifica electrónica (RA/BA) con multi-género (QuéHacemos).
+// ─────────────────────────────────────────────
+
+const FAMILY_GENRE_LABEL = { club:"Electronic", live:"En vivo", festival:"Festival", urbano:"Urbano", raiz:"Raíz", exp:"Experimental" };
+
+// event_type de QuéHacemos → familia (primer indicio, luego refina MusicBrainz)
+const QH_TYPE_FAMILY = { electronica:"club", fiesta:"club", festival:"festival", cuarteto:"raiz", recital:"live" };
+
+const ELECTRONIC_GENRES = new Set(["Melodic","Techno","Deep House","Tech House","House","Progressive","Minimal","DnB","Trance","Disco","Electronic"]);
+function familyFromGenreLabel(genre) {
+  if (!genre) return null;
+  if (genre === "Festival") return "festival";
+  if (genre === "Ambient") return "exp";              // ambient se lee como experimental
+  if (ELECTRONIC_GENRES.has(genre)) return "club";
+  return null;
+}
+
+// Keywords en título/descripción — específicas antes que genéricas.
+const FAMILY_KEYWORDS = [
+  ["urbano", /\b(trap|reggaet[oó]n|reggaeton|hip[\s-]?hop|\brap\b|rkt|freestyle|urbano|drill|perreo|dembow)\b/i],
+  ["raiz",   /\b(jazz|blues|folclor|folklor|cumbia|tango|milonga|salsa|bolero|chamam[eé]|bossa|reggae|ska|candombe|chacarera|zamba|flamenco|cuarteto|bailanta|murga|son cubano)\b/i],
+  ["exp",    /\b(experimental|ambient|drone|noise|contempor[aá]nea|improvisaci[oó]n|electroac[uú]stica|sound art|free jazz)\b/i],
+  ["club",   /\b(techno|deep house|tech house|house|trance|electr[oó]nica|\brave\b|\bafter\b|dj set|b2b|minimal|acid|\bdnb\b|drum\s*&?\s*bass|dubstep)\b/i],
+  ["live",   /\b(rock|indie|\bpop\b|punk|metal|hardcore|shoegaze|post[\s-]?punk|grunge|stoner|cantautor|power pop|new wave)\b/i],
+];
+function familyFromKeywords(text) {
+  const t = " " + (text || "").toLowerCase() + " ";
+  for (const [fam, re] of FAMILY_KEYWORDS) if (re.test(t)) return fam;
+  return null;
+}
+
+function mbQueryName(ev) { return (ev.artists && ev.artists[0]) || ev.name || ""; }
+
+// Clasificador de familia. Orden de confianza:
+// festival → fuente/genero electrónico → MusicBrainz (artista) → keywords → event_type → default.
+function classifyFamily(ev) {
+  const name = ev.name || "";
+  if (ev.event_type === "festival" || ev.genre === "Festival" || /\bfestival\b/i.test(name)) return "festival";
+  // Fuentes intrínsecamente electrónicas (Resident Advisor, Buenos Aliens) → club.
+  if (ev.source === "ra" || ev.source === "buenosaliens") return "club";
+  const elFam = familyFromGenreLabel(ev.genre);
+  if (elFam === "club") return "club";
+  // MusicBrainz (cache) — señal autoritativa sobre el artista; refina "recital".
+  const mb = mbCacheGet(mbQueryName(ev));
+  if (mb && mb.family) return mb.family;
+  const kw = familyFromKeywords(`${name} ${(ev.artists || []).join(" ")} ${ev.description || ""}`);
+  if (kw) return kw;
+  if (ev.event_type && QH_TYPE_FAMILY[ev.event_type]) return QH_TYPE_FAMILY[ev.event_type];
+  if (elFam) return elFam;                  // Ambient → exp
+  if (ev.source === "venue") return "club"; // venue-submitted históricamente electrónico
+  return "live";
+}
+
+// ─────────────────────────────────────────────
+//  MusicBrainz — clasificación de género por artista (sin API key)
+//  Rate limit real: 1 req/s + User-Agent descriptivo. Cache en disco
+//  ("horneado" como la curva BTC): la metadata de un artista casi no cambia.
+//  Nunca bloquea /api/events — lee cache y calienta en background.
+// ─────────────────────────────────────────────
+
+const MB_CACHE_FILE = join(__dirname, "data", "mb-family-cache.json");
+let mbCache = {};
+try { if (existsSync(MB_CACHE_FILE)) mbCache = JSON.parse(readFileSync(MB_CACHE_FILE, "utf8")) || {}; } catch { mbCache = {}; }
+const MB_HEADERS = { "User-Agent": "BassLayerWorld/1.0 ( https://www.instagram.com/basslayerworld )" };
+const mbSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const mbNorm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+function mbCacheGet(name) { const k = mbNorm(name); return k ? (mbCache[k] || null) : null; }
+
+// Nombres que no son un artista puntual → no vale consultar MB (fiestas, ciclos…).
+const MB_GENERIC_RE = /\b(fiesta|noche|milonga|tributo|homenaje|open air|after|closing|opening|showcase|pre[\s-]?party|ciclo|festival|sunset|rooftop|day party|b2b|vs\.?|edici[oó]n|aniversario|tour|presenta)\b/i;
+
+function mbGenreToFamily(g) {
+  if (!g) return null;
+  g = g.toLowerCase();
+  if (/(techno|house|trance|electro|\bedm\b|drum and bass|\bdnb\b|dubstep|minimal|acid|rave|hardstyle|gabber|breakbeat|\bidm\b|downtempo|big room|trip hop|electronica|electronic\b)/.test(g)) return "club";
+  if (/(hip hop|hip-hop|\brap\b|trap|reggaeton|reggaetón|r&b|\brnb\b|grime|drill|dembow)/.test(g)) return "urbano";
+  if (/(jazz|blues|folk|folklore|cumbia|tango|salsa|bolero|bossa|reggae|\bska\b|\bdub\b|soul|funk|world|latin|chamame|candombe|flamenco|bluegrass|country)/.test(g)) return "raiz";
+  if (/(ambient|drone|noise|experimental|musique concrete|avant|field recording|contemporary classical)/.test(g)) return "exp";
+  if (/(rock|indie|\bpop\b|punk|metal|hardcore|shoegaze|grunge|\bemo\b|new wave|post-punk|britpop|alternative)/.test(g)) return "live";
+  return null;
+}
+
+const mbQueued = new Set();
+const mbQueue = [];
+let mbBusy = false, mbDirty = false, mbLastPersist = 0;
+
+function mbEnqueue(name) {
+  const k = mbNorm(name);
+  if (!k || k.length < 3) return;
+  if (k in mbCache) return;                 // ya resuelto (familia o null)
+  if (mbQueued.has(k)) return;
+  if (MB_GENERIC_RE.test(name) || k.split(" ").length > 5) { mbCache[k] = null; mbDirty = true; return; }
+  if (mbQueue.length > 200) return;         // backstop anti-runaway
+  mbQueued.add(k);
+  mbQueue.push({ k, name });
+  mbDrain();
+}
+async function mbDrain() {
+  if (mbBusy) return;
+  mbBusy = true;
+  try {
+    while (mbQueue.length) {
+      const { k, name } = mbQueue.shift();
+      mbQueued.delete(k);
+      try { mbCache[k] = await mbClassify(name); } catch { mbCache[k] = null; }
+      mbDirty = true;
+      if (Date.now() - mbLastPersist > 15000) mbPersist();
+      await mbSleep(1100);                   // rate limit MusicBrainz: 1 req/s
+    }
+  } finally {
+    mbBusy = false;
+    if (mbDirty) mbPersist();
+  }
+}
+function mbPersist() {
+  try { writeFileSync(MB_CACHE_FILE, JSON.stringify(mbCache)); mbDirty = false; mbLastPersist = Date.now(); } catch {}
+}
+async function mbClassify(name) {
+  const q = encodeURIComponent(`artist:"${name}"`);
+  const sr = await fetchSafe(`https://musicbrainz.org/ws/2/artist/?query=${q}&fmt=json&limit=1`, { headers: MB_HEADERS }, 8000);
+  if (!sr.ok) return null;
+  const sj = JSON.parse(await safeText(sr, 512 * 1024));
+  const a = sj.artists && sj.artists[0];
+  if (!a || (a.score || 0) < 90) return null;
+  if (mbNorm(a.name) !== mbNorm(name)) return null;   // exige match de nombre (precisión > cobertura)
+  await mbSleep(1100);                                 // 1 req/s también entre las 2 llamadas
+  const lr = await fetchSafe(`https://musicbrainz.org/ws/2/artist/${a.id}?inc=genres+tags&fmt=json`, { headers: MB_HEADERS }, 8000);
+  if (!lr.ok) return null;
+  const lj = JSON.parse(await safeText(lr, 512 * 1024));
+  const byCount = (arr) => (arr || []).slice().sort((x, y) => (y.count || 0) - (x.count || 0));
+  // MB tiene poca cobertura de `genres` para artistas locales; los `tags`
+  // folksonómicos son el respaldo. Género primero, luego tags.
+  const labels = [...byCount(lj.genres), ...byCount(lj.tags)];
+  for (const g of labels) { const fam = mbGenreToFamily(g.name); if (fam) return { family: fam, genre: g.name, mbid: a.id }; }
+  return null;
+}
+
+// ─────────────────────────────────────────────
+//  QuéHacemos — agenda multi-género de Argentina (Fechitas API, sin key)
+//  GET /api/v1/events?date_from&date_to&limit(<=1000). offset/category/city
+//  se ignoran → filtramos música + provincia client-side. Paginamos por
+//  cursor de fecha porque una ventana ancha satura con el día más cercano.
+// ─────────────────────────────────────────────
+
+const QH_API = "https://api.quehacemos.com.ar/api/v1/events";
+// "fiesta" excluido a propósito: mezcla fiestas electrónicas (ya cubiertas por
+// RA/BA/electronica) con eventos privados (cumpleaños, "sweet 16") = ruido.
+const QH_MUSIC_TYPES = new Set(["recital", "electronica", "festival", "cuarteto"]);
+const QH_PROVINCES = new Set(["Buenos Aires"]);   // foco audiencia; ampliable
+const QH_WINDOW_DAYS = 75;
+const QH_MAX_PAGES = 8;
+const QH_MAX_EVENTS = 80;
+
+function qhCleanDescription(desc) {
+  if (!desc) return null;
+  let t = String(desc);
+  const cut = t.search(/Este evento requiere|Descarga la aplicaci[oó]n|Validaci[oó]n por|No hay medios de pago|CUIT|Smart Tickets|Al realizar la compra|Recuerde no incluir/i);
+  if (cut > 40) t = t.slice(0, cut);
+  t = t.trim();
+  if (t.length > 320) { const dot = t.lastIndexOf(".", 320); t = t.slice(0, dot > 120 ? dot + 1 : 320).trim(); }
+  return t || null;
+}
+
+function mapQHEvent(e) {
+  const md = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(e.date || "");
+  if (!md || !e.title) return null;
+  const monthIdx = parseInt(md[2], 10) - 1;
+  if (monthIdx < 0 || monthIdx > 11) return null;
+  const hh = md[4], mm = md[5];
+  const time = (hh === "00" && mm === "00") ? "" : `${hh}:${mm}`;   // T00:00 = hora desconocida, no inventamos
+  const venue = (e.venue || "TBA").slice(0, 60);
+  const city = e.city || detectCity(venue, e.address || "") || "";
+  const priceNum = Number(e.min_price);
+  return {
+    day: md[3],
+    month: MONTHS_ES[monthIdx],
+    name: String(e.title).slice(0, 90),
+    venue,
+    address: e.address || (e.city ? `${venue}, ${e.city}` : venue),
+    city,
+    region: "AR",
+    artists: [],
+    time,
+    genre: "",                       // se completa en la clasificación (label de familia)
+    url: sanitizeUrl(e.link || e.ticket_url),
+    image: sanitizeUrl(e.image_url) || null,
+    source: "quehacemos",
+    event_type: e.event_type,        // insumo para classifyFamily
+    description: qhCleanDescription(e.description),
+    ticket_price: (isFinite(priceNum) && priceNum > 0) ? priceNum : null,
+  };
+}
+
+async function fetchQueHacemos() {
+  try {
+    const pad = (n) => String(n).padStart(2, "0");
+    const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+    const now = new Date();
+    const dateTo = new Date(now.getTime() + QH_WINDOW_DAYS * 86400000);
+    const dateToStr = `${dateTo.getFullYear()}-${pad(dateTo.getMonth() + 1)}-${pad(dateTo.getDate())}T23:59:59`;
+
+    const byId = new Map();
+    let cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());   // hoy 00:00 local
+    for (let page = 0; page < QH_MAX_PAGES; page++) {
+      const url = `${QH_API}?date_from=${encodeURIComponent(iso(cursor))}&date_to=${encodeURIComponent(dateToStr)}&limit=1000`;
+      const r = await fetchSafe(url, { headers: { ...BROWSER_HEADERS, Accept: "application/json" } }, 12000);
+      if (!r.ok) { console.error(`[events] QuéHacemos API ${r.status}`); break; }
+      const arr = JSON.parse(await safeText(r, 5 * 1024 * 1024));
+      if (!Array.isArray(arr) || arr.length === 0) break;
+      let maxDate = cursor;
+      for (const e of arr) {
+        if (e.id != null) byId.set(e.id, e);
+        const d = new Date(e.date);
+        if (!isNaN(d) && d > maxDate) maxDate = d;
+      }
+      if (arr.length < 1000) break;                       // no truncado → cubrimos toda la ventana
+      const next = new Date(maxDate.getTime() + 1000);    // avanzar el cursor de fecha
+      cursor = (next <= cursor) ? new Date(cursor.getTime() + 86400000) : next;   // día saturado → forzar +1d
+      if (cursor > dateTo) break;
+    }
+
+    const mapped = [];
+    for (const e of byId.values()) {
+      if (!QH_MUSIC_TYPES.has(e.event_type)) continue;
+      if (QH_PROVINCES.size && !QH_PROVINCES.has(e.province)) continue;
+      const ev = mapQHEvent(e);
+      if (ev) mapped.push({ d: e.date || "", ev });
+    }
+    mapped.sort((a, b) => a.d.localeCompare(b.d));
+    return mapped.slice(0, QH_MAX_EVENTS).map((x) => x.ev);
+  } catch (e) {
+    console.error("[events] QuéHacemos error:", e.message);
+    return [];
+  }
+}
+
 // ── Strategy 1: Buenos Aliens HTML scraper ──
 
 async function fetchBuenosAliens() {
@@ -1706,6 +1949,45 @@ function festivalStatus(f) {
   return "upcoming";
 }
 
+// Festivales que suceden en Argentina → se inyectan en la agenda de eventos
+// (region AR, family "festival") además de vivir en la pestaña Festivales.
+// Solo los próximos/en curso; el genre "Festival" hace que classifyFamily los
+// mande a la familia festival.
+function arFestivalsAsEvents() {
+  try {
+    const out = [];
+    for (const f of loadFestivals()) {
+      if ((f.region || "") !== "BA") continue;          // solo Argentina (region BA)
+      if (festivalStatus(f) === "past") continue;        // solo próximos / en curso
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f.dates_start || "");
+      if (!m) continue;
+      const monthIdx = parseInt(m[2], 10) - 1;
+      if (monthIdx < 0 || monthIdx > 11) continue;
+      out.push({
+        day: m[3],
+        month: MONTHS_ES[monthIdx],
+        name: f.name,
+        venue: f.city || "Argentina",
+        address: [f.city, f.country].filter(Boolean).join(", "),
+        city: f.city || "",
+        region: "AR",
+        artists: [],
+        time: "",
+        genre: "Festival",
+        url: f.url || "",
+        image: f.image || null,
+        source: "festival",
+        description: f.description || null,
+        festival_id: f.id,
+      });
+    }
+    return out;
+  } catch (e) {
+    console.error("[events] AR festivals inject error:", e.message);
+    return [];
+  }
+}
+
 // Cache de meta (image + link status) por festival id. La primera carga es
 // lenta (~3-5s, 30 fetches en paralelo); las siguientes son instantáneas
 // durante 7 días para imagen, 12h para link status (chequeamos vigencia más
@@ -1893,17 +2175,21 @@ app.get("/api/events", async (req, res) => {
 
   let allEvents = [];
 
-  // Try Buenos Aliens first (primary source)
-  const baEvents = await fetchBuenosAliens();
+  // Fuentes independientes EN PARALELO (antes secuenciales → suma de latencias).
+  // QuéHacemos pagina y es la más lenta; ya no bloquea a Buenos Aliens ni RA.
+  const [baEvents, raResults, qhEvents] = await Promise.all([
+    fetchBuenosAliens().catch((e) => { console.error("[events] Buenos Aliens error:", e.message); return []; }),
+    Promise.allSettled(RA_AREAS.map(fetchRAGraphQL)),   // todas las áreas; nunca rechaza
+    fetchQueHacemos().catch((e) => { console.error("[events] QuéHacemos fetch error:", e.message); return []; }),
+  ]);
+
+  // Buenos Aliens (fuente primaria local)
   if (baEvents.length > 0) {
     console.log(`[events] Buenos Aliens: ${baEvents.length} events loaded`);
     allEvents.push(...baEvents);
   }
 
-  // Try RA as supplement (parallel, todas las áreas). Antes había un `break`
-  // que cortaba tras la primera área con datos — con multi-ciudad hay que
-  // agregar TODAS, no solo la primera. El dedup posterior maneja solapes.
-  const raResults = await Promise.allSettled(RA_AREAS.map(fetchRAGraphQL));
+  // Resident Advisor GraphQL — agregamos TODAS las áreas (el dedup maneja solapes)
   let raCount = 0;
   for (const r of raResults) {
     if (r.status === "fulfilled" && r.value.length > 0) {
@@ -1913,13 +2199,28 @@ app.get("/api/events", async (req, res) => {
   }
   if (raCount > 0) console.log(`[events] RA GraphQL: ${raCount} events loaded (${RA_AREAS.length} áreas)`);
 
-  // Try RA HTML if GraphQL failed
+  // RA HTML como fallback sólo si el GraphQL no trajo nada (depende del resultado RA)
   if (!allEvents.some(e => e.source === "ra")) {
     const raHtml = await fetchRAHtml();
     if (raHtml.length > 0) {
       console.log(`[events] RA HTML: ${raHtml.length} events loaded`);
       allEvents.push(...raHtml);
     }
+  }
+
+  // QuéHacemos — agenda multi-género AR (rock, pop, urbano, jazz, cuarteto…),
+  // lo que las fuentes electrónicas (RA/BA) no ven.
+  if (qhEvents.length > 0) {
+    console.log(`[events] QuéHacemos: ${qhEvents.length} events loaded`);
+    allEvents.push(...qhEvents);
+  }
+
+  // Festivales de Argentina en la agenda (curados) — Primavera BA, Creamfields,
+  // DGTL, Movement, etc. Aparecen bajo la familia "Festival" de la región AR.
+  const arFests = arFestivalsAsEvents();
+  if (arFests.length > 0) {
+    console.log(`[events] Festivales AR: ${arFests.length} en agenda`);
+    allEvents.push(...arFests);
   }
 
   // Fetch approved venue-submitted events from Supabase
@@ -2009,6 +2310,17 @@ app.get("/api/events", async (req, res) => {
     if (!db) return -1;
     return da - db;
   });
+
+  // Clasificación multi-género: cada evento recibe `family` (taxonomía Bass:
+  // club/live/festival/urbano/raiz/exp). Los de QuéHacemos toman su label de
+  // género desde la familia. MusicBrainz se calienta en background (no bloquea).
+  for (const ev of events) {
+    ev.family = classifyFamily(ev);
+    if (ev.source === "quehacemos") ev.genre = FAMILY_GENRE_LABEL[ev.family] || "En vivo";
+    // MB solo aporta donde hay ambigüedad de artista (live/recital); club y
+    // festival ya están resueltos por fuente/tipo. Se calienta en background.
+    if (ev.family !== "club" && ev.family !== "festival") mbEnqueue(mbQueryName(ev));
+  }
 
   setCache("events", events);
   res.json(applyFilter(events));
@@ -3398,19 +3710,16 @@ app.get("/sitemap.xml", (req, res) => {
     });
   }
 
-  // Hubs por género — solo los que tienen al menos 1 evento en caché.
-  // Captura queries de cola larga de alto volumen ("techno buenos aires").
-  const genreCounts = {};
+  // Hubs por familia (club/live/festival/urbano/raiz) — sólo las que tienen al
+  // menos 1 evento en caché. Una URL limpia por familia (sin duplicados).
+  const familyCounts = {};
   for (const ev of events) {
-    const g = ev.genre;
-    if (!g || g === "Electronic") continue; // Skip catch-all genérico
-    genreCounts[g] = (genreCounts[g] || 0) + 1;
+    if (ev.family) familyCounts[ev.family] = (familyCounts[ev.family] || 0) + 1;
   }
-  for (const genre of Object.keys(genreCounts)) {
-    const slug = genreSlug(genre);
-    if (!slug || !genreFromSlug(slug)) continue; // solo géneros reconocidos
+  for (const family of GENRE_LIST) {
+    if (!familyCounts[family]) continue;
     urls.push({
-      loc: `${PROD_ORIGIN}/eventos/genero/${slug}`,
+      loc: `${PROD_ORIGIN}/eventos/genero/${genreSlug(family)}`,
       lastmod: today,
       changefreq: "weekly",
       priority: "0.7",
@@ -4019,7 +4328,8 @@ if (IS_PROD) {
   // tiene texto evergreen + lista actualizable de eventos del género.
   function buildGenrePageBody(genre, events) {
     const slug = genreSlug(genre);
-    const blurb = GENRE_BLURBS[genre] || `${genre} en Buenos Aires y Argentina: agenda de eventos, fiestas y festivales del género.`;
+    const label = genreLabel(genre);
+    const blurb = GENRE_BLURBS[genre] || `${label} en Buenos Aires y Argentina: agenda de eventos, fiestas y festivales.`;
     const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
     const innerStyle = "max-width:880px;margin:0 auto;padding:2rem 1.25rem";
     const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
@@ -4034,25 +4344,24 @@ if (IS_PROD) {
     const tagRow = "display:flex;flex-wrap:wrap;gap:0.4rem;margin:1.5rem 0 2rem";
     const tagPill = "padding:0.35rem 0.8rem;border-radius:999px;font-size:0.8rem;text-decoration:none";
 
-    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(genre)} en Buenos Aires">`, `<div style="${innerStyle}">`];
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(label)} en Buenos Aires">`, `<div style="${innerStyle}">`];
 
-    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Eventos</a> <span>›</span> <a href="/" style="${crumbLink}">Géneros</a> <span>›</span> <span>${escHtml(genre)}</span></nav>`);
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Eventos</a> <span>›</span> <a href="/" style="${crumbLink}">Géneros</a> <span>›</span> <span>${escHtml(label)}</span></nav>`);
 
-    lines.push(`<h1 style="${h1Style}">${escHtml(genre)} en Buenos Aires — Próximos eventos</h1>`);
+    lines.push(`<h1 style="${h1Style}">${escHtml(label)} en Buenos Aires — Próximos eventos</h1>`);
     lines.push(`<p style="${introStyle}">${escHtml(blurb)}</p>`);
 
     // Nav cruzado a otros géneros (internal linking = autoridad temática para Google)
     lines.push(`<nav aria-label="Otros géneros" style="${tagRow}">`);
     for (const g of GENRE_LIST) {
       if (g === genre || g === "Electronic") continue;
-      const isActive = false;
-      lines.push(`<a href="/eventos/genero/${escHtml(genreSlug(g))}" style="${tagPill};${isActive ? "background:#7ec8ff;color:#000" : "background:#1a1a1a;color:#bcbcbc;border:1px solid #2a2a2a"}">${escHtml(g)}</a>`);
+      lines.push(`<a href="/eventos/genero/${escHtml(genreSlug(g))}" style="${tagPill};background:#1a1a1a;color:#bcbcbc;border:1px solid #2a2a2a">${escHtml(genreLabel(g))}</a>`);
     }
     lines.push(`</nav>`);
 
     if (events.length > 0) {
       lines.push(`<section aria-labelledby="seo-genre-events">`);
-      lines.push(`<h2 id="seo-genre-events" style="${h2Style}">Eventos de ${escHtml(genre)} próximos</h2>`);
+      lines.push(`<h2 id="seo-genre-events" style="${h2Style}">Eventos de ${escHtml(label)} próximos</h2>`);
       lines.push(`<ul style="${ulStyle}">`);
       for (const ev of events.slice(0, 30)) {
         const evSlug = eventSlug(ev);
@@ -4064,7 +4373,7 @@ if (IS_PROD) {
       }
       lines.push(`</ul></section>`);
     } else {
-      lines.push(`<p style="color:#888;line-height:1.5;margin:2rem 0;padding:1rem;background:#0a0a0a;border-radius:8px">No hay eventos de ${escHtml(genre)} programados en este momento. Volvé a chequear pronto — actualizamos la agenda todos los días.</p>`);
+      lines.push(`<p style="color:#888;line-height:1.5;margin:2rem 0;padding:1rem;background:#0a0a0a;border-radius:8px">No hay eventos de ${escHtml(label)} programados en este momento. Volvé a chequear pronto — actualizamos la agenda todos los días.</p>`);
     }
 
     lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${linkStyle}">← Ver toda la agenda y otros géneros</a></p>`);
@@ -4075,7 +4384,7 @@ if (IS_PROD) {
       const itemList = {
         "@context": "https://schema.org",
         "@type": "ItemList",
-        "name": `Eventos de ${genre} en Buenos Aires`,
+        "name": `Eventos de ${label} en Buenos Aires`,
         "numberOfItems": Math.min(events.length, 30),
         "itemListElement": events.slice(0, 30).map((ev, i) => ({
           "@type": "ListItem",
@@ -4091,12 +4400,12 @@ if (IS_PROD) {
     const collection = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      "name": `${genre} en Buenos Aires`,
+      "name": `${label} en Buenos Aires`,
       "description": blurb,
       "url": `${PROD_ORIGIN}/eventos/genero/${slug}`,
       "inLanguage": "es-AR",
       "isPartOf": { "@type": "WebSite", "@id": `${PROD_ORIGIN}/#website` },
-      "about": { "@type": "Thing", "name": `${genre} music` }
+      "about": { "@type": "Thing", "name": label }
     };
     lines.push(`<script type="application/ld+json">${JSON.stringify(collection).replace(/<\//g, "<\\/")}</script>`);
 
@@ -4106,7 +4415,7 @@ if (IS_PROD) {
       "itemListElement": [
         { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${PROD_ORIGIN}/` },
         { "@type": "ListItem", "position": 2, "name": "Eventos", "item": `${PROD_ORIGIN}/` },
-        { "@type": "ListItem", "position": 3, "name": genre, "item": `${PROD_ORIGIN}/eventos/genero/${slug}` }
+        { "@type": "ListItem", "position": 3, "name": label, "item": `${PROD_ORIGIN}/eventos/genero/${slug}` }
       ]
     };
     lines.push(`<script type="application/ld+json">${JSON.stringify(breadcrumb).replace(/<\//g, "<\\/")}</script>`);
@@ -4233,12 +4542,13 @@ if (IS_PROD) {
 
   function renderGenrePage(genre) {
     const allEvents = cached("events") || [];
-    const events = allEvents.filter(e => (e.genre || "").toLowerCase() === genre.toLowerCase());
+    // `genre` es la key de familia (club/live/…); filtramos por family, no por e.genre.
+    const events = allEvents.filter(e => (e.family || "") === genre);
     const { html: body, desc } = buildGenrePageBody(genre, events);
     const count = events.length;
     const titleSuffix = count > 0 ? `${count} eventos próximos` : "Agenda";
     return renderHtmlWithMeta({
-      title: `${genre} en Buenos Aires — ${titleSuffix} | BassLayer`,
+      title: `${genreLabel(genre)} en Buenos Aires — ${titleSuffix} | BassLayer`,
       description: desc.slice(0, 300),
       canonical: `${PROD_ORIGIN}/eventos/genero/${genreSlug(genre)}`,
       image: `${PROD_ORIGIN}/og-image.png`,
