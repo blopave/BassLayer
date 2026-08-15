@@ -81,7 +81,7 @@ export function CryptoBATimeline() {
           <div className="bl-timeline-title">{t("timeline.title")}</div>
           <div className="bl-timeline-subtitle">{t("timeline.subtitle")}</div>
         </div>
-        <button className="bl-timeline-close" onClick={() => setOpen(false)}>&times;</button>
+        <button className="bl-timeline-close" onClick={() => setOpen(false)} aria-label={t("common.close")}>&times;</button>
       </div>
 
       {/* Year tabs */}

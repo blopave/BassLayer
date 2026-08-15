@@ -1,7 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../utils/api";
 import { IndicatorModal } from "./IndicatorModal";
 import { useLocale } from "../hooks/useLocale";
+import { monthAbbrLocale } from "../i18n/strings";
+
+// Las fechas de ciclo vienen en el dato como "28 nov 2012" (mes en español).
+// En español las dejamos tal cual; en inglés reescribimos el mes ("28 Nov 2012").
+function fmtCycleDate(s, locale) {
+  if (locale === "es" || !s) return s;
+  const m = String(s).trim().match(/^(\d{1,2})\s+([a-zA-Z]{3})\s+(\d{4})$/);
+  return m ? `${m[1]} ${monthAbbrLocale(m[2], "en")} ${m[3]}` : s;
+}
+
+// Texto curado bilingüe del dato: en inglés preferimos el campo `<base>En`
+// (confluenceLabelEn, postureEn, noteEn — ya presentes en el JSON y en Supabase);
+// si falta, caemos al campo base en español (degradación elegante, sin diccionario
+// cliente que se desactualice).
+const pickLocalized = (obj, base, locale) => (locale === "en" && obj?.[base + "En"]) || obj?.[base];
 
 // Prueba de concepto — Dashboard de ciclos de halving de BTC en estética
 // terminal (lado Layer). Los datos vienen de /btc-cycles.json (curado); los
@@ -19,23 +34,42 @@ const pct = (d) => (d / SCALE) * 100;
 // corra según la zona horaria del navegador (ISO "2026-08-01" se interpreta
 // como UTC medianoche y en husos al oeste retrocede un día).
 const parseISO = (s) => new Date(s + "T12:00:00");
-function fmtMonth(d) {
-  return d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
+function fmtMonth(d, locale) {
+  return d.toLocaleDateString(locale === "en" ? "en-US" : "es-AR", { month: "short" }).replace(".", "");
 }
 
 // Timeline de fases: cada ciclo alineado a su halving (día 0). Segmentos
 // posicionados en % sobre un eje común para que sean comparables. Sin librería
 // de charts — divs absolutos, mismo criterio que las sparklines a mano.
 function PhaseTimeline({ cycles }) {
+  const { t, locale } = useLocale();
   const years = [365, 730, 1095, 1460];
+  const cd = (s) => fmtCycleDate(s, locale); // fecha de ciclo localizada
+  // Pista de scroll horizontal: el carril es más ancho que la pantalla en mobile.
+  // Marcamos con `at-end` cuando ya no hay más a la derecha para apagar el fade
+  // que insinúa "hay más contenido →" sin taparlo cuando llegaste al final.
+  const scrollRef = useRef(null);
+  const [atEnd, setAtEnd] = useState(true);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setAtEnd(max <= 1 || el.scrollLeft >= max - 1);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [cycles]);
   return (
-    <div className="bl-cyc-chart" role="img" aria-label="Duración de las fases de cada ciclo de halving, alineadas al día del halving">
+    <div ref={scrollRef} className={`bl-cyc-chart${atEnd ? " at-end" : ""}`} role="img" aria-label={locale === "en" ? "Duration of each halving cycle's phases, aligned to halving day" : "Duración de las fases de cada ciclo de halving, alineadas al día del halving"}>
       <div className="bl-cyc-rows">
         <div className="bl-cyc-axis" aria-hidden="true">
           <span className="bl-cyc-grid bl-cyc-grid-zero" style={{ left: "0%" }} />
           {years.map((y, i) => (
             <span className="bl-cyc-grid" key={y} style={{ left: `${pct(y)}%` }}>
-              <span className="bl-cyc-yr">{`Año ${i + 1}`}</span>
+              <span className="bl-cyc-yr">{t("cycles.year", { n: i + 1 })}</span>
             </span>
           ))}
         </div>
@@ -43,40 +77,40 @@ function PhaseTimeline({ cycles }) {
           <div className="bl-cyc-row" key={c.n}>
             <div className="bl-cyc-row-label">
               <span className="bl-cyc-cy">C{c.n}</span>
-              <span className="bl-cyc-cy-date">{c.halvingDate}</span>
-              {c.halvingPrice && <span className="bl-cyc-cy-price" title={`Precio al halving · ${c.halvingPrice}`}>{c.halvingPrice}</span>}
+              <span className="bl-cyc-cy-date">{cd(c.halvingDate)}</span>
+              {c.halvingPrice && <span className="bl-cyc-cy-price" title={t("cycles.tip.halvingPrice", { price: c.halvingPrice })}>{c.halvingPrice}</span>}
             </div>
             <div className="bl-cyc-track">
               {/* markup */}
-              <div className="bl-cyc-seg up" style={{ left: `${pct(0)}%`, width: `calc(${pct(c.markup)}% - 2px)` }} title={`Markup · ${c.markup} d`}>
+              <div className="bl-cyc-seg up" style={{ left: `${pct(0)}%`, width: `calc(${pct(c.markup)}% - 2px)` }} title={t("cycles.tip.markup", { d: c.markup })}>
                 <span className="bl-cyc-d">{c.markup}d</span>
               </div>
               {!c.ongoing ? (
                 <>
-                  <div className="bl-cyc-seg down" style={{ left: `${pct(c.markup)}%`, width: `calc(${pct(c.markdown)}% - 2px)` }} title={`Markdown · ${c.markdown} d`}>
+                  <div className="bl-cyc-seg down" style={{ left: `${pct(c.markup)}%`, width: `calc(${pct(c.markdown)}% - 2px)` }} title={t("cycles.tip.markdown", { d: c.markdown })}>
                     <span className="bl-cyc-d">{c.markdown}d</span>
                   </div>
-                  <div className="bl-cyc-seg build" style={{ left: `${pct(c.markup + c.markdown)}%`, width: `calc(${pct(c.recovery)}% - 2px)` }} title={`Acumulación · ${c.recovery} d`}>
+                  <div className="bl-cyc-seg build" style={{ left: `${pct(c.markup + c.markdown)}%`, width: `calc(${pct(c.recovery)}% - 2px)` }} title={t("cycles.tip.accumulation", { d: c.recovery })}>
                     <span className="bl-cyc-d">{c.recovery}d</span>
                   </div>
-                  <span className="bl-cyc-mk hv" style={{ left: `${pct(0)}%` }} title={`Halving · ${c.halvingDate}`} />
-                  <span className="bl-cyc-mk pk" style={{ left: `${pct(c.markup)}%` }} title={`Pico · ${c.peakDate}`} />
-                  <span className="bl-cyc-mk bt" style={{ left: `${pct(c.markup + c.markdown)}%` }} title={`Fondo · ${c.bottomDate}`} />
-                  {c.peakPrice && <span className="bl-cyc-pr pk" style={{ left: `${pct(c.markup)}%` }} title={`Pico · ${c.peakDate} · ${c.peakPrice}`}>{c.peakPrice}</span>}
-                  {c.bottomPrice && <span className="bl-cyc-pr bt" style={{ left: `${pct(c.markup + c.markdown)}%` }} title={`Fondo · ${c.bottomDate} · ${c.bottomPrice}`}>{c.bottomPrice}</span>}
+                  <span className="bl-cyc-mk hv" style={{ left: `${pct(0)}%` }} title={`${t("cycles.mk.halving")} · ${cd(c.halvingDate)}`} />
+                  <span className="bl-cyc-mk pk" style={{ left: `${pct(c.markup)}%` }} title={`${t("cycles.mk.peak")} · ${cd(c.peakDate)}`} />
+                  <span className="bl-cyc-mk bt" style={{ left: `${pct(c.markup + c.markdown)}%` }} title={`${t("cycles.mk.bottom")} · ${cd(c.bottomDate)}`} />
+                  {c.peakPrice && <span className="bl-cyc-pr pk" style={{ left: `${pct(c.markup)}%` }} title={`${t("cycles.mk.peak")} · ${cd(c.peakDate)} · ${c.peakPrice}`}>{c.peakPrice}</span>}
+                  {c.bottomPrice && <span className="bl-cyc-pr bt" style={{ left: `${pct(c.markup + c.markdown)}%` }} title={`${t("cycles.mk.bottom")} · ${cd(c.bottomDate)} · ${c.bottomPrice}`}>{c.bottomPrice}</span>}
                 </>
               ) : (
                 <>
-                  <div className="bl-cyc-seg down" style={{ left: `${pct(c.markup)}%`, width: `calc(${pct(c.markdownSoFar)}% - 2px)` }} title={`Markdown en curso · ${c.markdownSoFar} d`}>
+                  <div className="bl-cyc-seg down" style={{ left: `${pct(c.markup)}%`, width: `calc(${pct(c.markdownSoFar)}% - 2px)` }} title={t("cycles.tip.markdownOngoing", { d: c.markdownSoFar })}>
                     <span className="bl-cyc-d">{c.markdownSoFar}d</span>
                   </div>
-                  <div className="bl-cyc-seg proj" style={{ left: `${pct(c.markup + c.markdownSoFar)}%`, width: `calc(${pct(c.projMax - c.markdownSoFar)}% - 2px)` }} title="Fondo proyectado (oct–nov 2026)">
-                    <span className="bl-cyc-d">proy.</span>
+                  <div className="bl-cyc-seg proj" style={{ left: `${pct(c.markup + c.markdownSoFar)}%`, width: `calc(${pct(c.projMax - c.markdownSoFar)}% - 2px)` }} title={t("cycles.tip.projBottom")}>
+                    <span className="bl-cyc-d">{t("cycles.projShort")}</span>
                   </div>
-                  <span className="bl-cyc-mk hv" style={{ left: `${pct(0)}%` }} title={`Halving · ${c.halvingDate}`} />
-                  <span className="bl-cyc-mk pk" style={{ left: `${pct(c.markup)}%` }} title={`Pico · ${c.peakDate}`} />
-                  {c.peakPrice && <span className="bl-cyc-pr pk" style={{ left: `${pct(c.markup)}%` }} title={`Pico · ${c.peakDate} · ${c.peakPrice}`}>{c.peakPrice}</span>}
-                  <span className="bl-cyc-now" style={{ left: `${pct(c.markup + c.markdownSoFar)}%` }} title="Hoy" />
+                  <span className="bl-cyc-mk hv" style={{ left: `${pct(0)}%` }} title={`${t("cycles.mk.halving")} · ${cd(c.halvingDate)}`} />
+                  <span className="bl-cyc-mk pk" style={{ left: `${pct(c.markup)}%` }} title={`${t("cycles.mk.peak")} · ${cd(c.peakDate)}`} />
+                  {c.peakPrice && <span className="bl-cyc-pr pk" style={{ left: `${pct(c.markup)}%` }} title={`${t("cycles.mk.peak")} · ${cd(c.peakDate)} · ${c.peakPrice}`}>{c.peakPrice}</span>}
+                  <span className="bl-cyc-now" style={{ left: `${pct(c.markup + c.markdownSoFar)}%` }} title={t("common.today")} />
                 </>
               )}
             </div>
@@ -84,11 +118,11 @@ function PhaseTimeline({ cycles }) {
         ))}
       </div>
       <div className="bl-cyc-legend" aria-hidden="true">
-        <span className="bl-cyc-lg"><span className="bl-cyc-sw hv" /> halving</span>
-        <span className="bl-cyc-lg"><span className="bl-cyc-sw up" /> markup</span>
-        <span className="bl-cyc-lg"><span className="bl-cyc-sw down" /> markdown</span>
-        <span className="bl-cyc-lg"><span className="bl-cyc-sw build" /> acumulación</span>
-        <span className="bl-cyc-lg"><span className="bl-cyc-sw proj" /> proyectado</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw hv" /> {t("cycles.legend.halving")}</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw up" /> {t("cycles.legend.markup")}</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw down" /> {t("cycles.legend.markdown")}</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw build" /> {t("cycles.legend.accumulation")}</span>
+        <span className="bl-cyc-lg"><span className="bl-cyc-sw proj" /> {t("cycles.legend.projected")}</span>
       </div>
     </div>
   );
@@ -118,7 +152,7 @@ function Cell({ label, value, sub, tone, onClick, hint }) {
 
 // Tira de indicadores on-chain — versión compacta del tablero de confluencia.
 // Cada uno con su barra fondo→techo y el marcador en la posición actual.
-function IndicatorStrip({ indicators, onOpen, t }) {
+function IndicatorStrip({ indicators, onOpen, t, locale }) {
   return (
     <div className="bl-cyc-ind-strip">
       {indicators.map((ind) => (
@@ -129,7 +163,7 @@ function IndicatorStrip({ indicators, onOpen, t }) {
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(ind))}
           role="button"
           tabIndex={0}
-          title={`${ind.note} · ${t("indicator.tapInfo")}`}
+          title={`${pickLocalized(ind, "note", locale)} · ${t("indicator.tapInfo")}`}
         >
           <div className="bl-cyc-ind-top">
             <span className="bl-cyc-ind-name">{ind.name}</span>
@@ -170,6 +204,9 @@ function PriceCurve({ history, milestones, news }) {
   for (let yr = Math.ceil(iMin / 12); yr * 12 <= iMax; yr += 2) years.push(yr);
   const linePts = history.map((h) => `${x(h.t).toFixed(1)},${y(h.p).toFixed(1)}`).join(" ");
   const mkColor = { halving: "var(--bl-saved)", peak: "#c56b6b", bottom: "var(--bl-accent-layer)" };
+  // Label de hito localizado: la palabra sale del tipo, el número del label curado.
+  const mkWord = { halving: L("Halving", "Halving"), peak: L("Pico", "Peak"), bottom: L("Fondo", "Bottom") };
+  const mkLabel = (m) => { const n = (String(m.label).match(/\d+/) || [""])[0]; return `${mkWord[m.type] || m.label} ${n}`.trim(); };
   // Hitos: cada evento se apoya sobre la curva, a la altura del precio de su mes.
   const priceAt = new Map(history.map((h) => [h.t, h.p]));
   const events = (news || [])
@@ -196,7 +233,7 @@ function PriceCurve({ history, milestones, news }) {
         {activeEv && <line x1={x(activeEv.t)} y1={y(activeEv.p)} x2={x(activeEv.t)} y2={H - padB} className="bl-cyc-curve-guide" />}
         {(milestones || []).map((m, i) => (
           <circle key={i} cx={x(m.t)} cy={y(m.price)} r="3.6" fill={mkColor[m.type]} className="bl-cyc-curve-mk">
-            <title>{`${m.label} · ${m.t} · $${m.price.toLocaleString("es-AR")}`}</title>
+            <title>{`${mkLabel(m)} · ${m.t} · $${m.price.toLocaleString(locale === "en" ? "en-US" : "es-AR")}`}</title>
           </circle>
         ))}
         {events.map((e, i) => {
@@ -240,7 +277,7 @@ function PriceCurve({ history, milestones, news }) {
 }
 
 export function BtcCycles() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState(null); // indicador abierto en el modal
@@ -256,7 +293,7 @@ export function BtcCycles() {
   }, []);
 
   if (error && !data) {
-    return <div className="bl-terminal bl-cyc-terminal"><div className="bl-terminal-reading">&gt; error: no se pudo cargar el ciclo. tocá para reintentar.</div></div>;
+    return <div className="bl-terminal bl-cyc-terminal"><div className="bl-terminal-reading">&gt; {t("cycles.error")}</div></div>;
   }
   if (!data) return null;
 
@@ -271,10 +308,18 @@ export function BtcCycles() {
   const to = new Date(peak.getTime() + hiD * DAY);
   const central = new Date(peak.getTime() + keyDates.avgPeakToBottomDays * DAY);
   const countdown = daysBetween(central, now);
-  const windowLabel = `${fmtMonth(from)}–${fmtMonth(to)} ${to.toLocaleDateString("es-AR", { year: "2-digit" })}`;
-  const countdownLabel = countdown > 0 ? `faltan ~${countdown} d` : "ventana activa";
+  const localeTag = locale === "en" ? "en-US" : "es-AR";
+  const windowLabel = `${fmtMonth(from, locale)}–${fmtMonth(to, locale)} ${to.toLocaleDateString(localeTag, { year: "2-digit" })}`;
+  const countdownLabel = countdown > 0 ? t("cycles.countdown", { n: countdown }) : t("cycles.windowActive");
 
-  const syncTime = parseISO(data.meta.updated).toLocaleDateString("es-AR", { day: "2-digit", month: "short" }).replace(".", "");
+  const syncTime = parseISO(data.meta.updated).toLocaleDateString(localeTag, { day: "2-digit", month: "short" }).replace(".", "");
+
+  // Etiquetas que dependen del dato: la fase sale del enum `phase` (traducible);
+  // confluencia y postura son texto libre curado, con variante `*En` en el JSON.
+  const phaseKey = { markup: "markup", markdown: "markdown", accumulation: "accumulation", acumulacion: "accumulation" }[current.phase];
+  const phaseLabel = phaseKey ? t("cycles.phase." + phaseKey) : current.phaseLabel;
+  const confluenceLabel = pickLocalized(current, "confluenceLabel", locale);
+  const posture = pickLocalized(current, "posture", locale);
 
   // Contexto al clickear: abre el IndicatorModal con la explicación (qué es /
   // cómo leerlo / por qué importa) y resalta la zona donde cae el valor actual.
@@ -304,38 +349,38 @@ export function BtcCycles() {
       </div>
 
       <div className="bl-terminal-reading" aria-live="polite">
-        &gt; lectura: fase <b>{current.phaseLabel.toLowerCase()}</b> · día {daysSincePeak} del pico · confluencia {current.confluence}/100 · {current.confluenceLabel} · fondo proy. {windowLabel}
+        &gt; {t("cycles.reading", { phase: <b key="ph">{phaseLabel.toLowerCase()}</b>, days: daysSincePeak, conf: current.confluence, label: confluenceLabel, window: windowLabel })}
       </div>
 
       <div className="bl-terminal-grid bl-cyc-grid-stats">
-        <Cell label="FASE" value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {current.phaseLabel}</>} sub={`día ${daysSincePeak} del pico`} tone="down"
-          onClick={() => openInd("PHASE", current.phaseLabel, phaseIdx)} hint={t("indicator.tapInfo")} />
-        <Cell label="PRECIO" value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`}
+        <Cell label={t("cycles.cell.phase")} value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {phaseLabel}</>} sub={t("cycles.dayFromPeak", { n: daysSincePeak })} tone="down"
+          onClick={() => openInd("PHASE", phaseLabel, phaseIdx)} hint={t("indicator.tapInfo")} />
+        <Cell label={t("cycles.cell.price")} value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`}
           onClick={() => openInd("PRICE", `~$${(current.price / 1000).toFixed(0)}k`, current.priceVs200wPct)} hint={t("indicator.tapInfo")} />
-        <Cell label="CONFLUENCIA" value={`${current.confluence}/100`} sub={current.confluenceLabel} tone="build"
+        <Cell label={t("cycles.cell.confluence")} value={`${current.confluence}/100`} sub={confluenceLabel} tone="build"
           onClick={() => openInd("CONFLUENCE", `${current.confluence}/100`, current.confluence)} hint={t("indicator.tapInfo")} />
-        <Cell label="FONDO.PROY" value={windowLabel} sub={countdownLabel} tone="saved"
+        <Cell label={t("cycles.cell.projBottom")} value={windowLabel} sub={countdownLabel} tone="saved"
           onClick={() => openInd("PROJBOTTOM", windowLabel, null)} hint={t("indicator.tapInfo")} />
       </div>
 
       <div className="bl-cyc-section-title">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> ciclos --alineados-al-halving
+        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.cycles")}
       </div>
       <PhaseTimeline cycles={cycles} />
 
       <div className="bl-cyc-section-title">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> precio --escala-log
+        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.price")}
       </div>
       <PriceCurve history={data.priceHistory} milestones={data.milestones} news={data.newsEvents} />
 
       <div className="bl-cyc-section-title">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> confluencia --on-chain
+        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.confluence")}
       </div>
-      <IndicatorStrip indicators={indicators} onOpen={(ind) => openInd(ind.key, ind.value, numVal(ind.value))} t={t} />
+      <IndicatorStrip indicators={indicators} onOpen={(ind) => openInd(ind.key, ind.value, numVal(ind.value))} t={t} locale={locale} />
 
       <div className="bl-cyc-posture">
         <span className="bl-cyc-posture-dot" aria-hidden="true" />
-        <span className="bl-cyc-posture-txt"><b>Postura:</b> {current.posture} <span className="bl-cyc-inval">· invalida la tesis: nuevo ATH &gt; ${(current.invalidationPrice / 1000).toFixed(0)}k</span></span>
+        <span className="bl-cyc-posture-txt"><b>{t("cycles.posture")}</b> {posture} <span className="bl-cyc-inval">{t("cycles.invalidation", { price: (current.invalidationPrice / 1000).toFixed(0) })}</span></span>
       </div>
     </div>
     <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />

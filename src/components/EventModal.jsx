@@ -2,15 +2,13 @@ import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
-import { formatLongDateLocale } from "../i18n/strings";
-
-const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
+import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX } from "../i18n/strings";
 
 // Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
 // para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
 // fija America/Argentina/Buenos_Aires (offset -03:00 sin DST).
 function eventTimes(event) {
-  const m = MONTHS_MAP[event.month?.toLowerCase()];
+  const m = MONTH_ABBR_INDEX[event.month?.toLowerCase()];
   if (m === undefined) return null;
   const now = new Date();
   const year = now.getFullYear();
@@ -199,12 +197,12 @@ export function EventModal({ event, onClose, onShare }) {
   return (
     <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name} ref={trapRef}>
       <div className="bl-modal bl-event-modal">
-        <button className="bl-modal-close" onClick={onClose} aria-label="Cerrar">&times;</button>
+        <button className="bl-modal-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
 
         <div className="bl-modal-header">
           <div className="bl-modal-date">
             <div className="bl-modal-date-d">{event.day}</div>
-            <div className="bl-modal-date-m">{event.month}</div>
+            <div className="bl-modal-date-m">{monthAbbrLocale(event.month, locale)}</div>
           </div>
           <div className="bl-modal-title-area">
             <h1 className="bl-modal-name">{event.name}</h1>

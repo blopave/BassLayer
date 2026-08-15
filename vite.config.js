@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    host: true, // escucha en la LAN para poder probar desde el celular (mismo WiFi)
     proxy: {
       "/api": "http://localhost:3001",
     },

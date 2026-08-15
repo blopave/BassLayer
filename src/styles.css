@@ -2586,8 +2586,11 @@ button.bl-modal-artist:hover {
 }
 
 @media (max-width:768px) {
-  .bl-layer-sections { padding:10px 16px; gap:6px; }
-  .bl-layer-section-btn { padding:14px 10px; }
+  /* 4 pestañas no entran en una fila en pantallas angostas ("Predicciones" es
+     largo y los botones no encogen): la fila se desbordaba y "Ciclos" quedaba
+     recortado fuera de la vista. En mobile las acomodamos en grid 2×2. */
+  .bl-layer-sections { display:grid; grid-template-columns:1fr 1fr; padding:10px 16px; gap:6px; }
+  .bl-layer-section-btn { min-width:0; padding:14px 10px; }
   .bl-layer-section-label { font-size:13px; }
 }
 
@@ -3337,6 +3340,16 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
 .bl-root[data-section="layer"] .bl-cursor.hovering { background:rgba(108,184,200,0.06); border-color:rgba(108,184,200,0.6); }
 @media (max-width:768px) { .bl-cursor { display:none; } }
 @media (pointer:coarse) { .bl-cursor { display:none; } }
+
+/* En dispositivos táctiles agrandamos los controles chicos al mínimo de 44px
+   (guía de tap target). En desktop (pointer:fine) quedan compactos como estaban. */
+@media (pointer:coarse) {
+  .bl-modal-close { width:44px; height:44px; }
+  .bl-wp-close { width:44px; height:44px; }
+  .bl-timeline-close { width:44px; height:44px; }
+  .bl-cirl-tab { min-height:44px; }
+  .bl-timeline-year-btn { min-height:44px; display:inline-flex; align-items:center; }
+}
 
 /* ── 3. Enhanced Reveal Animation ────────── */
 .bl-reveal {
@@ -4531,7 +4544,14 @@ select.bl-venue-input { cursor:pointer; }
 }
 
 /* Timeline — divs absolutos sobre eje común, sin librería de charts */
-.bl-cyc-chart { padding:10px 14px 8px; position:relative; z-index:1; overflow-x:auto; }
+.bl-cyc-chart {
+  padding:10px 14px 8px; position:relative; z-index:1; overflow-x:auto;
+  /* Fade en el borde derecho = pista de que el carril sigue hacia el costado.
+     Se apaga con .at-end para no difuminar el contenido cuando no hay más. */
+  -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 26px), transparent);
+          mask-image:linear-gradient(to right, #000 calc(100% - 26px), transparent);
+}
+.bl-cyc-chart.at-end { -webkit-mask-image:none; mask-image:none; }
 .bl-cyc-rows { position:relative; padding-bottom:26px; min-width:560px; }
 .bl-cyc-axis { position:absolute; inset:0; pointer-events:none; z-index:0; }
 .bl-cyc-grid { position:absolute; top:0; bottom:26px; width:1px; background:var(--bl-border-sub); }

@@ -1,24 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../utils/api";
 import { CryptoEventModal } from "./CryptoEventModal";
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    const days = ["Dom","Lun","Mar","Mie","Jue","Vie","Sab"];
-    const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
-  } catch { return dateStr; }
-}
-
-const SOURCE_LABELS = {
-  luma: "Luma",
-  community: "Comunidad",
-  curated: "Destacado",
-};
+import { useLocale } from "../hooks/useLocale";
+import { formatShortDateLocale, sourceLabel } from "../i18n/strings";
 
 export function CryptoIRL() {
+  const { t, locale } = useLocale();
   const [tab, setTab] = useState("events");
   const [events, setEvents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -63,7 +50,7 @@ export function CryptoIRL() {
       clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => { setSuccess(false); setShowForm(false); }, 2000);
     } catch (err) {
-      setError(typeof err === "string" ? err : "Error al enviar");
+      setError(typeof err === "string" ? err : t("cirl.error.submit"));
     } finally {
       setSubmitting(false);
     }
@@ -77,23 +64,23 @@ export function CryptoIRL() {
       <div className="bl-cirl-header">
         <div>
           <div className="bl-cirl-title">Crypto IRL</div>
-          <div className="bl-cirl-subtitle">Eventos, meetups y cursos crypto</div>
+          <div className="bl-cirl-subtitle">{t("cirl.subtitle")}</div>
         </div>
         <button
           className={`bl-cirl-add-btn${showForm ? " active" : ""}`}
           onClick={() => { setShowForm(!showForm); setSuccess(false); setError(null); }}
         >
-          {showForm ? "Cancelar" : "+ Agregar"}
+          {showForm ? t("common.cancel") : t("cirl.add")}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="bl-cirl-tabs">
         <button className={`bl-cirl-tab${tab === "events" ? " active" : ""}`} onClick={() => setTab("events")}>
-          Eventos / Meetups{events.length > 0 ? ` (${events.length})` : ""}
+          {t("cirl.tab.events")}{events.length > 0 ? ` (${events.length})` : ""}
         </button>
         <button className={`bl-cirl-tab${tab === "courses" ? " active" : ""}`} onClick={() => setTab("courses")}>
-          Cursos / Charlas{courses.length > 0 ? ` (${courses.length})` : ""}
+          {t("cirl.tab.courses")}{courses.length > 0 ? ` (${courses.length})` : ""}
         </button>
       </div>
 
@@ -101,12 +88,12 @@ export function CryptoIRL() {
       {showForm && (
         <form className="bl-cirl-form" onSubmit={handleSubmit}>
           <div className="bl-cirl-form-title">
-            {tab === "events" ? "Agregar evento / meetup" : "Agregar curso / charla"}
+            {tab === "events" ? t("cirl.form.titleEvent") : t("cirl.form.titleCourse")}
           </div>
           <div className="bl-cirl-form-grid">
             <input
               className="bl-cirl-input"
-              placeholder={tab === "events" ? "Nombre del evento *" : "Nombre del curso *"}
+              placeholder={tab === "events" ? t("cirl.form.nameEvent") : t("cirl.form.nameCourse")}
               value={form.title}
               onChange={e => updateField("title", e.target.value)}
               required
@@ -114,7 +101,7 @@ export function CryptoIRL() {
             />
             <input
               className="bl-cirl-input"
-              placeholder="Organizador *"
+              placeholder={t("cirl.form.organizer")}
               value={form.organizer}
               onChange={e => updateField("organizer", e.target.value)}
               required
@@ -123,34 +110,34 @@ export function CryptoIRL() {
             <input
               className="bl-cirl-input"
               type="date"
-              placeholder="Fecha"
+              placeholder={t("cirl.form.date")}
               value={form.date}
               onChange={e => updateField("date", e.target.value)}
             />
             <input
               className="bl-cirl-input"
-              placeholder="Horario (ej: 19:00)"
+              placeholder={t("cirl.form.time")}
               value={form.time}
               onChange={e => updateField("time", e.target.value)}
               maxLength={20}
             />
             <input
               className="bl-cirl-input bl-cirl-input-full"
-              placeholder={tab === "events" ? "Lugar (ej: Espacio Bitcoin, Palermo)" : "Modalidad (presencial / online / ambos)"}
+              placeholder={tab === "events" ? t("cirl.form.locationEvent") : t("cirl.form.locationCourse")}
               value={form.location}
               onChange={e => updateField("location", e.target.value)}
               maxLength={200}
             />
             <input
               className="bl-cirl-input bl-cirl-input-full"
-              placeholder="Link (web, registro o entradas)"
+              placeholder={t("cirl.form.link")}
               value={form.url}
               onChange={e => updateField("url", e.target.value)}
               maxLength={200}
             />
             <textarea
               className="bl-cirl-input bl-cirl-input-full bl-cirl-textarea"
-              placeholder="Descripcion breve (opcional)"
+              placeholder={t("cirl.form.desc")}
               value={form.description}
               onChange={e => updateField("description", e.target.value)}
               rows={2}
@@ -162,13 +149,13 @@ export function CryptoIRL() {
                 checked={form.free}
                 onChange={e => updateField("free", e.target.checked)}
               />
-              <span>Gratis</span>
+              <span>{t("cirl.free")}</span>
             </label>
           </div>
           {error && <div className="bl-cirl-error">{error}</div>}
-          {success && <div className="bl-cirl-success">Enviado correctamente</div>}
+          {success && <div className="bl-cirl-success">{t("cirl.success")}</div>}
           <button className="bl-cirl-submit" type="submit" disabled={submitting}>
-            {submitting ? "Enviando..." : "Enviar"}
+            {submitting ? t("cirl.submitting") : t("cirl.submit")}
           </button>
         </form>
       )}
@@ -176,15 +163,15 @@ export function CryptoIRL() {
       {/* Listings */}
       <div className="bl-cirl-list">
         {loading ? (
-          <div className="bl-cirl-loading">Buscando eventos...</div>
+          <div className="bl-cirl-loading">{t("cirl.loading")}</div>
         ) : items.length === 0 ? (
           <div className="bl-cirl-empty">
-            {tab === "events"
-              ? "No hay eventos cargados todavia. Se el primero en agregar uno."
-              : "No hay cursos cargados todavia. Se el primero en agregar uno."}
+            {tab === "events" ? t("cirl.empty.events") : t("cirl.empty.courses")}
           </div>
         ) : (
-          items.map((item, idx) => (
+          items.map((item, idx) => {
+            const src = sourceLabel(item.source, t);
+            return (
             <div
               key={item.id || idx}
               className="bl-cirl-item"
@@ -194,7 +181,7 @@ export function CryptoIRL() {
               onKeyDown={(e) => e.key === "Enter" && setSelectedItem(item)}
             >
               <div className="bl-cirl-item-left">
-                {item.date && <div className="bl-cirl-item-date">{formatDate(item.date)}</div>}
+                {item.date && <div className="bl-cirl-item-date">{formatShortDateLocale(item.date, locale)}</div>}
                 {item.time && <div className="bl-cirl-item-time">{item.time}</div>}
               </div>
               <div className="bl-cirl-item-body">
@@ -203,13 +190,12 @@ export function CryptoIRL() {
                 {item.location && <div className="bl-cirl-item-loc">{item.location}</div>}
               </div>
               <div className="bl-cirl-item-right">
-                {item.free && <span className="bl-cirl-badge-free">Gratis</span>}
-                {item.source && SOURCE_LABELS[item.source] && (
-                  <span className="bl-cirl-badge-source">{SOURCE_LABELS[item.source]}</span>
-                )}
+                {item.free && <span className="bl-cirl-badge-free">{t("cirl.free")}</span>}
+                {src && <span className="bl-cirl-badge-source">{src}</span>}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

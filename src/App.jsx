@@ -21,6 +21,30 @@ import { AdminPanel } from "./components/AdminPanel";
 import { ProjectAuth } from "./components/ProjectAuth";
 import { ProjectDashboard } from "./components/ProjectDashboard";
 
+// Antes de tratar un arrastre horizontal como swipe de mundo (Bass↔Layer),
+// vemos si el dedo arrancó dentro de un elemento con scroll horizontal propio
+// (p.ej. la timeline de ciclos de BTC, `overflow-x:auto`) que todavía puede
+// desplazarse en la dirección del gesto. Si es así, cedemos: dejamos que el
+// scroll nativo haga lo suyo y no secuestramos el gesto para navegar de panel.
+// `dx > 0` = dedo hacia la derecha → contenido va a la izquierda → hace falta
+// scrollLeft > 0; `dx < 0` = al revés.
+function startedInScrollableX(startEl, dx, boundary) {
+  let el = startEl;
+  while (el && el !== boundary && el.nodeType === 1) {
+    const canScroll = el.scrollWidth - el.clientWidth > 2;
+    if (canScroll) {
+      const ox = getComputedStyle(el).overflowX;
+      if (ox === "auto" || ox === "scroll") {
+        const maxLeft = el.scrollWidth - el.clientWidth;
+        if (dx > 0 && el.scrollLeft > 1) return true;
+        if (dx < 0 && el.scrollLeft < maxLeft - 1) return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
 export default function App() {
   const { locale, setLocale, t } = useLocale();
   const isMobile = useIsMobile();
@@ -617,6 +641,8 @@ export default function App() {
   const touchStart = useRef({ x: 0, y: 0 });
   const touchDelta = useRef(0);
   const isDragging = useRef(false);
+  const swipeCeded = useRef(false); // gesto cedido a un scroll horizontal interno
+  const touchStartEl = useRef(null);
   const containerRef = useRef(null);
 
   const navigateToSections = useCallback((e, startPanel = 0) => {
@@ -675,14 +701,23 @@ export default function App() {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchDelta.current = 0;
     isDragging.current = false;
+    swipeCeded.current = false;
+    touchStartEl.current = e.target;
   }, []);
 
   const onTouchMoveRef = useRef(null);
   onTouchMoveRef.current = (e) => {
+    if (swipeCeded.current) return; // gesto entregado a un scroll interno
     const dx = e.touches[0].clientX - touchStart.current.x;
     const dy = e.touches[0].clientY - touchStart.current.y;
     if (!isDragging.current) {
       if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        // Si el gesto nació dentro de un scroll horizontal que aún tiene
+        // recorrido en esta dirección, no navegamos de mundo: lo dejamos scrollear.
+        if (startedInScrollableX(touchStartEl.current, dx, containerRef.current)) {
+          swipeCeded.current = true;
+          return;
+        }
         isDragging.current = true;
         if (containerRef.current) containerRef.current.classList.add("dragging");
       } else return;

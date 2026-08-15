@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "../utils/api";
 import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useLocale } from "../hooks/useLocale";
 
 export function PriceModal({ price, onClose }) {
+  const { t } = useLocale();
   const trapRef = useFocusTrap(!!price);
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ export function PriceModal({ price, onClose }) {
   return (
     <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={price.sym} ref={trapRef}>
       <div className="bl-modal bl-price-modal">
-        <button className="bl-modal-close" onClick={onClose} aria-label="Cerrar">&#x2715;</button>
+        <button className="bl-modal-close" onClick={onClose} aria-label={t("common.close")}>&#x2715;</button>
 
         <div className="bl-price-modal-header">
           <div className="bl-price-modal-sym">{price.sym}</div>

@@ -1,11 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useLocale } from "../hooks/useLocale";
-import { DAYS_LONG } from "../i18n/strings";
-
-const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
+import { DAYS_LONG, MONTH_ABBR_INDEX } from "../i18n/strings";
 
 function getEventDate(ev) {
-  const m = MONTHS_MAP[ev.month?.toLowerCase()];
+  const m = MONTH_ABBR_INDEX[ev.month?.toLowerCase()];
   if (m === undefined) return null;
   const d = parseInt(ev.day);
   if (isNaN(d)) return null;
@@ -85,7 +83,7 @@ export function WeekendPicker({ events, onClose, onSelect }) {
         <div className="bl-wp-panel" onClick={e => e.stopPropagation()}>
           <div className="bl-wp-panel-header">
             <div className="bl-wp-panel-title">{t("weekend.title")}</div>
-            <button className="bl-wp-close" onClick={onClose}>&times;</button>
+            <button className="bl-wp-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
           </div>
           <div className="bl-wp-empty-msg">{t("weekend.empty")}</div>
         </div>
@@ -101,7 +99,7 @@ export function WeekendPicker({ events, onClose, onSelect }) {
             <div className="bl-wp-panel-title">{t("weekend.title")}</div>
             <div className="bl-wp-panel-count">{total} {total !== 1 ? t("weekend.eventPlural") : t("weekend.eventSingle")}</div>
           </div>
-          <button className="bl-wp-close" onClick={onClose}>&times;</button>
+          <button className="bl-wp-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
         </div>
 
         <div className="bl-wp-panel-body">

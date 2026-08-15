@@ -6,9 +6,8 @@ import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
 import { IG_HANDLE, IG_URL } from "../utils/constants";
-import { DAYS_LONG } from "../i18n/strings";
+import { DAYS_LONG, MONTHS_ABBR, MONTH_ABBR_INDEX, monthAbbrLocale, monthLongLocale } from "../i18n/strings";
 
-const MONTHS_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 
 // Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
 // La familia la asigna el backend (classifyFamily). Los items son KEYS estables
@@ -34,7 +33,7 @@ function EndOfSet() {
 }
 
 function getEventDate(ev) {
-  const m = MONTHS_MAP[ev.month?.toLowerCase()];
+  const m = MONTH_ABBR_INDEX[ev.month?.toLowerCase()];
   if (m === undefined) return null;
   const now = new Date();
   const year = now.getFullYear();
@@ -261,7 +260,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return groups;
   }, [filtered, t, dayNames]);
 
-  const MONTH_FULL = { Ene:"Enero", Feb:"Febrero", Mar:"Marzo", Abr:"Abril", May:"Mayo", Jun:"Junio", Jul:"Julio", Ago:"Agosto", Sep:"Septiembre", Oct:"Octubre", Nov:"Noviembre", Dic:"Diciembre" };
 
   // Pass `section` as dep so the observer re-attaches when toggling back from
   // noticias → eventos (the events list unmounts and remounts in that flow).
@@ -279,10 +277,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         .map((ev) => ({ ev, date: getEventDate(ev) }))
         .filter((x) => x.date && x.date >= today)
         .sort((a, b) => a.date - b.date)[0];
-      if (!upcoming) return <>Nada hoy — próximamente sin fecha confirmada.</>;
+      if (!upcoming) return <>{t("feed.empty.todayNone")}</>;
       const dayName = (dayNames[upcoming.date.getDay()] || "").slice(0, 3).toUpperCase();
       const dd = String(upcoming.date.getDate()).padStart(2, "0");
-      return <>Nada hoy — lo próximo: {dayName} {dd}</>;
+      return <>{t("feed.empty.todayNext", { day: dayName, dd })}</>;
     }
     if (esteFinde) {
       return <>{t("feed.empty.weekend")}</>;
@@ -396,7 +394,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 return (
                   <div className="bl-month-divider" key={`m-${item.label}-${gIdx}`} aria-hidden="true">
                     <span className="bl-month-line" />
-                    <span className="bl-month-label">{MONTH_FULL[item.label] || item.label}</span>
+                    <span className="bl-month-label">{monthLongLocale(item.label, locale)}</span>
                     <span className="bl-month-line" />
                   </div>
                 );
@@ -431,7 +429,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 >
                   <div className="bl-ev-date">
                     <div className="bl-ev-date-d">{ev.day}</div>
-                    <div className="bl-ev-date-m">{ev.month}</div>
+                    <div className="bl-ev-date-m">{monthAbbrLocale(ev.month, locale)}</div>
                   </div>
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
@@ -521,7 +519,7 @@ function BassNewsItem({ item, idx, onSelect }) {
 }
 
 const FESTIVAL_REGIONS = ["All", "BA", "Sudamérica", "Europa", "Norteamérica", "Asia"];
-const FESTIVAL_MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const festMonths = (locale) => MONTHS_ABBR[locale] || MONTHS_ABBR.es;
 
 function festivalDay(start) {
   if (!start) return "??";
@@ -529,21 +527,22 @@ function festivalDay(start) {
   return String(s.getDate()).padStart(2, "0");
 }
 
-function festivalMonth(start) {
+function festivalMonth(start, locale) {
   if (!start) return "TBA";
   const s = new Date(start + "T00:00:00");
-  return FESTIVAL_MONTHS_ES[s.getMonth()];
+  return festMonths(locale)[s.getMonth()];
 }
 
-function festivalDateRange(start, end) {
+function festivalDateRange(start, end, locale) {
   if (!start) return "—";
+  const M = festMonths(locale);
   const s = new Date(start + "T00:00:00");
   const e = end ? new Date(end + "T00:00:00") : null;
-  if (!e || e.getTime() === s.getTime()) return `${String(s.getDate()).padStart(2,"0")} ${FESTIVAL_MONTHS_ES[s.getMonth()]}`;
+  if (!e || e.getTime() === s.getTime()) return `${String(s.getDate()).padStart(2,"0")} ${M[s.getMonth()]}`;
   const sd = String(s.getDate()).padStart(2,"0");
   const ed = String(e.getDate()).padStart(2,"0");
-  const sm = FESTIVAL_MONTHS_ES[s.getMonth()];
-  const em = FESTIVAL_MONTHS_ES[e.getMonth()];
+  const sm = M[s.getMonth()];
+  const em = M[e.getMonth()];
   return sm === em ? `${sd}–${ed} ${sm}` : `${sd} ${sm} → ${ed} ${em}`;
 }
 
@@ -592,6 +591,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
 }
 
 function FestivalItem({ f, idx, onSelect }) {
+  const { locale } = useLocale();
   return (
     <article
       className="bl-ev-item bl-reveal"
@@ -604,7 +604,7 @@ function FestivalItem({ f, idx, onSelect }) {
     >
       <div className="bl-ev-date">
         <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
-        <div className="bl-ev-date-m">{festivalMonth(f.dates_start)}</div>
+        <div className="bl-ev-date-m">{festivalMonth(f.dates_start, locale)}</div>
       </div>
       <div className="bl-ev-body">
         <div className="bl-ev-name">
@@ -615,7 +615,7 @@ function FestivalItem({ f, idx, onSelect }) {
         </div>
         <div className="bl-ev-artists">{f.city}, {f.country}</div>
         <div className="bl-ev-meta-row">
-          <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end)}</span>
+          <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end, locale)}</span>
           {f.region && <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>}
           {f.status === "live" && <span className="bl-festival-live-dot">EN CURSO</span>}
         </div>

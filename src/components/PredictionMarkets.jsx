@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { useLocale } from "../hooks/useLocale";
 
 function fmtVolume(n) {
   if (!n || n < 1000) return `$${Math.round(n || 0)}`;
@@ -22,6 +23,7 @@ function daysLeft(iso) {
 }
 
 export function PredictionMarkets() {
+  const { t } = useLocale();
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +34,7 @@ export function PredictionMarkets() {
     fetch("/api/prediction-markets")
       .then((r) => (r.ok ? r.json() : Promise.reject(`Error ${r.status}`)))
       .then((data) => { if (mounted) { setMarkets(data || []); setError(null); } })
-      .catch((e) => { if (mounted) setError(typeof e === "string" ? e : "No se pudo cargar"); })
+      .catch((e) => { if (mounted) setError(typeof e === "string" ? e : t("common.loadError")); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
@@ -69,10 +71,10 @@ export function PredictionMarkets() {
   }
 
   return (
-    <div className="bl-feed bl-predict-feed" role="feed" aria-label="Mercados de predicción" ref={listRef}>
+    <div className="bl-feed bl-predict-feed" role="feed" aria-label={t("predict.aria")} ref={listRef}>
       <div className="bl-predict-header">
         <span className="bl-predict-source">POLYMARKET</span>
-        <span className="bl-predict-sub">Top markets · 24h volumen</span>
+        <span className="bl-predict-sub">{t("predict.sub")}</span>
       </div>
       {markets.map((m, idx) => {
         const dleft = daysLeft(m.endDate);

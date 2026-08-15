@@ -11,6 +11,10 @@ export const STRINGS = {
     "common.all": "Todos",
     "common.refresh": "Tirar para actualizar",
     "common.retry": "Reintentar",
+    "common.today": "Hoy",
+    "common.tomorrow": "Mañana",
+    "pulse.thisWeek": "Esta semana",
+    "pulse.events": "{n} eventos",
 
     "topbar.bass": "Bass",
     "topbar.layer": "Layer",
@@ -24,6 +28,39 @@ export const STRINGS = {
     "section.cycles": "Ciclos",
     "cycles.title": "Bitcoin Halvings",
     "cycles.subtitle": "El reloj de 4 años · medido día a día",
+    "cycles.error": "error: no se pudo cargar el ciclo. tocá para reintentar.",
+    "cycles.reading": "lectura: fase {phase} · día {days} del pico · confluencia {conf}/100 · {label} · fondo proy. {window}",
+    "cycles.cell.phase": "FASE",
+    "cycles.cell.price": "PRECIO",
+    "cycles.cell.confluence": "CONFLUENCIA",
+    "cycles.cell.projBottom": "FONDO.PROY",
+    "cycles.dayFromPeak": "día {n} del pico",
+    "cycles.countdown": "faltan ~{n} d",
+    "cycles.windowActive": "ventana activa",
+    "cycles.section.cycles": "ciclos --alineados-al-halving",
+    "cycles.section.price": "precio --escala-log",
+    "cycles.section.confluence": "confluencia --on-chain",
+    "cycles.posture": "Postura:",
+    "cycles.invalidation": "· invalida la tesis: nuevo ATH > ${price}k",
+    "cycles.phase.markup": "Markup",
+    "cycles.phase.markdown": "Markdown",
+    "cycles.phase.accumulation": "Acumulación",
+    "cycles.legend.halving": "halving",
+    "cycles.legend.markup": "markup",
+    "cycles.legend.markdown": "markdown",
+    "cycles.legend.accumulation": "acumulación",
+    "cycles.legend.projected": "proyectado",
+    "cycles.year": "Año {n}",
+    "cycles.projShort": "proy.",
+    "cycles.mk.halving": "Halving",
+    "cycles.mk.peak": "Pico",
+    "cycles.mk.bottom": "Fondo",
+    "cycles.tip.markup": "Markup · {d} d",
+    "cycles.tip.markdown": "Markdown · {d} d",
+    "cycles.tip.accumulation": "Acumulación · {d} d",
+    "cycles.tip.markdownOngoing": "Markdown en curso · {d} d",
+    "cycles.tip.projBottom": "Fondo proyectado",
+    "cycles.tip.halvingPrice": "Precio al halving · {price}",
     "section.festivals": "Festivales",
     "family.club": "Club",
     "family.live": "En vivo",
@@ -71,6 +108,8 @@ export const STRINGS = {
     "feed.empty.searchHint": "Probá otro nombre.",
     "feed.empty.weekend": "Nada cocinándose este finde. Quitá el filtro y mirá la semana entera.",
     "feed.empty.filter": "No hay nada en este estilo esta noche. Probá otro o volvé el viernes.",
+    "feed.empty.todayNone": "Nada hoy — próximamente sin fecha confirmada.",
+    "feed.empty.todayNext": "Nada hoy — lo próximo: {day} {dd}",
     "feed.empty.news": "Sin señal para",
     "feed.empty.newsHint": "Esperá el próximo bloque.",
     "feed.empty.bassNews": "Sin notas frescas. Los medios locales se toman su tiempo.",
@@ -78,6 +117,43 @@ export const STRINGS = {
     "feed.endOfSet": "—— end of set ——",
     "feed.endOfFeed": "--- EOF ---",
     "feed.empty.festivals": "Sin festivales en esta región. Probá con otra o saquemos el filtro.",
+    "cirl.subtitle": "Eventos, meetups y cursos crypto",
+    "cirl.add": "+ Agregar",
+    "cirl.tab.events": "Eventos / Meetups",
+    "cirl.tab.courses": "Cursos / Charlas",
+    "cirl.form.titleEvent": "Agregar evento / meetup",
+    "cirl.form.titleCourse": "Agregar curso / charla",
+    "cirl.form.nameEvent": "Nombre del evento *",
+    "cirl.form.nameCourse": "Nombre del curso *",
+    "cirl.form.organizer": "Organizador *",
+    "cirl.form.date": "Fecha",
+    "cirl.form.time": "Horario (ej: 19:00)",
+    "cirl.form.locationEvent": "Lugar (ej: Espacio Bitcoin, Palermo)",
+    "cirl.form.locationCourse": "Modalidad (presencial / online / ambos)",
+    "cirl.form.link": "Link (web, registro o entradas)",
+    "cirl.form.desc": "Descripción breve (opcional)",
+    "cirl.free": "Gratis",
+    "cirl.error.submit": "Error al enviar",
+    "cirl.success": "Enviado correctamente",
+    "cirl.submitting": "Enviando…",
+    "cirl.submit": "Enviar",
+    "cirl.loading": "Buscando eventos…",
+    "cirl.empty.events": "No hay eventos cargados todavía. Sé el primero en agregar uno.",
+    "cirl.empty.courses": "No hay cursos cargados todavía. Sé el primero en agregar uno.",
+    "cirl.source.community": "Comunidad",
+    "cirl.source.curated": "Destacado",
+    "cevent.description": "Descripción",
+    "cevent.date": "Fecha",
+    "cevent.time": "Hora",
+    "cevent.organizer": "Organizador",
+    "cevent.place": "Lugar",
+    "cevent.free": "Evento gratuito",
+    "cevent.interested": "{n} interesados",
+    "cevent.viewEvent": "Ver evento",
+    "common.loadError": "No se pudo cargar",
+    "predict.aria": "Mercados de predicción",
+    "predict.sub": "Top markets · 24h volumen",
+    "ticker.aria": "Precios de criptomonedas",
     "feed.festivalsLoadError": "No pude cargar los festivales. Tocá para reintentar.",
 
     "news.summary": "Resumen",
@@ -104,6 +180,16 @@ export const STRINGS = {
     "dashboard.gasAvg": "Avg",
     "dashboard.gasFast": "Fast",
     "dashboard.viewInfo": "Ver info:",
+    "dashboard.reading.label": "lectura",
+    "dashboard.reading.noSignal": "sin señal clara",
+    "dashboard.reading.greenDay": "día verde",
+    "dashboard.reading.redDay": "día rojo",
+    "dashboard.reading.upTimid": "mercado sube tímido",
+    "dashboard.reading.downTimid": "mercado baja tímido",
+    "dashboard.reading.flat": "mercado plancha",
+    "dashboard.reading.extremeFear": "miedo extremo",
+    "dashboard.reading.euphoria": "euforia",
+    "dashboard.trendingAria": "Trending ahora",
 
     "timeline.toggle": "Crypto BA Timeline",
     "timeline.toggleSub": "Memoria del ecosistema local",
@@ -158,6 +244,10 @@ export const STRINGS = {
     "common.all": "All",
     "common.refresh": "Pull to refresh",
     "common.retry": "Retry",
+    "common.today": "Today",
+    "common.tomorrow": "Tomorrow",
+    "pulse.thisWeek": "This week",
+    "pulse.events": "{n} events",
 
     "topbar.bass": "Bass",
     "topbar.layer": "Layer",
@@ -171,6 +261,39 @@ export const STRINGS = {
     "section.cycles": "Cycles",
     "cycles.title": "Bitcoin Halvings",
     "cycles.subtitle": "The 4-year clock · measured day by day",
+    "cycles.error": "error: couldn't load the cycle. tap to retry.",
+    "cycles.reading": "reading: {phase} phase · day {days} from peak · confluence {conf}/100 · {label} · proj. bottom {window}",
+    "cycles.cell.phase": "PHASE",
+    "cycles.cell.price": "PRICE",
+    "cycles.cell.confluence": "CONFLUENCE",
+    "cycles.cell.projBottom": "PROJ.BOTTOM",
+    "cycles.dayFromPeak": "day {n} from peak",
+    "cycles.countdown": "~{n} d left",
+    "cycles.windowActive": "window active",
+    "cycles.section.cycles": "cycles --aligned-to-halving",
+    "cycles.section.price": "price --log-scale",
+    "cycles.section.confluence": "confluence --on-chain",
+    "cycles.posture": "Stance:",
+    "cycles.invalidation": "· invalidates the thesis: new ATH > ${price}k",
+    "cycles.phase.markup": "Markup",
+    "cycles.phase.markdown": "Markdown",
+    "cycles.phase.accumulation": "Accumulation",
+    "cycles.legend.halving": "halving",
+    "cycles.legend.markup": "markup",
+    "cycles.legend.markdown": "markdown",
+    "cycles.legend.accumulation": "accumulation",
+    "cycles.legend.projected": "projected",
+    "cycles.year": "Year {n}",
+    "cycles.projShort": "proj.",
+    "cycles.mk.halving": "Halving",
+    "cycles.mk.peak": "Peak",
+    "cycles.mk.bottom": "Bottom",
+    "cycles.tip.markup": "Markup · {d} d",
+    "cycles.tip.markdown": "Markdown · {d} d",
+    "cycles.tip.accumulation": "Accumulation · {d} d",
+    "cycles.tip.markdownOngoing": "Markdown ongoing · {d} d",
+    "cycles.tip.projBottom": "Projected bottom",
+    "cycles.tip.halvingPrice": "Price at halving · {price}",
     "section.festivals": "Festivals",
     "family.club": "Club",
     "family.live": "Live",
@@ -218,6 +341,8 @@ export const STRINGS = {
     "feed.empty.searchHint": "Try another name.",
     "feed.empty.weekend": "Nothing cooking this weekend. Drop the filter and see the full week.",
     "feed.empty.filter": "No events in this genre tonight. Try another style or come back Friday.",
+    "feed.empty.todayNone": "Nothing today — upcoming, date TBA.",
+    "feed.empty.todayNext": "Nothing today — next: {day} {dd}",
     "feed.empty.news": "Market quiet for",
     "feed.empty.newsHint": "No movement right now.",
     "feed.empty.bassNews": "No fresh notes. Local outlets publish at their own pace.",
@@ -225,6 +350,43 @@ export const STRINGS = {
     "feed.endOfSet": "—— end of set ——",
     "feed.endOfFeed": "--- EOF ---",
     "feed.empty.festivals": "No festivals in this region. Try another or drop the filter.",
+    "cirl.subtitle": "Crypto events, meetups & courses",
+    "cirl.add": "+ Add",
+    "cirl.tab.events": "Events / Meetups",
+    "cirl.tab.courses": "Courses / Talks",
+    "cirl.form.titleEvent": "Add event / meetup",
+    "cirl.form.titleCourse": "Add course / talk",
+    "cirl.form.nameEvent": "Event name *",
+    "cirl.form.nameCourse": "Course name *",
+    "cirl.form.organizer": "Organizer *",
+    "cirl.form.date": "Date",
+    "cirl.form.time": "Time (e.g. 19:00)",
+    "cirl.form.locationEvent": "Venue (e.g. Espacio Bitcoin, Palermo)",
+    "cirl.form.locationCourse": "Format (in person / online / both)",
+    "cirl.form.link": "Link (site, registration or tickets)",
+    "cirl.form.desc": "Short description (optional)",
+    "cirl.free": "Free",
+    "cirl.error.submit": "Couldn't submit",
+    "cirl.success": "Submitted successfully",
+    "cirl.submitting": "Submitting…",
+    "cirl.submit": "Submit",
+    "cirl.loading": "Loading events…",
+    "cirl.empty.events": "No events yet. Be the first to add one.",
+    "cirl.empty.courses": "No courses yet. Be the first to add one.",
+    "cirl.source.community": "Community",
+    "cirl.source.curated": "Featured",
+    "cevent.description": "Description",
+    "cevent.date": "Date",
+    "cevent.time": "Time",
+    "cevent.organizer": "Organizer",
+    "cevent.place": "Venue",
+    "cevent.free": "Free event",
+    "cevent.interested": "{n} interested",
+    "cevent.viewEvent": "View event",
+    "common.loadError": "Couldn't load",
+    "predict.aria": "Prediction markets",
+    "predict.sub": "Top markets · 24h volume",
+    "ticker.aria": "Cryptocurrency prices",
     "feed.festivalsLoadError": "Couldn't load festivals. Tap to retry.",
 
     "news.summary": "Summary",
@@ -251,6 +413,16 @@ export const STRINGS = {
     "dashboard.gasAvg": "Avg",
     "dashboard.gasFast": "Fast",
     "dashboard.viewInfo": "View info:",
+    "dashboard.reading.label": "reading",
+    "dashboard.reading.noSignal": "no clear signal",
+    "dashboard.reading.greenDay": "green day",
+    "dashboard.reading.redDay": "red day",
+    "dashboard.reading.upTimid": "market up, timid",
+    "dashboard.reading.downTimid": "market down, timid",
+    "dashboard.reading.flat": "market flat",
+    "dashboard.reading.extremeFear": "extreme fear",
+    "dashboard.reading.euphoria": "euphoria",
+    "dashboard.trendingAria": "Trending now",
 
     "timeline.toggle": "Crypto BA Timeline",
     "timeline.toggleSub": "Memory of the local scene",
@@ -305,9 +477,34 @@ export const DAYS_LONG = {
   en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
 };
 
+export const MONTHS_ABBR = {
+  es: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+
+// Mapa canónico abreviatura-de-mes-en-español → índice (0-11). Único dueño; el
+// resto de los componentes lo importan en vez de re-declararlo.
+export const MONTH_ABBR_INDEX = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+
+// Los datos de eventos traen el mes abreviado en español ("ago"). Este helper lo
+// traduce a la abreviatura del locale activo ("Aug" en en). Si no matchea, devuelve
+// el original para no romper nada.
+export function monthAbbrLocale(monthAbbrEs, locale) {
+  const i = MONTH_ABBR_INDEX[String(monthAbbrEs || "").toLowerCase()];
+  if (i === undefined) return monthAbbrEs;
+  return (MONTHS_ABBR[locale] || MONTHS_ABBR.es)[i];
+}
+
+// Igual que monthAbbrLocale pero devuelve el nombre completo del mes (para los
+// divisores del feed). Acepta la abreviatura en español que viene en los datos.
+export function monthLongLocale(monthAbbrEs, locale) {
+  const i = MONTH_ABBR_INDEX[String(monthAbbrEs || "").toLowerCase()];
+  if (i === undefined) return monthAbbrEs;
+  return (MONTHS_LONG[locale] || MONTHS_LONG.es)[i];
+}
+
 export function formatLongDateLocale(day, monthAbbr, locale) {
-  const MONTHS_MAP = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
-  const m = MONTHS_MAP[monthAbbr?.toLowerCase()];
+  const m = MONTH_ABBR_INDEX[monthAbbr?.toLowerCase()];
   if (m === undefined) return `${day} ${monthAbbr}`;
   const d = parseInt(day);
   if (isNaN(d)) return `${day} ${monthAbbr}`;
@@ -319,4 +516,25 @@ export function formatLongDateLocale(day, monthAbbr, locale) {
   return locale === "es"
     ? `${dayName} ${date.getDate()} de ${monthName}`
     : `${dayName}, ${monthName} ${date.getDate()}`;
+}
+
+// Fecha corta localizada a partir de un ISO "YYYY-MM-DD" → "Dom 3 Ago" (o
+// "Domingo 3 Ago" con longDay). Compartida por los listados/modales de Crypto IRL.
+export function formatShortDateLocale(dateStr, locale, { longDay = false } = {}) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return dateStr;
+  const dayFull = (DAYS_LONG[locale] || DAYS_LONG.es)[d.getDay()];
+  const day = longDay ? dayFull : dayFull.slice(0, 3);
+  const month = (MONTHS_ABBR[locale] || MONTHS_ABBR.es)[d.getMonth()];
+  return `${day} ${d.getDate()} ${month}`;
+}
+
+// Etiqueta de la fuente de un evento de Crypto IRL. Devuelve null para fuentes
+// desconocidas (sin badge). Compartida por CryptoIRL y CryptoEventModal.
+export function sourceLabel(source, t) {
+  if (source === "luma") return "Luma";
+  if (source === "community") return t("cirl.source.community");
+  if (source === "curated") return t("cirl.source.curated");
+  return null;
 }

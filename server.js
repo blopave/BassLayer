@@ -2405,7 +2405,8 @@ function normalizeArtistName(s) {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
 }
 
-async function tryDeezer(name) {
+async function tryDeezer(name, locale = "es") {
+  const en = locale === "en";
   const url = `https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=3`;
   try {
     const r = await fetchSafe(url, {}, 6000);
@@ -2419,15 +2420,16 @@ async function tryDeezer(name) {
     if (!match) return null;
     const fans = match.nb_fan || 0;
     const albums = match.nb_album || 0;
+    const nf = fans.toLocaleString(en ? "en-US" : "es-AR");
     const desc = [
-      fans > 0 ? `${fans.toLocaleString("es-AR")} fans en Deezer` : null,
-      albums > 0 ? `${albums} ${albums === 1 ? "álbum" : "álbumes"}` : null,
+      fans > 0 ? (en ? `${nf} fans on Deezer` : `${nf} fans en Deezer`) : null,
+      albums > 0 ? (en ? `${albums} ${albums === 1 ? "album" : "albums"}` : `${albums} ${albums === 1 ? "álbum" : "álbumes"}`) : null,
     ].filter(Boolean).join(" · ");
     return {
       name,
       found: true,
       title: match.name,
-      description: desc || "Perfil de Deezer",
+      description: desc || (en ? "Deezer profile" : "Perfil de Deezer"),
       extract: null,
       thumbnail: match.picture_xl || match.picture_big || match.picture_medium || null,
       url: match.link || null,
@@ -2513,7 +2515,7 @@ async function fetchArtistInfo(name, locale = "es") {
   const wikiFallback = await tryWikipediaLang(name, fallback);
   if (wikiFallback) return wikiFallback;
   // 3. Deezer (photo + fan count, great for DJs)
-  const deezer = await tryDeezer(name);
+  const deezer = await tryDeezer(name, locale);
   if (deezer) return deezer;
   // 4. iTunes (genre + official link)
   const itunes = await tryItunes(name);

@@ -104,24 +104,24 @@ function FearGreedCell({ value, label, history, onClick, t }) {
 // Lectura del día — se compone con reglas simples sobre los datos ya en pantalla.
 // Sin lookup extra: usa marketCapChange24h y fearGreed.value. Si en el futuro
 // tenemos btcChange vs alts change, se puede refinar sin cambiar el shape.
-function readingOfTheDay(data) {
+function readingOfTheDay(data, t) {
   if (!data) return null;
   const mc = data.marketCapChange24h;
   const fg = data.fearGreed?.value;
 
-  let base;
-  if (mc == null) base = "sin señal clara";
-  else if (mc >= 1.5) base = "día verde";
-  else if (mc <= -1.5) base = "día rojo";
-  else if (mc >= 0.5) base = "mercado sube tímido";
-  else if (mc <= -0.5) base = "mercado baja tímido";
-  else base = "mercado plancha";
+  let baseKey;
+  if (mc == null) baseKey = "noSignal";
+  else if (mc >= 1.5) baseKey = "greenDay";
+  else if (mc <= -1.5) baseKey = "redDay";
+  else if (mc >= 0.5) baseKey = "upTimid";
+  else if (mc <= -0.5) baseKey = "downTimid";
+  else baseKey = "flat";
 
   const flags = [];
-  if (fg != null && fg < 25) flags.push("miedo extremo");
-  else if (fg != null && fg > 75) flags.push("euforia");
+  if (fg != null && fg < 25) flags.push(t("dashboard.reading.extremeFear"));
+  else if (fg != null && fg > 75) flags.push(t("dashboard.reading.euphoria"));
 
-  return `> lectura: ${base}${flags.length ? " · " + flags.join(" · ") : ""}`;
+  return `> ${t("dashboard.reading.label")}: ${t("dashboard.reading." + baseKey)}${flags.length ? " · " + flags.join(" · ") : ""}`;
 }
 
 function GasCell({ gas, onClick, t }) {
@@ -161,10 +161,10 @@ function GasCell({ gas, onClick, t }) {
 
 // Trending: monedas más buscadas ahora (CoinGecko). Fila horizontal en el
 // mismo lenguaje terminal del dashboard — display-only, scroll en mobile.
-function TrendingRow({ trending }) {
+function TrendingRow({ trending, t }) {
   if (!Array.isArray(trending) || trending.length === 0) return null;
   return (
-    <div className="bl-term-trending" role="region" aria-label="Trending ahora">
+    <div className="bl-term-trending" role="region" aria-label={t("dashboard.trendingAria")}>
       <div className="bl-term-trending-label" aria-hidden="true">
         <span className="bl-term-prompt">&gt;</span>
         <span className="bl-term-cell-label-text">trending</span>
@@ -238,7 +238,7 @@ export function CryptoDashboard() {
           <span className="bl-terminal-status-code">[200]</span>
         </span>
       </div>
-      <div className="bl-terminal-reading" aria-live="polite">{readingOfTheDay(data)}</div>
+      <div className="bl-terminal-reading" aria-live="polite">{readingOfTheDay(data, t)}</div>
       <div className="bl-terminal-grid">
         {data.btcDominance != null && (
           <StatCell
@@ -281,7 +281,7 @@ export function CryptoDashboard() {
           t={t}
         />
       </div>
-      <TrendingRow trending={data.trending} />
+      <TrendingRow trending={data.trending} t={t} />
       <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
     </div>
   );
