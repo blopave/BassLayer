@@ -89,9 +89,37 @@
   --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-smooth:    cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* Layer: entrada más seca que la de Bass — es parte de la diferencia entre
+     los dos mundos, así que merece nombre en vez de repetirse suelta. */
+  --ease-layer:     cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-expo:   cubic-bezier(0.55, 0, 1, 0.45);
   --duration-fast:  0.15s;
   --duration-med:   0.3s;
   --duration-slow:  0.5s;
+}
+
+/* ── Movimiento reducido ───────────────────────────────────────────────────
+   El sitio tiene mucho movimiento: cortina circular a pantalla completa,
+   parallax, canvas generativo, reveals al scrollear, ecualizador, shimmer.
+   Para alguien con sensibilidad vestibular eso no es decoración, es un
+   problema. Hasta acá sólo había dos excepciones sueltas; esto lo cubre todo.
+
+   Se anulan las duraciones en vez de las propiedades: los estados finales se
+   siguen aplicando, así que nada queda a medio camino. La cortina se oculta
+   entera —sin transición sería un flash de pantalla completa, peor que la
+   animación— y el cambio de vista igual funciona, porque lo maneja el
+   temporizador y no el CSS. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .bl-circle { display: none; }
+  /* El reveal ES la animación: sin ella el contenido tiene que estar visible de
+     entrada, sin depender del observer de scroll para aparecer. */
+  .bl-reveal { opacity: 1 !important; transform: none !important; }
 }
 
 /* ── Day Mode (Light Theme) ─────────────── */
@@ -156,7 +184,7 @@
   --bl-radius-sm:   5px;
   --bl-radius-pill: 100px;
   --bl-item-border: 3px;
-  --bl-transition:  all .45s cubic-bezier(0.16, 1, 0.3, 1);
+  --bl-transition:  all .45s var(--ease-out-expo);
 }
 
 /* ═══════════════════════════════════════════
@@ -247,7 +275,7 @@
   --bl-radius-sm:   2px;
   --bl-radius-pill: 4px;
   --bl-item-border: 2px;
-  --bl-transition:  all .25s cubic-bezier(0.2, 0, 0, 1);
+  --bl-transition:  all .25s var(--ease-layer);
 }
 
 /* Day mode + Bass world */
@@ -386,27 +414,27 @@
 /* Bass: items rise with a calm, restrained motion */
 .bl-root[data-section="bass"] .bl-reveal {
   opacity:0; transform:translateY(10px);
-  transition:opacity .45s cubic-bezier(0.16, 1, 0.3, 1),
-             transform .45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:opacity .45s var(--ease-out-expo),
+             transform .45s var(--ease-out-expo);
 }
 .bl-root[data-section="bass"] .bl-reveal.visible { opacity:1; transform:translateY(0); }
 
 /* Layer: items slide in sharp and precise */
 .bl-root[data-section="layer"] .bl-reveal {
   opacity:0; transform:translateX(-12px) translateY(8px);
-  transition:opacity .5s cubic-bezier(0.2, 0, 0, 1),
-             transform .5s cubic-bezier(0.2, 0, 0, 1);
+  transition:opacity .5s var(--ease-layer),
+             transform .5s var(--ease-layer);
 }
 .bl-root[data-section="layer"] .bl-reveal.visible { opacity:1; transform:translateX(0) translateY(0); }
 
 /* ── World-specific Skeleton Shimmers ── */
-.bl-root[data-section="bass"] .bl-skeleton-bone {
-  background:linear-gradient(90deg, var(--bl-surface) 25%, rgba(196,144,112,0.08) 50%, var(--bl-surface) 75%);
-  background-size:200% 100%; animation:bl-shimmer 2s ease-in-out infinite;
+.bl-root[data-section="bass"] .bl-skeleton-bone::after {
+  background:linear-gradient(90deg, transparent 25%, rgba(196,144,112,0.10) 50%, transparent 75%);
+  animation-duration:2s; animation-timing-function:ease-in-out;
 }
-.bl-root[data-section="layer"] .bl-skeleton-bone {
-  background:linear-gradient(90deg, var(--bl-surface) 25%, rgba(108,184,200,0.06) 50%, var(--bl-surface) 75%);
-  background-size:200% 100%; animation:bl-shimmer 1.2s linear infinite;
+.bl-root[data-section="layer"] .bl-skeleton-bone::after {
+  background:linear-gradient(90deg, transparent 25%, rgba(108,184,200,0.08) 50%, transparent 75%);
+  animation-duration:1.2s; animation-timing-function:linear;
 }
 
 /* ── World-specific Empty/Error States ── */
@@ -465,7 +493,7 @@
   width:44px; height:44px; border-radius:50%;
   background:var(--bl-surface); border:1px solid var(--bl-border);
   cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:all .4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .4s var(--ease-out-expo);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   box-shadow:0 2px 12px rgba(0,0,0,0.2);
   flex-shrink:0;
@@ -475,7 +503,7 @@
   border-color:var(--bl-text-sec);
   box-shadow:0 4px 20px rgba(0,0,0,0.3);
 }
-.bl-mode-toggle svg { width:18px; height:18px; transition:transform .5s cubic-bezier(0.16,1,0.3,1), opacity .3s; }
+.bl-mode-toggle svg { width:18px; height:18px; transition:transform .5s var(--ease-out-expo), opacity .3s; }
 .bl-mode-toggle:hover svg { transform:rotate(30deg); }
 .bl-mode-icon { fill:none; stroke:var(--bl-text); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
 
@@ -501,7 +529,7 @@
   font-size:10px; letter-spacing:1.5px;
   text-transform:lowercase;
   color:var(--bl-text-sec);
-  transition:all .35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .35s var(--ease-out-expo);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   box-shadow:0 2px 12px rgba(0,0,0,0.2);
   flex-shrink:0;
@@ -519,7 +547,7 @@
   font-size:13px;
   letter-spacing:0;
   margin-top:-1px;
-  transition:transform .35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:transform .35s var(--ease-out-expo);
 }
 .bl-util-home:hover .bl-util-arrow { transform:translateX(-2px); }
 
@@ -545,7 +573,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:flex; align-items:center; gap:6px;
   font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
   color:var(--bl-text-sec);
-  transition:all .4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .4s var(--ease-out-expo);
   backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   box-shadow:0 2px 12px rgba(0,0,0,0.2);
   flex-shrink:0;
@@ -647,9 +675,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-root.theme-transitioning .bl-mode-toggle,
 .bl-root.theme-transitioning .bl-modal,
 .bl-root.theme-transitioning .bl-modal-overlay {
-  transition:background .6s cubic-bezier(0.16,1,0.3,1),
-             color .6s cubic-bezier(0.16,1,0.3,1),
-             border-color .6s cubic-bezier(0.16,1,0.3,1) !important;
+  transition:background .6s var(--ease-out-expo),
+             color .6s var(--ease-out-expo),
+             border-color .6s var(--ease-out-expo) !important;
 }
 
 /* ── Focus & Accessibility ─────────────── */
@@ -693,12 +721,12 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-circle-inner.expand { transform:translate(-50%,-50%) scale(1); }
 /* Warmer, softer expansion for Bass world */
 .bl-root[data-section="bass"] .bl-circle-inner {
-  transition:transform .8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:transform .8s var(--ease-out-expo);
   box-shadow:0 0 120px rgba(196,144,112,0.15);
 }
 /* Faster, sharper expansion for Layer world */
 .bl-root[data-section="layer"] .bl-circle-inner {
-  transition:transform .55s cubic-bezier(0.2, 0, 0, 1);
+  transition:transform .55s var(--ease-layer);
   box-shadow:0 0 80px rgba(108,184,200,0.1);
 }
 
@@ -751,9 +779,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   padding:0 16px;
   outline:none;
   transition:
-    flex-basis 600ms cubic-bezier(0.16, 1, 0.3, 1),
-    background 500ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    flex-basis 600ms var(--ease-out-expo),
+    background 500ms var(--ease-out-expo),
+    color 400ms var(--ease-out-expo);
 }
 .bl-header-half:not(.is-active) { flex-basis:30%; cursor:pointer; }
 .bl-header-half.is-active { flex-basis:70%; cursor:default; }
@@ -772,7 +800,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:inline-flex;
   align-items:center;
   gap:14px;
-  transition:transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:transform 600ms var(--ease-out-expo);
 }
 .bl-header-half-bass.is-active .bl-header-cluster  { transform:translateX(15vw); }
 .bl-header-half-layer.is-active .bl-header-cluster { transform:translateX(-15vw); }
@@ -789,7 +817,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   font-style:normal;
   letter-spacing:-1px;
   line-height:1;
-  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), font-weight .4s, color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
+  transition:font-size .55s var(--ease-out-expo), font-weight .4s, color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
 }
 .bl-header-half-bass:not(.is-active) .bl-header-world-name {
   font-size:22px; font-weight:700;
@@ -815,7 +843,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   font-family:var(--font-layer), sans-serif;
   text-transform:uppercase;
   line-height:1;
-  transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .55s cubic-bezier(0.16, 1, 0.3, 1), color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
+  transition:font-size .55s var(--ease-out-expo), letter-spacing .55s var(--ease-out-expo), color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
 }
 .bl-header-half-layer:not(.is-active) .bl-header-world-name {
   font-size:14px; letter-spacing:4.5px; font-weight:400;
@@ -838,15 +866,18 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 .bl-header-half-bass.is-active .bl-tab-eq { opacity:1; }
 .bl-header-half-bass:not(.is-active) .bl-tab-eq { display:none; }
+/* La altura es fija y la animación escala: animar `height` obliga al navegador
+   a rehacer layout en cada frame, y son tres barras corriendo siempre. */
 .bl-tab-eq-bar {
-  width:2.5px; border-radius:1px;
+  width:2.5px; height:16px; border-radius:1px;
   background:var(--bl-accent-bass); transform-origin:bottom;
   box-shadow:0 0 6px rgba(196,144,112,0.4);
+  will-change:transform;
 }
 .bl-tab-eq-bar:nth-child(1) { animation:bl-eq 0.8s ease-in-out infinite alternate; }
 .bl-tab-eq-bar:nth-child(2) { animation:bl-eq 0.6s ease-in-out 0.15s infinite alternate; }
 .bl-tab-eq-bar:nth-child(3) { animation:bl-eq 0.9s ease-in-out 0.3s infinite alternate; }
-@keyframes bl-eq { 0% { height:3px; } 100% { height:16px; } }
+@keyframes bl-eq { 0% { transform:scaleY(0.1875); } 100% { transform:scaleY(1); } }
 
 /* Terminal-style block cursor — bar vertical pegada a la última letra,
    como si la próxima tecla fuera a escribir el siguiente caracter. */
@@ -873,11 +904,11 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 .bl-header.is-wiping.wiping-bass .bl-header-half-bass::before {
   background:linear-gradient(90deg, rgba(196,144,112,0.22) 0%, rgba(196,144,112,0.08) 50%, transparent 100%);
-  animation:bl-header-wipe-bass 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation:bl-header-wipe-bass 600ms var(--ease-out-expo);
 }
 .bl-header.is-wiping.wiping-layer .bl-header-half-layer::before {
   background:linear-gradient(270deg, rgba(108,184,200,0.24) 0%, rgba(108,184,200,0.08) 50%, transparent 100%);
-  animation:bl-header-wipe-layer 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation:bl-header-wipe-layer 600ms var(--ease-out-expo);
 }
 @keyframes bl-header-wipe-bass {
   0%   { opacity:0.95; transform:translateX(-30%); }
@@ -919,12 +950,12 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 .bl-cross-signature.active.wiping-layer {
   transform-origin:left center;
-  animation:bl-cross-sig-l 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation:bl-cross-sig-l 320ms var(--ease-out-expo);
 }
 .bl-cross-signature.active.wiping-bass {
   transform-origin:right center;
   background:linear-gradient(90deg, var(--bl-accent-layer) 0%, var(--bl-accent-bass) 100%);
-  animation:bl-cross-sig-r 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation:bl-cross-sig-r 320ms var(--ease-out-expo);
 }
 @keyframes bl-cross-sig-l {
   0%   { opacity:0.9; transform:scaleX(0); }
@@ -963,7 +994,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   color:var(--bl-text-sec); cursor:pointer;
   background:transparent; border:1px solid var(--bl-border);
   padding:8px 20px; border-radius:var(--bl-radius-pill, 100px);
-  transition:all .35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .35s var(--ease-out-expo);
 }
 .bl-subtab:hover { border-color:var(--bl-450); color:var(--bl-text); }
 .bl-subtab.active {
@@ -997,7 +1028,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-word-wrap:not(.hero-entered) .bl-letter { opacity:0; transform:translateY(120%); }
 
 .bl-word-wrap.hero-entered .bl-word-bass .bl-letter {
-  animation:letter-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation:letter-rise 1.2s var(--ease-out-expo) forwards;
 }
 .bl-word-wrap.hero-entered .bl-word-bass .bl-letter:nth-child(1) { animation-delay:0.08s; }
 .bl-word-wrap.hero-entered .bl-word-bass .bl-letter:nth-child(2) { animation-delay:0.16s; }
@@ -1005,7 +1036,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-word-wrap.hero-entered .bl-word-bass .bl-letter:nth-child(4) { animation-delay:0.32s; }
 
 .bl-word-wrap.hero-entered .bl-word-layer .bl-letter {
-  animation:letter-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation:letter-rise 1.2s var(--ease-out-expo) forwards;
 }
 .bl-word-wrap.hero-entered .bl-word-layer .bl-letter:nth-child(1) { animation-delay:0.55s; }
 .bl-word-wrap.hero-entered .bl-word-layer .bl-letter:nth-child(2) { animation-delay:0.63s; }
@@ -1019,7 +1050,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   to   { transform:translateY(-60%); filter:blur(6px); opacity:0; }
 }
 .bl-word-wrap.hero-exiting .bl-letter {
-  animation:letter-exit 0.4s cubic-bezier(0.55, 0, 1, 0.45) forwards !important;
+  animation:letter-exit 0.4s var(--ease-in-expo) forwards !important;
 }
 .bl-word-wrap.hero-exiting .bl-word-bass .bl-letter:nth-child(1) { animation-delay:0s!important; }
 .bl-word-wrap.hero-exiting .bl-word-bass .bl-letter:nth-child(2) { animation-delay:0.03s!important; }
@@ -1033,7 +1064,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 
 /* Info labels exit */
 .bl-home.hero-exiting .bl-info {
-  animation:letter-exit 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards !important;
+  animation:letter-exit 0.3s var(--ease-in-expo) forwards !important;
 }
 
 /* ── BASS — Geist Bold: contundente a gran escala, tracking cerrado ── */
@@ -1048,7 +1079,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   line-height:0.9;
   color:var(--bl-text);
   will-change:transform,color,opacity;
-  transition:color .4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow .5s;
+  transition:color .4s var(--ease-out-expo), text-shadow .5s;
 }
 
 /* ── LAYER — Geist Light: la misma familia que Bass, separada por peso,
@@ -1062,7 +1093,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   line-height:0.9;
   color:var(--bl-text);
   will-change:transform,color,opacity;
-  transition:color .4s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .6s cubic-bezier(0.16, 1, 0.3, 1), opacity .4s;
+  transition:color .4s var(--ease-out-expo), letter-spacing .6s var(--ease-out-expo), opacity .4s;
   text-transform:uppercase;
 }
 
@@ -1105,7 +1136,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   to   { opacity:1; transform:translateY(0); }
 }
 .bl-info { position:absolute; font-family:var(--font-mono); font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--bl-700); z-index:50; transition:color .4s; opacity:0; }
-.bl-home.hero-entered .bl-info { animation:info-fade .8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.bl-home.hero-entered .bl-info { animation:info-fade .8s var(--ease-out-expo) forwards; }
 .bl-info-tl { top:32px; left:40px; animation-delay:1.2s!important; }
 .bl-info-tr { top:32px; right:40px; animation-delay:1.35s!important; }
 .bl-info-bl { bottom:32px; left:40px; animation-delay:1.5s!important; }
@@ -1118,8 +1149,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-choose { position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:50; text-align:center; display:none; }
 .bl-choose-text { font-family:var(--font-mono); font-size:9px; letter-spacing:4px; text-transform:uppercase; color:var(--bl-650); }
 .bl-choose-line { width:1px; height:20px; background:var(--bl-surface); margin:10px auto 0; position:relative; overflow:hidden; }
-.bl-choose-line::after { content:''; position:absolute; left:0; top:-100%; width:100%; height:100%; background:var(--bl-500); animation:bl-drip 2s ease-in-out infinite; }
-@keyframes bl-drip { 0%{top:-100%} 35%{top:100%} 100%{top:100%} }
+/* Igual que el ecualizador: animar `top` dispara layout; translateY no. */
+.bl-choose-line::after { content:''; position:absolute; left:0; top:0; width:100%; height:100%; background:var(--bl-500); animation:bl-drip 2s ease-in-out infinite; will-change:transform; }
+@keyframes bl-drip { 0%{transform:translateY(-100%)} 35%{transform:translateY(100%)} 100%{transform:translateY(100%)} }
 
 /* ── Filters ────────────────────────────── */
 .bl-filters { position:sticky; z-index:898; display:flex; gap:6px; padding:12px 32px; overflow-x:auto; border-bottom:none; background:var(--bl-glass-light); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); scrollbar-width:none; }
@@ -1839,10 +1871,19 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 
 /* ── Skeleton Loaders ───────────────────── */
-@keyframes bl-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes bl-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 .bl-skeleton { padding:0 32px; }
 .bl-skeleton-item { display:flex; align-items:center; gap:20px; padding:20px 0; border-bottom:1px solid var(--bl-border-sub); }
-.bl-skeleton-bone { background:linear-gradient(90deg, var(--bl-surface) 25%, var(--bl-border) 50%, var(--bl-surface) 75%); background-size:200% 100%; animation:bl-shimmer 1.5s ease-in-out infinite; border-radius:3px; }
+/* El brillo pasa a ser una capa que se desplaza con transform, en vez de mover
+   el background-position del propio hueso: eso repintaba en cada frame, y los
+   esqueletos son justo lo que está en pantalla mientras Lighthouse mide. */
+.bl-skeleton-bone { position:relative; overflow:hidden; background:var(--bl-surface); border-radius:3px; }
+.bl-skeleton-bone::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent 25%, var(--bl-border) 50%, transparent 75%);
+  animation:bl-shimmer 1.5s ease-in-out infinite;
+  will-change:transform;
+}
 .bl-skeleton-circle { width:48px; height:48px; border-radius:4px; flex-shrink:0; }
 .bl-skeleton-line { height:12px; }
 .bl-skeleton-line-short { width:40%; }
@@ -2047,7 +2088,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   position:relative; margin:16px 0 8px; padding:24px 20px;
   background:var(--bl-subtle-03); border:1px solid var(--bl-border);
   border-radius:8px; cursor:pointer;
-  transition:all .5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .5s var(--ease-out-expo);
   overflow:hidden;
 }
 .bl-featured-hero::before {
@@ -2093,7 +2134,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-featured-arrow {
   position:absolute; right:20px; top:50%; transform:translateY(-50%);
   font-size:18px; color:var(--bl-text-sec); opacity:0;
-  transition:all .4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:all .4s var(--ease-out-expo);
 }
 .bl-featured-hero:hover .bl-featured-arrow { opacity:1; transform:translateY(-50%) translateX(4px); }
 
@@ -3568,8 +3609,8 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
 /* ── 3. Enhanced Reveal Animation ────────── */
 .bl-reveal {
   opacity:0; transform:translateY(28px) scale(0.97);
-  transition:opacity .8s cubic-bezier(0.16, 1, 0.3, 1),
-             transform .8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:opacity .8s var(--ease-out-expo),
+             transform .8s var(--ease-out-expo);
   will-change:opacity, transform;
 }
 .bl-reveal.visible { opacity:1; transform:translateY(0) scale(1); }
