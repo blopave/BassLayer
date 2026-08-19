@@ -79,6 +79,10 @@ export const STRINGS = {
     "filter.thisWeekend": "Este finde",
     "filter.exploreWeekend": "Explorar finde…",
     "filter.searchPlaceholder": "Buscá artistas, venues, fiestas…",
+    "filter.filters": "Filtros",
+    "filter.sheetTitle": "Filtrar la agenda",
+    "filter.apply": "Ver {n} eventos",
+    "filter.clear": "Limpiar",
     "feed.eventsWord": "eventos",
 
     "event.lineup": "Line-up",
@@ -312,6 +316,10 @@ export const STRINGS = {
     "filter.thisWeekend": "This weekend",
     "filter.exploreWeekend": "Explore weekend…",
     "filter.searchPlaceholder": "Search artists, venues, parties…",
+    "filter.filters": "Filters",
+    "filter.sheetTitle": "Filter the agenda",
+    "filter.apply": "See {n} events",
+    "filter.clear": "Clear",
     "feed.eventsWord": "events",
 
     "event.lineup": "Line-up",

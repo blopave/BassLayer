@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
-import { IG_HANDLE, IG_URL } from "../utils/constants";
+import { IG_HANDLE, IG_URL, useIsMobile } from "../utils/constants";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, MONTH_ABBR_INDEX, monthAbbrLocale, monthLongLocale } from "../i18n/strings";
 
 
@@ -138,6 +140,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const [regionFilter, setRegionFilter] = useState("AR");
   const [cityFilter, setCityFilter] = useState("Todas");
   const [when, setWhen] = useState("");   // "" | "hoy" | "finde" — filtro temporal
+  // En mobile los tres segmentos de control se apilaban y empujaban el primer
+  // evento a 548px de un viewport de 667. Pasan a un bottom sheet detrás de un
+  // disparador compacto; en desktop la barra de una fila se queda como está.
+  const isMobile = useIsMobile();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const sheetRef = useFocusTrap(sheetOpen);
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
@@ -290,6 +298,57 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return <>{t("feed.empty.filter")}</>;
   }
 
+  // Segmentos de control. Se definen una sola vez y se montan en la barra de
+  // desktop o dentro del bottom sheet de mobile — misma lógica, dos envases.
+  const whenSeg = (
+    <label className="bl-ctrl-seg" key="when">
+      <span className="bl-ctrl-k">{t("filter.when")}</span>
+      <select className="bl-ctrl-select" value={when} onChange={(e) => onWhenChange(e.target.value)} aria-label={t("filter.when")}>
+        <option value="">{t("filter.anytime")}</option>
+        <option value="hoy">{t("day.today")}</option>
+        <option value="finde">{t("filter.thisWeekend")}</option>
+        <option value="explore">{t("filter.exploreWeekend")}</option>
+      </select>
+    </label>
+  );
+
+  const whereSeg = (availableRegions.length > 1 || cities.length > 2) ? (
+    <div className="bl-ctrl-seg" key="where">
+      <span className="bl-ctrl-k">{t("filter.where")}</span>
+      <div className="bl-ctrl-where">
+        {availableRegions.length > 1 && (
+          <select className="bl-ctrl-select" value={regionFilter} onChange={(e) => changeRegion(e.target.value)} aria-label={t("filter.where")}>
+            {availableRegions.map((r) => (<option key={r.code} value={r.code}>{r.label}</option>))}
+          </select>
+        )}
+        {cities.length > 2 && (
+          <select className="bl-ctrl-select" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} aria-label={t("filter.allCities")}>
+            {cities.map((c) => (<option key={c} value={c}>{c === "Todas" ? t("filter.allCities") : c}</option>))}
+          </select>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  const searchSeg = (
+    <div className="bl-ctrl-seg bl-ctrl-search-seg" key="search">
+      <span className="bl-ctrl-mag" aria-hidden="true">&#8981;</span>
+      <input
+        className="bl-ctrl-search"
+        type="search"
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder={t("filter.searchPlaceholder")}
+        aria-label={t("filter.searchPlaceholder")}
+      />
+    </div>
+  );
+
+  // Cuántos filtros hay puestos. Va como contador en el disparador para que el
+  // estado siga siendo visible con el sheet cerrado.
+  const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "AR" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
+  const clearFilters = () => { setWhen(""); changeRegion("AR"); };
+
   let itemIdx = 0;
 
   return (
@@ -340,45 +399,61 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
 
       {/* Barra unificada de contexto: Cuándo · Dónde · Buscar (una sola forma) */}
-      <div className="bl-ctrl-bar">
-        <label className="bl-ctrl-seg">
-          <span className="bl-ctrl-k">{t("filter.when")}</span>
-          <select className="bl-ctrl-select" value={when} onChange={(e) => onWhenChange(e.target.value)} aria-label={t("filter.when")}>
-            <option value="">{t("filter.anytime")}</option>
-            <option value="hoy">{t("day.today")}</option>
-            <option value="finde">{t("filter.thisWeekend")}</option>
-            <option value="explore">{t("filter.exploreWeekend")}</option>
-          </select>
-        </label>
-        {(availableRegions.length > 1 || cities.length > 2) && (
-          <div className="bl-ctrl-seg">
-            <span className="bl-ctrl-k">{t("filter.where")}</span>
-            <div className="bl-ctrl-where">
-              {availableRegions.length > 1 && (
-                <select className="bl-ctrl-select" value={regionFilter} onChange={(e) => changeRegion(e.target.value)} aria-label={t("filter.where")}>
-                  {availableRegions.map((r) => (<option key={r.code} value={r.code}>{r.label}</option>))}
-                </select>
-              )}
-              {cities.length > 2 && (
-                <select className="bl-ctrl-select" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} aria-label={t("filter.allCities")}>
-                  {cities.map((c) => (<option key={c} value={c}>{c === "Todas" ? t("filter.allCities") : c}</option>))}
-                </select>
-              )}
-            </div>
+      {isMobile ? (
+        <>
+          {/* Mobile: una sola fila. Los selectores viven en el sheet. */}
+          <div className="bl-ctrl-bar bl-ctrl-bar-compact">
+            {searchSeg}
+            <button
+              type="button"
+              className={`bl-ctrl-filters-btn${activeFilterCount > 0 ? " has-filters" : ""}`}
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+            >
+              {t("filter.filters")}
+              {activeFilterCount > 0 && <span className="bl-ctrl-filters-count">{activeFilterCount}</span>}
+            </button>
           </div>
-        )}
-        <div className="bl-ctrl-seg bl-ctrl-search-seg">
-          <span className="bl-ctrl-mag" aria-hidden="true">&#8981;</span>
-          <input
-            className="bl-ctrl-search"
-            type="search"
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder={t("filter.searchPlaceholder")}
-            aria-label={t("filter.searchPlaceholder")}
-          />
+
+          {/* Va por portal a <body>: el contenedor del swipe tiene transform, y un
+              position:fixed adentro se posiciona contra ESE ancestro (queda de
+              200% de ancho) y su z-index no compite con el de la barra de
+              utilidades. Fuera del árbol transformado, las dos cosas se arreglan. */}
+          {sheetOpen && createPortal(
+            <div
+              className="bl-sheet-overlay"
+              onClick={(e) => { if (e.target === e.currentTarget) setSheetOpen(false); }}
+            >
+              <div className="bl-sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label={t("filter.sheetTitle")}>
+                <div className="bl-sheet-grip" aria-hidden="true" />
+                <div className="bl-sheet-head">
+                  <h2 className="bl-sheet-title">{t("filter.sheetTitle")}</h2>
+                  {activeFilterCount > 0 && (
+                    <button type="button" className="bl-sheet-clear" onClick={clearFilters}>
+                      {t("filter.clear")}
+                    </button>
+                  )}
+                </div>
+                <div className="bl-sheet-body">
+                  {whenSeg}
+                  {whereSeg}
+                </div>
+                <button type="button" className="bl-sheet-apply" onClick={() => setSheetOpen(false)}>
+                  {t("filter.apply", { n: filtered.length })}
+                </button>
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
+      ) : (
+        <div className="bl-ctrl-bar">
+          {whenSeg}
+          {whereSeg}
+          {searchSeg}
         </div>
-      </div>
+      )}
 
       {/* Header editorial del listado */}
       {!loading && !error && filtered.length > 0 && (

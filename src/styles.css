@@ -1361,6 +1361,96 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 /* Header editorial del listado */
 .bl-feed-head { display:flex; align-items:baseline; gap:12px; margin:22px 32px 2px; padding-bottom:12px; border-bottom:1px solid var(--bl-border); }
 .bl-feed-head-n { font-family:var(--font-bass), sans-serif; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--bl-text); font-variant-numeric:tabular-nums; }
+/* ── Filtros en mobile: disparador + bottom sheet ──────────────────────────
+   Los tres segmentos apilados empujaban el primer evento a 548px de un
+   viewport de 667. Acá la barra queda en una fila y los selectores se mudan a
+   un panel que sube desde abajo, que es donde el pulgar ya está. */
+.bl-ctrl-bar-compact { gap:8px; padding:6px; align-items:center; }
+/* Especificidad de 3 clases a propósito: el bloque mobile de más abajo le pone
+   order:3 y flex-basis:100% al buscador para apilarlo, y acá lo queremos en
+   línea y primero — el buscar es la intención más común. */
+.bl-ctrl-bar.bl-ctrl-bar-compact .bl-ctrl-search-seg {
+  order:0; flex:1 1 0%; min-width:0;
+  border:none; border-top:none;
+}
+
+.bl-ctrl-filters-btn {
+  flex:0 0 auto;
+  display:inline-flex; align-items:center; gap:7px;
+  min-height:44px; padding:0 16px;
+  font-family:var(--font-bass-mono), monospace;
+  font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--bl-text); background:var(--bl-subtle);
+  border:1px solid var(--bl-border); border-radius:8px;
+  cursor:pointer; white-space:nowrap;
+  transition:border-color .2s, background .2s;
+}
+.bl-ctrl-filters-btn:hover { border-color:var(--bl-accent-bass); }
+.bl-ctrl-filters-btn.has-filters { border-color:var(--bl-accent-bass); color:var(--bl-accent-bass); }
+.bl-ctrl-filters-count {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:18px; height:18px; padding:0 5px;
+  font-size:10.5px; line-height:1;
+  color:var(--bl-black); background:var(--bl-accent-bass);
+  border-radius:9px; font-variant-numeric:tabular-nums;
+}
+
+.bl-sheet-overlay {
+  position:fixed; inset:0; z-index:9750;
+  background:var(--bl-overlay);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  display:flex; align-items:flex-end;
+  animation:bl-wp-fadein .25s var(--ease-out-expo);
+}
+.bl-sheet {
+  width:100%; max-height:85vh;
+  display:flex; flex-direction:column; gap:18px;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background:var(--bl-surface);
+  border-top:1px solid var(--bl-border);
+  border-radius:18px 18px 0 0;
+  animation:bl-sheet-up .32s var(--ease-out-expo);
+  overflow-y:auto;
+}
+@keyframes bl-sheet-up { from { transform:translateY(100%); } to { transform:translateY(0); } }
+@media (prefers-reduced-motion:reduce) {
+  .bl-sheet { animation:none; }
+  .bl-sheet-overlay { animation:none; }
+}
+.bl-sheet-grip {
+  width:38px; height:4px; border-radius:2px;
+  background:var(--bl-border); margin:0 auto 4px;
+  flex-shrink:0;
+}
+.bl-sheet-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.bl-sheet-title {
+  margin:0; font-family:var(--font-display);
+  font-size:19px; font-weight:700; letter-spacing:-0.02em; color:var(--bl-text);
+}
+.bl-sheet-clear {
+  min-height:44px; padding:0 4px; background:transparent; border:none; cursor:pointer;
+  font-family:var(--font-bass-mono), monospace;
+  font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--bl-text-ter);
+}
+.bl-sheet-clear:hover { color:var(--bl-accent-bass); }
+.bl-sheet-body { display:flex; flex-direction:column; gap:14px; }
+/* Dentro del sheet los segmentos son cajas propias, no columnas de una barra */
+.bl-sheet-body .bl-ctrl-seg {
+  flex-direction:column; align-items:stretch; gap:6px;
+  padding:12px 14px; border:1px solid var(--bl-border-sub); border-radius:10px;
+}
+.bl-sheet-body .bl-ctrl-select { min-height:44px; font-size:15px; }
+.bl-sheet-body .bl-ctrl-where { display:flex; flex-direction:column; gap:8px; }
+.bl-sheet-apply {
+  min-height:50px; width:100%;
+  font-family:var(--font-bass-mono), monospace;
+  font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--bl-black); background:var(--bl-accent-bass);
+  border:none; border-radius:10px; cursor:pointer; flex-shrink:0;
+}
+.bl-sheet-apply:hover { filter:brightness(1.08); }
+
 .bl-feed-head-ctx { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-ter); }
 
 /* ── Columna editorial ─────────────────────────────────────────────────────
