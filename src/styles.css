@@ -3434,6 +3434,30 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   .bl-timeline-year-btn { min-height:44px; display:inline-flex; align-items:center; }
 }
 
+/* ── Táctil ────────────────────────────────────────────────────────────────
+   La union de las dos condiciones es a propósito: `pointer:coarse` sola deja
+   afuera cualquier verificación en un browser de escritorio angosto, y
+   `max-width` sola deja afuera una tablet táctil en horizontal. */
+@media (pointer:coarse), (max-width:768px) {
+  /* Chips de filtro y tabs de sección — medían entre 24 y 37px, por debajo del
+     mínimo táctil de 44. Se agranda el área de toque sin tocar el cuerpo de la
+     tipografía, así el índice editorial de Bass conserva su aspecto. */
+  .bl-filter-chip,
+  .bl-filters.bass-filters .bl-filter-chip,
+  .bl-festival-region-chip {
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+  }
+  .bl-bass-section-btn { min-height:44px; }
+
+  /* La barra flotante de utilidades es fixed y se comía el final de la lista:
+     en Bass tapaba una fila de eventos y en Layer la primera noticia entera.
+     El panel es el que scrollea, así que se le da fondo suficiente para que el
+     último contenido pueda pasar por encima de la barra. */
+  .bl-swipe-panel { padding-bottom:96px; }
+}
+
 /* ── 3. Enhanced Reveal Animation ────────── */
 .bl-reveal {
   opacity:0; transform:translateY(28px) scale(0.97);
