@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 
+// Techo duro: pase lo que pase con el contador, el preloader no retiene la
+// pantalla más que esto. Es una cortina, no una espera.
+const PRELOAD_MAX_MS = 1200;
+
 export function Preloader({ done }) {
   const [p, setP] = useState(0);
   const canvasRef = useRef(null);
+  const doneRef = useRef(done);
+  doneRef.current = done;
 
   useEffect(() => {
     const iv = setInterval(() => setP((v) => { const n = v + Math.random() * 15 + 8; if (n >= 100) { clearInterval(iv); return 100; } return n; }), 20);
-    return () => clearInterval(iv);
+    const cap = setTimeout(() => doneRef.current(), PRELOAD_MAX_MS);
+    return () => { clearInterval(iv); clearTimeout(cap); };
   }, []);
 
-  useEffect(() => { if (p >= 100) { const t = setTimeout(done, 300); return () => clearTimeout(t); } }, [p, done]);
+  // Lee `done` por ref: si dependiera de la prop, un re-render del padre
+  // reiniciaría este timer y la salida nunca llegaría.
+  useEffect(() => { if (p >= 100) { const t = setTimeout(() => doneRef.current(), 300); return () => clearTimeout(t); } }, [p]);
 
   // Generative pattern
   useEffect(() => {

@@ -45,6 +45,18 @@ function startedInScrollableX(startEl, dx, boundary) {
   return false;
 }
 
+// Tiempos del wipe circular, en ms. `lettersOut` es absoluto; el resto va
+// medido desde que el círculo empieza a crecer. `end` tiene que caer después
+// de `reveal` + los .7s de la transición CSS: es el desmonte garantizado.
+const WIPE = { lettersOut: 350, swap: 500, reveal: 600, end: 1450 };
+
+// El círculo nace donde ocurrió el gesto; sin coordenadas, en el centro.
+const wipeOrigin = (e) => ({
+  cx: e?.clientX || e?.changedTouches?.[0]?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2,
+  cy: e?.clientY || e?.changedTouches?.[0]?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2,
+  sz: Math.max(innerWidth, innerHeight) * 2.5,
+});
+
 export default function App() {
   const { locale, setLocale, t } = useLocale();
   const isMobile = useIsMobile();
@@ -645,41 +657,74 @@ export default function App() {
   const touchStartEl = useRef(null);
   const containerRef = useRef(null);
 
+  // Identidad estable a propósito: como arrow inline se recreaba en cada
+  // render, y el reloj de la home re-renderiza App cada segundo. Eso reiniciaba
+  // el timer de salida del preloader y lo dejaba colgado en pantalla.
+  const finishPreload = useCallback(() => {
+    setLoaded(true);
+    if (!localStorage.getItem("bl-onboarded")) setShowOnboarding(true);
+  }, []);
+
+  // ── Wipe circular ──────────────────────────────────────────
+  // Los tiempos se agendan TODOS desde el mismo instante, nunca anidados: un
+  // callback que se pierde ya no puede cortar la cadena y dejar el overlay
+  // tapando la app. `end` es el seguro — corre siempre y lo desmonta.
+  const wipeTimersRef = useRef([]);
+
+  const clearWipeTimers = useCallback(() => {
+    wipeTimersRef.current.forEach(clearTimeout);
+    wipeTimersRef.current = [];
+  }, []);
+
+  const schedule = useCallback((fn, ms) => {
+    wipeTimersRef.current.push(setTimeout(fn, ms));
+  }, []);
+
+  // Desmonta el overlay y vuelve al estado neutro. Idempotente.
+  const endWipe = useCallback(() => {
+    clearWipeTimers();
+    setCircleExpand(false);
+    setCircleStyle({});
+  }, [clearWipeTimers]);
+
+  useEffect(() => clearWipeTimers, [clearWipeTimers]);
+
+  // Arranca el wipe y agenda su propio desarme. `delay` es lo que hay que
+  // esperar antes de tapar (la home necesita que primero salgan las letras).
+  // Devuelve el instante en que la pantalla queda tapada, para que el llamador
+  // cambie de vista ahí sin encadenar timers dentro de este.
+  const openWipe = useCallback((e, background, delay) => {
+    const { cx, cy, sz } = wipeOrigin(e);
+    clearWipeTimers();
+    schedule(() => {
+      setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background });
+      setCircleExpand(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
+    }, delay);
+    schedule(() => setCircleExpand(false), delay + WIPE.reveal);   // destapa la vista nueva
+    schedule(endWipe, delay + WIPE.end);                           // seguro: siempre desmonta
+    return delay + WIPE.swap;
+  }, [clearWipeTimers, schedule, endWipe]);
+
   const navigateToSections = useCallback((e, startPanel = 0) => {
     if (view !== "home" || heroExiting) return;
     setActivePanel(startPanel);
     setHeroExiting(true);
-    const cx = e?.clientX || e?.changedTouches?.[0]?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
-    const cy = e?.clientY || e?.changedTouches?.[0]?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
-    const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    // Letters exit first, then circle wipe
-    setTimeout(() => {
-      setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? (startPanel === 0 ? "#E8E2DA" : "#DAE6EC") : (startPanel === 0 ? "#181614" : "#0F1418") });
-      setCircleExpand(false);
-      requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
-      setTimeout(() => {
-        setView("sections");
-        setHeroExiting(false);
-        setTimeout(() => setCircleExpand(false), 100);
-        if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
-        if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-      }, 500);
-    }, 350); // wait for letters to exit
-  }, [view, heroExiting, dayMode, loadNews, loadEvents]);
+    const bg = dayMode ? (startPanel === 0 ? "#E8E2DA" : "#DAE6EC") : (startPanel === 0 ? "#181614" : "#0F1418");
+    const swapAt = openWipe(e, bg, WIPE.lettersOut);
+    schedule(() => {
+      setView("sections");
+      setHeroExiting(false);
+      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+    }, swapAt);
+  }, [view, heroExiting, dayMode, loadNews, loadEvents, openWipe, schedule]);
 
   const navigateHome = useCallback((e) => {
     if (view !== "sections") return;
-    const cx = e?.clientX || e?.changedTouches?.[0]?.clientX || e?.touches?.[0]?.clientX || innerWidth / 2;
-    const cy = e?.clientY || e?.changedTouches?.[0]?.clientY || e?.touches?.[0]?.clientY || innerHeight / 2;
-    const sz = Math.max(innerWidth, innerHeight) * 2.5;
-    setCircleStyle({ width: sz, height: sz, left: cx, top: cy, background: dayMode ? "#F5F5F0" : "#000000" });
-    setCircleExpand(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => setCircleExpand(true)));
-    setTimeout(() => {
-      setView("home");
-      setTimeout(() => setCircleExpand(false), 100);
-    }, 500);
-  }, [view, dayMode]);
+    const swapAt = openWipe(e, dayMode ? "#F5F5F0" : "#000000", 0);
+    schedule(() => setView("home"), swapAt);
+  }, [view, dayMode, openWipe, schedule]);
 
   const wipeTimerRef = useRef(null);
   const swipeTo = useCallback((panel) => {
@@ -810,12 +855,16 @@ export default function App() {
     <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
       {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
-      {!loaded && <Preloader done={() => { setLoaded(true); if (!localStorage.getItem("bl-onboarded")) setShowOnboarding(true); }} />}
+      {!loaded && <Preloader done={finishPreload} />}
 
-      <div className="bl-circle" aria-hidden="true">
-        <div className={`bl-circle-inner${circleExpand ? " expand" : ""}`}
-          style={{ width: circleStyle.width || 0, height: circleStyle.height || 0, left: circleStyle.left || 0, top: circleStyle.top || 0, background: circleStyle.background || "#0A0A0A" }} />
-      </div>
+      {/* Sólo existe mientras dura la transición: en reposo no hay nada que
+          se pueda quedar trabado tapando la app. */}
+      {circleStyle.width ? (
+        <div className="bl-circle" aria-hidden="true">
+          <div className={`bl-circle-inner${circleExpand ? " expand" : ""}`}
+            style={{ width: circleStyle.width, height: circleStyle.height, left: circleStyle.left, top: circleStyle.top, background: circleStyle.background }} />
+        </div>
+      ) : null}
 
       {/* HOME */}
       <div className={`bl-view bl-home-view${view === "home" ? " active" : ""}`}>
