@@ -4,16 +4,20 @@
 
 /* ── Design Tokens ────────────────────────── */
 :root {
-  /* Grayscale system — pure neutrals */
+  /* Grayscale system — pure neutrals.
+     La escala tiene más pasos de los que el ojo distingue, pero se deja como
+     está a propósito: casi todo el CSS consume los alias semánticos de abajo
+     (--bl-text, --bl-text-sec, --bl-border…), no los números. Los ~60 usos
+     directos que quedan no justifican renumerar 4700 líneas.
+     El daño real que causaba esta escala era de contraste, y eso se arregló
+     donde correspondía — en los tokens semánticos de cada mundo. */
   --bl-black:       #000000;
   --bl-900:         #0A0A0A;
-  --bl-850:         #111111;
   --bl-800:         #141414;
   --bl-750:         #1A1A1A;
   --bl-700:         #1E1E1E;
   --bl-650:         #252525;
   --bl-600:         #2A2A2A;
-  --bl-550:         #333333;
   --bl-500:         #3A3A3A;
   --bl-450:         #4A4A4A;
   --bl-400:         #555555;
@@ -41,8 +45,12 @@
   --bl-indicator:   var(--bl-450);
 
   /* Functional */
-  --bl-up:          #2D6B3F;
-  --bl-down:        #6B2D2D;
+  /* Semánticos de suba/baja. Los anteriores (#2D6B3F / #6B2D2D) daban 2.79 y
+     1.73 de contraste sobre el fondo de Layer — ilegibles. Se subió la
+     luminosidad conservando croma en vez de aclarar hacia el blanco, que los
+     habría dejado en pastel: el verde queda incluso más saturado que antes. */
+  --bl-up:          #3E9B63;
+  --bl-down:        #CF6262;
   --bl-saved:       #D4A017;
 
   /* Section accent colors */
@@ -117,7 +125,6 @@
   --bl-accent-bass:  #A0714D;
   --bl-accent-layer: #4D8A9A;
   --bl-750:         #DDDDD8;
-  --bl-850:         #E8E8E3;
 }
 .bl-root.day-mode .bl-home::after { background:radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(245,245,240,0.5) 100%); }
 .bl-root.day-mode .bl-scanlines { background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.008) 2px,rgba(0,0,0,0.008) 4px); }
@@ -130,9 +137,15 @@
   --bl-surface-alt: #201E1A;
   --bl-border:      #302B25;
   --bl-border-sub:  #26221D;
-  --bl-text-sec:    #736A5E;
-  --bl-text-ter:    #584F44;
-  --bl-indicator:   #584F44;
+  /* Un solo nivel apagado, no dos. Sobre un fondo de #181614 no hay lugar para
+     tres niveles de texto legible: para pasar 4.5:1 el secundario y el
+     terciario convergen al mismo color. El anterior #584F44 daba 2.25 y era la
+     causa de 12 de las 14 fallas de contraste que reportó Lighthouse.
+     La diferencia entre secundario y terciario la hace ahora el tamaño y el
+     peso — igual que el contraste entre los dos mundos. */
+  --bl-text-sec:    #8A827A;
+  --bl-text-ter:    var(--bl-text-sec);
+  --bl-indicator:   #584F44;   /* decorativo (líneas, puntos): no es texto */
   --bl-glass:       rgba(24, 22, 20, 0.93);
   --bl-glass-light: rgba(24, 22, 20, 0.96);
   --bl-subtle:      rgba(196, 144, 112, 0.05);
@@ -220,9 +233,10 @@
   --bl-surface-alt: #151C24;
   --bl-border:      #1E2E38;
   --bl-border-sub:  #18242E;
-  --bl-text-sec:    #5A7080;
-  --bl-text-ter:    #405060;
-  --bl-indicator:   #405868;
+  /* Mismo criterio que Bass: un solo nivel apagado que pasa AA. */
+  --bl-text-sec:    #7A8B98;
+  --bl-text-ter:    var(--bl-text-sec);
+  --bl-indicator:   #405868;   /* decorativo */
   --bl-glass:       rgba(15, 20, 24, 0.93);
   --bl-glass-light: rgba(15, 20, 24, 0.96);
   --bl-subtle:      rgba(108, 184, 200, 0.05);
@@ -551,8 +565,10 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   color:var(--bl-bg);
   background:var(--bl-text);
 }
+/* Usaba --bl-border como color de texto: 1.24 de contraste, la peor de todas.
+   Un color de borde no es un color de texto. */
 .bl-lang-sep {
-  color:var(--bl-border);
+  color:var(--bl-text-sec);
   font-weight:400;
 }
 @media (max-width:768px) {
@@ -1159,7 +1175,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-price-track:hover { animation-play-state:paused; }
 @keyframes bl-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 .bl-price-item { display:inline-flex; align-items:center; gap:12px; padding:16px 32px; border-right:1px solid var(--bl-border); flex-shrink:0; transition:background var(--duration-fast); }
-.bl-price-sym { font-family:var(--font-mono); font-size:12px; letter-spacing:2px; color:var(--bl-300); font-weight:700; }
+.bl-price-sym { font-family:var(--font-mono); font-size:12px; letter-spacing:2px; color:var(--bl-text-sec); font-weight:700; }
 .bl-price-val { font-family:var(--font-mono); font-size:15px; color:var(--bl-100); font-weight:700; }
 .bl-price-chg { font-family:var(--font-mono); font-size:11px; }
 .bl-price-up { color:var(--bl-up); } .bl-price-down { color:var(--bl-down); }
