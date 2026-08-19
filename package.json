@@ -6,7 +6,8 @@
     "dev": "concurrently \"node server.js\" \"vite\"",
     "build": "vite build",
     "start": "NODE_ENV=production node server.js",
-    "preview": "open preview.html || xdg-open preview.html"
+    "preview": "open preview.html || xdg-open preview.html",
+    "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
