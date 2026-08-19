@@ -59,14 +59,20 @@
   --bl-subtle-bg:   rgba(255, 255, 255, 0.025);
   --bl-subtle-03:   rgba(255, 255, 255, 0.03);
 
-  /* Typography */
-  --font-display:   'Syne', sans-serif;
-  --font-bass:      'Geist', system-ui, -apple-system, sans-serif;
-  --font-bass-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
-  --font-layer:     'Space Grotesk', sans-serif;
-  --font-heading:   'Plus Jakarta Sans', sans-serif;
-  --font-mono:      'Space Mono', monospace;
-  --font-body:      'DM Sans', sans-serif;
+  /* ── Typography ──────────────────────────────────────────────
+     Dos familias reales, una superfamilia. La diferencia entre Bass y Layer
+     se construye con peso, tracking y caja — no con familias distintas — así
+     el contraste entre mundos es una regla y no un accidente.
+     Los nombres semánticos se conservan: describen el ROL, no la familia. */
+  --font-sans:      'Geist Variable', system-ui, -apple-system, sans-serif;
+  --font-mono:      'Geist Mono Variable', ui-monospace, Menlo, monospace;
+
+  --font-display:   var(--font-sans);   /* era Syne */
+  --font-bass:      var(--font-sans);
+  --font-bass-mono: var(--font-mono);
+  --font-layer:     var(--font-sans);   /* era Space Grotesk */
+  --font-heading:   var(--font-sans);   /* era Plus Jakarta Sans */
+  --font-body:      var(--font-sans);   /* era DM Sans */
 
   /* Motion */
   --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
@@ -787,7 +793,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   background:linear-gradient(225deg, rgba(108,184,200,0.08) 0%, transparent 60%);
 }
 .bl-header-half-layer .bl-header-world-name {
-  font-family:var(--font-layer), 'Space Grotesk', sans-serif;
+  font-family:var(--font-layer), sans-serif;
   text-transform:uppercase;
   line-height:1;
   transition:font-size .55s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing .55s cubic-bezier(0.16, 1, 0.3, 1), color .4s, text-shadow .4s, opacity .3s var(--ease-out-expo);
@@ -1011,7 +1017,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   animation:letter-exit 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards !important;
 }
 
-/* ── BASS — Geist: grotesca cálida, recta, contundente a gran escala ── */
+/* ── BASS — Geist Bold: contundente a gran escala, tracking cerrado ── */
 .bl-word-bass .bl-letter {
   display:inline-block;
   font-family:var(--font-bass);
@@ -1026,7 +1032,8 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   transition:color .4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow .5s;
 }
 
-/* ── LAYER — Space Grotesk: geometric, light, technical ── */
+/* ── LAYER — Geist Light: la misma familia que Bass, separada por peso,
+   caja y tracking. El contraste entre mundos es una regla, no otra fuente. ── */
 .bl-word-layer .bl-letter {
   display:inline-block;
   font-family:var(--font-layer);
@@ -1162,7 +1169,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
    .bl-bass-news-item y .bl-layer-news-item.
    Card real (bg + border + radius), hover rápido
    sin warm glow, 2 voces tipográficas: Bodoni
-   para fecha+nombre, Space Mono para meta.
+   para fecha+nombre, la mono para meta.
    ═══════════════════════════════════════════ */
 .bl-ev-list { display:flex; flex-direction:column; gap:14px; padding:8px 32px 0; }
 .bl-ev-item {
@@ -1191,42 +1198,28 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   padding-left:18px;
 }
 
-.bl-ev-date {
-  flex:0 0 56px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:4px;
-  padding-right:18px;
-  border-right:1px solid var(--bl-border-sub);
-}
-.bl-ev-date-d {
-  font-family:var(--font-bass-mono), monospace;
-  font-weight:600; font-style:normal;
-  font-size:27px; letter-spacing:-1px;
-  color:#F0EDE6;
-  line-height:1;
-  font-feature-settings:"tnum" 1;
-}
-.bl-ev-date-m {
-  font-family:var(--font-bass-mono), monospace;
-  font-weight:400; font-size:10px;
-  letter-spacing:2px; text-transform:uppercase;
-  color:var(--bl-text-sec);
-}
-
 .bl-ev-body {
   flex:1; min-width:0;
-  display:flex; flex-direction:column; justify-content:center; gap:8px;
+  display:flex; flex-direction:column; justify-content:center; gap:6px;
 }
 .bl-ev-name {
   font-family:var(--font-bass), sans-serif;
-  font-style:normal; font-weight:600;
-  font-size:17px; letter-spacing:-0.2px; line-height:1.3;
+  font-style:normal; font-weight:700;
+  font-size:20px; letter-spacing:-0.025em; line-height:1.15;
   color:#F0EDE6;
   text-decoration:none;
   display:-webkit-box;
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
   overflow:hidden;
+}
+/* El venue baja a su propia línea: era lo primero del meta-row y competía con
+   la hora y el género por la misma jerarquía. */
+.bl-ev-venue-line {
+  font-family:var(--font-bass), sans-serif;
+  font-size:13.5px; line-height:1.35;
+  color:var(--bl-150);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
 .bl-ev-meta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -1253,10 +1246,58 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   padding:0;
   white-space:nowrap;
 }
-.bl-ev-item .bl-thumb {
-  flex-basis:72px; width:72px; height:72px;
+/* El flyer va en 3:4 — la proporción real en la que se diseñan — y a un tamaño
+   donde se lee. A 72px cuadrados no comunicaba nada y era ruido.
+   Los festivales quedan afuera: su imagen es un logo apaisado, no un flyer. */
+.bl-ev-item:not(.bl-ev-item-festival) .bl-thumb {
+  flex:0 0 88px; width:88px; height:auto; aspect-ratio:3/4;
+  border-radius:6px;
+  align-self:stretch;
+}
+.bl-ev-item-festival .bl-thumb {
+  flex:0 0 72px; width:72px; height:72px;
   border-radius:10px;
   align-self:center;
+}
+
+/* Badge de fecha — sólo festivales. La agenda de eventos ya viene agrupada por
+   día, así que ahí la fecha vive en el encabezado; el listado de festivales es
+   plano y sí la necesita en cada fila. */
+.bl-ev-item-festival .bl-ev-date {
+  flex:0 0 56px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px;
+  padding-right:18px;
+  border-right:1px solid var(--bl-border-sub);
+}
+.bl-ev-item-festival .bl-ev-date-d {
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:600; font-style:normal;
+  font-size:27px; letter-spacing:-1px;
+  color:#F0EDE6;
+  line-height:1;
+  font-feature-settings:"tnum" 1;
+}
+.bl-ev-item-festival .bl-ev-date-m {
+  font-family:var(--font-bass-mono), monospace;
+  font-weight:400; font-size:10px;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--bl-text-sec);
+}
+/* Los festivales conservan el título en el tamaño anterior: su lista es un
+   índice de referencia, no la agenda del finde. */
+.bl-ev-item-festival .bl-ev-name { font-size:17px; font-weight:600; letter-spacing:-0.2px; line-height:1.3; }
+/* Nivel destacado: el mismo dato `featured` que ya venía del backend y que la
+   interfaz no expresaba. Flyer más grande y título más grande — escala como
+   jerarquía, que es el recurso más viejo y confiable que hay. */
+.bl-root[data-section="bass"] .bl-ev-item[data-featured="true"] .bl-thumb {
+  flex-basis:132px; width:132px;
+}
+.bl-root[data-section="bass"] .bl-ev-item[data-featured="true"] .bl-ev-name {
+  font-size:25px; letter-spacing:-0.03em;
+}
+.bl-root[data-section="bass"] .bl-ev-item[data-featured="true"] .bl-ev-venue-line {
+  font-size:14.5px;
 }
 /* Usado solo por FestivalItem: subtítulo "ciudad, país" bajo el nombre */
 .bl-ev-artists {
@@ -1356,6 +1397,13 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   font-family:var(--font-body); font-size:11px; letter-spacing:1px; text-transform:uppercase;
   color:var(--bl-accent-bass); white-space:nowrap; flex-shrink:0; font-weight:600;
 }
+/* La fecha numérica ya no se repite en cada fila: se dice una vez, acá. */
+.bl-day-date {
+  font-family:var(--font-mono), monospace;
+  font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--bl-text-ter); white-space:nowrap; flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
 .bl-day-line { flex:1; height:1px; background:linear-gradient(to right, var(--bl-border), transparent); }
 
 /* ═══════════════════════════════════════════
@@ -1392,7 +1440,7 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   user-select:none;
 }
 /* Línea de "lectura del día" — bajo el status bar del terminal, misma tipografía
-   Space Mono. Sin protagonismo: color secundario, borde inferior sutil, misma
+   la mono. Sin protagonismo: color secundario, borde inferior sutil, misma
    altura de línea que el header. */
 .bl-terminal-reading {
   font-family:var(--font-mono);
@@ -1823,12 +1871,13 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-filter-chip { font-size:9.5px; padding:5px 11px; }
   .bl-feed, .bl-skeleton { padding:0 16px; }
   .bl-ev-list { padding:6px 16px 0; gap:12px; }
-  .bl-ev-item { gap:14px; padding:16px; }
-  .bl-ev-item[data-featured="true"] { padding-left:14px; }
-  .bl-ev-date { flex-basis:48px; padding-right:14px; }
-  .bl-ev-date-d { font-size:26px; letter-spacing:-1px; }
-  .bl-ev-date-m { font-size:9.5px; letter-spacing:1.6px; }
-  .bl-ev-name { font-size:15.5px; letter-spacing:-0.1px; line-height:1.3; }
+  .bl-ev-item { gap:14px; padding:14px; }
+  .bl-ev-item[data-featured="true"] { padding-left:12px; }
+  .bl-ev-item:not(.bl-ev-item-festival) .bl-thumb { flex-basis:68px; width:68px; }
+  .bl-root[data-section="bass"] .bl-ev-item[data-featured="true"] .bl-thumb { flex-basis:96px; width:96px; }
+  .bl-ev-name { font-size:16.5px; letter-spacing:-0.02em; line-height:1.2; }
+  .bl-root[data-section="bass"] .bl-ev-item[data-featured="true"] .bl-ev-name { font-size:19px; }
+  .bl-ev-venue-line { font-size:12.5px; }
   .bl-ev-venue-inline { font-size:11px; letter-spacing:0; }
   .bl-ev-time-inline { font-size:10.5px; letter-spacing:0.3px; }
   .bl-ev-genre-badge { font-size:8px; padding:2px 7px; border-radius:10px; }

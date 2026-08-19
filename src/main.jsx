@@ -3,13 +3,12 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LocaleProvider } from "./hooks/useLocale";
+// Las dos únicas familias del sistema, auto-hospedadas y variables: un archivo
+// por familia cubre todo el rango 100–900. Van antes de styles.css para que
+// nuestros tokens ganen. Reemplazan a las siete que se pedían a Google Fonts.
+import "@fontsource-variable/geist/wght.css";
+import "@fontsource-variable/geist-mono/wght.css";
 import "./styles.css";
-
-// La hoja de Google Fonts entra como preload para no bloquear la primera
-// pintura; acá se promueve a stylesheet. Va antes del render porque a esta
-// altura el HTML ya se parseó y la descarga arrancó en paralelo.
-const fontLink = document.getElementById("bl-fonts");
-if (fontLink && fontLink.rel === "preload") fontLink.rel = "stylesheet";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

@@ -42,8 +42,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      // Las fuentes ahora se sirven desde el mismo origen (Geist Variable,
+      // empaquetada por Vite): ya no hace falta habilitar Google Fonts.
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'"],
       // imgSrc abierto a cualquier HTTPS — los festivales y feeds se hostean en
       // dominios variados e impredecibles (CDNs, WP, S3, etc.). Las URLs vienen
       // de fuentes que controlamos curatorialmente, no de input de usuario.

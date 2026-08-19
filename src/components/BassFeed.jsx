@@ -252,7 +252,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       currentMonth = ev.month;
       const label = getDayLabel(getEventDate(ev), t, dayNames);
       if (label !== currentLabel) {
-        groups.push({ type: "header", label });
+        // La fecha numérica viaja con el encabezado: al sacarla de cada fila,
+        // este pasa a ser el único lugar donde se dice, y tiene que decirla.
+        groups.push({ type: "header", label, day: ev.day, month: ev.month });
         currentLabel = label;
       }
       groups.push({ type: "event", data: ev });
@@ -403,6 +405,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 return (
                   <h2 className="bl-day-header bl-reveal" key={`h-${item.label}`} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
                     <span className="bl-day-label">{item.label}</span>
+                    <span className="bl-day-date">{item.day} {monthAbbrLocale(item.month, locale)}</span>
                     <span className="bl-day-line" aria-hidden="true" />
                   </h2>
                 );
@@ -427,14 +430,14 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   role="button"
                   aria-label={`${ev.name} - ${ev.day} ${ev.month} en ${ev.venue}`}
                 >
-                  <div className="bl-ev-date">
-                    <div className="bl-ev-date-d">{ev.day}</div>
-                    <div className="bl-ev-date-m">{monthAbbrLocale(ev.month, locale)}</div>
-                  </div>
+                  {/* El flyer es diseño gráfico hecho para este show: va de
+                      portada, no de miniatura. La fecha no se repite acá —
+                      la dice el encabezado del día, una sola vez. */}
+                  <BlThumb image={ev.image} />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
+                    <div className="bl-ev-venue-line">{ev.venue}</div>
                     <div className="bl-ev-meta-row">
-                      <span className="bl-ev-venue-inline">{ev.venue}</span>
                       {ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
                       {stamp && (
                         <span className="bl-ev-genre-badge" title={stamp}>{stamp}</span>
@@ -443,7 +446,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
                     </div>
                   </div>
-                  <BlThumb image={ev.image} />
                 </article>
               );
             })}
@@ -594,7 +596,7 @@ function FestivalItem({ f, idx, onSelect }) {
   const { locale } = useLocale();
   return (
     <article
-      className="bl-ev-item bl-reveal"
+      className="bl-ev-item bl-ev-item-festival bl-reveal"
       onClick={() => onSelect?.(f)}
       onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
       tabIndex={0}
