@@ -74,6 +74,9 @@
   --font-heading:   var(--font-sans);   /* era Plus Jakarta Sans */
   --font-body:      var(--font-sans);   /* era DM Sans */
 
+  /* Ancho de la columna editorial del feed (ver "Columna editorial"). */
+  --bl-measure:     1080px;
+
   /* Motion */
   --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -1359,6 +1362,37 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-feed-head { display:flex; align-items:baseline; gap:12px; margin:22px 32px 2px; padding-bottom:12px; border-bottom:1px solid var(--bl-border); }
 .bl-feed-head-n { font-family:var(--font-bass), sans-serif; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--bl-text); font-variant-numeric:tabular-nums; }
 .bl-feed-head-ctx { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-ter); }
+
+/* ── Columna editorial ─────────────────────────────────────────────────────
+   La agenda es una publicación, no un tablero: sin tope de ancho el título
+   quedaba flotando con cientos de píxeles de vacío hasta el borde derecho.
+
+   Dos tratamientos según lo que pinta cada bloque:
+   · Los que llevan fondo o borde a sangre (tabs, filtros sticky con glass, y
+     la lista) NO se angostan — se les corre el padding. Así el fondo sigue
+     cubriendo todo el ancho y sólo el contenido entra en la columna.
+   · Los que son cajas con borde propio (ctrl-bar, feed-head) sí se angostan.
+   El resultado es un único borde izquierdo de contenido, de arriba a abajo.
+
+   Sólo se activa donde el problema existe. Por debajo de 1180px no cambia
+   nada: los gutters de 32/16px siguen siendo los de siempre. */
+@media (min-width: 1180px) {
+  /* Los selectores llevan prefijo para ganarle a las definiciones base sin
+     depender del orden del archivo: .bl-bass-sections se define mucho más
+     abajo, y los chips ya venían con especificidad de 4 clases. */
+  .bl-swipe-panel .bl-bass-sections,
+  .bl-root[data-section="bass"] .bl-filters.bass-filters,
+  .bl-swipe-panel .bl-ev-list,
+  .bl-swipe-panel .bl-festival-filters,
+  .bl-swipe-panel .bl-bass-news-list {
+    padding-inline:calc((100% - var(--bl-measure)) / 2);
+  }
+  .bl-swipe-panel .bl-ctrl-bar,
+  .bl-swipe-panel .bl-feed-head {
+    max-width:var(--bl-measure);
+    margin-inline:auto;
+  }
+}
 
 @media (max-width:768px) {
   .bl-ctrl-bar { margin:16px 16px 0; flex-wrap:wrap; }
