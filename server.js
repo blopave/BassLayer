@@ -202,8 +202,10 @@ async function safeText(response, maxBytes = MAX_RESPONSE_SIZE) {
 }
 
 // Sanitize URLs from external sources — only allow http/https
+// Las URLs se extraen de atributos HTML y de XML, donde "&" viaja escapado como
+// "&amp;". Sin decodificar, los query strings quedaban rotos ("?a=1&amp;b=2").
 function sanitizeUrl(url) {
-  const str = String(url || "").trim();
+  const str = decodeHtmlEntities(String(url || "").trim());
   if (str.startsWith("https://") || str.startsWith("http://")) return str;
   return "";
 }
@@ -479,8 +481,22 @@ const NAMED_ENTITIES = {
   deg: "°", plusmn: "±", times: "×", divide: "÷",
   hearts: "♥", diams: "♦", clubs: "♣", spades: "♠",
   larr: "←", rarr: "→", uarr: "↑", darr: "↓", harr: "↔",
+  // Latin-1 acentuado. Estaban sueltas dentro de htmlToText y se perdieron al
+  // unificar los decodificadores; los feeds en español las usan todo el tiempo.
+  aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", uuml: "ü",
+  Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Uuml: "Ü",
+  ntilde: "ñ", Ntilde: "Ñ", ccedil: "ç", Ccedil: "Ç",
+  agrave: "à", egrave: "è", igrave: "ì", ograve: "ò", ugrave: "ù",
+  acirc: "â", ecirc: "ê", icirc: "î", ocirc: "ô", ucirc: "û",
+  auml: "ä", euml: "ë", ouml: "ö", Auml: "Ä", Ouml: "Ö",
+  atilde: "ã", otilde: "õ", Atilde: "Ã", Otilde: "Õ",
+  aring: "å", oslash: "ø", szlig: "ß", aelig: "æ",
+  iexcl: "¡", iquest: "¿", ordf: "ª", ordm: "º", sect: "§", para: "¶",
+  frac12: "½", frac14: "¼", sup2: "²", sup3: "³",
 };
-function decodeHtmlEntities(s) {
+// Una pasada de decodificación. No se usa directamente: la envuelve
+// decodeHtmlEntities, que repite hasta estabilizar.
+function decodeEntitiesOnce(s) {
   return String(s)
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => {
       const n = parseInt(h, 16);
@@ -504,6 +520,23 @@ function decodeHtmlEntities(s) {
       if (NAMED_ENTITIES[lower]) return NAMED_ENTITIES[lower];
       return m;
     });
+}
+
+// Varios feeds mandan el texto doble-codificado ("&amp;#8216;"). Con una sola
+// pasada quedaba "&#8216;" literal en pantalla: el paso numérico corre antes
+// que el de nombres, así que cuando "&amp;" recién se convierte en "&" ya no
+// hay quien mire el "&#8216;" que acaba de aparecer. Se repite hasta que el
+// texto no cambia, con tope de pasadas para no iterar de más ante una cadena
+// armada a propósito.
+const ENTITY_DECODE_MAX_PASSES = 3;
+function decodeHtmlEntities(s) {
+  let t = String(s);
+  for (let i = 0; i < ENTITY_DECODE_MAX_PASSES; i++) {
+    const next = decodeEntitiesOnce(t);
+    if (next === t) break;
+    t = next;
+  }
+  return t;
 }
 
 // Limpia un título RSS: decodifica entidades, stripea tags, quita prefijo/sufijo
@@ -875,24 +908,18 @@ function detectMusicTag(title) {
 }
 
 // Strip HTML, decode named entities, collapse whitespace.
+// Convierte HTML en texto plano. La decodificación de entidades la delega en
+// decodeHtmlEntities: antes tenía su propia tabla hardcodeada que no cubría las
+// entidades hex más allá de &#x27;, y por eso las comillas tipográficas
+// (&#x2019;, &#x201C;) salían literales en las descripciones de noticias.
 function htmlToText(s) {
   if (!s) return "";
-  return String(s)
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#x27;|&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&aacute;/gi, "á").replace(/&eacute;/gi, "é").replace(/&iacute;/gi, "í")
-    .replace(/&oacute;/gi, "ó").replace(/&uacute;/gi, "ú").replace(/&ntilde;/gi, "ñ")
-    .replace(/&iexcl;/gi, "¡").replace(/&iquest;/gi, "¿")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
-    .replace(/\s+/g, " ")
-    .trim();
+  return decodeHtmlEntities(
+    String(s)
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+  ).replace(/\s+/g, " ").trim();
 }
 
 function pickFirstImage(html) {
@@ -989,7 +1016,9 @@ async function fetchBassNewsRSSFeed(feed) {
         .replace(/\s*Der Beitrag\s+.+?\s+erschien zuerst auf\s+.+?\.?\s*$/i, "")       // DE
         .replace(/\s*(?:Continue reading|Read more|Seguir leyendo|Leer más|Suite|Weiterlesen)\.{0,3}\s*$/i, "")
         .slice(0, 320);
-      let cleanTitle = String(title).replace(/^(Mixmag|DJ Mag|RA|EDM\.com)\s*[:–—\-|]\s*/i, "").trim();
+      // Pasa por cleanNewsTitle como los feeds de Layer: antes sólo se le sacaba
+      // el prefijo de marca y las entidades llegaban crudas a la pantalla.
+      let cleanTitle = cleanNewsTitle(title).replace(/^(Mixmag|DJ Mag|RA|EDM\.com)\s*[:–—\-|]\s*/i, "").trim();
       cleanTitle = cleanTitle.replace(/\s{2,}/g, " ").slice(0, 140);
       return {
         time: rel,
@@ -1468,7 +1497,10 @@ function isNonMusicalQHEvent(e, nonMusicTitles) {
 
 function qhCleanDescription(desc) {
   if (!desc) return null;
-  let t = String(desc);
+  // El separador propio de la fuente ("&lt;|&gt;") y las entidades sueltas se
+  // resuelven acá: es el único lugar por el que pasa la descripción antes de
+  // llegar a la ficha del evento.
+  let t = decodeHtmlEntities(String(desc)).replace(/\s*<\|>\s*/g, " ").replace(/\s+/g, " ");
   const cut = t.search(/Este evento requiere|Descarga la aplicaci[oó]n|Validaci[oó]n por|No hay medios de pago|CUIT|Smart Tickets|Al realizar la compra|Recuerde no incluir/i);
   if (cut > 40) t = t.slice(0, cut);
   t = t.trim();
