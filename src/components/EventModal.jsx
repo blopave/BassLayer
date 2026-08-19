@@ -193,6 +193,12 @@ export function EventModal({ event, onClose, onShare }) {
   const supporting = artists.slice(1);
 
   const longDate = formatLongDateLocale(event.day, event.month, locale);
+  // El precio venía en los datos y no se mostraba en ninguna parte. Es dato de
+  // decisión: va arriba, con el resto de lo que define si vas o no.
+  const priceNum = Number(event.ticket_price);
+  const priceLabel = isFinite(priceNum) && priceNum > 0
+    ? `${t("event.priceFrom")} $${priceNum.toLocaleString(locale === "en" ? "en-US" : "es-AR")}`
+    : null;
 
   return (
     <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name} ref={trapRef}>
@@ -206,9 +212,14 @@ export function EventModal({ event, onClose, onShare }) {
           </div>
           <div className="bl-modal-title-area">
             <h1 className="bl-modal-name">{event.name}</h1>
+            {/* La fecha larga sube acá desde la tabla de INFORMACIÓN, que se
+                borró por redundante: sus cuatro filas repetían este header o la
+                tarjeta de ubicación. Así no se pierde el día de la semana. */}
             <div className="bl-em-meta">
+              <span className="bl-em-meta-date">{longDate}</span>
               {event.time && <span className="bl-em-meta-time">{event.time} hs</span>}
               {event.genre && <span className="bl-modal-genre">{event.genre}</span>}
+              {priceLabel && <span className="bl-em-meta-price">{priceLabel}</span>}
             </div>
           </div>
         </div>
@@ -280,31 +291,12 @@ export function EventModal({ event, onClose, onShare }) {
             </div>
           )}
 
-          <div className="bl-modal-section">
-            <div className="bl-modal-label bl-bass-t-label">{t("event.info")}</div>
-            <div className="bl-em-info">
-              <div className="bl-em-info-row">
-                <span className="bl-em-info-key bl-bass-t-label">{t("event.when")}</span>
-                <span className="bl-em-info-val bl-bass-t-body">{longDate}{event.time ? `, ${event.time} ${t("event.hoursShort")}` : ""}</span>
-              </div>
-              <div className="bl-em-info-row">
-                <span className="bl-em-info-key bl-bass-t-label">{t("event.where")}</span>
-                <span className="bl-em-info-val bl-bass-t-body">{event.venue}</span>
-              </div>
-              {event.address && (
-                <div className="bl-em-info-row">
-                  <span className="bl-em-info-key bl-bass-t-label">{t("event.address")}</span>
-                  <span className="bl-em-info-val bl-bass-t-body">{event.address}</span>
-                </div>
-              )}
-              {event.genre && (
-                <div className="bl-em-info-row">
-                  <span className="bl-em-info-key bl-bass-t-label">{t("event.genre")}</span>
-                  <span className="bl-em-info-val bl-bass-t-body">{event.genre}</span>
-                </div>
-              )}
+          {event.description && (
+            <div className="bl-modal-section">
+              <div className="bl-modal-label bl-bass-t-label">{t("event.about")}</div>
+              <p className="bl-em-desc bl-bass-t-body">{event.description}</p>
             </div>
-          </div>
+          )}
 
           <div className="bl-modal-section">
             <div className="bl-modal-label bl-bass-t-label">{t("event.location")}</div>

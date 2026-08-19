@@ -1495,8 +1495,25 @@ function isNonMusicalQHEvent(e, nonMusicTitles) {
   return false;
 }
 
-function qhCleanDescription(desc) {
+// Descarta la descripción cuando no aporta nada sobre el título. La fuente
+// autogenera muchas con la plantilla "{título} en {venue}" (48 de 76 medidas):
+// mostrarlas hacía que el venue apareciera cuatro veces en la misma ficha.
+function qhDescriptionIsRedundant(desc, title) {
+  if (!desc || !title) return false;
+  const norm = (x) => String(x).normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const d = norm(desc), t = norm(title);
+  if (!t) return false;
+  // Plantillas de ticketeras que sólo repiten el nombre del evento.
+  if (/^evento (en|disponible en)\b/.test(d)) return true;
+  if (/\bevento disponible en\b/.test(d) && d.length < t.length + 40) return true;
+  // "TÍTULO en VENUE" y variantes: arranca igual y casi no agrega texto.
+  return d.startsWith(t.slice(0, 40)) && d.length < t.length * 1.6 + 30;
+}
+
+function qhCleanDescription(desc, title) {
   if (!desc) return null;
+  if (qhDescriptionIsRedundant(desc, title)) return null;
   // El separador propio de la fuente ("&lt;|&gt;") y las entidades sueltas se
   // resuelven acá: es el único lugar por el que pasa la descripción antes de
   // llegar a la ficha del evento.
@@ -1533,7 +1550,7 @@ function mapQHEvent(e) {
     image: sanitizeUrl(e.image_url) || null,
     source: "quehacemos",
     event_type: e.event_type,        // insumo para classifyFamily
-    description: qhCleanDescription(e.description),
+    description: qhCleanDescription(e.description, e.title),
     ticket_price: (isFinite(priceNum) && priceNum > 0) ? priceNum : null,
   };
 }

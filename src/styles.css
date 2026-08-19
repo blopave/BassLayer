@@ -2129,6 +2129,22 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
   color:var(--bl-text-sec); text-transform:uppercase;
 }
+/* La fecha larga con día de la semana: lo único que la tabla de INFORMACIÓN
+   aportaba de verdad, ahora dicho una sola vez y donde se mira primero. */
+.bl-em-meta-date {
+  font-family:var(--font-bass), sans-serif; font-size:13.5px;
+  color:var(--bl-150);
+}
+.bl-em-meta-price {
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.08em;
+  color:var(--bl-accent-bass); text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+}
+/* Descripción del evento — 76 de 567 eventos la traen y no se mostraba nunca. */
+.bl-em-desc {
+  margin:0; font-size:14.5px; line-height:1.6;
+  color:var(--bl-150); max-width:62ch;
+}
 
 /* Headliner: click reveals inline info panel below */
 .bl-em-headliner { margin-bottom:10px; }
@@ -2225,20 +2241,6 @@ button.bl-modal-artist:hover {
 }
 
 /* Compact info rows replacing the alternating grid */
-.bl-em-info {
-  display:flex; flex-direction:column;
-  border:1px solid var(--bl-border); border-radius:6px;
-  overflow:hidden;
-}
-.bl-em-info-row {
-  display:grid; grid-template-columns:96px 1fr; gap:14px;
-  padding:11px 14px;
-  border-top:1px solid var(--bl-border-sub);
-  align-items:baseline;
-}
-.bl-em-info-row:first-child { border-top:none; }
-.bl-em-info-key { color:var(--bl-text-sec); }
-.bl-em-info-val { color:var(--bl-150); }
 
 /* Location card — designed alternative to a generic map embed */
 .bl-em-loc-card {
@@ -2291,8 +2293,7 @@ button.bl-modal-artist:hover {
 
 @media (max-width:768px) {
   .bl-modal.bl-event-modal { max-width:100%; }
-  .bl-em-info-row { grid-template-columns:80px 1fr; gap:10px; padding:10px 12px; }
-  .bl-em-headliner-name { font-size:19px; }
+    .bl-em-headliner-name { font-size:19px; }
   .bl-em-artist-panel { gap:12px; padding:12px; }
   .bl-em-artist-thumb-wrap { width:64px; height:64px; }
   .bl-em-artist-name { font-size:15px; }
