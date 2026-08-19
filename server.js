@@ -1344,6 +1344,126 @@ const QH_WINDOW_DAYS = 75;
 const QH_MAX_PAGES = 8;
 const QH_MAX_EVENTS = 80;
 
+// ── Filtro anti-no-musical (QuéHacemos) ──
+// El `event_type` de la fuente no es confiable: obras de teatro, musicales,
+// stand up y cine entran tipeados como "recital" o "festival". Bass es agenda
+// musical, así que se descartan con dos señales complementarias:
+//   1. léxico escénico en título+descripción, contrapesado por léxico musical;
+//   2. salas exclusivamente teatrales sin ninguna señal musical.
+// Ninguna sola alcanza: hay obras con descripción larga y cero léxico escénico
+// (se cazan por sala) y música en salas teatrales (sobrevive por léxico musical).
+
+const NON_MUSIC_MARKERS = [
+  [2, /\bobra de teatro\b/i],
+  [2, /\bdramaturg(ia|o|a)\b/i],
+  [2, /\belenco\b/i],
+  [2, /\bunipersonal(es)?\b/i],
+  [2, /\bstand[\s-]?up\b/i],
+  [2, /\bmon[oó]logo\b/i],
+  [2, /\bhumorista\b/i],
+  [2, /\bteatro (musical|independiente|off)\b/i],
+  [2, /\bteatralidad\b/i],
+  [2, /\bversi[oó]n teatral\b/i],
+  [2, /\b[eé]xito cinematogr[aá]fic[oa]\b/i],
+  [2, /\bllega al teatro\b/i],
+  [2, /\bobras cortas\b/i],
+  [2, /\bel musical\b/i],
+  [2, /\bcomedia (musical|teatral|dram[aá]tica)\b/i],
+  [2, /\b(cortometraje|largometraje|pel[ií]cula|documental)\b/i],
+  [2, /\b(proyecci[oó]n|preestreno)\b/i],
+  [2, /\b(exposici[oó]n|muestra de arte|vernissage)\b/i],
+  [2, /\b(conferencia|seminario|taller|masterclass|charla)\b/i],
+  [1, /\bpuesta en escena\b/i],
+  [1, /\b(la|una|esta|su) obra\b/i],
+  [1, /\bdirigid[oa] por\b/i],
+  [1, /\bdirecci[oó]n (art[ií]stica|general|teatral)\b/i],
+  [1, /\bescrita? por\b/i],
+  [1, /\b(actores|actrices|actriz)\b/i],
+  [1, /\bprotagoniz(a|an|ada|ado)\b/i],
+  [1, /\bespect[aá]culo teatral\b/i],
+];
+
+const MUSIC_MARKERS = [
+  [2, /\bm[uú]sica en vivo\b/i],
+  [2, /\b(recital|concierto)\b/i],
+  [2, /\bpresenta su (nuevo |primer |segundo )?(disco|[aá]lbum|ep)\b/i],
+  [2, /\bnuevo (disco|[aá]lbum)\b/i],
+  [2, /\b(dj|dj set|b2b|line[\s-]?up|after|rave)\b/i],
+  [2, /\b(su|la) gira\b|\bgira \d{4}\b|\bgira (nacional|mundial|latinoamericana|argentina)\b/i],
+  [2, /\b(canciones|cancionero|repertorio|setlist)\b/i],
+  [2, /\b(la|su|una) banda\b/i],
+  [2, /\b(tributo|homenaje)\b/i],
+  [1, /\b(rock|pop|jazz|blues|cumbia|tango|folclore|folklore|reggae|ska|metal|punk|indie|trap|reggaet[oó]n|hip[\s-]?hop|electr[oó]nica|techno|house|cuarteto|sinfon)\b/i],
+  [1, /\b(cantante|m[uú]sico|guitarra|bater[ií]a|bajo|vocalista|orquesta|cuarteto|d[uú]o|tr[ií]o)\b/i],
+];
+
+// En una sala teatral, "recital"/"concierto" se usan sueltos para cualquier
+// espectáculo ("Puro Cuento es un recital minimalista"), así que ahí no cuentan
+// como prueba de música: hace falta una señal más específica.
+const MUSIC_MARKERS_STRICT = MUSIC_MARKERS.filter(([, re]) => !/recital/.test(String(re)));
+
+// Salas de teatro puro de CABA/GBA. Deliberadamente NO incluye salas mixtas
+// (Gran Rex, Ópera, Coliseo, Broadway, Vorterix) donde el recital es la norma.
+const THEATER_VENUES = [
+  "multitabaris", "multiteatro", "paseo la plaza", "picadero", "el nacional",
+  "lola membrives", "metropolitan", "teatro liceo", "regio", "camarín de las musas",
+  "camarin de las musas", "la carpintería", "la carpinteria", "timbre 4", "maipo",
+  "chacarerean", "politeama", "teatro apolo", "astral", "método kairós", "metodo kairos",
+  "teatro del pueblo", "border", "el extranjero",
+];
+
+// Salas de música que viven dentro de un complejo teatral (Cervelar y The
+// Cavern en Paseo La Plaza) o cuyo nombre ya declara que son sala de shows.
+// Anulan el match por sala teatral: ahí sí hay recitales.
+const MUSIC_VENUE_HINTS = /\b(bar|club|pub|live|caver|cavern|cervelar|boliche|disco|arena|estadio)\b/i;
+
+// Tipos que la fuente sí clasifica bien: si un título aparece además bajo uno
+// de estos, el "recital" es la ficha duplicada del mismo show no musical.
+// "teatro" queda afuera a propósito: la fuente lo usa para cualquier cosa que
+// pase en una sala, y arrastraría recitales legítimos (p. ej. Sandra Mihanovich).
+const QH_NON_MUSIC_TYPES = new Set(["cine", "stand up", "charla", "arte", "expo", "deporte", "gastronomia"]);
+
+const qhStripDesc = (s) =>
+  String(s || "").replace(/&lt;\|&gt;/g, " ").replace(/&nbsp;/g, " ").replace(/<[^>]+>/g, " ");
+const qhNormTitle = (s) =>
+  String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const markerScore = (markers, t) => markers.reduce((n, [w, re]) => (re.test(t) ? n + w : n), 0);
+
+// Índice de títulos publicados por la fuente bajo un tipo no musical.
+function qhNonMusicTitles(events) {
+  const out = new Set();
+  for (const e of events) {
+    if (!QH_NON_MUSIC_TYPES.has(e.event_type)) continue;
+    const n = qhNormTitle(e.title);
+    if (n.length >= 14) out.add(n);   // títulos cortos generan falsos positivos
+  }
+  return out;
+}
+
+function isNonMusicalQHEvent(e, nonMusicTitles) {
+  // "cuarteto" es el único event_type con nombre de género: la fuente no lo usa
+  // para teatro, y su descripción a veces pertenece a otro show (bug de origen).
+  if (e.event_type === "cuarteto") return false;
+
+  if (nonMusicTitles && nonMusicTitles.size) {
+    const n = qhNormTitle(e.title);
+    for (const t of nonMusicTitles) {
+      if (t === n || n.includes(t) || (n.length >= 14 && t.includes(n))) return true;
+    }
+  }
+
+  const text = `${e.title || ""} ${qhStripDesc(e.description)}`;
+  const nonMusic = markerScore(NON_MUSIC_MARKERS, text);
+  const music = markerScore(MUSIC_MARKERS, text);
+  if (nonMusic >= 2 && nonMusic > music) return true;
+
+  const musicStrict = markerScore(MUSIC_MARKERS_STRICT, text);
+  const venue = (e.venue || "").toLowerCase();
+  if (musicStrict === 0 && !MUSIC_VENUE_HINTS.test(venue) && THEATER_VENUES.some(v => venue.includes(v))) return true;
+
+  return false;
+}
+
 function qhCleanDescription(desc) {
   if (!desc) return null;
   let t = String(desc);
@@ -1413,12 +1533,16 @@ async function fetchQueHacemos() {
     }
 
     const mapped = [];
+    let skippedNonMusical = 0;
+    const nonMusicTitles = qhNonMusicTitles(byId.values());
     for (const e of byId.values()) {
       if (!QH_MUSIC_TYPES.has(e.event_type)) continue;
       if (QH_PROVINCES.size && !QH_PROVINCES.has(e.province)) continue;
+      if (isNonMusicalQHEvent(e, nonMusicTitles)) { skippedNonMusical++; continue; }
       const ev = mapQHEvent(e);
       if (ev) mapped.push({ d: e.date || "", ev });
     }
+    if (skippedNonMusical > 0) console.log(`[events] QuéHacemos: ${skippedNonMusical} eventos no musicales descartados`);
     mapped.sort((a, b) => a.d.localeCompare(b.d));
     return mapped.slice(0, QH_MAX_EVENTS).map((x) => x.ev);
   } catch (e) {
