@@ -1212,6 +1212,37 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-price-chg { font-family:var(--font-mono); font-size:11px; }
 .bl-price-up { color:var(--bl-up); } .bl-price-down { color:var(--bl-down); }
 
+/* Marquesina de line-ups (Bass) — hermano del price ticker, identidad cobre + ecualizador */
+.bl-lineup-bar { position:sticky; top:0; z-index:899; display:flex; align-items:stretch; overflow:hidden; border-bottom:1px solid var(--bl-border); background:var(--bl-glass-light); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); white-space:nowrap; }
+.bl-lineup-sign { display:flex; align-items:center; gap:8px; padding:0 18px; border-right:1px solid var(--bl-border); flex-shrink:0; background:var(--bl-subtle-03); }
+.bl-lineup-dot { width:7px; height:7px; border-radius:50%; background:var(--bl-accent-bass); box-shadow:0 0 0 0 var(--bl-accent-bass); animation:bl-lineup-pulse 2s ease-out infinite; }
+.bl-lineup-sign-label { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-accent-bass); font-weight:700; }
+@keyframes bl-lineup-pulse { 0%{box-shadow:0 0 0 0 rgba(196,144,112,0.5)} 70%{box-shadow:0 0 0 6px rgba(196,144,112,0)} 100%{box-shadow:0 0 0 0 rgba(196,144,112,0)} }
+.bl-lineup-viewport { flex:1; overflow:hidden; }
+.bl-lineup-track { display:inline-flex; animation:bl-scroll 80s linear infinite; }
+.bl-lineup-track:hover { animation-play-state:paused; }
+.bl-lineup-item { display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border-right:1px solid var(--bl-border); flex-shrink:0; cursor:pointer; transition:background var(--duration-fast); }
+.bl-lineup-item:hover { background:var(--bl-subtle-03); }
+.bl-lineup-act { font-size:14px; color:var(--bl-100); font-weight:700; letter-spacing:0.2px; }
+.bl-lineup-at { font-family:var(--font-mono); font-size:12px; color:var(--bl-300); }
+.bl-lineup-venue { font-family:var(--font-mono); font-size:12px; color:var(--bl-300); letter-spacing:0.5px; }
+.bl-lineup-when { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--bl-300); text-transform:uppercase; padding:2px 6px; border:1px solid var(--bl-border); border-radius:3px; }
+.bl-lineup-when.is-live { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); }
+/* Ecualizador — energía viva aunque el scroll pause */
+.bl-lineup-eq { display:inline-flex; align-items:flex-end; gap:2px; height:14px; flex-shrink:0; }
+.bl-lineup-eq span { width:2.5px; background:var(--bl-accent-bass); border-radius:1px; animation:bl-eq 900ms ease-in-out infinite; }
+.bl-lineup-eq span:nth-child(1) { height:40%; animation-delay:0ms; }
+.bl-lineup-eq span:nth-child(2) { height:90%; animation-delay:150ms; }
+.bl-lineup-eq span:nth-child(3) { height:60%; animation-delay:300ms; }
+.bl-lineup-eq span:nth-child(4) { height:75%; animation-delay:450ms; }
+@keyframes bl-eq { 0%,100%{transform:scaleY(0.35)} 50%{transform:scaleY(1)} }
+@media (prefers-reduced-motion: reduce) {
+  .bl-lineup-track { animation:none; }
+  .bl-lineup-eq span { animation:none; }
+  .bl-lineup-dot { animation:none; }
+  .bl-lineup-viewport { overflow-x:auto; }
+}
+
 /* ── News Feed container (empty/error states) ── */
 .bl-feed { padding:0 32px; }
 
@@ -2066,6 +2097,12 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-price-item { padding:12px 16px; gap:6px; }
   .bl-price-sym { font-size:10px; } .bl-price-val { font-size:13px; }
   .bl-sparkline { display:none; }
+  .bl-lineup-item { padding:11px 16px; gap:7px; }
+  .bl-lineup-act { font-size:12px; }
+  .bl-lineup-at, .bl-lineup-venue { font-size:10px; }
+  .bl-lineup-sign { padding:0 12px; }
+  .bl-lineup-sign-label { display:none; }
+  .bl-lineup-eq { display:none; }
   .bl-modal { max-width:100%; border-radius:0; max-height:100vh; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
   .bl-modal-header { padding:20px 48px 16px 20px; gap:12px; }
   .bl-modal-body { padding:0 20px 20px; }

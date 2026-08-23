@@ -1,17 +1,6 @@
 import { useMemo } from "react";
 import { useLocale } from "../hooks/useLocale";
-import { DAYS_LONG, MONTH_ABBR_INDEX } from "../i18n/strings";
-
-function getEventDate(ev) {
-  const m = MONTH_ABBR_INDEX[ev.month?.toLowerCase()];
-  if (m === undefined) return null;
-  const now = new Date();
-  const year = now.getFullYear();
-  const [h, min] = (ev.time || "23:00").split(":").map(Number);
-  const d = new Date(year, m, parseInt(ev.day), h || 23, min || 0);
-  if (d < now - 30 * 86400000) d.setFullYear(year + 1);
-  return d;
-}
+import { DAYS_LONG, getEventDate } from "../i18n/strings";
 
 function isThisWeek(eventDate) {
   if (!eventDate) return false;

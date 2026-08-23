@@ -8,7 +8,7 @@ import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
 import { IG_HANDLE, IG_URL, useIsMobile } from "../utils/constants";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { DAYS_LONG, MONTHS_ABBR, MONTH_ABBR_INDEX, monthAbbrLocale, monthLongLocale } from "../i18n/strings";
+import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate } from "../i18n/strings";
 
 
 // Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
@@ -32,17 +32,6 @@ function EndOfSet() {
       </a>
     </div>
   );
-}
-
-function getEventDate(ev) {
-  const m = MONTH_ABBR_INDEX[ev.month?.toLowerCase()];
-  if (m === undefined) return null;
-  const now = new Date();
-  const year = now.getFullYear();
-  const [h, min] = (ev.time || "23:00").split(":").map(Number);
-  const d = new Date(year, m, parseInt(ev.day), h || 23, min || 0);
-  if (d < now - 30 * 86400000) d.setFullYear(year + 1);
-  return d;
 }
 
 function useCountdown(targetDate) {

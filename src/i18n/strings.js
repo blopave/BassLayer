@@ -160,6 +160,8 @@ export const STRINGS = {
     "predict.aria": "Mercados de predicción",
     "predict.sub": "Top markets · 24h volumen",
     "ticker.aria": "Precios de criptomonedas",
+    "lineup.aria": "Line-ups de esta semana",
+    "lineup.live": "En vivo",
     "feed.festivalsLoadError": "No pude cargar los festivales. Tocá para reintentar.",
 
     "news.summary": "Resumen",
@@ -399,6 +401,8 @@ export const STRINGS = {
     "predict.aria": "Prediction markets",
     "predict.sub": "Top markets · 24h volume",
     "ticker.aria": "Cryptocurrency prices",
+    "lineup.aria": "This week's line-ups",
+    "lineup.live": "Live",
     "feed.festivalsLoadError": "Couldn't load festivals. Tap to retry.",
 
     "news.summary": "Summary",
@@ -497,6 +501,21 @@ export const MONTHS_ABBR = {
 // Mapa canónico abreviatura-de-mes-en-español → índice (0-11). Único dueño; el
 // resto de los componentes lo importan en vez de re-declararlo.
 export const MONTH_ABBR_INDEX = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+
+// Resuelve la fecha de un evento (mes abreviado ES + día + hora) a un Date en
+// horario local del cliente. Rollover de año: si la fecha ya pasó hace >30 días,
+// asume que es del año próximo. Único dueño; el resto lo importa (lógica sensible
+// a timezone — no re-declarar).
+export function getEventDate(ev) {
+  const m = MONTH_ABBR_INDEX[ev.month?.toLowerCase()];
+  if (m === undefined) return null;
+  const now = new Date();
+  const year = now.getFullYear();
+  const [h, min] = (ev.time || "23:00").split(":").map(Number);
+  const d = new Date(year, m, parseInt(ev.day), h || 23, min || 0);
+  if (d < now - 30 * 86400000) d.setFullYear(year + 1);
+  return d;
+}
 
 // Los datos de eventos traen el mes abreviado en español ("ago"). Este helper lo
 // traduce a la abreviatura del locale activo ("Aug" en en). Si no matchea, devuelve
