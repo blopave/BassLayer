@@ -61,7 +61,7 @@
     { "n": 1, "halvingDate": "28 nov 2012", "halvingPrice": "$12", "peakDate": "30 nov 2013", "peakPrice": "$1.163", "bottomDate": "14 ene 2015", "bottomPrice": "$164", "markup": 367, "markdown": 410, "recovery": 542, "roi": "95x", "drawdown": "-86%", "ongoing": false },
     { "n": 2, "halvingDate": "09 jul 2016", "halvingPrice": "$650", "peakDate": "17 dic 2017", "peakPrice": "$19.783", "bottomDate": "15 dic 2018", "bottomPrice": "$3.122", "markup": 526, "markdown": 363, "recovery": 513, "roi": "30x", "drawdown": "-84%", "ongoing": false },
     { "n": 3, "halvingDate": "11 may 2020", "halvingPrice": "$8.700", "peakDate": "10 nov 2021", "peakPrice": "$69.000", "bottomDate": "21 nov 2022", "bottomPrice": "$15.480", "markup": 548, "markdown": 376, "recovery": 516, "roi": "7,9x", "drawdown": "-78%", "ongoing": false },
-    { "n": 4, "halvingDate": "20 abr 2024", "halvingPrice": "$64.260", "peakDate": "06 oct 2025", "peakPrice": "$126.198", "markup": 534, "markdownSoFar": 298, "projMax": 410, "roi": "2,0x", "drawdown": "-53%", "ongoing": true }
+    { "n": 4, "halvingDate": "20 abr 2024", "halvingPrice": "$64.260", "peakDate": "06 oct 2025", "peakPrice": "$126.198", "markup": 534, "projMax": 410, "roi": "2,0x", "drawdown": "-53%", "ongoing": true }
   ],
   "indicators": [
     { "key": "MVRV",  "name": "MVRV.Z",    "value": "0.34",  "pos": 5,  "status": "green",  "note": "fondo <0 / techo >7", "noteEn": "bottom <0 / top >7" },

@@ -302,10 +302,9 @@ export function BtcCycles() {
   const peak = parseISO(keyDates.peak);
   const daysSincePeak = daysBetween(now, peak);
 
-  // El ciclo en curso trae `markdownSoFar` horneado en el JSON (snapshot de
-  // curación). Lo recomputamos en vivo desde el pico real para que la barra del
-  // timeline avance con el calendario, igual que la cabecera — si no, el conteo
-  // queda congelado en la fecha del snapshot y el indicador deja de servir.
+  // Los días de markdown del ciclo en curso se computan en vivo desde el pico
+  // real (mismo valor que la cabecera), no vienen del dato — así la barra del
+  // timeline avanza con el calendario en vez de quedar congelada en un snapshot.
   // `projMax` se clampea a hoy para que el segmento de proyección nunca quede
   // con ancho negativo cuando el día actual pase el máximo proyectado.
   const cyclesLive = cycles.map((c) =>
