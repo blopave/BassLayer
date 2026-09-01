@@ -302,6 +302,18 @@ export function BtcCycles() {
   const peak = parseISO(keyDates.peak);
   const daysSincePeak = daysBetween(now, peak);
 
+  // El ciclo en curso trae `markdownSoFar` horneado en el JSON (snapshot de
+  // curación). Lo recomputamos en vivo desde el pico real para que la barra del
+  // timeline avance con el calendario, igual que la cabecera — si no, el conteo
+  // queda congelado en la fecha del snapshot y el indicador deja de servir.
+  // `projMax` se clampea a hoy para que el segmento de proyección nunca quede
+  // con ancho negativo cuando el día actual pase el máximo proyectado.
+  const cyclesLive = cycles.map((c) =>
+    c.ongoing
+      ? { ...c, markdownSoFar: daysSincePeak, projMax: Math.max(c.projMax, daysSincePeak) }
+      : c
+  );
+
   // Ventana de fondo proyectada, computada en vivo desde el pico + rango histórico
   const [loD, hiD] = keyDates.peakToBottomRange;
   const from = new Date(peak.getTime() + loD * DAY);
@@ -366,7 +378,7 @@ export function BtcCycles() {
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.cycles")}
       </div>
-      <PhaseTimeline cycles={cycles} />
+      <PhaseTimeline cycles={cyclesLive} />
 
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.price")}
