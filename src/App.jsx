@@ -438,6 +438,7 @@ export default function App() {
     };
     window.addEventListener("mousemove", onMove);
     const smooth = { x: 0, y: 0 };
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf;
     function animate() {
       // Cursor
@@ -446,8 +447,9 @@ export default function App() {
       p.y += (t.y - p.y) * 0.15;
       if (cursorRef.current) cursorRef.current.style.transform = `translate(${p.x}px, ${p.y}px)`;
 
-      // Parallax — only compute on home view
-      if (viewRef.current === "home") {
+      // Parallax — only compute on home view. Reduced motion lo saltea: es
+      // movimiento decorativo; el cursor de arriba es funcional y se queda.
+      if (viewRef.current === "home" && !reduceMotion) {
         smooth.x += (mouseNorm.current.x - smooth.x) * 0.05;
         smooth.y += (mouseNorm.current.y - smooth.y) * 0.05;
         const pr = parallaxRefs.current;

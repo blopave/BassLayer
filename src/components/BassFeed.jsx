@@ -526,7 +526,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </div>
       )}
       {loading ? <EventSkeleton />
-        : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
+        : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
         : <div className="bl-ev-list" role="feed" aria-label={t("section.events")} ref={listRef}>
             {grouped.map((item, gIdx) => {
@@ -559,7 +559,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   data-genre={ev.genre}
                   data-featured={ev.featured ? "true" : undefined}
                   onClick={() => onSelect(ev)}
-                  onKeyDown={(e) => e.key === "Enter" && onSelect(ev)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(ev))}
                   style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
                   tabIndex={0}
                   role="button"
@@ -609,7 +609,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   if (error) {
     return (
       <div className="bl-feed">
-        <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>
+        <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>
           {error}
         </div>
       </div>
@@ -647,7 +647,7 @@ function BassNewsItem({ item, idx, onSelect }) {
     <article
       className="bl-bass-news-item bl-reveal"
       onClick={() => onSelect?.(item)}
-      onKeyDown={(e) => e.key === "Enter" && onSelect?.(item)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(item))}
       tabIndex={0}
       role="button"
       aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
@@ -710,7 +710,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
       {loading ? <NewsSkeleton />
        : error ? (
          <div className="bl-feed">
-           <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>
+           <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>
              {error}
            </div>
          </div>
@@ -740,7 +740,7 @@ function FestivalItem({ f, idx, onSelect }) {
     <article
       className="bl-ev-item bl-ev-item-festival bl-reveal"
       onClick={() => onSelect?.(f)}
-      onKeyDown={(e) => e.key === "Enter" && onSelect?.(f)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(f))}
       tabIndex={0}
       role="button"
       aria-label={`${f.name} — ${f.city}, ${f.country}`}

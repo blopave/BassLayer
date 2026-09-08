@@ -45,7 +45,8 @@ function LayerEmptySignal({ filter, hasAnyNews, onFilter, onRetry }) {
   const tagLabel = filter === "All" ? t("common.all") : filter;
   return (
     <div className="bl-layer-empty" role="status">
-      <div>
+      {/* Cromo de terminal, no contenido: el mensaje real es la línea de abajo */}
+      <div aria-hidden="true">
         <span className="bl-terminal-prompt-user">bl@layer</span>
         <span className="bl-terminal-prompt-sep"> : </span>
         <span className="bl-terminal-prompt-path">~/news</span>

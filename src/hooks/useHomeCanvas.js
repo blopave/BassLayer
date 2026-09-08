@@ -106,8 +106,10 @@ export function useHomeCanvas(canvasRef, bassI, layerI, view) {
       }
 
       if (!day) vignette();
-      raf = requestAnimationFrame(draw);
+      // Reduced motion: un solo frame de atmósfera en reposo, sin respiración.
+      if (!reduceMotion) raf = requestAnimationFrame(draw);
     }
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     draw();
 
     return () => {

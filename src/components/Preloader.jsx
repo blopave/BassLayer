@@ -51,7 +51,8 @@ export function Preloader({ done }) {
         const r = 1 + Math.sin(t * 0.03 + i) * 0.5;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
       }
-      raf = requestAnimationFrame(draw);
+      // Reduced motion: grilla estática, sin partículas orbitando.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) raf = requestAnimationFrame(draw);
     }
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };

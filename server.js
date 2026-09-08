@@ -3969,6 +3969,34 @@ if (IS_PROD) {
   function escHtml(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  // Fecha del evento desde day+month (misma heurística que el JSON-LD de
+  // abajo: si quedó >30 días en el pasado, es del año que viene).
+  function seoEventDate(ev) {
+    const m = MONTH_MAP[ev.month?.toLowerCase()] ?? -1;
+    const d = parseInt(ev.day);
+    if (m < 0 || !d) return null;
+    const date = new Date(new Date().getFullYear(), m, d);
+    if (date < new Date() - 30 * 86400000) date.setFullYear(date.getFullYear() + 1);
+    return date;
+  }
+
+  // Destacados del finde — el mismo criterio del hero del cliente (featured >
+  // con flyer > más próximo), para que Google y humanos lean la misma portada.
+  function weekendPicks(events, max = 5) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dow = today.getDay();
+    const fridayOffset = dow === 5 ? 0 : dow === 6 ? -1 : dow === 0 ? -2 : 5 - dow;
+    const friday = new Date(today); friday.setDate(friday.getDate() + fridayOffset);
+    const monday = new Date(friday); monday.setDate(monday.getDate() + 3);
+    const score = (ev) => (ev.featured ? 2 : 0) + (ev.image ? 1 : 0);
+    return events
+      .map((ev) => ({ ev, date: seoEventDate(ev) }))
+      .filter((x) => x.date && x.date >= friday && x.date < monday)
+      .sort((a, b) => score(b.ev) - score(a.ev) || a.date - b.date)
+      .slice(0, max);
+  }
+
   function buildSeoHtml() {
     const events = cached("events") || [];
     const news = cached("news") || [];
@@ -3997,6 +4025,25 @@ if (IS_PROD) {
     lines.push(`<a href="/?view=layer" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Crypto</a>`);
     lines.push(`<a href="/?lang=en" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">English</a>`);
     lines.push("</nav>");
+
+    // Portada del finde — espejo del hero "El finde" del cliente.
+    const finde = weekendPicks(events.filter((e) => (e.region || "AR") === "AR"));
+    if (finde.length > 0) {
+      lines.push(`<section style="${sectionStyle}" aria-labelledby="seo-weekend">`);
+      lines.push(`<h2 id="seo-weekend" style="${h2Style}">Qué hay este finde en Buenos Aires</h2>`);
+      lines.push(`<ul style="${ulStyle}">`);
+      const DAY_ABBR = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+      for (const { ev, date } of finde) {
+        const nameMarkup = ev.url
+          ? `<a href="${escHtml(ev.url)}" rel="noopener" style="${linkStyle};font-weight:500">${escHtml(ev.name)}</a>`
+          : `<strong style="color:#fff">${escHtml(ev.name)}</strong>`;
+        const venue = ev.venue ? ` · <span>${escHtml(ev.venue)}</span>` : "";
+        const artists = (ev.artists || []).slice(0, 3).map(escHtml).join(", ");
+        const performers = artists ? ` · <span style="${metaStyle}">${artists}</span>` : "";
+        lines.push(`<li style="${liStyle}"><span style="${metaStyle}">${DAY_ABBR[date.getDay()]}</span> ${nameMarkup}${venue}${performers}</li>`);
+      }
+      lines.push("</ul></section>");
+    }
 
     if (events.length > 0) {
       lines.push(`<section style="${sectionStyle}" aria-labelledby="seo-events">`);
