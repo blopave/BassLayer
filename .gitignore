@@ -11,3 +11,6 @@ dist/
 
 # MusicBrainz family classification cache (runtime, se regenera)
 data/mb-family-cache.json
+
+# Screenshots de verificación de sesiones Claude
+.pw-shots/

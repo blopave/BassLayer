@@ -21,10 +21,16 @@ export function eventSlug(ev) {
 
 // Hash determinista corto para garantizar unicidad cuando hay títulos repetidos
 // entre fuentes (frecuente en agregadores RSS).
-function hash6(s) {
+// Hash determinístico compartido (slugs, variantes de poster). No cambiar la
+// fórmula: hash6 alimenta URLs que el prerender del server replica.
+export function hashStr(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h).toString(36).slice(0, 6);
+  return Math.abs(h);
+}
+
+function hash6(s) {
+  return hashStr(s).toString(36).slice(0, 6);
 }
 
 export function newsSlug(n) {

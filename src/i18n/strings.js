@@ -85,6 +85,10 @@ export const STRINGS = {
     "filter.clear": "Limpiar",
     "feed.eventsWord": "eventos",
 
+    "hero.title": "El finde",
+    "hero.weekend": "Finde",
+    "hero.sound": "Sonido",
+
     "event.lineup": "Line-up",
     "event.lineupSingle": "artista",
     "event.lineupPlural": "artistas",
@@ -325,6 +329,10 @@ export const STRINGS = {
     "filter.apply": "See {n} events",
     "filter.clear": "Clear",
     "feed.eventsWord": "events",
+
+    "hero.title": "The weekend",
+    "hero.weekend": "Wknd",
+    "hero.sound": "Sound",
 
     "event.lineup": "Line-up",
     "event.lineupSingle": "artist",

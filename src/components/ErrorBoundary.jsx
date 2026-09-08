@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { dismissCurtain } from "../utils/curtain";
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,9 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    // Si el crash ocurre antes del primer commit de App, la cortina de
+    // index.html sigue en pie y taparía este fallback.
+    dismissCurtain();
   }
 
   render() {

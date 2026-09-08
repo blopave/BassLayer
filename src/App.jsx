@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
+import { dismissCurtain } from "./utils/curtain";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { LineupTicker } from "./components/LineupTicker";
@@ -16,11 +17,15 @@ import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
-import { VenueAuth } from "./components/VenueAuth";
-import { VenueDashboard } from "./components/VenueDashboard";
-import { AdminPanel } from "./components/AdminPanel";
-import { ProjectAuth } from "./components/ProjectAuth";
-import { ProjectDashboard } from "./components/ProjectDashboard";
+// Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
+// las visitas: van en chunks aparte para sacarlos del bundle crítico del home.
+// El import() queda dentro de cada arrow para que Vite pueda analizarlo.
+const lazyNamed = (load, name) => lazy(() => load().then((m) => ({ default: m[name] })));
+const VenueAuth = lazyNamed(() => import("./components/VenueAuth"), "VenueAuth");
+const VenueDashboard = lazyNamed(() => import("./components/VenueDashboard"), "VenueDashboard");
+const AdminPanel = lazyNamed(() => import("./components/AdminPanel"), "AdminPanel");
+const ProjectAuth = lazyNamed(() => import("./components/ProjectAuth"), "ProjectAuth");
+const ProjectDashboard = lazyNamed(() => import("./components/ProjectDashboard"), "ProjectDashboard");
 
 // Antes de tratar un arrastre horizontal como swipe de mundo (Bass↔Layer),
 // vemos si el dedo arrancó dentro de un elemento con scroll horizontal propio
@@ -94,6 +99,9 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
+
+  // La cortina de index.html tapa el prerender SEO hasta este primer commit.
+  useEffect(() => { dismissCurtain(); }, []);
 
   // Restore auth session on load
   useEffect(() => {
@@ -1107,6 +1115,7 @@ export default function App() {
         <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setVenueView(null); }}>
           <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
             <button className="bl-modal-close" onClick={() => setVenueView(null)} aria-label="Cerrar">&times;</button>
+            <Suspense fallback={null}>
             {venueView === "auth" && (
               <VenueAuth
                 onAuth={(user) => { setVenueUser(user); setVenueView("dashboard"); }}
@@ -1124,6 +1133,7 @@ export default function App() {
             {venueView === "admin" && (
               <AdminPanel onBack={() => setVenueView(null)} />
             )}
+            </Suspense>
           </div>
         </div>
       )}
@@ -1133,6 +1143,7 @@ export default function App() {
         <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setProjectView(null); }}>
           <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
             <button className="bl-modal-close" onClick={() => setProjectView(null)} aria-label="Cerrar">&times;</button>
+            <Suspense fallback={null}>
             {projectView === "auth" && (
               <ProjectAuth
                 onAuth={(user) => { setVenueUser(user); setProjectView("dashboard"); }}
@@ -1146,6 +1157,7 @@ export default function App() {
                 onBack={() => setProjectView(null)}
               />
             )}
+            </Suspense>
           </div>
         </div>
       )}

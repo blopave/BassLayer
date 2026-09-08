@@ -1,6 +1,28 @@
 import { useState } from "react";
+import { hashStr } from "../utils/slug";
 
-export function BlThumb({ image, onImgFail }) {
+// Mini-afiche tipográfico para items sin flyer: el headliner (o el nombre) en
+// grotesca pesada, tintado por familia. Tres variantes (sólida / primera
+// palabra en outline / alineada arriba) elegidas por hash para que el feed
+// tenga ritmo sin caos. El recorte lateral es intencional — crop de afiche.
+function Poster({ text, family }) {
+  const words = String(text).trim().split(/\s+/).slice(0, 3);
+  const longest = Math.max(...words.map((w) => w.length));
+  const size = longest > 9 ? "s" : longest > 5 ? "m" : "l";
+  const variant = hashStr(String(text)) % 3;
+  return (
+    <div className="bl-poster" data-family={family || "other"} data-variant={variant} data-size={size}>
+      <span className="bl-poster-rule" />
+      <div className="bl-poster-words">
+        {words.map((w, i) => (
+          <span className="bl-poster-word" key={i}>{w}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function BlThumb({ image, poster, onImgFail }) {
   const [imgFailed, setImgFailed] = useState(false);
   const hasImage = image && !imgFailed;
 
@@ -15,6 +37,14 @@ export function BlThumb({ image, onImgFail }) {
           decoding="async"
           onError={() => { setImgFailed(true); onImgFail?.(); }}
         />
+      </div>
+    );
+  }
+
+  if (poster?.text) {
+    return (
+      <div className="bl-thumb bl-thumb-poster" aria-hidden="true">
+        <Poster text={poster.text} family={poster.family} />
       </div>
     );
   }

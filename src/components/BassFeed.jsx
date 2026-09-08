@@ -40,13 +40,14 @@ function useCountdown(targetDate) {
     if (!targetDate) return;
     function update() {
       const diff = targetDate - Date.now();
-      if (diff <= 0) { setText("Ahora"); return; }
+      // Solo data, sin palabras: legible igual en ES y EN.
+      if (diff <= 0) { setText("▶"); return; }
       const days = Math.floor(diff / 86400000);
       const hrs = Math.floor((diff % 86400000) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
-      if (days > 0) setText(`en ${days}d ${hrs}h`);
-      else if (hrs > 0) setText(`en ${hrs}h ${mins}m`);
-      else setText(`en ${mins}m`);
+      if (days > 0) setText(`${days}d ${hrs}h`);
+      else if (hrs > 0) setText(`${hrs}h ${mins}m`);
+      else setText(`${mins}m`);
     }
     update();
     const iv = setInterval(update, 60000);
@@ -55,9 +56,8 @@ function useCountdown(targetDate) {
   return text;
 }
 
-function EventCountdown({ event }) {
-  const eventDate = getEventDate(event);
-  const countdown = useCountdown(eventDate);
+function EventCountdown({ date }) {
+  const countdown = useCountdown(date);
   if (!countdown) return null;
   return <span className="bl-ev-countdown">{countdown}</span>;
 }
@@ -80,25 +80,28 @@ function getDayLabel(eventDate, t, dayNames) {
 // Retorna un Date en la medianoche local del cliente que representa el YMD
 // actual en BsAs — así comparaciones de igualdad por fecha son directas
 // con getEventDate() (que también usa horario local del cliente).
+// El formatter vive a nivel módulo: construir Intl.DateTimeFormat es caro y
+// estos chequeos corren una vez por evento en listas de ~150.
+const BA_YMD_FORMAT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Argentina/Buenos_Aires",
+  year: "numeric", month: "2-digit", day: "2-digit",
+});
 function todayInBA() {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(now).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
+  const parts = BA_YMD_FORMAT.formatToParts(new Date())
+    .reduce((acc, p) => (acc[p.type] = p.value, acc), {});
   return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
 }
 
-function isToday(eventDate) {
+// `today`/`bounds` aceptan el valor precomputado: los filtros por lista lo
+// calculan una vez y lo pasan, en vez de rehacerlo por evento.
+function isToday(eventDate, today = todayInBA()) {
   if (!eventDate) return false;
-  const today = todayInBA();
   return eventDate.getFullYear() === today.getFullYear()
     && eventDate.getMonth() === today.getMonth()
     && eventDate.getDate() === today.getDate();
 }
 
-function isThisWeekend(eventDate) {
-  if (!eventDate) return false;
+function weekendBounds() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dow = today.getDay(); // 0=Sun
@@ -112,8 +115,70 @@ function isThisWeekend(eventDate) {
   friday.setDate(friday.getDate() + fridayOffset);
   const monday = new Date(friday);
   monday.setDate(monday.getDate() + 3); // Monday after weekend
+  return { friday, monday };
+}
+
+function isThisWeekend(eventDate, bounds = weekendBounds()) {
+  if (!eventDate) return false;
   const evDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-  return evDay >= friday && evDay < monday;
+  return evDay >= bounds.friday && evDay < bounds.monday;
+}
+
+// El momento dashboard de Bass: qué pasa hoy y este finde, con 2-3 destacados
+// con artwork. La lectura curada que Layer ya tenía y Bass no — el hermano
+// cálido del status de mercado.
+function WeekendHero({ events, onSelect }) {
+  const { t, locale } = useLocale();
+  const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
+  const { picks, todayN, weekendN, sound } = useMemo(() => {
+    const today = todayInBA();
+    const bounds = weekendBounds();
+    const dated = events.map((ev) => ({ ev, date: getEventDate(ev) })).filter((x) => x.date);
+    const weekend = dated.filter((x) => isThisWeekend(x.date, bounds));
+    const todayN = dated.filter((x) => isToday(x.date, today)).length;
+    const counts = {};
+    for (const x of weekend) { const f = x.ev.family; if (f) counts[f] = (counts[f] || 0) + 1; }
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    // Destacados: primero los curados (featured), después los que tienen flyer
+    // real; a igualdad, el más próximo.
+    const score = (x) => (x.ev.featured ? 2 : 0) + (x.ev.image ? 1 : 0);
+    const picks = [...weekend]
+      .sort((a, b) => score(b) - score(a) || a.date - b.date)
+      .slice(0, 3);
+    return { picks, todayN, weekendN: weekend.length, sound: top ? top[0] : null };
+  }, [events]);
+
+  if (picks.length === 0) return null;
+
+  return (
+    <section className="bl-hero" aria-label={t("hero.title")}>
+      <div className="bl-hero-head">
+        <h2 className="bl-hero-title bl-bass-t-stamp">{t("hero.title")}</h2>
+        <div className="bl-hero-stats">
+          <span className="bl-hero-stat bl-bass-t-label"><b>{todayN}</b> {t("day.today")}</span>
+          <span className="bl-hero-stat bl-bass-t-label"><b>{weekendN}</b> {t("hero.weekend")}</span>
+          {sound && <span className="bl-hero-stat bl-bass-t-label"><b>{t(`family.${sound}`)}</b> {t("hero.sound")}</span>}
+        </div>
+      </div>
+      <div className="bl-hero-tiles">
+        {picks.map(({ ev, date }) => (
+          <button
+            type="button"
+            className="bl-hero-tile"
+            key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
+            onClick={() => onSelect(ev)}
+            aria-label={`${ev.name} — ${ev.venue}`}
+          >
+            <BlThumb image={ev.image} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+            <div className="bl-hero-tile-name">{ev.name}</div>
+            <div className="bl-hero-tile-meta bl-bass-t-label">
+              {(dayNames[date.getDay()] || "").slice(0, 3)} · {ev.venue}
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival }) {
@@ -221,8 +286,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const { filtered, familyCounts } = useMemo(() => {
     let ctx = regionEvents;
     if (cityFilter !== "Todas") ctx = ctx.filter((e) => e.city === cityFilter);
-    if (esteFinde) ctx = ctx.filter((e) => isThisWeekend(getEventDate(e)));
-    if (hoyOnly) ctx = ctx.filter((e) => isToday(getEventDate(e)));
+    if (esteFinde) { const b = weekendBounds(); ctx = ctx.filter((e) => isThisWeekend(getEventDate(e), b)); }
+    if (hoyOnly) { const today = todayInBA(); ctx = ctx.filter((e) => isToday(getEventDate(e), today)); }
     if (search) {
       const q = search.toLowerCase();
       ctx = ctx.filter((e) =>
@@ -247,14 +312,19 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         groups.push({ type: "month", label: ev.month });
       }
       currentMonth = ev.month;
-      const label = getDayLabel(getEventDate(ev), t, dayNames);
+      const date = getEventDate(ev);
+      const label = getDayLabel(date, t, dayNames);
+      // Cartel: el primero de cada día o un destacado del backend; el resto
+      // sigue en filas compactas. Escala como ritmo, no como decoración.
+      let lead = !!ev.featured;
       if (label !== currentLabel) {
         // La fecha numérica viaja con el encabezado: al sacarla de cada fila,
         // este pasa a ser el único lugar donde se dice, y tiene que decirla.
         groups.push({ type: "header", label, day: ev.day, month: ev.month });
         currentLabel = label;
+        lead = true;
       }
-      groups.push({ type: "event", data: ev });
+      groups.push({ type: "event", data: ev, lead, date });
     }
     return groups;
   }, [filtered, t, dayNames]);
@@ -384,6 +454,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         />
       ) : (
         <>
+      {/* Portada editorial: solo sin búsqueda ni filtro temporal — cuando el
+          usuario ya está buscando algo puntual, el hero es ruido. */}
+      {!search && !when && <WeekendHero events={regionEvents} onSelect={onSelect} />}
+
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
 
@@ -476,6 +550,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               }
               const ev = item.data;
               const idx = itemIdx++;
+              const isLead = item.lead;
               // Stamp editorial: subgénero real para electrónica (Techno/House),
               // etiqueta de familia para el resto (En vivo/Urbano/Raíz/Festival).
               const stamp = ev.family === "club"
@@ -483,7 +558,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                 : (ev.family ? t(`family.${ev.family}`) : null);
               return (
                 <article
-                  className="bl-ev-item bl-reveal"
+                  className={`bl-ev-item bl-reveal ${isLead ? "bl-ev-lead" : "bl-ev-row"}`}
                   key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
                   data-genre={ev.genre}
                   data-featured={ev.featured ? "true" : undefined}
@@ -497,12 +572,15 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   {/* El flyer es diseño gráfico hecho para este show: va de
                       portada, no de miniatura. La fecha no se repite acá —
                       la dice el encabezado del día, una sola vez. */}
-                  <BlThumb image={ev.image} />
+                  <BlThumb image={ev.image} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
+                    {isLead && ev.artists && ev.artists.length >= 2 && (
+                      <div className="bl-ev-lineup">{ev.artists.slice(0, 4).join(" · ")}</div>
+                    )}
                     <div className="bl-ev-venue-line">{ev.venue}</div>
                     <div className="bl-ev-meta-row">
-                      {ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
+                      {isLead && ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
                       {stamp && (
                         <span className="bl-ev-genre-badge" title={stamp}>{stamp}</span>
                       )}
@@ -510,6 +588,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
                     </div>
                   </div>
+                  {/* Fila: la hora sale del meta-row y ancla la derecha en mono,
+                      lectura de tracklist. El cartel ancla el countdown. */}
+                  {!isLead && ev.time && <div className="bl-ev-time-block">{ev.time}</div>}
+                  {isLead && <EventCountdown date={item.date} />}
                 </article>
               );
             })}
@@ -575,7 +657,7 @@ function BassNewsItem({ item, idx, onSelect }) {
       aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
-      <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
+      <BlThumb image={item.image} poster={{ text: item.source || item.tag || item.title, family: "news" }} onImgFail={() => setImgFailed(true)} />
       <div className="bl-bass-news-body">
         <h3 className="bl-bass-news-title bl-bass-t-heading">{item.title}</h3>
         {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}
@@ -686,7 +768,7 @@ function FestivalItem({ f, idx, onSelect }) {
           {f.status === "live" && <span className="bl-festival-live-dot">EN CURSO</span>}
         </div>
       </div>
-      <BlThumb image={f.image} />
+      <BlThumb image={f.image} poster={{ text: f.name, family: "festival" }} />
     </article>
   );
 }

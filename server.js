@@ -41,7 +41,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      // Cloudflare inyecta su beacon de Web Analytics en el HTML que pasa por
+      // el proxy; sin estas dos entradas la CSP lo bloquea y no mide nada.
+      scriptSrc: ["'self'", "https://static.cloudflareinsights.com"],
       // Las fuentes ahora se sirven desde el mismo origen (Geist Variable,
       // empaquetada por Vite): ya no hace falta habilitar Google Fonts.
       styleSrc: ["'self'", "'unsafe-inline'"],
@@ -50,7 +52,7 @@ app.use(helmet({
       // dominios variados e impredecibles (CDNs, WP, S3, etc.). Las URLs vienen
       // de fuentes que controlamos curatorialmente, no de input de usuario.
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://jbszspnwegykpnlagypf.supabase.co"],
+      connectSrc: ["'self'", "https://jbszspnwegykpnlagypf.supabase.co", "https://cloudflareinsights.com"],
     },
   },
 }));
