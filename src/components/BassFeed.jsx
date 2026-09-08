@@ -8,7 +8,7 @@ import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
 import { IG_HANDLE, IG_URL, useIsMobile } from "../utils/constants";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate } from "../i18n/strings";
+import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
 
 
 // Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
@@ -551,11 +551,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               const ev = item.data;
               const idx = itemIdx++;
               const isLead = item.lead;
-              // Stamp editorial: subgénero real para electrónica (Techno/House),
-              // etiqueta de familia para el resto (En vivo/Urbano/Raíz/Festival).
-              const stamp = ev.family === "club"
-                ? (ev.genre && ev.genre !== "Electronic" ? ev.genre : null)
-                : (ev.family ? t(`family.${ev.family}`) : null);
+              const stamp = eventStamp(ev, t);
               return (
                 <article
                   className={`bl-ev-item bl-reveal ${isLead ? "bl-ev-lead" : "bl-ev-row"}`}

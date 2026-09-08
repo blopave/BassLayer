@@ -1,3 +1,11 @@
+// Stamp editorial de un evento: subgénero real para electrónica (Techno,
+// House…), etiqueta de familia traducida para el resto. "Electronic" a secas
+// no aporta — se omite. Compartido entre feed y modal.
+export function eventStamp(ev, t) {
+  if (ev.family === "club") return ev.genre && ev.genre !== "Electronic" ? ev.genre : null;
+  return ev.family ? t(`family.${ev.family}`) : null;
+}
+
 export const STRINGS = {
   es: {
     "common.close": "Cerrar",
@@ -107,7 +115,6 @@ export const STRINGS = {
     "event.hoursShort": "hs",
     "event.viewArtist": "Quién es",
     "event.weekendButton": "Qué hay este finde",
-    "event.noImage": "Todavía sin flyer",
 
     "weekend.title": "Este finde",
     "weekend.empty": "Nada en agenda para este finde",
@@ -122,6 +129,7 @@ export const STRINGS = {
     "feed.empty.todayNext": "Nada hoy — lo próximo: {day} {dd}",
     "feed.empty.news": "Sin señal para",
     "feed.empty.newsHint": "Esperá el próximo bloque.",
+    "feed.empty.viewAll": "Ver todo el feed",
     "feed.empty.bassNews": "Sin notas frescas. Los medios locales se toman su tiempo.",
     "feed.bassNewsLoadError": "No pude cargar las noticias. Tocá para reintentar.",
     "feed.endOfSet": "—— end of set ——",
@@ -352,7 +360,6 @@ export const STRINGS = {
     "event.hoursShort": "hs",
     "event.viewArtist": "View info on",
     "event.weekendButton": "This weekend's events",
-    "event.noImage": "No flyer available",
 
     "weekend.title": "This weekend",
     "weekend.empty": "No events this weekend",
@@ -367,6 +374,7 @@ export const STRINGS = {
     "feed.empty.todayNext": "Nothing today — next: {day} {dd}",
     "feed.empty.news": "Market quiet for",
     "feed.empty.newsHint": "No movement right now.",
+    "feed.empty.viewAll": "View full feed",
     "feed.empty.bassNews": "No fresh notes. Local outlets publish at their own pace.",
     "feed.bassNewsLoadError": "Couldn't load the news. Tap to retry.",
     "feed.endOfSet": "—— end of set ——",

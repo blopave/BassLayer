@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { api } from "../utils/api";
-import { IndicatorModal } from "./IndicatorModal";
+import { lazyNamed } from "../utils/lazy";
+
+const IndicatorModal = lazyNamed(() => import("./IndicatorModal"), "IndicatorModal");
 import { useLocale } from "../hooks/useLocale";
 import { monthAbbrLocale } from "../i18n/strings";
 
@@ -394,7 +396,11 @@ export function BtcCycles() {
         <span className="bl-cyc-posture-txt"><b>{t("cycles.posture")}</b> {posture} <span className="bl-cyc-inval">{t("cycles.invalidation", { price: (current.invalidationPrice / 1000).toFixed(0) })}</span></span>
       </div>
     </div>
-    <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
+    {selected && (
+      <Suspense fallback={null}>
+        <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
+      </Suspense>
+    )}
     </>
   );
 }

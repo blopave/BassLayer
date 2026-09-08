@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
@@ -9,7 +9,7 @@ import { dismissCurtain } from "./utils/curtain";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { LineupTicker } from "./components/LineupTicker";
-import { EventModal } from "./components/EventModal";
+import { lazyNamed } from "./utils/lazy";
 import { NewsModal } from "./components/NewsModal";
 import { FestivalModal } from "./components/FestivalModal";
 import { useLocale } from "./hooks/useLocale";
@@ -18,9 +18,9 @@ import { LayerFeed } from "./components/LayerFeed";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
-// las visitas: van en chunks aparte para sacarlos del bundle crítico del home.
-// El import() queda dentro de cada arrow para que Vite pueda analizarlo.
-const lazyNamed = (load, name) => lazy(() => load().then((m) => ({ default: m[name] })));
+// las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
+// aparte para sacarlos del bundle crítico del home.
+const EventModal = lazyNamed(() => import("./components/EventModal"), "EventModal");
 const VenueAuth = lazyNamed(() => import("./components/VenueAuth"), "VenueAuth");
 const VenueDashboard = lazyNamed(() => import("./components/VenueDashboard"), "VenueDashboard");
 const AdminPanel = lazyNamed(() => import("./components/AdminPanel"), "AdminPanel");
@@ -992,8 +992,12 @@ export default function App() {
         </div>
       </section>
 
-      {/* EVENT MODAL */}
-      <EventModal event={selectedEvent} onClose={closeEvent} onShare={shareEvent} />
+      {/* EVENT MODAL — gateado: sin evento seleccionado no se baja el chunk */}
+      {selectedEvent && (
+        <Suspense fallback={null}>
+          <EventModal event={selectedEvent} onClose={closeEvent} onShare={shareEvent} />
+        </Suspense>
+      )}
 
       {/* PRICE MODAL */}
       <PriceModal price={selectedPrice} onClose={() => setSelectedPrice(null)} />

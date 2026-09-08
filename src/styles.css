@@ -1784,6 +1784,35 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 .bl-term-trending-chg.up   { color:var(--bl-up); }
 .bl-term-trending-chg.down { color:var(--bl-down); }
 
+/* ── Empty state de Layer — misma voz terminal, con salida ── */
+.bl-layer-empty {
+  margin:18px 32px;
+  padding:18px 20px 20px;
+  border:1px solid var(--bl-border-sub);
+  border-radius:8px;
+  background:var(--bl-subtle-bg);
+  font-family:var(--font-mono);
+  font-size:11px; letter-spacing:0.4px;
+  display:flex; flex-direction:column; gap:10px; align-items:flex-start;
+}
+.bl-layer-empty-line { color:var(--bl-text-sec); line-height:1.7; }
+.bl-layer-empty-btn {
+  font-family:var(--font-mono);
+  font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--bl-accent-layer);
+  background:transparent;
+  border:1px solid rgba(108,184,200,0.35);
+  border-radius:2px;
+  padding:7px 14px;
+  margin-top:4px;
+  cursor:pointer;
+  transition:background .25s var(--ease-out-expo), border-color .25s;
+}
+.bl-layer-empty-btn:hover {
+  background:rgba(108,184,200,0.08);
+  border-color:var(--bl-accent-layer);
+}
+
 .bl-terminal-prompt-user { color:var(--bl-accent-layer); font-weight:600; }
 .bl-terminal-prompt-sep  { color:var(--bl-text-ter); }
 .bl-terminal-prompt-path { color:var(--bl-text-sec); }
@@ -2177,6 +2206,14 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-filters { padding:8px 16px; gap:5px; }
   .bl-filters.layer-filters { top:0; }
   .bl-filters.bass-filters { top:0; }
+  /* En mobile las familias no envuelven: strip horizontal scrolleable, como
+     los tiles del hero — dos filas con hueco leían como layout roto. */
+  .bl-root[data-section="bass"] .bl-filters.bass-filters {
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    gap:18px;
+    padding:12px 16px 6px;
+  }
   .bl-filter-chip { font-size:9.5px; padding:5px 11px; }
   .bl-feed, .bl-skeleton { padding:0 16px; }
   .bl-ev-list { padding:6px 16px 0; gap:12px; }
@@ -2312,19 +2349,19 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   display:block;
   background:var(--bl-subtle-bg);
 }
-.bl-modal-image-placeholder {
-  width:100%; height:120px; border-radius:4px;
-  border:1px dashed var(--bl-border);
+/* Sin flyer: el mini-afiche generativo a escala de modal — mismo sistema
+   que las cards del feed, no un ícono de imagen rota. */
+.bl-modal-poster {
+  position:relative; width:100%; aspect-ratio:21/9;
+  border-radius:8px; overflow:hidden;
+  border:1px solid var(--bl-border-sub);
   background:
-    repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 8px, transparent 8px 16px),
-    var(--bl-surface, rgba(255,255,255,0.02));
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:8px; color:var(--bl-text-sec);
+    radial-gradient(circle at 30% 20%, var(--poster-wash, rgba(196,144,112,0.10)) 0%, transparent 70%),
+    linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%);
 }
-.bl-modal-image-placeholder-text {
-  font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px;
-  text-transform:uppercase; opacity:0.75;
-}
+.bl-modal-poster .bl-poster { font-size:24px; padding:18px 20px; }
+.bl-modal-poster .bl-poster-rule { left:20px; top:18px; width:22px; height:3px; }
+.bl-modal-poster .bl-poster[data-variant="2"] .bl-poster-rule { top:auto; bottom:18px; }
 
 /* ── Event Modal (Bass) — extended layout ─── */
 .bl-modal.bl-event-modal { max-width:600px; }
@@ -4984,6 +5021,7 @@ select.bl-venue-input { cursor:pointer; }
 
   /* Mensajes de error / vacío del feed — el usuario los lee para saber qué hacer. */
   .bl-error, .bl-empty { font-size:11px; }
+  .bl-layer-empty { margin:14px 16px; padding:14px 16px 16px; }
 
   /* Countdown del evento destacado del hero. */
   .bl-featured-countdown { font-size:11px; }

@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoDashboard } from "./CryptoDashboard";
 import { CryptoBATimeline } from "./CryptoBATimeline";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
-import { BtcCycles } from "./BtcCycles";
+import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { IG_HANDLE, IG_URL } from "../utils/constants";
+
+// El dashboard de ciclos (charts SVG + data horneada) solo carga al abrir su
+// sección — es el módulo más pesado de Layer y la mayoría no llega hasta ahí.
+const BtcCycles = lazyNamed(() => import("./BtcCycles"), "BtcCycles");
 
 function LayerNewsItem({ item, idx, onSelect }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -30,6 +34,37 @@ function LayerNewsItem({ item, idx, onSelect }) {
         {showPill && <span className="bl-layer-news-tag-pill">{item.tag}</span>}
       </div>
     </article>
+  );
+}
+
+// Sin señal, en la voz de la terminal y con salida: un tag vacío ofrece volver
+// al feed completo; un feed vacío ofrece reintentar. Antes era una línea
+// perdida en un panel enorme, sin nada para hacer.
+function LayerEmptySignal({ filter, hasAnyNews, onFilter, onRetry }) {
+  const { t } = useLocale();
+  const tagLabel = filter === "All" ? t("common.all") : filter;
+  return (
+    <div className="bl-layer-empty" role="status">
+      <div>
+        <span className="bl-terminal-prompt-user">bl@layer</span>
+        <span className="bl-terminal-prompt-sep"> : </span>
+        <span className="bl-terminal-prompt-path">~/news</span>
+        <span className="bl-terminal-prompt-cmd"> $ fetch --tag={tagLabel.toLowerCase()}</span>
+      </div>
+      <div className="bl-layer-empty-line">
+        &gt; {t("feed.empty.news")} &ldquo;{tagLabel}&rdquo;. {t("feed.empty.newsHint")}
+        <span className="bl-terminal-prompt-cursor" aria-hidden="true" />
+      </div>
+      {hasAnyNews ? (
+        <button type="button" className="bl-layer-empty-btn" onClick={() => onFilter("All")}>
+          {t("feed.empty.viewAll")}
+        </button>
+      ) : (
+        <button type="button" className="bl-layer-empty-btn" onClick={onRetry}>
+          {t("common.retry")}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -90,11 +125,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
           {loading ? <NewsSkeleton />
             : error ? <div className="bl-feed"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
             : filtered.length === 0 ? (
-              <div className="bl-feed">
-                <div className="bl-empty">
-                  {t("feed.empty.news")} &ldquo;{filter === "All" ? t("common.all") : filter}&rdquo;. {t("feed.empty.newsHint")}
-                </div>
-              </div>
+              <LayerEmptySignal filter={filter} hasAnyNews={news.length > 0} onFilter={onFilter} onRetry={onRetry} />
             )
             : <div className="bl-layer-news-list" role="feed" aria-label="Noticias crypto" ref={listRef}>
                 {filtered.map((item, idx) => (
@@ -142,7 +173,9 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       {section === "ciclos" && (
         <div className="bl-layer-content">
           <h2 className="bl-sr-only">{t("section.cycles")}</h2>
-          <BtcCycles />
+          <Suspense fallback={<div className="bl-empty">{t("common.loading")}</div>}>
+            <BtcCycles />
+          </Suspense>
         </div>
       )}
     </>

@@ -1,6 +1,9 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { api } from "../utils/api";
-import { IndicatorModal } from "./IndicatorModal";
+import { lazyNamed } from "../utils/lazy";
+
+// Solo baja al tocar un indicador: es el componente más pesado de Layer.
+const IndicatorModal = lazyNamed(() => import("./IndicatorModal"), "IndicatorModal");
 import { useLocale } from "../hooks/useLocale";
 
 function formatMarketCap(n) {
@@ -282,7 +285,11 @@ export function CryptoDashboard() {
         />
       </div>
       <TrendingRow trending={data.trending} t={t} />
-      <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
+      {selected && (
+        <Suspense fallback={null}>
+          <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />
+        </Suspense>
+      )}
     </div>
   );
 }

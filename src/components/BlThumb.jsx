@@ -5,7 +5,7 @@ import { hashStr } from "../utils/slug";
 // grotesca pesada, tintado por familia. Tres variantes (sólida / primera
 // palabra en outline / alineada arriba) elegidas por hash para que el feed
 // tenga ritmo sin caos. El recorte lateral es intencional — crop de afiche.
-function Poster({ text, family }) {
+export function Poster({ text, family }) {
   const words = String(text).trim().split(/\s+/).slice(0, 3);
   const longest = Math.max(...words.map((w) => w.length));
   const size = longest > 9 ? "s" : longest > 5 ? "m" : "l";

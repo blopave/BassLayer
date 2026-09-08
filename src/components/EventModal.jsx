@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
+import { Poster } from "./BlThumb";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
-import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX } from "../i18n/strings";
+import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX, eventStamp } from "../i18n/strings";
 
 // Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
 // para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
@@ -193,6 +194,7 @@ export function EventModal({ event, onClose, onShare }) {
   const supporting = artists.slice(1);
 
   const longDate = formatLongDateLocale(event.day, event.month, locale);
+  const stamp = eventStamp(event, t);
   // El precio venía en los datos y no se mostraba en ninguna parte. Es dato de
   // decisión: va arriba, con el resto de lo que define si vas o no.
   const priceNum = Number(event.ticket_price);
@@ -218,7 +220,7 @@ export function EventModal({ event, onClose, onShare }) {
             <div className="bl-em-meta">
               <span className="bl-em-meta-date">{longDate}</span>
               {event.time && <span className="bl-em-meta-time">{event.time} hs</span>}
-              {event.genre && <span className="bl-modal-genre">{event.genre}</span>}
+              {stamp && <span className="bl-modal-genre">{stamp}</span>}
               {priceLabel && <span className="bl-em-meta-price">{priceLabel}</span>}
             </div>
           </div>
@@ -234,13 +236,8 @@ export function EventModal({ event, onClose, onShare }) {
               onError={() => setImageFailed(true)}
             />
           ) : (
-            <div className="bl-modal-image-placeholder" aria-hidden="true">
-              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.4">
-                <rect x="4" y="6" width="24" height="20" rx="2" />
-                <circle cx="11" cy="13" r="2" />
-                <path d="M4 22l7-7 6 6 4-4 7 7" />
-              </svg>
-              <span className="bl-modal-image-placeholder-text">{t("event.noImage")}</span>
+            <div className="bl-modal-poster" aria-hidden="true">
+              <Poster text={(event.artists && event.artists[0]) || event.name} family={event.family} />
             </div>
           )}
         </div>
