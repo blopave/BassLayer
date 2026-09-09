@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { flushSync } from "react-dom";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
@@ -252,6 +253,15 @@ export default function App() {
   // Detectar deep link al montar + responder a back/forward
   useEffect(() => {
     const path = window.location.pathname;
+    // /?view=layer — el link "Crypto" del prerender SEO y el shortcut del
+    // manifest aterrizan directo en el mundo Layer.
+    if (new URLSearchParams(window.location.search).get("view") === "layer") {
+      setView("sections");
+      setActivePanel(1);
+      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      return;
+    }
     // /eventos/hoy · /eventos/este-finde → feed con el filtro temporal puesto
     const temporalMatch = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
     if (temporalMatch) {
@@ -421,11 +431,19 @@ export default function App() {
       root.classList.add("theme-transitioning");
       setTimeout(() => root.classList.remove("theme-transitioning"), 700);
     }
-    setDayMode((prev) => {
+    const flip = () => setDayMode((prev) => {
       const next = !prev;
       localStorage.setItem("bl-mode", next ? "day" : "night");
       return next;
     });
+    // View Transition (~92% soporte): el flip de tema cruza en un snapshot
+    // suave en vez de re-pintar en cascada. Sin soporte o con reduced-motion,
+    // el camino de siempre.
+    if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.startViewTransition(() => { flushSync(flip); });
+    } else {
+      flip();
+    }
   }, []);
 
   // BA Clock

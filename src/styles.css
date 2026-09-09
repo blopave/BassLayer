@@ -1467,6 +1467,15 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   border-bottom-color:var(--bl-accent-bass);
   transform:none;
 }
+/* ── Pack tipográfico/perf de plataforma (degrada a nada sin soporte) ──
+   balance: títulos multilínea sin viudas; pretty: párrafos sin huérfanas;
+   content-visibility: el browser saltea el render de filas fuera de pantalla
+   en el feed largo — la única ganancia de scroll medible del pack. */
+.bl-ev-name, .bl-modal-name, .bl-bass-news-title, .bl-layer-news-title, .bl-hero-tile-name { text-wrap: balance; }
+.bl-modal-about, .bl-empty, .bl-layer-empty-line, .bl-about-section-text { text-wrap: pretty; }
+.bl-ev-item.bl-ev-row { content-visibility: auto; contain-intrinsic-size: auto 92px; }
+.bl-root[data-section="bass"] .bl-ev-lead:not(.bl-ev-item-festival) { content-visibility: auto; contain-intrinsic-size: auto 212px; }
+
 /* ── Guardado — "mi agenda" sin login ── */
 .bl-save-btn {
   align-self:center; flex-shrink:0;

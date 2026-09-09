@@ -9,6 +9,42 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Eventos hoy",
+      "short_name": "Hoy",
+      "url": "/eventos/hoy",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "El finde",
+      "short_name": "Finde",
+      "url": "/eventos/este-finde",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Crypto",
+      "short_name": "Crypto",
+      "url": "/?view=layer",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Agenda de eventos en Buenos Aires"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "BassLayer — eventos y crypto"
+    }
+  ],
   "icons": [
     {
       "src": "/favicon.svg",
