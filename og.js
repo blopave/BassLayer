@@ -422,14 +422,101 @@ async function newsTemplate(news) {
   }, leftCol, rightCol);
 }
 
+// ── Template: STORY de evento (1080×1920, para stories/estados) ──
+// La card que el share del cliente comparte como archivo: flyer full-bleed con
+// velo, o fondo generativo tintado por familia — el mismo lenguaje que los
+// posters del feed. El flyer se fetchea server-side: sin CORS.
+const STORY_TINT = {
+  club: "196,144,112",
+  live: "200,122,108",
+  urbano: "168,139,192",
+  raiz: "155,175,126",
+  festival: "210,168,92",
+};
+
+async function storyTemplate(event) {
+  const flyer = event.image ? await fetchImageAsDataUri(event.image) : null;
+  const tint = STORY_TINT[event.family] || STORY_TINT.club;
+  const artists = (event.artists || []).filter(a => a && a !== "TBA").slice(0, 4).join(" · ");
+  const dateLine = `${event.day || ""} ${event.month || ""}${event.time ? ` · ${event.time}` : ""}`.trim().toUpperCase();
+  const venueLine = [event.venue, event.city].filter(Boolean).join(" · ");
+  const headliner = ((event.artists && event.artists[0]) || event.name || "").toUpperCase();
+
+  const bgLayer = flyer
+    ? el("img", {
+        src: flyer, width: 1080, height: 1920,
+        style: { position: "absolute", top: 0, left: 0, width: "1080px", height: "1920px", objectFit: "cover" },
+      })
+    : el("div", {
+        style: {
+          position: "absolute", top: 0, left: 0, width: "1080px", height: "1920px",
+          background: `radial-gradient(circle at 30% 22%, rgba(${tint},0.25) 0%, rgba(10,10,10,0) 65%)`,
+          display: "flex", flexDirection: "column", padding: "300px 72px 0",
+        },
+      },
+        el("div", { style: { width: "60px", height: "10px", background: `rgba(${tint},0.95)`, marginBottom: "48px" } }),
+        el("div", {
+          style: {
+            fontSize: "150px", fontWeight: 700, lineHeight: 1.02,
+            letterSpacing: "-0.02em", color: `rgba(${tint},0.9)`,
+            display: "flex", flexDirection: "column",
+          },
+        }, ...headliner.split(/\s+/).slice(0, 3).map(w => el("div", {}, w))),
+      );
+
+  return el("div", {
+    style: {
+      width: "1080px", height: "1920px", position: "relative",
+      display: "flex", flexDirection: "column",
+      background: C.bg, color: C.ink, fontFamily: "Inter",
+    },
+  },
+    bgLayer,
+    // Velo para el bloque inferior — siempre, con o sin flyer.
+    el("div", {
+      style: {
+        position: "absolute", top: 0, left: 0, width: "1080px", height: "1920px",
+        background: "linear-gradient(180deg, rgba(10,10,10,0.25) 0%, rgba(10,10,10,0) 25%, rgba(10,10,10,0) 45%, rgba(10,10,10,0.88) 68%, rgba(10,10,10,0.97) 100%)",
+      },
+    }),
+    // Contenido anclado abajo — satori hace el wrapping del nombre solo.
+    el("div", {
+      style: {
+        position: "absolute", left: 0, right: 0, bottom: 0,
+        display: "flex", flexDirection: "column",
+        padding: "0 72px 180px", gap: "26px",
+      },
+    },
+      el("div", { style: { width: "60px", height: "10px", background: `rgba(${tint},0.95)` } }),
+      el("div", { style: { fontSize: "34px", color: "#C9C4BA", letterSpacing: "0.14em", fontWeight: 400 } }, dateLine),
+      el("div", { style: { fontSize: "88px", fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.02em", color: "#FFFFFF" } }, event.name),
+      venueLine ? el("div", { style: { fontSize: "36px", color: "#A8A296", fontWeight: 400 } }, venueLine) : null,
+      artists ? el("div", { style: { fontSize: "30px", color: "#7E7A72", fontWeight: 400 } }, artists) : null,
+    ),
+    // Pie de marca.
+    el("div", {
+      style: {
+        position: "absolute", left: "72px", right: "72px", bottom: "96px",
+        display: "flex", alignItems: "baseline", justifyContent: "space-between",
+      },
+    },
+      el("div", { style: { display: "flex", alignItems: "baseline", gap: "12px" } },
+        el("span", { style: { fontSize: "44px", fontWeight: 700, color: `rgba(${tint},0.95)` } }, "Bass"),
+        el("span", { style: { fontSize: "38px", fontWeight: 400, letterSpacing: "0.14em", color: "#8C8880" } }, "LAYER"),
+      ),
+      el("span", { style: { fontSize: "30px", color: "#6E6A63", letterSpacing: "0.06em" } }, "basslayer.io"),
+    ),
+  );
+}
+
 // ── Render principal: node → SVG (satori) → PNG (resvg) ──
-async function renderToPng(node) {
+async function renderToPng(node, width = 1200, height = 630) {
   const svg = await satori(node, {
-    width: 1200,
-    height: 630,
+    width,
+    height,
     fonts: FONTS,
   });
-  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });
+  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: width } });
   return resvg.render().asPng();
 }
 
@@ -440,6 +527,16 @@ export async function generateEventOG(event) {
   if (cacheValid(cached)) return cached.buffer;
   const node = await eventTemplate(event);
   const png = await renderToPng(node);
+  cacheSet(key, png, OG_CACHE_TTL.event);
+  return png;
+}
+
+export async function generateEventStory(event) {
+  const key = `story:${event.day || ""}-${event.month || ""}-${event.name || ""}-${event.image || ""}`;
+  const cached = cacheGet(key);
+  if (cacheValid(cached)) return cached.buffer;
+  const node = await storyTemplate(event);
+  const png = await renderToPng(node, 1080, 1920);
   cacheSet(key, png, OG_CACHE_TTL.event);
   return png;
 }

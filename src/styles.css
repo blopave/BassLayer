@@ -1467,6 +1467,39 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   border-bottom-color:var(--bl-accent-bass);
   transform:none;
 }
+/* ── Guardado — "mi agenda" sin login ── */
+.bl-save-btn {
+  align-self:center; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  width:34px; height:34px;
+  background:transparent; border:none; border-radius:8px;
+  color:var(--bl-text-ter);
+  cursor:pointer;
+  transition:color .2s, background .2s;
+}
+.bl-save-btn:hover { color:var(--bl-text-sec); background:var(--bl-subtle-hover); }
+.bl-save-btn.on { color:var(--bl-accent-bass); }
+.bl-save-btn:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
+
+.bl-saved-toggle {
+  margin-left:auto;
+  display:flex; align-items:center; gap:6px;
+  background:transparent;
+  border:1px solid var(--bl-border);
+  border-radius:999px;
+  padding:5px 12px;
+  color:var(--bl-text-sec);
+  cursor:pointer;
+  transition:color .2s, border-color .2s, background .2s;
+}
+.bl-saved-toggle:hover { color:var(--bl-text); border-color:var(--bl-400); }
+.bl-saved-toggle.on {
+  color:var(--bl-accent-bass);
+  border-color:var(--bl-accent-bass);
+  background:rgba(196,144,112,0.08);
+}
+.bl-modal-btn-save.on { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); }
+
 /* Hora como bloque derecho en mono — lectura de tracklist */
 .bl-ev-time-block {
   align-self:center;

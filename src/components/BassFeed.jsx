@@ -9,6 +9,31 @@ import { api } from "../utils/api";
 import { IG_HANDLE, IG_URL, useIsMobile } from "../utils/constants";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
+import { useSavedEvents } from "../hooks/useSavedEvents";
+import { eventSlug } from "../utils/slug";
+
+// Señalador de guardado — vive en cada card y en el modal. Para el feed con
+// muchas filas conviene un componente chico: solo re-renderiza él al togglear.
+export function SaveButton({ slug, className = "" }) {
+  const { t } = useLocale();
+  const { isSaved, toggle } = useSavedEvents();
+  const on = isSaved(slug);
+  return (
+    <button
+      type="button"
+      className={`bl-save-btn${on ? " on" : ""} ${className}`}
+      aria-pressed={on}
+      aria-label={on ? t("saved.remove") : t("saved.add")}
+      title={on ? t("saved.remove") : t("saved.add")}
+      onClick={(e) => { e.stopPropagation(); toggle(slug); }}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M6 3h12v18l-6-4.5L6 21V3z" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
 
 
 // Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
@@ -29,6 +54,12 @@ function EndOfSet() {
         aria-label={`Instagram — ${IG_HANDLE}`}
       >
         La agenda también en Instagram → {IG_HANDLE}
+      </a>
+      {/* webcal: suscripción viva (iOS/macOS la abren en Calendario; Google
+          Calendar la acepta como "agregar por URL"). Nadie más lo ofrece
+          en la escena BA. */}
+      <a className="bl-end-of-set-ig" href={`webcal://${typeof window !== "undefined" ? window.location.host : "basslayer.io"}/agenda.ics`}>
+        {t("feed.subscribeCal")}
       </a>
     </div>
   );
@@ -203,6 +234,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
+  // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
+  const { saved } = useSavedEvents();
+  const [savedOnly, setSavedOnly] = useState(false);
 
   // Bass news — lazy loaded on first toggle to "noticias"
   const [bassNews, setBassNews] = useState([]);
@@ -285,6 +319,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Memoizado: sólo recomputa cuando cambia una entrada real, no en cada render.
   const { filtered, familyCounts } = useMemo(() => {
     let ctx = regionEvents;
+    if (savedOnly) { const set = new Set(saved); ctx = ctx.filter((e) => set.has(eventSlug(e))); }
     if (cityFilter !== "Todas") ctx = ctx.filter((e) => e.city === cityFilter);
     if (esteFinde) { const b = weekendBounds(); ctx = ctx.filter((e) => isThisWeekend(getEventDate(e), b)); }
     if (hoyOnly) { const today = todayInBA(); ctx = ctx.filter((e) => isToday(getEventDate(e), today)); }
@@ -300,7 +335,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     for (const e of ctx) { const f = e.family || "other"; counts[f] = (counts[f] || 0) + 1; }
     const list = filter === "All" ? ctx : ctx.filter((e) => (e.family || "") === filter);
     return { filtered: list, familyCounts: counts };
-  }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter]);
+  }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
 
   // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
@@ -335,6 +370,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const listRef = useScrollReveal(loading, section);
 
   function emptyMessage() {
+    if (savedOnly) {
+      return <>{t("feed.empty.saved")}</>;
+    }
     if (search) {
       return <>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
     }
@@ -518,11 +556,25 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </div>
       )}
 
-      {/* Header editorial del listado */}
-      {!loading && !error && filtered.length > 0 && (
+      {/* Header editorial del listado. Con savedOnly activo se muestra aunque
+          haya 0 resultados: el toggle tiene que seguir visible para salir. */}
+      {!loading && !error && (filtered.length > 0 || savedOnly) && (
         <div className="bl-feed-head">
           <span className="bl-feed-head-n">{filtered.length}</span>
           <span className="bl-feed-head-ctx">{t("feed.eventsWord")}{cityFilter !== "Todas" ? ` · ${cityFilter}` : ""}</span>
+          {(saved.length > 0 || savedOnly) && (
+            <button
+              type="button"
+              className={`bl-saved-toggle bl-bass-t-label${savedOnly ? " on" : ""}`}
+              onClick={() => setSavedOnly((v) => !v)}
+              aria-pressed={savedOnly}
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">
+                <path d="M6 3h12v18l-6-4.5L6 21V3z" fill={savedOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
+              {t("saved.label")} {saved.length}
+            </button>
+          )}
         </div>
       )}
       {loading ? <EventSkeleton />
@@ -588,6 +640,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       lectura de tracklist. El cartel ancla el countdown. */}
                   {!isLead && ev.time && <div className="bl-ev-time-block">{ev.time}</div>}
                   {isLead && <EventCountdown date={item.date} />}
+                  <SaveButton slug={eventSlug(ev)} />
                 </article>
               );
             })}

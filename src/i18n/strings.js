@@ -97,6 +97,12 @@ export const STRINGS = {
     "hero.weekend": "Finde",
     "hero.sound": "Sonido",
 
+    "saved.add": "Guardar",
+    "saved.remove": "Guardado",
+    "saved.label": "Guardados",
+    "feed.empty.saved": "Nada guardado todavía. Tocá el señalador de un evento y armá tu agenda.",
+    "feed.subscribeCal": "Suscribite a la agenda en tu calendario →",
+
     "event.lineup": "Line-up",
     "event.lineupSingle": "artista",
     "event.lineupPlural": "artistas",
@@ -341,6 +347,12 @@ export const STRINGS = {
     "hero.title": "The weekend",
     "hero.weekend": "Wknd",
     "hero.sound": "Sound",
+
+    "saved.add": "Save",
+    "saved.remove": "Saved",
+    "saved.label": "Saved",
+    "feed.empty.saved": "Nothing saved yet. Tap the bookmark on an event to build your agenda.",
+    "feed.subscribeCal": "Subscribe to the agenda in your calendar →",
 
     "event.lineup": "Line-up",
     "event.lineupSingle": "artist",

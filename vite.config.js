@@ -9,6 +9,7 @@ export default defineConfig({
     host: true, // escucha en la LAN para poder probar desde el celular (mismo WiFi)
     proxy: {
       "/api": "http://localhost:3001",
+      "/og": "http://localhost:3001",
     },
   },
   build: {

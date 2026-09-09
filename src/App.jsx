@@ -6,6 +6,7 @@ import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
 import { dismissCurtain } from "./utils/curtain";
+import { shareEventCard } from "./utils/shareCard";
 import { Preloader } from "./components/Preloader";
 import { PriceTicker } from "./components/PriceTicker";
 import { LineupTicker } from "./components/LineupTicker";
@@ -363,17 +364,17 @@ export default function App() {
   }, [news]);
 
 
-  // Share
+  // Share: story-card del server \u2192 share nativo \u2192 wa.me. El link es NUESTRO
+  // deep link indexable (/eventos/slug, con OG propio), no el de la ticketera.
   function shareEvent(ev) {
     const artists = (ev.artists || []).filter(a => a && a !== "TBA").slice(0, 3).join(", ");
     const text = `${ev.name} \u2014 ${ev.day} ${ev.month} @ ${ev.venue}${artists ? "\n" + artists : ""}`;
-    const url = ev.url || `https://www.google.com/search?q=${encodeURIComponent(ev.name + " " + ev.venue + " Buenos Aires")}`;
-    if (navigator.share) {
-      navigator.share({ title: ev.name, text, url }).catch(() => {});
-    } else {
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`;
-      window.open(waUrl, "_blank");
-    }
+    const slug = eventSlug(ev);
+    shareEventCard(ev, {
+      url: `${window.location.origin}/eventos/${slug}`,
+      text,
+      storyUrl: `/og/story/event/${slug}.png`,
+    });
   }
 
   // Day/Night mode — dark por defecto. Si el usuario alguna vez toggleó a día,

@@ -4,6 +4,8 @@ import { Poster } from "./BlThumb";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX, eventStamp } from "../i18n/strings";
+import { useSavedEvents } from "../hooks/useSavedEvents";
+import { eventSlug } from "../utils/slug";
 
 // Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
 // para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
@@ -195,6 +197,9 @@ export function EventModal({ event, onClose, onShare }) {
 
   const longDate = formatLongDateLocale(event.day, event.month, locale);
   const stamp = eventStamp(event, t);
+  const { isSaved, toggle } = useSavedEvents();
+  const slug = eventSlug(event);
+  const savedOn = isSaved(slug);
   // El precio venía en los datos y no se mostraba en ninguna parte. Es dato de
   // decisión: va arriba, con el resto de lo que define si vas o no.
   const priceNum = Number(event.ticket_price);
@@ -336,6 +341,17 @@ export function EventModal({ event, onClose, onShare }) {
           <a className={`bl-modal-btn bl-modal-btn-primary${hasDirectLink ? "" : " bl-modal-btn-search"}`} href={ticketUrl()} target="_blank" rel="noopener noreferrer">
             {hasDirectLink ? `${t("event.buyTickets")} →` : `${t("event.searchTickets")} →`}
           </a>
+          <button
+            type="button"
+            className={`bl-modal-btn bl-modal-btn-secondary bl-modal-btn-save${savedOn ? " on" : ""}`}
+            aria-pressed={savedOn}
+            onClick={() => toggle(slug)}
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style={{ marginRight: 6, verticalAlign: -1 }}>
+              <path d="M6 3h12v18l-6-4.5L6 21V3z" fill={savedOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+            {savedOn ? t("saved.remove") : t("saved.add")}
+          </button>
           <div className="bl-cal-menu-wrap">
             <button
               className="bl-modal-btn bl-modal-btn-calendar"
@@ -366,7 +382,18 @@ export function EventModal({ event, onClose, onShare }) {
                 </a>
                 <button
                   className="bl-cal-menu-item"
-                  onClick={() => { downloadICS(event); setCalOpen(false); }}
+                  onClick={async () => {
+                    setCalOpen(false);
+                    // El server sirve el .ics con Content-Type text/calendar:
+                    // en iOS eso lo abre Calendario directo, sin pasos de
+                    // descarga. Si el server no lo tiene, blob local.
+                    const href = `/api/ics/${eventSlug(event)}.ics`;
+                    try {
+                      const r = await fetch(href, { method: "HEAD" });
+                      if (r.ok) { window.location.assign(href); return; }
+                    } catch { /* offline → local */ }
+                    downloadICS(event);
+                  }}
                   role="menuitem"
                 >
                   Descargar .ics

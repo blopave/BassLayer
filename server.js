@@ -16,7 +16,7 @@ import { dirname, join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { generateEventOG, generateFestivalOG, generateNewsOG } from "./og.js";
+import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
@@ -3812,6 +3812,166 @@ app.get("/og/event/:slug.png", async (req, res) => {
     res.send(png);
   } catch (e) {
     console.error("[og/event] error:", e.message);
+    res.status(500).end();
+  }
+});
+
+// ─── ICS + RSS: la agenda como feed suscribible ───────────────
+// Un solo serializador alimenta el .ics por evento (modal), el calendario
+// suscribible /agenda.ics (webcal) y el RSS. BA no tiene DST desde 2009:
+// offset fijo -03, así que el VTIMEZONE es un bloque estático.
+
+// Fecha wall-time BA del evento desde day/month/time (strings). El año sale
+// de la misma heurística que el JSON-LD: >30 días en el pasado → año próximo.
+function icsDateParts(ev) {
+  const mo = MONTH_MAP[ev.month?.toLowerCase()] ?? -1;
+  const d = parseInt(ev.day);
+  if (mo < 0 || !d) return null;
+  const probe = new Date(new Date().getFullYear(), mo, d);
+  if (probe < new Date() - 30 * 86400000) probe.setFullYear(probe.getFullYear() + 1);
+  const tm = /^(\d{1,2}):(\d{2})/.exec(ev.time || "");
+  return {
+    y: probe.getFullYear(), mo: mo + 1, d,
+    hh: tm ? +tm[1] : null, mm: tm ? +tm[2] : null,
+    sort: probe.getTime(),
+  };
+}
+
+const escICS = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+// Folding RFC 5545: líneas de máx. 75 octetos, continuación con espacio.
+const foldICS = (line) => {
+  const out = [];
+  let rest = line;
+  while (Buffer.byteLength(rest) > 74) {
+    let cut = 74;
+    while (Buffer.byteLength(rest.slice(0, cut)) > 74) cut--;
+    out.push(rest.slice(0, cut));
+    rest = " " + rest.slice(cut);
+  }
+  out.push(rest);
+  return out.join("\r\n");
+};
+
+const ICS_VTIMEZONE = [
+  "BEGIN:VTIMEZONE",
+  "TZID:America/Argentina/Buenos_Aires",
+  "BEGIN:STANDARD",
+  "DTSTART:19700101T000000",
+  "TZOFFSETFROM:-0300",
+  "TZOFFSETTO:-0300",
+  "TZNAME:-03",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+].join("\r\n");
+
+function eventsToICS(events, calName) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const now = new Date();
+  const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//BassLayer//Agenda//ES",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    foldICS(`X-WR-CALNAME:${escICS(calName)}`),
+    "X-WR-TIMEZONE:America/Argentina/Buenos_Aires",
+    ICS_VTIMEZONE,
+  ];
+  for (const ev of events) {
+    const p = icsDateParts(ev);
+    if (!p) continue;
+    const slug = eventSlug(ev);
+    const url = `${PROD_ORIGIN}/eventos/${slug}`;
+    const artists = (ev.artists || []).filter((a) => a && a !== "TBA").slice(0, 6).join(", ");
+    lines.push("BEGIN:VEVENT");
+    lines.push(foldICS(`UID:${slug}@basslayer.io`));
+    lines.push(`DTSTAMP:${dtstamp}`);
+    if (p.hh != null) {
+      const start = `${p.y}${pad(p.mo)}${pad(p.d)}T${pad(p.hh)}${pad(p.mm)}00`;
+      // +5h de fiesta; si cruza medianoche el TZID lo resuelve el calendario.
+      const endDate = new Date(p.y, p.mo - 1, p.d, p.hh + 5, p.mm);
+      const end = `${endDate.getFullYear()}${pad(endDate.getMonth() + 1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+      lines.push(`DTSTART;TZID=America/Argentina/Buenos_Aires:${start}`);
+      lines.push(`DTEND;TZID=America/Argentina/Buenos_Aires:${end}`);
+    } else {
+      const next = new Date(p.y, p.mo - 1, p.d + 1);
+      lines.push(`DTSTART;VALUE=DATE:${p.y}${pad(p.mo)}${pad(p.d)}`);
+      lines.push(`DTEND;VALUE=DATE:${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`);
+    }
+    lines.push(foldICS(`SUMMARY:${escICS(ev.name)}`));
+    const loc = [ev.venue, ev.city].filter(Boolean).join(", ");
+    if (loc) lines.push(foldICS(`LOCATION:${escICS(loc)}`));
+    lines.push(foldICS(`DESCRIPTION:${escICS([artists, url].filter(Boolean).join("\n"))}`));
+    lines.push(foldICS(`URL:${url}`));
+    lines.push("STATUS:CONFIRMED");
+    lines.push("END:VEVENT");
+  }
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}
+
+// Eventos AR próximos, ordenados — base de agenda.ics y feed.xml.
+function upcomingAREvents(family, cap = 120) {
+  const events = (cached("events") || []).filter((e) => (e.region || "AR") === "AR");
+  const cutoff = Date.now() - 86400000;
+  return events
+    .map((ev) => ({ ev, p: icsDateParts(ev) }))
+    .filter((x) => x.p && x.p.sort > cutoff && (!family || x.ev.family === family))
+    .sort((a, b) => a.p.sort - b.p.sort)
+    .slice(0, cap)
+    .map((x) => x.ev);
+}
+
+// .ics de UN evento — el modal lo linkea: text/calendar hace que iOS lo abra
+// en Calendario directo, sin danza de descargas.
+app.get("/api/ics/:slug.ics", (req, res) => {
+  const ev = findEventBySlug(req.params.slug);
+  if (!ev) return res.status(404).end();
+  res.set("Content-Type", "text/calendar; charset=utf-8");
+  res.set("Content-Disposition", `inline; filename="basslayer-evento.ics"`);
+  res.send(eventsToICS([ev], "BassLayer"));
+});
+
+// Calendario suscribible (webcal://basslayer.io/agenda.ics[?family=club]).
+app.get("/agenda.ics", (req, res) => {
+  const family = ["club", "live", "festival", "urbano", "raiz"].includes(req.query.family) ? req.query.family : null;
+  const name = family ? `BassLayer — Agenda ${family}` : "BassLayer — Agenda BA";
+  res.set("Content-Type", "text/calendar; charset=utf-8");
+  res.set("Cache-Control", "public, max-age=3600");
+  res.send(eventsToICS(upcomingAREvents(family), name));
+});
+
+// RSS de la agenda — mismo dataset, para lectores y agregadores.
+app.get("/feed.xml", (req, res) => {
+  const escXml = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const items = upcomingAREvents(null, 50).map((ev) => {
+    const url = `${PROD_ORIGIN}/eventos/${eventSlug(ev)}`;
+    const artists = (ev.artists || []).filter((a) => a && a !== "TBA").slice(0, 5).join(", ");
+    const desc = [`${ev.day} ${ev.month}${ev.time ? ` · ${ev.time}` : ""}`, [ev.venue, ev.city].filter(Boolean).join(", "), artists].filter(Boolean).join(" — ");
+    return `<item><title>${escXml(ev.name)}</title><link>${escXml(url)}</link><guid isPermaLink="true">${escXml(url)}</guid><description>${escXml(desc)}</description></item>`;
+  }).join("");
+  res.set("Content-Type", "application/rss+xml; charset=utf-8");
+  res.set("Cache-Control", "public, max-age=1800");
+  res.send(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>BassLayer — Agenda BA</title><link>${PROD_ORIGIN}/</link><description>Eventos de música electrónica y más en Buenos Aires</description><language>es-AR</language><lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${items}</channel></rss>`);
+});
+
+// Story-card 1080×1920 para el share del cliente (stories IG / estados WA).
+app.get("/og/story/event/:slug.png", async (req, res) => {
+  try {
+    const key = `story:${req.params.slug}`;
+    let png = ogCacheGet(key);
+    if (!png) {
+      const ev = findEventBySlug(req.params.slug);
+      if (!ev) return res.status(404).end();
+      png = await generateEventStory(ev);
+      ogCacheSet(key, png, 3600_000);
+    }
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    res.send(png);
+  } catch (e) {
+    console.error("[og/story] error:", e.message);
     res.status(500).end();
   }
 });
