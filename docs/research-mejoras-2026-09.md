@@ -37,7 +37,8 @@ La memoria previa ("más noticias ES, no más módulos") quedó parcialmente obs
 - **Descartado con evidencia**: scroll-driven animations (Safari 26/Firefox 158 muy recientes; los reveals actuales son "once-only", migrar sería por migrar), Speculation Rules (no aplica a SPA), Badging (sin caso de uso).
 
 ## Fuera de código (decisión de Pablo)
-- **WhatsApp Channel** con "el finde en 10 eventos" cada jueves — cero API, cero código; el costo es el hábito editorial. Espejo en Telegram para la audiencia Layer.
+- ~~WhatsApp Channel~~ — **DESCARTADO por decisión de Pablo (2026-09-09): nada relacionado a WhatsApp**, ni canal ni botones wa.me en el producto. El share usa solo el sheet nativo del sistema + copiar link. No re-proponer.
+- **Telegram** para la audiencia Layer queda como opción si algún día se quiere canal propio.
 - **Widget embebible** para venues/blogs ("powered by BassLayer") — cada embed es backlink + adquisición; el loop de Bandsintown.
 - **Roadmap de producto más grande** (requiere backend/decisiones): seguir venues/artistas con alertas, "avisame" de eventos, social proof "X interesados", listas curadas con nombre, páginas de venue como entidad seguible, embeds de audio por artista del lineup (patrón Xceed).
 

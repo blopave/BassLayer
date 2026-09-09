@@ -405,8 +405,9 @@ export default function App() {
   }, [news]);
 
 
-  // Share: story-card del server \u2192 share nativo \u2192 wa.me. El link es NUESTRO
-  // deep link indexable (/eventos/slug, con OG propio), no el de la ticketera.
+  // Share: story-card del server \u2192 share nativo \u2192 copiar link. El link es
+  // NUESTRO deep link indexable (/eventos/slug, con OG propio), no el de la
+  // ticketera.
   function shareEvent(ev) {
     const artists = (ev.artists || []).filter(a => a && a !== "TBA").slice(0, 3).join(", ");
     const text = `${ev.name} \u2014 ${ev.day} ${ev.month} @ ${ev.venue}${artists ? "\n" + artists : ""}`;
@@ -415,6 +416,7 @@ export default function App() {
       url: `${window.location.origin}/eventos/${slug}`,
       text,
       storyUrl: `/og/story/event/${slug}.png`,
+      copiedLabel: t("share.copied"),
     });
   }
 

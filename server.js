@@ -5285,7 +5285,7 @@ if (IS_PROD) {
       title,
       description: (desc || `Resumen de ${n.title}, publicado por ${sourceName}.`).slice(0, 300),
       canonical,
-      // OG dinámica branded para mejorar share previews en WhatsApp/redes.
+      // OG dinámica branded para mejorar share previews en mensajería/redes.
       // Aunque la página es noindex, el OG sí afecta el preview cuando
       // alguien comparte el link de BassLayer (no el de la fuente).
       image: `${PROD_ORIGIN}/og/news/${slug}.png`,
