@@ -185,7 +185,7 @@ function IndicatorStrip({ indicators, onOpen, t, locale }) {
 // marcados, más dots de hitos históricos que cuentan la historia de BTC. Cada
 // hito cae sobre la curva (a la altura del precio de su mes) y al tocarlo se
 // explica abajo. Historial mensual real; SVG a mano, sin librería de charts.
-function PriceCurve({ history, milestones, news }) {
+function PriceCurve({ history, milestones, news, realizedPrice }) {
   const { locale } = useLocale();
   const [active, setActive] = useState(null); // índice del hito seleccionado
   if (!Array.isArray(history) || history.length < 2) return null;
@@ -231,6 +231,16 @@ function PriceCurve({ history, milestones, news }) {
         {(milestones || []).filter((m) => m.type === "halving").map((m, i) => (
           <line key={"hv" + i} x1={x(m.t)} y1={padT} x2={x(m.t)} y2={H - padB} className="bl-cyc-curve-hv" />
         ))}
+        {/* Precio realizado (costo base agregado on-chain): la línea que separa
+            mercado en ganancia de mercado en pérdida. Data viva, sin key. */}
+        {realizedPrice > 0 && Math.log10(realizedPrice) > lo && Math.log10(realizedPrice) < hi && (
+          <g>
+            <line x1={padL} y1={y(realizedPrice)} x2={W - padR} y2={y(realizedPrice)} className="bl-cyc-curve-rlz" />
+            <text x={W - padR - 4} y={y(realizedPrice) - 5} className="bl-cyc-curve-rlz-lab" textAnchor="end">
+              {L("precio realizado", "realized price")} {fmtP(Math.round(realizedPrice))}
+            </text>
+          </g>
+        )}
         <polyline points={linePts} className="bl-cyc-curve-line" />
         {activeEv && <line x1={x(activeEv.t)} y1={y(activeEv.p)} x2={x(activeEv.t)} y2={H - padB} className="bl-cyc-curve-guide" />}
         {(milestones || []).map((m, i) => (
@@ -283,6 +293,7 @@ export function BtcCycles() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState(null); // indicador abierto en el modal
+  const [network, setNetwork] = useState(null);   // fees + dificultad (mempool)
 
   useEffect(() => {
     let mounted = true;
@@ -290,8 +301,13 @@ export function BtcCycles() {
       .then((d) => { if (mounted) { setData(d); setError(false); } })
       .catch(() => { if (mounted) setError(true); });
     load();
+    const loadNet = () => api.btcNetwork()
+      .then((n) => { if (mounted) setNetwork(n); })
+      .catch(() => {});
+    loadNet();
     const iv = setInterval(load, 10 * 60_000);
-    return () => { mounted = false; clearInterval(iv); };
+    const ivNet = setInterval(loadNet, 10 * 60_000);
+    return () => { mounted = false; clearInterval(iv); clearInterval(ivNet); };
   }, []);
 
   if (error && !data) {
@@ -384,12 +400,44 @@ export function BtcCycles() {
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.price")}
       </div>
-      <PriceCurve history={data.priceHistory} milestones={data.milestones} news={data.newsEvents} />
+      <PriceCurve history={data.priceHistory} milestones={data.milestones} news={data.newsEvents} realizedPrice={data.onchain?.realizedPrice} />
 
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.confluence")}
       </div>
       <IndicatorStrip indicators={indicators} onOpen={(ind) => openInd(ind.key, ind.value, numVal(ind.value))} t={t} locale={locale} />
+
+      {/* Red Bitcoin en vivo (mempool.space): fees + ajuste de dificultad con
+          progress bar — el patrón visual de mempool, hermano de los halvings. */}
+      {network && (network.fees || network.difficulty) && (
+        <>
+          <div className="bl-cyc-section-title">
+            <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.network")}
+          </div>
+          <div className="bl-cyc-network">
+            {network.fees && (
+              <div className="bl-cyc-net-item">
+                <span className="bl-cyc-net-k">{t("cycles.net.fees")}</span>
+                <span className="bl-cyc-net-v">
+                  <b>{network.fees.fast}</b>/{network.fees.half}/{network.fees.hour}
+                </span>
+              </div>
+            )}
+            {network.difficulty && (
+              <div className="bl-cyc-net-item bl-cyc-net-diff">
+                <span className="bl-cyc-net-k">{t("cycles.net.adjust")}</span>
+                <span className="bl-cyc-net-bar" role="progressbar" aria-valuenow={network.difficulty.progress} aria-valuemin={0} aria-valuemax={100}>
+                  <span className="bl-cyc-net-bar-fill" style={{ width: `${Math.min(100, network.difficulty.progress)}%` }} />
+                </span>
+                <span className="bl-cyc-net-v">
+                  {network.difficulty.progress}% · <b className={network.difficulty.change >= 0 ? "up" : "down"}>{network.difficulty.change >= 0 ? "+" : ""}{network.difficulty.change}%</b>
+                  {network.difficulty.retargetDate ? ` · ~${Math.max(0, Math.round((network.difficulty.retargetDate - Date.now()) / 86400000))}d` : ""}
+                </span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="bl-cyc-posture">
         <span className="bl-cyc-posture-dot" aria-hidden="true" />

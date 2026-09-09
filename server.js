@@ -142,6 +142,9 @@ const cache = {
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
   predictions: { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — Polymarket trending
   btcCycles:   { data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — ciclos halving (precio+200W en vivo, resto curado)
+  dolar:       { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — USDT/ARS por exchange + dólares AR
+  onchain:     { data: null, ts: 0, ttl: 6 * 60 * 60_000 }, // 6h — métricas on-chain diarias (bitcoin-data)
+  btcNetwork:  { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — fees + ajuste de dificultad (mempool.space)
 };
 
 function cached(key) {
@@ -2727,6 +2730,137 @@ app.get("/api/artist", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  GET /api/dolar — USDT/ARS por exchange (CriptoYa) + dólares AR (DolarAPI)
+//  El módulo que ninguna terminal global tiene. Sin key, cache 5min.
+// ─────────────────────────────────────────────
+
+app.get("/api/dolar", async (req, res) => {
+  const hit = cached("dolar");
+  if (hit) return res.json(hit);
+  try {
+    const [cy, da] = await Promise.allSettled([
+      fetchSafe("https://criptoya.com/api/usdt/ars/1").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://dolarapi.com/v1/dolares").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+    ]);
+    const cyData = cy.status === "fulfilled" ? cy.value : null;
+    const daData = da.status === "fulfilled" ? da.value : null;
+
+    // CriptoYa: objeto exchange → {ask,bid,...}. Curamos a los exchanges que
+    // la audiencia AR usa de verdad, orden fijo para que la tabla no baile.
+    const EXCHANGES = ["binance", "buenbit", "ripio", "lemoncash", "belo", "fiwind", "letsbit", "satoshitango"];
+    const usdt = [];
+    if (cyData && typeof cyData === "object") {
+      for (const ex of EXCHANGES) {
+        const q = cyData[ex];
+        if (q && Number(q.ask) > 0 && Number(q.bid) > 0) {
+          usdt.push({ exchange: ex, ask: Math.round(q.ask * 100) / 100, bid: Math.round(q.bid * 100) / 100 });
+        }
+      }
+    }
+
+    const byCasa = {};
+    if (Array.isArray(daData)) for (const d of daData) byCasa[d.casa] = { compra: d.compra, venta: d.venta };
+    const oficialVenta = byCasa.oficial?.venta || null;
+    const criptoVenta = byCasa.cripto?.venta || (usdt.length ? usdt.reduce((a, x) => a + x.ask, 0) / usdt.length : null);
+
+    const dolar = {
+      usdt,
+      dolares: {
+        oficial: byCasa.oficial || null,
+        blue: byCasa.blue || null,
+        mep: byCasa.bolsa || null,
+        cripto: byCasa.cripto || null,
+      },
+      // Brecha cripto vs oficial — el número que la audiencia AR mira.
+      brecha: oficialVenta && criptoVenta ? Math.round(((criptoVenta / oficialVenta) - 1) * 1000) / 10 : null,
+      updated: Date.now(),
+    };
+    if (usdt.length === 0 && !daData) throw new Error("ambas fuentes vacías");
+    setCache("dolar", dolar);
+    res.json(dolar);
+  } catch (e) {
+    console.error("[dolar] error:", e.message);
+    res.status(502).json({ error: "dolar unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/onchain — métricas de ciclo (bitcoin-data.com, sin key, diarias)
+// ─────────────────────────────────────────────
+
+async function loadOnchain() {
+  const hit = cached("onchain");
+  if (hit) return hit;
+  const urls = [
+    "https://bitcoin-data.com/v1/mvrv-zscore/last",
+    "https://bitcoin-data.com/v1/nupl/last",
+    "https://bitcoin-data.com/v1/puell-multiple/last",
+    "https://bitcoin-data.com/v1/realized-price/last",
+  ];
+  const rs = await Promise.allSettled(urls.map(u =>
+    fetchSafe(u).then(r => r.ok ? safeText(r).then(JSON.parse) : null)
+  ));
+  const val = (i, key) => {
+    const d = rs[i].status === "fulfilled" ? rs[i].value : null;
+    const n = d ? Number(d[key]) : NaN;
+    return isFinite(n) ? n : null;
+  };
+  const onchain = {
+    mvrvZ: val(0, "mvrvZscore"),
+    nupl: val(1, "nupl"),
+    puell: val(2, "puellMultiple"),
+    realizedPrice: val(3, "realizedPrice"),
+    date: rs[0].status === "fulfilled" ? rs[0].value?.d || null : null,
+  };
+  if (onchain.mvrvZ == null && onchain.realizedPrice == null) return null;
+  setCache("onchain", onchain);
+  return onchain;
+}
+
+app.get("/api/onchain", async (req, res) => {
+  try {
+    const onchain = await loadOnchain();
+    if (!onchain) throw new Error("bitcoin-data vacío");
+    res.json(onchain);
+  } catch (e) {
+    console.error("[onchain] error:", e.message);
+    res.status(502).json({ error: "onchain unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/btc-network — fees + ajuste de dificultad (mempool.space, sin key)
+// ─────────────────────────────────────────────
+
+app.get("/api/btc-network", async (req, res) => {
+  const hit = cached("btcNetwork");
+  if (hit) return res.json(hit);
+  try {
+    const [fees, diff] = await Promise.allSettled([
+      fetchSafe("https://mempool.space/api/v1/fees/recommended").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+      fetchSafe("https://mempool.space/api/v1/difficulty-adjustment").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
+    ]);
+    const f = fees.status === "fulfilled" ? fees.value : null;
+    const d = diff.status === "fulfilled" ? diff.value : null;
+    const network = {
+      fees: f ? { fast: f.fastestFee, half: f.halfHourFee, hour: f.hourFee } : null,
+      difficulty: d ? {
+        progress: Math.round(d.progressPercent * 10) / 10,
+        change: Math.round(d.difficultyChange * 100) / 100,
+        remainingBlocks: d.remainingBlocks,
+        retargetDate: d.estimatedRetargetDate || null,
+      } : null,
+    };
+    if (!network.fees && !network.difficulty) throw new Error("mempool vacío");
+    setCache("btcNetwork", network);
+    res.json(network);
+  } catch (e) {
+    console.error("[btc-network] error:", e.message);
+    res.status(502).json({ error: "btc-network unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
 //  GET /api/dashboard — BTC dominance, Fear & Greed, ETH gas
 // ─────────────────────────────────────────────
 
@@ -2910,6 +3044,38 @@ app.get("/api/btc-cycles", async (req, res) => {
     }
     const priceHistory = [...monthMap.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([t, p]) => ({ t, p }));
 
+    // Indicadores on-chain EN VIVO (bitcoin-data.com) pisan el snapshot curado
+    // — los valores manuales envejecían mal (MVRV curado 0.34 vs 0.87 real).
+    // status/pos: mecánicos, derivados de las bandas documentadas en cada nota.
+    const oc = await loadOnchain().catch(() => null);
+    const clampPos = (v) => Math.min(98, Math.max(2, Math.round(v)));
+    const liveInd = {};
+    if (oc) {
+      if (oc.mvrvZ != null) liveInd.MVRV = {
+        value: oc.mvrvZ.toFixed(2),
+        status: oc.mvrvZ < 2 ? "green" : oc.mvrvZ < 6 ? "amber" : "red",
+        pos: clampPos(((oc.mvrvZ + 1) / 8) * 100),
+      };
+      if (oc.nupl != null) liveInd.NUPL = {
+        value: oc.nupl.toFixed(2),
+        status: oc.nupl < 0.25 ? "green" : oc.nupl < 0.5 ? "amber" : "red",
+        pos: clampPos(((oc.nupl + 0.25) / 1) * 100),
+      };
+      if (oc.puell != null) liveInd.PUELL = {
+        value: oc.puell.toFixed(2),
+        status: oc.puell < 1 ? "green" : oc.puell < 3 ? "amber" : "red",
+        pos: clampPos(((oc.puell - 0.3) / 3.7) * 100),
+      };
+      if (oc.realizedPrice != null && live.price != null) {
+        const ratio = live.price / oc.realizedPrice;
+        liveInd.RPRICE = {
+          value: `${ratio.toFixed(2)}x`,
+          status: ratio < 1 ? "green" : ratio < 2.4 ? "amber" : "red",
+          pos: clampPos(((ratio - 0.8) / 2.7) * 100),
+        };
+      }
+    }
+
     // El indicador 200W del tablero también refleja el valor en vivo, para que
     // no contradiga al header. pos: mapa aproximado -10%..+200% -> 0..100 (fondo→techo).
     const indicators = Array.isArray(curated.indicators)
@@ -2919,6 +3085,7 @@ app.get("/api/btc-cycles", async (req, res) => {
             const pos = Math.min(98, Math.max(2, Math.round(((p + 10) / 210) * 100)));
             return { ...ind, value: `${p >= 0 ? "+" : ""}${p}%`, pos };
           }
+          if (liveInd[ind.key]) return { ...ind, ...liveInd[ind.key] };
           return ind;
         })
       : curated.indicators;
@@ -2938,6 +3105,8 @@ app.get("/api/btc-cycles", async (req, res) => {
       milestones,
       newsEvents,
       live,
+      // Para la línea de precio realizado en la curva log del cliente.
+      onchain: oc || null,
     };
 
     setCache("btcCycles", merged);

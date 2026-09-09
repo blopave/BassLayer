@@ -103,6 +103,16 @@ export const STRINGS = {
     "feed.empty.saved": "Nada guardado todavía. Tocá el señalador de un evento y armá tu agenda.",
     "feed.subscribeCal": "Suscribite a la agenda en tu calendario →",
 
+    "dolar.title": "Dólar cripto",
+    "dolar.gap": "BRECHA",
+    "dolar.bid": "COMPRA",
+    "dolar.ask": "VENTA",
+    "cycles.section.onchain": "on-chain --ciclo",
+    "cycles.section.network": "red --btc",
+    "cycles.net.fees": "FEES SAT/VB",
+    "cycles.net.adjust": "AJUSTE DIFICULTAD",
+    "cycles.realized": "precio realizado",
+
     "event.lineup": "Line-up",
     "event.lineupSingle": "artista",
     "event.lineupPlural": "artistas",
@@ -353,6 +363,16 @@ export const STRINGS = {
     "saved.label": "Saved",
     "feed.empty.saved": "Nothing saved yet. Tap the bookmark on an event to build your agenda.",
     "feed.subscribeCal": "Subscribe to the agenda in your calendar →",
+
+    "dolar.title": "Crypto dollar",
+    "dolar.gap": "GAP",
+    "dolar.bid": "BID",
+    "dolar.ask": "ASK",
+    "cycles.section.onchain": "on-chain --cycle",
+    "cycles.section.network": "network --btc",
+    "cycles.net.fees": "FEES SAT/VB",
+    "cycles.net.adjust": "DIFFICULTY ADJUST",
+    "cycles.realized": "realized price",
 
     "event.lineup": "Line-up",
     "event.lineupSingle": "artist",

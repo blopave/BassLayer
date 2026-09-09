@@ -3,6 +3,7 @@ import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoDashboard } from "./CryptoDashboard";
 import { CryptoBATimeline } from "./CryptoBATimeline";
+import { DolarCripto } from "./DolarCripto";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
 import { lazyNamed } from "../utils/lazy";
@@ -81,6 +82,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
   return (
     <>
       <CryptoDashboard />
+      <DolarCripto />
       <div className="bl-layer-tools">
         <CryptoBATimeline />
       </div>
