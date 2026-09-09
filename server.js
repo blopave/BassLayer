@@ -3911,6 +3911,55 @@ function eventsToICS(events, calName) {
   return lines.join("\r\n");
 }
 
+// JSON-LD MusicEvent — builder único para el ItemList del prerender y la
+// ficha de evento. startDate/endDate con hora y offset -03:00 explícito:
+// "timezone mal seteado" y "sin offers" son de los errores que más
+// descalifican del carrusel de Google Events.
+function musicEventSchema(ev, extra = {}) {
+  const p = icsDateParts(ev);
+  const pad = (n) => String(n).padStart(2, "0");
+  const schema = {
+    "@type": "MusicEvent",
+    "name": ev.name,
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "location": {
+      "@type": "Place",
+      "name": ev.venue || "Buenos Aires",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": ev.city || "Buenos Aires",
+        "addressRegion": "CABA",
+        "addressCountry": "AR",
+      },
+    },
+    "performer": (ev.artists || []).filter((a) => a && a !== "TBA").slice(0, 5).map((a) => ({ "@type": "PerformingGroup", "name": a })),
+    "organizer": { "@type": "Organization", "name": ev.venue || "BassLayer" },
+    ...extra,
+  };
+  if (p) {
+    const d = `${p.y}-${pad(p.mo)}-${pad(p.d)}`;
+    if (p.hh != null) {
+      schema.startDate = `${d}T${pad(p.hh)}:${pad(p.mm)}:00-03:00`;
+      const end = new Date(p.y, p.mo - 1, p.d, p.hh + 5, p.mm);
+      schema.endDate = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}:00-03:00`;
+    } else {
+      schema.startDate = d;
+    }
+  }
+  const images = [ev.image, `${PROD_ORIGIN}/og/event/${eventSlug(ev)}.png`].filter(Boolean);
+  if (images.length) schema.image = images;
+  if (ev.url) {
+    schema.offers = {
+      "@type": "Offer",
+      "url": ev.url,
+      "availability": "https://schema.org/InStock",
+      ...(Number(ev.ticket_price) > 0 ? { "price": Number(ev.ticket_price), "priceCurrency": "ARS" } : {}),
+    };
+  }
+  return schema;
+}
+
 // Eventos AR próximos, ordenados — base de agenda.ics y feed.xml.
 function upcomingAREvents(family, cap = 120) {
   const events = (cached("events") || []).filter((e) => (e.region || "AR") === "AR");
@@ -4034,7 +4083,13 @@ app.get("/sitemap.xml", (req, res) => {
     },
   ];
 
-  // Eventos
+  // Páginas temporales — cambian a diario de verdad; lastmod=today es honesto
+  // acá y solo acá (Google usa lastmod para programar recrawl).
+  urls.push({ loc: `${PROD_ORIGIN}/eventos/hoy`, lastmod: today, changefreq: "daily", priority: "0.9" });
+  urls.push({ loc: `${PROD_ORIGIN}/eventos/este-finde`, lastmod: today, changefreq: "daily", priority: "0.9" });
+
+  // Eventos — sin lastmod: no versionamos la data por evento y un lastmod
+  // inventado entrena a Google a ignorar la señal en todo el sitio.
   const events = cached("events") || [];
   const seen = new Set();
   for (const ev of events) {
@@ -4043,10 +4098,21 @@ app.get("/sitemap.xml", (req, res) => {
     seen.add(slug);
     urls.push({
       loc: `${PROD_ORIGIN}/eventos/${slug}`,
-      lastmod: today,
       changefreq: "weekly",
       priority: "0.8",
     });
+  }
+
+  // Venues con 3+ fechas próximas — "crobar eventos" y compañía.
+  const venueCounts = {};
+  for (const ev of events) {
+    if (!ev.venue) continue;
+    const vs = slugify(ev.venue);
+    if (vs) venueCounts[vs] = (venueCounts[vs] || 0) + 1;
+  }
+  for (const [vs, n] of Object.entries(venueCounts)) {
+    if (n < 3) continue;
+    urls.push({ loc: `${PROD_ORIGIN}/eventos/venue/${vs}`, lastmod: today, changefreq: "daily", priority: "0.7" });
   }
 
   // Hubs por familia (club/live/festival/urbano/raiz) — sólo las que tienen al
@@ -4097,7 +4163,7 @@ app.get("/sitemap.xml", (req, res) => {
   for (const u of urls) {
     xml.push("  <url>");
     xml.push(`    <loc>${xmlEsc(u.loc)}</loc>`);
-    xml.push(`    <lastmod>${u.lastmod}</lastmod>`);
+    if (u.lastmod) xml.push(`    <lastmod>${u.lastmod}</lastmod>`);
     xml.push(`    <changefreq>${u.changefreq}</changefreq>`);
     xml.push(`    <priority>${u.priority}</priority>`);
     for (const alt of u.alternates || []) {
@@ -4240,42 +4306,9 @@ if (IS_PROD) {
     lines.push("</div></main>");
 
     // JSON-LD: ItemList con MusicEvent por evento (rich results en Google Events)
-    const eventSchemas = events.slice(0, 25).map(ev => {
-      const m = MONTH_MAP[ev.month?.toLowerCase()] ?? 0;
-      const year = new Date().getFullYear();
-      const date = new Date(year, m, parseInt(ev.day));
-      if (date < new Date() - 30 * 86400000) date.setFullYear(year + 1);
-      const schema = {
-        "@type": "MusicEvent",
-        "name": ev.name,
-        "startDate": date.toISOString().split("T")[0],
-        "eventStatus": "https://schema.org/EventScheduled",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-        "location": {
-          "@type": "Place",
-          "name": ev.venue || "Buenos Aires",
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": ev.city || "Buenos Aires",
-            "addressRegion": "CABA",
-            "addressCountry": "AR"
-          }
-        },
-        "performer": (ev.artists || []).slice(0, 5).map(a => ({ "@type": "PerformingGroup", "name": a })),
-        "organizer": { "@type": "Organization", "name": ev.venue || "BassLayer" }
-      };
-      if (ev.image) schema.image = [ev.image];
-      if (ev.url) {
-        schema.url = ev.url;
-        schema.offers = {
-          "@type": "Offer",
-          "url": ev.url,
-          "availability": "https://schema.org/InStock",
-          "category": "primary"
-        };
-      }
-      return schema;
-    });
+    const eventSchemas = events.slice(0, 25).map(ev =>
+      musicEventSchema(ev, { "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}` })
+    );
 
     if (eventSchemas.length > 0) {
       const itemList = {
@@ -4411,43 +4444,14 @@ if (IS_PROD) {
     lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${crumbLink}">← Volver a la agenda completa</a></p>`);
     lines.push(`</div></main>`);
 
-    // JSON-LD MusicEvent enriquecido
-    const m = MONTH_MAP[ev.month?.toLowerCase()] ?? 0;
-    const year = new Date().getFullYear();
-    const date = new Date(year, m, parseInt(ev.day));
-    if (date < new Date() - 30 * 86400000) date.setFullYear(year + 1);
-
+    // JSON-LD MusicEvent enriquecido — builder compartido (musicEventSchema)
     const eventSchema = {
       "@context": "https://schema.org",
-      "@type": "MusicEvent",
-      "name": ev.name,
-      "description": desc,
-      "startDate": date.toISOString().split("T")[0],
-      "eventStatus": "https://schema.org/EventScheduled",
-      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-      "location": {
-        "@type": "Place",
-        "name": ev.venue || "Buenos Aires",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": ev.city || "Buenos Aires",
-          "addressRegion": "CABA",
-          "addressCountry": "AR"
-        }
-      },
-      "performer": artists.map(a => ({ "@type": "PerformingGroup", "name": a })),
-      "organizer": { "@type": "Organization", "name": ev.venue || "BassLayer" },
-      "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}`
+      ...musicEventSchema(ev, {
+        "description": desc,
+        "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}`,
+      }),
     };
-    if (ev.image) eventSchema.image = [ev.image];
-    if (ev.url) {
-      eventSchema.offers = {
-        "@type": "Offer",
-        "url": ev.url,
-        "availability": "https://schema.org/InStock",
-        "category": "primary"
-      };
-    }
     lines.push(`<script type="application/ld+json">${JSON.stringify(eventSchema).replace(/<\//g, "<\\/")}</script>`);
 
     const breadcrumb = {
@@ -4942,6 +4946,150 @@ if (IS_PROD) {
     });
   }
 
+  // ── Páginas programáticas temporales: /eventos/hoy · /eventos/este-finde ──
+  // El playbook de RA/Songkick: la query "fiestas hoy buenos aires" tiene una
+  // página exacta que la responde, con ItemList para el carrusel de Google.
+  function temporalEvents(kind) {
+    const all = (cached("events") || []).filter((e) => (e.region || "AR") === "AR");
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let from = today, to = new Date(today.getTime() + 86400000);
+    if (kind === "este-finde") {
+      const dow = today.getDay();
+      const fo = dow === 5 ? 0 : dow === 6 ? -1 : dow === 0 ? -2 : 5 - dow;
+      from = new Date(today); from.setDate(from.getDate() + fo);
+      to = new Date(from); to.setDate(to.getDate() + 3);
+    }
+    return all
+      .map((ev) => ({ ev, p: icsDateParts(ev) }))
+      .filter((x) => x.p && x.p.sort >= from.getTime() && x.p.sort < to.getTime())
+      .sort((a, b) => a.p.sort - b.p.sort)
+      .map((x) => x.ev);
+  }
+
+  // Body genérico de página-listado (temporales y venues): mismo lenguaje
+  // visual que las páginas de género.
+  function buildListPageBody({ ariaLabel, crumb, h1, intro, listTitle, events, emptyMsg, extraNav }) {
+    const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
+    const innerStyle = "max-width:880px;margin:0 auto;padding:2rem 1.25rem";
+    const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";
+    const crumbLink = "color:#7ec8ff;text-decoration:none";
+    const h1Style = "font-size:2rem;font-weight:600;letter-spacing:-0.02em;line-height:1.2;margin:0 0 0.75rem;color:#fff";
+    const introStyle = "color:#bcbcbc;line-height:1.65;margin:0 0 2rem;font-size:1rem;max-width:65ch";
+    const h2Style = "font-size:1.2rem;font-weight:500;color:#fff;margin:2rem 0 1rem;padding-bottom:0.5rem;border-bottom:1px solid #222;letter-spacing:-0.01em";
+    const ulStyle = "list-style:none;padding:0;margin:0";
+    const liStyle = "padding:0.7rem 0;border-bottom:1px solid #141414;line-height:1.5;font-size:0.95rem";
+    const linkStyle = "color:#7ec8ff;text-decoration:none";
+    const metaStyle = "color:#888;font-size:0.88em";
+
+    const lines = [`<main style="${wrapStyle}" aria-label="${escHtml(ariaLabel)}">`, `<div style="${innerStyle}">`];
+    lines.push(`<nav aria-label="Ruta" style="${crumbStyle}"><a href="/" style="${crumbLink}">BassLayer</a> <span>›</span> <a href="/" style="${crumbLink}">Eventos</a> <span>›</span> <span>${escHtml(crumb)}</span></nav>`);
+    lines.push(`<h1 style="${h1Style}">${escHtml(h1)}</h1>`);
+    lines.push(`<p style="${introStyle}">${escHtml(intro)}</p>`);
+    if (extraNav) lines.push(extraNav);
+    if (events.length > 0) {
+      lines.push(`<section aria-labelledby="seo-list">`);
+      lines.push(`<h2 id="seo-list" style="${h2Style}">${escHtml(listTitle)} (${events.length})</h2>`);
+      lines.push(`<ul style="${ulStyle}">`);
+      for (const ev of events.slice(0, 40)) {
+        const evSlug = eventSlug(ev);
+        const artists = (ev.artists || []).filter((a) => a && a !== "TBA").slice(0, 3).map(escHtml).join(", ");
+        const name = `<a href="/eventos/${escHtml(evSlug)}" style="${linkStyle};font-weight:500">${escHtml(ev.name)}</a>`;
+        const venue = ev.venue ? ` · ${escHtml(ev.venue)}` : "";
+        const performers = artists ? ` · <span style="${metaStyle}">${artists}</span>` : "";
+        lines.push(`<li style="${liStyle}">${name} <span style="${metaStyle}">${escHtml(ev.day)} ${escHtml(ev.month)}${ev.time ? ` · ${escHtml(ev.time)}` : ""}</span>${venue}${performers}</li>`);
+      }
+      lines.push(`</ul></section>`);
+    } else {
+      lines.push(`<p style="color:#888;line-height:1.5;margin:2rem 0;padding:1rem;background:#0a0a0a;border-radius:8px">${escHtml(emptyMsg)}</p>`);
+    }
+    lines.push(`<p style="color:#666;font-size:0.85rem;margin-top:3rem"><a href="/" style="${linkStyle}">← Ver toda la agenda</a></p>`);
+    lines.push(`</div></main>`);
+
+    if (events.length > 0) {
+      const itemList = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": listTitle,
+        "numberOfItems": Math.min(events.length, 40),
+        "itemListElement": events.slice(0, 40).map((ev, i) => ({
+          "@type": "ListItem",
+          "position": i + 1,
+          "item": musicEventSchema(ev, { "url": `${PROD_ORIGIN}/eventos/${eventSlug(ev)}` }),
+        })),
+      };
+      lines.push(`<script type="application/ld+json">${JSON.stringify(itemList).replace(/<\//g, "<\\/")}</script>`);
+    }
+    return lines.join("");
+  }
+
+  function renderTemporalPage(kind) {
+    const events = temporalEvents(kind);
+    const isHoy = kind === "hoy";
+    const h1 = isHoy ? "Eventos hoy en Buenos Aires" : "Qué hacer este finde en Buenos Aires";
+    const intro = isHoy
+      ? "Fiestas, recitales y eventos de música electrónica y más para hoy en Buenos Aires y alrededores. Actualizado todos los días con la agenda completa."
+      : "La agenda del fin de semana en Buenos Aires: fiestas electrónicas, recitales en vivo, festivales y más — viernes, sábado y domingo, actualizada a diario.";
+    const crossLink = isHoy
+      ? `<p style="margin:0 0 2rem"><a href="/eventos/este-finde" style="color:#7ec8ff;text-decoration:none">→ Ver todo el finde</a></p>`
+      : `<p style="margin:0 0 2rem"><a href="/eventos/hoy" style="color:#7ec8ff;text-decoration:none">→ Ver solo hoy</a></p>`;
+    const body = buildListPageBody({
+      ariaLabel: h1,
+      crumb: isHoy ? "Hoy" : "Este finde",
+      h1, intro,
+      listTitle: isHoy ? "Los eventos de hoy" : "Los eventos del finde",
+      events,
+      emptyMsg: isHoy
+        ? "No hay eventos cargados para hoy — mirá el finde completo o volvé mañana, la agenda se actualiza a diario."
+        : "Todavía no hay eventos cargados para este finde. La agenda se actualiza todos los días.",
+      extraNav: crossLink,
+    });
+    return renderHtmlWithMeta({
+      title: `${h1} — ${events.length > 0 ? `${events.length} eventos` : "Agenda"} | BassLayer`,
+      description: intro.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/eventos/${kind}`,
+      image: `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
+  // ── Páginas de venue: /eventos/venue/:slug ──
+  // "crobar eventos" tiene intención altísima y competencia local baja.
+  function venueEvents(vslug) {
+    const all = (cached("events") || []);
+    return all
+      .filter((e) => e.venue && slugify(e.venue) === vslug)
+      .map((ev) => ({ ev, p: icsDateParts(ev) }))
+      .filter((x) => x.p && x.p.sort > Date.now() - 86400000)
+      .sort((a, b) => a.p.sort - b.p.sort)
+      .map((x) => x.ev);
+  }
+
+  function renderVenuePage(vslug) {
+    const events = venueEvents(vslug);
+    if (events.length === 0) return null;
+    const venueName = events[0].venue;
+    const city = events[0].city || "Buenos Aires";
+    const address = events.find((e) => e.address)?.address;
+    const h1 = `${venueName} — Próximos eventos`;
+    const intro = `Agenda de próximas fechas en ${venueName}${address ? ` (${address}, ${city})` : `, ${city}`}: fiestas, DJs y música en vivo, actualizada a diario.`;
+    const body = buildListPageBody({
+      ariaLabel: h1,
+      crumb: venueName,
+      h1, intro,
+      listTitle: `Próximas fechas en ${venueName}`,
+      events,
+      emptyMsg: "",
+    });
+    return renderHtmlWithMeta({
+      title: `${venueName}: próximos eventos y fechas — ${city} | BassLayer`,
+      description: intro.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/eventos/venue/${vslug}`,
+      image: `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   function renderFestivalPage(f) {
     const { html: body, desc } = buildFestivalPageBody(f);
     const range = dateRange(f.dates_start, f.dates_end);
@@ -4995,6 +5143,24 @@ if (IS_PROD) {
         if (genre) {
           res.set("Content-Type", "text/html");
           return res.send(renderGenrePage(genre));
+        }
+        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+      }
+
+      // /eventos/hoy · /eventos/este-finde — páginas temporales programáticas
+      const temporalMatch = req.path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
+      if (temporalMatch) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderTemporalPage(temporalMatch[1]));
+      }
+
+      // /eventos/venue/[slug] — próximas fechas por venue
+      const venueMatch = req.path.match(/^\/eventos\/venue\/([^/]+)\/?$/);
+      if (venueMatch) {
+        const page = renderVenuePage(decodeURIComponent(venueMatch[1]));
+        if (page) {
+          res.set("Content-Type", "text/html");
+          return res.send(page);
         }
         return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
       }

@@ -212,7 +212,7 @@ function WeekendHero({ events, onSelect }) {
   );
 }
 
-export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival }) {
+export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival, presetWhen }) {
   const { t, locale } = useLocale();
   const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
   const familyLabels = useMemo(() => ({
@@ -224,7 +224,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const REGIONS = [{ label: "Argentina", code: "AR" }, { label: "LatAm", code: "LatAm" }, { label: t("region.world"), code: "World" }];
   const [regionFilter, setRegionFilter] = useState("AR");
   const [cityFilter, setCityFilter] = useState("Todas");
-  const [when, setWhen] = useState("");   // "" | "hoy" | "finde" — filtro temporal
+  // "" | "hoy" | "finde" — filtro temporal; el deep link (/eventos/hoy,
+  // /eventos/este-finde) lo presetea vía prop. Va por efecto y no por estado
+  // inicial: el feed ya está montado cuando App resuelve el deep link (los
+  // paneles viven en el DOM incluso en la vista home).
+  const [when, setWhen] = useState("");
+  useEffect(() => { if (presetWhen) setWhen(presetWhen); }, [presetWhen]);
   // En mobile los tres segmentos de control se apilaban y empujaban el primer
   // evento a 548px de un viewport de 667. Pasan a un bottom sheet detrás de un
   // disparador compacto; en desktop la barra de una fila se queda como está.

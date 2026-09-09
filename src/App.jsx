@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { api } from "./utils/api";
-import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug } from "./utils/slug";
+import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
@@ -159,6 +159,9 @@ export default function App() {
   // Deep link a /eventos/[slug] y /noticias/[slug]: el server prerenderiza la
   // ficha; el cliente detecta el path, fuerza la carga del feed y abre el modal.
   const pendingEventSlugRef = useRef(null);
+  const pendingVenueSlugRef = useRef(null);
+  // Filtro temporal preseteado por deep link (/eventos/hoy | /este-finde)
+  const [presetWhen, setPresetWhen] = useState("");
   const pendingNewsSlugRef = useRef(null);
 
   const openEvent = useCallback((ev) => {
@@ -249,6 +252,23 @@ export default function App() {
   // Detectar deep link al montar + responder a back/forward
   useEffect(() => {
     const path = window.location.pathname;
+    // /eventos/hoy · /eventos/este-finde → feed con el filtro temporal puesto
+    const temporalMatch = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
+    if (temporalMatch) {
+      setPresetWhen(temporalMatch[1] === "hoy" ? "hoy" : "finde");
+      setView("sections");
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      return;
+    }
+    // /eventos/venue/[slug] → feed buscando por ese venue (se resuelve el
+    // nombre real cuando llegan los eventos)
+    const venueMatch = path.match(/^\/eventos\/venue\/([^/]+)\/?$/);
+    if (venueMatch) {
+      pendingVenueSlugRef.current = decodeURIComponent(venueMatch[1]);
+      setView("sections");
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      return;
+    }
     const evMatch = path.match(/^\/eventos\/([^/]+)\/?$/);
     const newsMatch = path.match(/^\/noticias\/([^/]+)\/?$/);
     const festMatch = path.match(/^\/festivales\/([^/]+)\/?$/);
@@ -350,6 +370,17 @@ export default function App() {
         applyEventJsonLd(found, slug);
       }
       pendingEventSlugRef.current = null;
+    }
+  }, [events]);
+
+  // Resolver pending venue slug: cuando llegan los eventos, la búsqueda se
+  // setea al nombre real del venue y el feed queda filtrado por él.
+  useEffect(() => {
+    const vslug = pendingVenueSlugRef.current;
+    if (vslug && events.length > 0) {
+      const found = events.find((e) => e.venue && slugify(e.venue) === vslug);
+      if (found) setEventsSearch(found.venue);
+      pendingVenueSlugRef.current = null;
     }
   }, [events]);
 
@@ -977,7 +1008,7 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <LineupTicker events={events} onSelect={openEvent} />
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
