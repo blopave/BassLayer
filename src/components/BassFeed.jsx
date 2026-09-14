@@ -190,6 +190,9 @@ function WeekendHero({ events, onSelect }) {
           <span className="bl-hero-stat bl-bass-t-label"><b>{weekendN}</b> {t("hero.weekend")}</span>
           {sound && <span className="bl-hero-stat bl-bass-t-label"><b>{t(`family.${sound}`)}</b> {t("hero.sound")}</span>}
         </div>
+        {/* Mobile: los tres stats se reemplazan por un único dato quieto —
+            dos líneas de mono trackeada antes del contenido eran ruido. */}
+        <span className="bl-hero-stat bl-hero-count bl-bass-t-label"><b>{weekendN}</b> {t("hero.events")}</span>
       </div>
       <div className="bl-hero-tiles">
         {picks.map(({ ev, date }) => (
@@ -236,6 +239,13 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
   const sheetRef = useFocusTrap(sheetOpen);
+  // Escape cierra el sheet — mismo contrato que los modales.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setSheetOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheetOpen]);
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
@@ -633,7 +643,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                     )}
                     <div className="bl-ev-venue-line">{ev.venue}</div>
                     <div className="bl-ev-meta-row">
-                      {isLead && ev.time && <span className="bl-ev-time-inline">{ev.time}</span>}
+                      {/* En leads la hora vive acá siempre; en filas, solo en
+                          mobile (libera la columna derecha para el título). */}
+                      {ev.time && <span className={`bl-ev-time-inline${isLead ? "" : " bl-ev-time-mobile"}`}>{ev.time}</span>}
                       {stamp && (
                         <span className="bl-ev-genre-badge" title={stamp}>{stamp}</span>
                       )}

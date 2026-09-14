@@ -96,6 +96,7 @@ export const STRINGS = {
     "hero.title": "El finde",
     "hero.weekend": "Finde",
     "hero.sound": "Sonido",
+    "hero.events": "eventos",
 
     "saved.add": "Guardar",
     "saved.remove": "Guardado",
@@ -253,6 +254,8 @@ export const STRINGS = {
 
     "util.back": "Volver al inicio",
     "util.aboutBL": "Acerca de BassLayer",
+    "util.menuOpen": "Abrir menú",
+    "util.menuClose": "Cerrar menú",
     "util.day": "Modo diurno",
     "util.night": "Modo nocturno",
 
@@ -358,6 +361,7 @@ export const STRINGS = {
     "hero.title": "The weekend",
     "hero.weekend": "Wknd",
     "hero.sound": "Sound",
+    "hero.events": "events",
 
     "saved.add": "Save",
     "saved.remove": "Saved",
@@ -515,6 +519,8 @@ export const STRINGS = {
 
     "util.back": "Back to home",
     "util.aboutBL": "About BassLayer",
+    "util.menuOpen": "Open menu",
+    "util.menuClose": "Close menu",
     "util.day": "Day mode",
     "util.night": "Night mode",
 

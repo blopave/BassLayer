@@ -82,9 +82,6 @@
   --font-heading:   var(--font-sans);   /* era Plus Jakarta Sans */
   --font-body:      var(--font-sans);   /* era DM Sans */
 
-  /* Ancho de la columna editorial del feed (ver "Columna editorial"). */
-  --bl-measure:     1080px;
-
   /* Motion */
   --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -514,8 +511,11 @@
   right:24px;
   z-index:9700;
   display:flex; align-items:center;
-  gap:10px;
 }
+.bl-util-items { display:flex; align-items:center; gap:10px; }
+/* El botón que colapsa la barra sólo existe en mobile. Comparte base circular
+   con .bl-mode-toggle (mismo className en el JSX); acá solo los deltas. */
+.bl-util-fab { display:none; }
 
 .bl-util-toggle {
   height:44px;
@@ -600,7 +600,26 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   font-weight:400;
 }
 @media (max-width:768px) {
-  .bl-util-bar { right:14px; gap:6px; bottom:max(18px, env(safe-area-inset-bottom, 0px) + 10px); }
+  .bl-util-bar { right:14px; bottom:max(18px, env(safe-area-inset-bottom, 0px) + 10px); }
+  /* Colapso: un solo control flotante de 48px; los cinco toggles se
+     despliegan en columna hacia arriba (speed-dial) y se cierran al elegir. */
+  /* Doble clase: le gana al sizing de .bl-mode-toggle de más abajo. */
+  .bl-mode-toggle.bl-util-fab {
+    display:flex;
+    width:48px; height:48px;
+    color:var(--bl-text-sec);
+    font-family:var(--font-mono); font-size:20px; line-height:1;
+  }
+  .bl-util-bar.is-open .bl-util-fab { color:var(--bl-text); border-color:var(--bl-text-sec); }
+  /* visibility además de opacity: con blur+shadow compositados, opacity:0
+     solo no garantiza que el browser deje de pintar las cinco pastillas. */
+  .bl-util-items {
+    position:absolute; bottom:58px; right:0;
+    flex-direction:column; align-items:flex-end; gap:8px;
+    opacity:0; transform:translateY(8px); pointer-events:none; visibility:hidden;
+    transition:opacity .3s var(--ease-out-expo), transform .3s var(--ease-out-expo), visibility .3s;
+  }
+  .bl-util-bar.is-open .bl-util-items { opacity:1; transform:none; pointer-events:auto; visibility:visible; }
   /* Áreas táctiles ≥44px (auditoría P3.1) — antes 34px, sub-tap. */
   .bl-util-toggle { height:44px; padding:0 12px; font-size:10px; gap:5px; }
   .bl-util-arrow { font-size:12px; }
@@ -1396,6 +1415,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   color:var(--bl-text);
   font-variant-numeric:tabular-nums;
 }
+/* Contador único del header mobile — hereda de .bl-hero-stat, esto es solo
+   el toggle de visibilidad (en desktop no existe). */
+.bl-hero-count { display:none; }
 .bl-hero-tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .bl-hero-tile {
   text-align:left; background:none; border:none; padding:0; margin:0;
@@ -1508,6 +1530,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   background:rgba(196,144,112,0.08);
 }
 .bl-modal-btn-save.on { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); }
+
+/* Hora inline mobile — oculta en desktop, donde la hora ancla la derecha. */
+.bl-ev-time-mobile { display:none; }
 
 /* Hora como bloque derecho en mono — lectura de tracklist */
 .bl-ev-time-block {
@@ -1671,36 +1696,8 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 
 .bl-feed-head-ctx { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-ter); }
 
-/* ── Columna editorial ─────────────────────────────────────────────────────
-   La agenda es una publicación, no un tablero: sin tope de ancho el título
-   quedaba flotando con cientos de píxeles de vacío hasta el borde derecho.
-
-   Dos tratamientos según lo que pinta cada bloque:
-   · Los que llevan fondo o borde a sangre (tabs, filtros sticky con glass, y
-     la lista) NO se angostan — se les corre el padding. Así el fondo sigue
-     cubriendo todo el ancho y sólo el contenido entra en la columna.
-   · Los que son cajas con borde propio (ctrl-bar, feed-head) sí se angostan.
-   El resultado es un único borde izquierdo de contenido, de arriba a abajo.
-
-   Sólo se activa donde el problema existe. Por debajo de 1180px no cambia
-   nada: los gutters de 32/16px siguen siendo los de siempre. */
-@media (min-width: 1180px) {
-  /* Los selectores llevan prefijo para ganarle a las definiciones base sin
-     depender del orden del archivo: .bl-bass-sections se define mucho más
-     abajo, y los chips ya venían con especificidad de 4 clases. */
-  .bl-swipe-panel .bl-bass-sections,
-  .bl-root[data-section="bass"] .bl-filters.bass-filters,
-  .bl-swipe-panel .bl-ev-list,
-  .bl-swipe-panel .bl-festival-filters,
-  .bl-swipe-panel .bl-bass-news-list {
-    padding-inline:calc((100% - var(--bl-measure)) / 2);
-  }
-  .bl-swipe-panel .bl-ctrl-bar,
-  .bl-swipe-panel .bl-feed-head {
-    max-width:var(--bl-measure);
-    margin-inline:auto;
-  }
-}
+/* Bass usa los mismos gutters de 32px que Layer a cualquier ancho — la
+   columna editorial centrada de 1080px se quitó 2026-09 (mundos gemelos). */
 
 @media (max-width:768px) {
   .bl-ctrl-bar { margin:16px 16px 0; flex-wrap:wrap; }
@@ -2310,18 +2307,33 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-ev-venue-line { font-size:12.5px; }
   .bl-poster { font-size:9.5px; padding:6px 7px; }
   .bl-ev-lead .bl-poster { font-size:12.5px; }
-  .bl-hero { margin:14px 16px 2px; padding:14px 14px 16px; }
-  .bl-hero-head { flex-direction:column; align-items:flex-start; gap:10px; }
-  .bl-hero-stats { margin-left:0; gap:16px; }
-  /* Tiles en strip horizontal scrolleable — el pulgar ya sabe qué hacer */
-  .bl-hero-tiles { display:flex; overflow-x:auto; gap:10px; margin:0 -14px; padding:0 14px; scrollbar-width:none; }
+  /* Hero opción A (2026-09): sin caja y header en una línea. El borde era
+     un marco dentro del marco del teléfono, y las dos líneas de stats en
+     mono trackeada, ruido antes del contenido. Queda el label + un único
+     dato apagado; el flyer pasa a ser el protagonista. */
+  .bl-hero { margin:18px 0 2px; padding:0; background:none; border:none; border-radius:0; }
+  .bl-hero-head { margin:0 16px 12px; justify-content:space-between; gap:10px; }
+  .bl-hero-stats { display:none; }
+  .bl-hero-count { display:flex; }
+  /* Tiles en strip horizontal scrolleable a sangre — el pulgar ya sabe qué hacer */
+  .bl-hero-tiles { display:flex; overflow-x:auto; gap:10px; margin:0; padding:0 16px; scrollbar-width:none; }
   .bl-hero-tiles::-webkit-scrollbar { display:none; }
-  .bl-hero-tile { flex:0 0 64%; }
+  .bl-hero-tile { flex:0 0 72%; }
+  .bl-hero-tile-meta { color:var(--bl-text-ter); }
   .bl-ev-item.bl-ev-row { padding:8px 6px 10px; gap:12px; }
   .bl-ev-item.bl-ev-row:not(.bl-ev-item-festival) .bl-thumb { flex-basis:42px; width:42px; }
-  .bl-ev-row .bl-ev-name { font-size:15px; }
+  /* Título a dos líneas y hora inline en el meta-row: la columna derecha
+     de hora estrangulaba el nombre, que es el dato que importa. */
+  .bl-ev-row .bl-ev-name { font-size:15px; -webkit-line-clamp:2; }
   .bl-ev-row .bl-poster { font-size:6px; }
-  .bl-ev-time-block { font-size:11px; }
+  .bl-ev-time-block { display:none; }
+  .bl-ev-time-mobile { display:inline; }
+  /* Festivales: las tres columnas no entran en 390px — el póster ya vive
+     en el detalle, acá sale; el bloque de fecha se angosta. */
+  .bl-ev-item-festival .bl-thumb { display:none; }
+  .bl-ev-item-festival .bl-ev-date { flex-basis:44px; padding-right:12px; }
+  .bl-ev-item-festival .bl-ev-date-d { font-size:22px; }
+  .bl-ev-item-festival .bl-ev-name { font-size:16px; }
   .bl-ev-venue-inline { font-size:11px; letter-spacing:0; }
   .bl-ev-time-inline { font-size:10.5px; letter-spacing:0.3px; }
   .bl-ev-genre-badge { font-size:8px; padding:2px 7px; border-radius:10px; }
@@ -2338,7 +2350,11 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
   .bl-modal { max-width:100%; border-radius:0; max-height:100vh; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
   .bl-modal-header { padding:20px 48px 16px 20px; gap:12px; }
   .bl-modal-body { padding:0 20px 20px; }
-  .bl-modal-actions { padding:0 20px 24px; flex-direction:column; }
+  /* Botonera del detalle: primario a lo ancho + secundarios en una fila —
+     la pila de cuatro botones se comía ~230px de viewport. */
+  .bl-modal-actions { padding:0 20px 24px; flex-wrap:wrap; gap:8px; }
+  .bl-modal-actions .bl-modal-btn { padding:12px 6px; font-size:9px; letter-spacing:0.8px; }
+  .bl-modal-btn-primary { flex-basis:100%; }
   .bl-modal-name { font-size:18px; }
   .bl-modal-info-grid { grid-template-columns:1fr; }
   .bl-modal-info-item:nth-child(odd) { max-width:none; border-right:none; }
@@ -5107,8 +5123,16 @@ select.bl-venue-input { cursor:pointer; }
   .bl-error, .bl-empty { font-size:11px; }
   .bl-layer-empty { margin:14px 16px; padding:14px 16px 16px; }
   .bl-dolar { margin:12px 16px 0; }
-  .bl-dolar-head { flex-wrap:wrap; gap:8px 14px; }
+  /* El chevron se ancla al vértice: suelto al final del wrap quedaba
+     huérfano en su propia línea. */
+  .bl-dolar-head { flex-wrap:wrap; gap:8px 14px; position:relative; padding-right:36px; }
   .bl-dolar-summary { margin-left:0; gap:12px; }
+  .bl-dolar-chevron { position:absolute; right:14px; top:16px; }
+  /* TRENDING scrollea horizontal — fade en el borde derecho como pista. */
+  .bl-term-trending-list {
+    mask-image:linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
 
   /* Countdown del evento destacado del hero. */
   .bl-featured-countdown { font-size:11px; }

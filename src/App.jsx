@@ -95,6 +95,7 @@ export default function App() {
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile)
   const [venueUser, setVenueUser] = useState(null);
   const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
   const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
@@ -876,6 +877,7 @@ export default function App() {
       if (key === "escape" && projectView) { setProjectView(null); return; }
       if (key === "escape" && venueView) { setVenueView(null); return; }
       if (key === "escape" && showMenu) { setShowMenu(false); return; }
+      if (key === "escape" && utilOpen) { setUtilOpen(false); return; }
       if (view === "sections") {
         if (e.key === "ArrowLeft" && activePanel === 1) swipeTo(0);
         if (e.key === "ArrowRight" && activePanel === 0) swipeTo(1);
@@ -887,17 +889,18 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, venueView, projectView]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, utilOpen, venueView, projectView]);
 
-  // Close menu on outside click
+  // Close menu / collapsed util-bar on outside click
   useEffect(() => {
-    if (!showMenu) return;
+    if (!showMenu && !utilOpen) return;
     const handler = (e) => {
-      if (!e.target.closest(".bl-menu-btn") && !e.target.closest(".bl-menu-dropdown")) setShowMenu(false);
+      if (showMenu && !e.target.closest(".bl-menu-btn") && !e.target.closest(".bl-menu-dropdown")) setShowMenu(false);
+      if (utilOpen && !e.target.closest(".bl-util-bar")) setUtilOpen(false);
     };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [showMenu]);
+  }, [showMenu, utilOpen]);
 
   // Feed loaders (defined early — used by PTR, navigateToSections, auto-refresh)
 
@@ -1097,8 +1100,12 @@ export default function App() {
         </div>
       )}
 
-      {/* UTILITY CLUSTER — home / about / lang / mode */}
-      <div className="bl-util-bar">
+      {/* UTILITY CLUSTER — home / about / lang / mode.
+          En mobile los controles viven colapsados detrás de un único botón
+          (speed-dial vertical): cinco pastillas fijas a lo ancho de 390px
+          eran una barrera visual sobre cada pantalla de contenido. */}
+      <div className={`bl-util-bar${utilOpen ? " is-open" : ""}`}>
+        <div className="bl-util-items" onClick={() => setUtilOpen(false)}>
         {view === "sections" && (
           <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label={t("util.back")}>
             <span className="bl-util-arrow" aria-hidden="true">&larr;</span>
@@ -1133,6 +1140,15 @@ export default function App() {
           ) : (
             <svg viewBox="0 0 24 24"><circle className="bl-mode-icon" cx="12" cy="12" r="5" /><path className="bl-mode-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
           )}
+        </button>
+        </div>
+        <button
+          className="bl-mode-toggle bl-util-fab"
+          onClick={() => setUtilOpen((v) => !v)}
+          aria-expanded={utilOpen}
+          aria-label={utilOpen ? t("util.menuClose") : t("util.menuOpen")}
+        >
+          <span aria-hidden="true">{utilOpen ? "×" : "⋯"}</span>
         </button>
       </div>
 
