@@ -5248,8 +5248,12 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-cyc-net-bar-fill { display:block; height:100%; background:var(--bl-accent-layer); opacity:0.7; }
 .bl-cyc-curve-line { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
-.bl-cyc-curve-mk { stroke:var(--bl-surface); stroke-width:1.5; cursor:pointer; transition:r .15s; }
-.bl-cyc-curve-mk:hover { r:5; }
+.bl-cyc-curve-mk-g { cursor:pointer; outline:none; }
+.bl-cyc-curve-mk { stroke:var(--bl-surface); stroke-width:1.5; transition:r .13s ease-out; }
+.bl-cyc-curve-mk-g:hover .bl-cyc-curve-mk,
+.bl-cyc-curve-mk.active { r:5.4; }
+.bl-cyc-curve-mk.active { filter:drop-shadow(0 0 5px currentColor); }
+.bl-cyc-curve-mk-g:focus-visible .bl-cyc-curve-mk { r:5.4; filter:drop-shadow(0 0 5px var(--bl-accent-layer)); }
 .bl-cyc-curve-legend { display:flex; flex-wrap:wrap; gap:9px 15px; margin-top:8px; align-items:center; }
 .bl-cyc-curve-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
 .bl-cyc-curve-dot-news { background:var(--bl-text-ter); }
@@ -5266,11 +5270,24 @@ select.bl-venue-input { cursor:pointer; }
 .bl-cyc-curve-caption {
   margin-top:8px; padding-top:8px; border-top:1px solid var(--bl-border-sub);
   font-family:var(--font-mono); font-size:11px; color:var(--bl-text-sec);
-  min-height:1.5em; line-height:1.5;
+  min-height:2.9em; line-height:1.5;
 }
-.bl-cyc-curve-cap-date { color:var(--bl-saved); font-weight:700; }
 .bl-cyc-curve-cap-text { color:var(--bl-text); }
 .bl-cyc-curve-cap-empty { color:var(--bl-text-ter); opacity:0.75; }
+/* Caption rico: cabecera (chip de tipo + título) + línea meta con los datos */
+.bl-cyc-cap-rich { display:flex; flex-direction:column; gap:3px; animation:bl-cyc-cap-in .18s ease-out; }
+.bl-cyc-cap-head { display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }
+.bl-cyc-cap-badge {
+  font-size:8.5px; letter-spacing:1px; text-transform:uppercase; font-weight:700;
+  padding:1px 6px; border:1px solid currentColor; border-radius:3px;
+  opacity:0.9; flex-shrink:0; align-self:center;
+}
+.bl-cyc-cap-meta {
+  color:var(--bl-text-ter); font-size:10px; letter-spacing:0.2px;
+  padding-left:16px; font-variant-numeric:tabular-nums;
+}
+@keyframes bl-cyc-cap-in { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .bl-cyc-cap-rich { animation:none; } }
 
 /* Confluencia — tira de indicadores compacta */
 .bl-cyc-ind-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); position:relative; z-index:1; }

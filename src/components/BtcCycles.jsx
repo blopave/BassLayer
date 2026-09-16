@@ -182,14 +182,29 @@ function IndicatorStrip({ indicators, onOpen, t, locale }) {
 }
 
 // Curva de precio en escala logarítmica (2012→hoy) con halvings, picos y fondos
-// marcados, más dots de hitos históricos que cuentan la historia de BTC. Cada
-// hito cae sobre la curva (a la altura del precio de su mes) y al tocarlo se
-// explica abajo. Historial mensual real; SVG a mano, sin librería de charts.
-function PriceCurve({ history, milestones, news, realizedPrice }) {
+// marcados, más dots de hitos históricos que cuentan la historia de BTC. Todos
+// los puntos (halving/pico/fondo/hito) son interactivos: al tocar cualquiera se
+// explica abajo con su contexto (precio del momento + recompensa/ROI/drawdown o
+// la categoría del hito). Historial mensual real; SVG a mano, sin librería.
+
+// Categorías de hitos: etiqueta bilingüe + color propio para el chip. Los datos
+// ya traen `cat` por evento (macro/regulacion/colapso/protocolo/mercado/adopcion);
+// acá le damos nombre legible y color, sin inventar nada nuevo.
+const NEWS_CAT = {
+  macro:      { es: "Macro",      en: "Macro",      color: "#c9a227" },
+  regulacion: { es: "Regulación", en: "Regulation", color: "#6b8fc5" },
+  colapso:    { es: "Colapso",    en: "Collapse",   color: "#c56b6b" },
+  protocolo:  { es: "Protocolo",  en: "Protocol",   color: "var(--bl-accent-layer)" },
+  mercado:    { es: "Mercado",    en: "Market",     color: "#9b8fc5" },
+  adopcion:   { es: "Adopción",   en: "Adoption",   color: "var(--bl-up)" },
+};
+
+function PriceCurve({ history, milestones, news, cycles, realizedPrice }) {
   const { locale } = useLocale();
-  const [active, setActive] = useState(null); // índice del hito seleccionado
+  const [active, setActive] = useState(null); // id del punto seleccionado
   if (!Array.isArray(history) || history.length < 2) return null;
   const L = (es, en) => (locale === "en" ? en : es);
+  const localeTag = locale === "en" ? "en-US" : "es-AR";
   const W = 1000, H = 240, padL = 46, padR = 12, padT = 12, padB = 22;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const mi = (t) => { const [y, m] = t.split("-").map(Number); return y * 12 + (m - 1); };
@@ -202,20 +217,71 @@ function PriceCurve({ history, milestones, news, realizedPrice }) {
   const decades = [];
   for (let d = Math.ceil(lo); d <= Math.floor(hi); d++) decades.push(Math.pow(10, d));
   const fmtP = (v) => (v >= 1000 ? `$${v / 1000 >= 10 ? Math.round(v / 1000) : v / 1000}k` : `$${v}`);
+  const money = (v) => `$${Math.round(v).toLocaleString(localeTag)}`;
+  // "2013-04" → "abr 2013" / "Apr 2013" (mes localizado, sin depender del huso).
+  const fmtYM = (t) => { const d = new Date(t + "-15T12:00:00"); return `${fmtMonth(d, locale)} ${d.getFullYear()}`; };
   const years = [];
   for (let yr = Math.ceil(iMin / 12); yr * 12 <= iMax; yr += 2) years.push(yr);
   const linePts = history.map((h) => `${x(h.t).toFixed(1)},${y(h.p).toFixed(1)}`).join(" ");
   const mkColor = { halving: "var(--bl-saved)", peak: "#c56b6b", bottom: "var(--bl-accent-layer)" };
   // Label de hito localizado: la palabra sale del tipo, el número del label curado.
   const mkWord = { halving: L("Halving", "Halving"), peak: L("Pico", "Peak"), bottom: L("Fondo", "Bottom") };
-  const mkLabel = (m) => { const n = (String(m.label).match(/\d+/) || [""])[0]; return `${mkWord[m.type] || m.label} ${n}`.trim(); };
+  const mkNum = (m) => (String(m.label).match(/\d+/) || [""])[0];
+  const mkLabel = (m) => `${mkWord[m.type] || m.label} ${mkNum(m)}`.trim();
+
+  // Ciclo por número: para colgar del pico su ROI (halving→pico) y del fondo su
+  // drawdown (pico→fondo). Ambos ya curados en `cycles`, sin recomputar.
+  const cycleByN = new Map((cycles || []).map((c) => [c.n, c]));
+  // Recompensa por bloque tras cada halving: constante de protocolo (50→25→12,5…).
+  const rewardText = (n) => {
+    const after = 50 / 2 ** Number(n), before = after * 2;
+    return L(
+      `recompensa ${before.toLocaleString("es-AR")}→${after.toLocaleString("es-AR")} BTC/bloque`,
+      `reward ${before.toLocaleString("en-US")}→${after.toLocaleString("en-US")} BTC/block`
+    );
+  };
+
   // Hitos: cada evento se apoya sobre la curva, a la altura del precio de su mes.
   const priceAt = new Map(history.map((h) => [h.t, h.p]));
   const events = (news || [])
     .map((e) => ({ ...e, p: priceAt.get(e.t) }))
     .filter((e) => e.p > 0 && mi(e.t) >= iMin && mi(e.t) <= iMax);
-  const activeEv = active != null ? events[active] : null;
-  const label = (e) => e[locale] || e.es || e.en;
+  const newsLabel = (e) => e[locale] || e.es || e.en;
+
+  // Descriptor unificado del punto activo → alimenta el caption rico de abajo.
+  // Cada punto tiene id ("mk3"/"ev5"), color, palabra-chip, título, y una línea
+  // meta con fecha · precio · dato extra según el tipo.
+  const describe = (id) => {
+    const [kind, idx] = [id.slice(0, 2), Number(id.slice(2))];
+    if (kind === "mk") {
+      const m = (milestones || [])[idx];
+      if (!m) return null;
+      const c = cycleByN.get(Number(mkNum(m)));
+      let extra = null;
+      if (m.type === "halving") extra = rewardText(mkNum(m));
+      else if (m.type === "peak" && c?.roi) extra = L(`${c.roi} desde el halving`, `${c.roi} from halving`);
+      else if (m.type === "bottom" && c?.drawdown) extra = L(`${c.drawdown} desde el pico`, `${c.drawdown} from peak`);
+      return {
+        color: mkColor[m.type], chip: mkWord[m.type], title: mkLabel(m),
+        meta: [fmtYM(m.t), money(m.price), extra].filter(Boolean),
+      };
+    }
+    const e = events[idx];
+    if (!e) return null;
+    const cat = NEWS_CAT[e.cat];
+    return {
+      color: cat?.color || "var(--bl-text-ter)", chip: cat ? cat[locale] || cat.es : null,
+      title: newsLabel(e), meta: [fmtYM(e.t), `BTC ${money(e.p)}`],
+    };
+  };
+  const activeDesc = active ? describe(active) : null;
+  const activePt = active
+    ? (active.slice(0, 2) === "mk" ? (milestones || [])[Number(active.slice(2))] : events[Number(active.slice(2))])
+    : null;
+  const activeXY = activePt ? { t: activePt.t, p: activePt.p ?? activePt.price } : null;
+  // Toggle con teclado/click; hover/focus fijan; segundo tap sobre el mismo cierra.
+  const toggle = (id) => setActive((cur) => (cur === id ? null : id));
+
   return (
     <div className="bl-cyc-curve">
       <svg viewBox={`0 0 ${W} ${H}`} className="bl-cyc-curve-svg" role="img" aria-label="Precio de Bitcoin en escala logarítmica con halvings, picos, fondos e hitos históricos">
@@ -242,30 +308,42 @@ function PriceCurve({ history, milestones, news, realizedPrice }) {
           </g>
         )}
         <polyline points={linePts} className="bl-cyc-curve-line" />
-        {activeEv && <line x1={x(activeEv.t)} y1={y(activeEv.p)} x2={x(activeEv.t)} y2={H - padB} className="bl-cyc-curve-guide" />}
-        {(milestones || []).map((m, i) => (
-          <circle key={i} cx={x(m.t)} cy={y(m.price)} r="3.6" fill={mkColor[m.type]} className="bl-cyc-curve-mk">
-            <title>{`${mkLabel(m)} · ${m.t} · $${m.price.toLocaleString(locale === "en" ? "en-US" : "es-AR")}`}</title>
-          </circle>
-        ))}
-        {events.map((e, i) => {
-          const cap = `${e.t} · ${label(e)}`;
-          const on = active === i;
+        {activeXY && <line x1={x(activeXY.t)} y1={y(activeXY.p)} x2={x(activeXY.t)} y2={H - padB} className="bl-cyc-curve-guide" />}
+        {(milestones || []).map((m, i) => {
+          const id = "mk" + i, on = active === id;
           return (
             <g
-              key={"ev" + i}
+              key={id}
+              className="bl-cyc-curve-mk-g"
+              role="button"
+              tabIndex={0}
+              aria-label={`${mkLabel(m)} · ${fmtYM(m.t)} · ${money(m.price)}`}
+              onMouseEnter={() => setActive(id)}
+              onFocus={() => setActive(id)}
+              onClick={() => toggle(id)}
+              onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(id); } }}
+            >
+              <circle cx={x(m.t)} cy={y(m.price)} r="9" className="bl-cyc-curve-news-hit" />
+              <circle cx={x(m.t)} cy={y(m.price)} r={on ? 5.4 : 3.6} fill={mkColor[m.type]} className={`bl-cyc-curve-mk${on ? " active" : ""}`} />
+            </g>
+          );
+        })}
+        {events.map((e, i) => {
+          const id = "ev" + i, on = active === id;
+          return (
+            <g
+              key={id}
               className="bl-cyc-curve-news-g"
               role="button"
               tabIndex={0}
-              aria-label={cap}
-              onMouseEnter={() => setActive(i)}
-              onFocus={() => setActive(i)}
-              onClick={() => setActive(on ? null : i)}
-              onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setActive(on ? null : i); } }}
+              aria-label={`${fmtYM(e.t)} · ${newsLabel(e)}`}
+              onMouseEnter={() => setActive(id)}
+              onFocus={() => setActive(id)}
+              onClick={() => toggle(id)}
+              onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(id); } }}
             >
               <circle cx={x(e.t)} cy={y(e.p)} r="9" className="bl-cyc-curve-news-hit" />
               <circle cx={x(e.t)} cy={y(e.p)} r={on ? 5 : 3.2} className={`bl-cyc-curve-news${on ? " active" : ""}`} />
-              <title>{cap}</title>
             </g>
           );
         })}
@@ -275,13 +353,20 @@ function PriceCurve({ history, milestones, news, realizedPrice }) {
         <span className="bl-cyc-lg"><span className="bl-cyc-curve-dot" style={{ background: "#c56b6b" }} /> {L("pico", "peak")}</span>
         <span className="bl-cyc-lg"><span className="bl-cyc-curve-dot" style={{ background: "var(--bl-accent-layer)" }} /> {L("fondo", "bottom")}</span>
         <span className="bl-cyc-lg"><span className="bl-cyc-curve-dot bl-cyc-curve-dot-news" /> {L("hito", "milestone")}</span>
-        <span className="bl-cyc-curve-hint">{L("escala log · tocá un hito", "log scale · tap a milestone")}</span>
+        <span className="bl-cyc-curve-hint">{L("escala log · tocá un punto", "log scale · tap a point")}</span>
       </div>
       <div className="bl-cyc-curve-caption" aria-live="polite">
-        {activeEv ? (
-          <><span className="bl-term-prompt" aria-hidden="true">&gt;</span> <span className="bl-cyc-curve-cap-date">{activeEv.t}</span> · <span className="bl-cyc-curve-cap-text">{label(activeEv)}</span></>
+        {activeDesc ? (
+          <div className="bl-cyc-cap-rich">
+            <div className="bl-cyc-cap-head">
+              <span className="bl-term-prompt" aria-hidden="true">&gt;</span>
+              {activeDesc.chip && <span className="bl-cyc-cap-badge" style={{ color: activeDesc.color, borderColor: activeDesc.color }}>{activeDesc.chip}</span>}
+              <span className="bl-cyc-curve-cap-text">{activeDesc.title}</span>
+            </div>
+            <div className="bl-cyc-cap-meta">{activeDesc.meta.join(" · ")}</div>
+          </div>
         ) : (
-          <span className="bl-cyc-curve-cap-empty">&gt; {L("tocá un hito sobre la curva para ver qué pasó", "tap a milestone on the curve to see what happened")}</span>
+          <span className="bl-cyc-curve-cap-empty">&gt; {L("tocá cualquier punto de la curva para ver qué pasó", "tap any point on the curve to see what happened")}</span>
         )}
       </div>
     </div>
@@ -400,7 +485,7 @@ export function BtcCycles() {
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.price")}
       </div>
-      <PriceCurve history={data.priceHistory} milestones={data.milestones} news={data.newsEvents} realizedPrice={data.onchain?.realizedPrice} />
+      <PriceCurve history={data.priceHistory} milestones={data.milestones} news={data.newsEvents} cycles={cycles} realizedPrice={data.onchain?.realizedPrice} />
 
       <div className="bl-cyc-section-title">
         <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.confluence")}
