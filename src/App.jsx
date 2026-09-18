@@ -17,6 +17,7 @@ import { FestivalModal } from "./components/FestivalModal";
 import { useLocale } from "./hooks/useLocale";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
+import HomeFusion from "./components/HomeFusion";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
@@ -53,10 +54,10 @@ function startedInScrollableX(startEl, dx, boundary) {
   return false;
 }
 
-// Tiempos del wipe circular, en ms. `lettersOut` es absoluto; el resto va
-// medido desde que el círculo empieza a crecer. `end` tiene que caer después
-// de `reveal` + los .7s de la transición CSS: es el desmonte garantizado.
-const WIPE = { lettersOut: 350, swap: 500, reveal: 600, end: 1450 };
+// Tiempos del wipe circular, en ms, medidos desde que el círculo empieza a
+// crecer. `end` tiene que caer después de `reveal` + los .7s de la transición
+// CSS: es el desmonte garantizado.
+const WIPE = { swap: 500, reveal: 600, end: 1450 };
 
 // El círculo nace donde ocurrió el gesto; sin coordenadas, en el centro.
 const wipeOrigin = (e) => ({
@@ -519,114 +520,16 @@ export default function App() {
     return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
   }, [isMobile]);
 
-  // Home hover
-  const [bassHov, setBassHov] = useState(false);
-  const [layerHov, setLayerHov] = useState(false);
-  const bassI = useRef(0);
-  const layerI = useRef(0);
+  // Canvas de atmósfera del home (desktop): resplandor cálido/frío reactivo a la
+  // posición del cursor. El tinte por hover de cada mundo ahora lo hace el
+  // cursor-glow de HomeFusion, así que el canvas solo dibuja la atmósfera base.
   const canvasRef = useRef(null);
-  const bassLetters = useRef([]);
-  const layerLetters = useRef([]);
-  const tRef = useRef(0);
-  const decodeTimers = useRef(Array(5).fill(0));
-  const wasLayerHov = useRef(false);
 
   // Force re-render for "updated X ago"
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick((n) => n + 1), 30_000); return () => clearInterval(iv); }, []);
 
-  useHomeCanvas(canvasRef, bassI, layerI, view);
-
-  // Letter animation — only run on home view
-  useEffect(() => {
-    if (view !== "home") return;
-    const glyphs = "01#$\u20BF\u039E\u0394>|_\u27E8\u27E9\u221E\u2248\u00D7\u2261".split("");
-    const isDay = () => document.querySelector(".bl-root")?.classList.contains("day-mode");
-    let raf;
-    function animate() {
-      tRef.current++;
-      const t = tRef.current;
-      const day = isDay();
-      bassI.current += ((bassHov ? 1 : 0) - bassI.current) * (bassHov ? 0.12 : 0.06);
-      layerI.current += ((layerHov ? 1 : 0) - layerI.current) * (layerHov ? 0.12 : 0.06);
-      if (layerHov && !wasLayerHov.current) decodeTimers.current.fill(0);
-      wasLayerHov.current = layerHov;
-
-      bassLetters.current.forEach((el, i) => {
-        if (!el) return;
-        const bi = bassI.current;
-        if (bi > 0.01) {
-          const kick = Math.sin(t * 0.06) * 0.5 + 0.5;
-          const tremor = (Math.random() - 0.5) * 3 * bi;
-          const wave = Math.sin(t * 0.1 + i * 1.2);
-          const y = wave * 8 * bi + tremor * kick;
-          const x = tremor * kick * 0.4;
-          const skew = wave * 2 * bi * kick;
-          const scale = 1 + kick * 0.04 * bi;
-
-          el.style.transform = `translate(${x}px, ${y}px) skewX(${skew}deg) scaleY(${scale})`;
-
-          if (day) {
-            const r = Math.round(30 + wave * 20 * bi);
-            const g = Math.round(28 + wave * 12 * bi);
-            const b2 = Math.round(25 + wave * 8 * bi);
-            el.style.color = `rgb(${r},${g},${b2})`;
-            const glowStr = (0.06 + kick * 0.08) * bi;
-            el.style.textShadow = `0 0 ${10 * bi}px rgba(60,40,20,${glowStr})`;
-          } else {
-            const r = Math.round(230 + wave * 25 * bi);
-            const g = Math.round(225 + wave * 15 * bi);
-            const b2 = Math.round(220 - wave * 10 * bi);
-            el.style.color = `rgb(${r},${g},${b2})`;
-            const glowStr = (0.08 + kick * 0.12) * bi;
-            const outerGlow = (0.03 + kick * 0.05) * bi;
-            el.style.textShadow = [
-              `0 0 ${10 * bi}px rgba(255,240,220,${glowStr})`,
-              `0 0 ${40 * bi}px rgba(255,220,180,${outerGlow})`,
-              `0 ${Math.abs(y) * 0.5}px ${12 * bi}px rgba(255,255,255,${0.03 * bi})`,
-              `${-x * 0.5}px 0 ${2 * bi}px rgba(255,200,150,${0.06 * bi})`
-            ].join(",");
-          }
-        } else {
-          const breath = Math.sin(t * 0.02 + i * 0.8) * 1.2;
-          el.style.transform = `translateY(${breath}px)`;
-          el.style.color = ""; el.style.textShadow = "";
-        }
-      });
-
-      layerLetters.current.forEach((el, i) => {
-        if (!el) return;
-        const li = layerI.current, orig = "Layer"[i];
-        const dimColor = day ? "#BBBBBB" : "#3A3A3A";
-        const midColor = day ? "#888888" : "#666666";
-        const fullColor = day ? "#1A1A1A" : "#E5E5E5";
-        const glowRgba = day ? "rgba(0,0,0," : "rgba(255,255,255,";
-        if (li > 0.01) {
-          const sf = i * 14;
-          decodeTimers.current[i]++;
-          const dt = decodeTimers.current[i];
-          if (dt < sf) {
-            el.textContent = orig; el.style.opacity = 0.12 * li; el.style.color = dimColor; el.style.textShadow = "none"; el.style.transform = "";
-          } else if (dt < sf + 35) {
-            if ((dt - sf) % 4 === 0) el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
-            el.style.opacity = (0.35 + Math.random() * 0.25) * li; el.style.color = midColor;
-            el.style.transform = `translateY(${(Math.random() - 0.5) * 1.5}px)`;
-            el.style.textShadow = `0 0 ${10 * li}px ${glowRgba}${0.05 * li})`;
-          } else {
-            el.textContent = orig; el.style.opacity = 1; el.style.color = fullColor; el.style.transform = "";
-            el.style.textShadow = `0 0 ${8 * li}px ${glowRgba}${0.04 * li})`;
-            if (Math.random() < 0.006) { el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)]; el.style.opacity = 0.6; }
-          }
-        } else {
-          el.style.transform = ""; el.style.color = ""; el.style.opacity = ""; el.style.textShadow = "";
-          el.textContent = orig; decodeTimers.current[i] = 0;
-        }
-      });
-      raf = requestAnimationFrame(animate);
-    }
-    animate();
-    return () => cancelAnimationFrame(raf);
-  }, [bassHov, layerHov, view]);
+  useHomeCanvas(canvasRef, view);
 
   // Navigation
   const [activePanel, setActivePanel] = useState(0);
@@ -775,7 +678,7 @@ export default function App() {
     setActivePanel(startPanel);
     setHeroExiting(true);
     const bg = dayMode ? (startPanel === 0 ? "#E8E2DA" : "#DAE6EC") : (startPanel === 0 ? "#181614" : "#0F1418");
-    const swapAt = openWipe(e, bg, WIPE.lettersOut);
+    const swapAt = openWipe(e, bg, 0);
     schedule(() => {
       setView("sections");
       setHeroExiting(false);
@@ -904,6 +807,12 @@ export default function App() {
 
   // Feed loaders (defined early — used by PTR, navigateToSections, auto-refresh)
 
+  // El home (FUSIÓN) muestra un preview real de la agenda (flyers + conteo),
+  // así que cargamos los eventos ya en el home — no solo al entrar a Bass.
+  useEffect(() => {
+    if (view === "home" && !eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+  }, [view, loadEvents]);
+
   // Auto-refresh
   useEffect(() => {
     if (view !== "sections") return;
@@ -934,49 +843,16 @@ export default function App() {
 
       {/* HOME */}
       <div className={`bl-view bl-home-view${view === "home" ? " active" : ""}`}>
-        <main className={`bl-home${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${layerHov ? " layer-active" : ""}`}>
-          <div className="bl-scanlines" aria-hidden="true" />
-          <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />
+        <main className={`bl-home${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}`}>
+          {/* canvas generativo solo en desktop — en mobile es un drena-batería sin retorno visible */}
+          {!isMobile && <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />}
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
           <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
 
-          <div className={`bl-word-wrap${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}${bassHov ? " bass-hovered" : ""}${layerHov ? " layer-hovered" : ""}`}>
-            {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
-            {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : <h1 className="bl-sr-only">BassLayer</h1>}
-            <div className="bl-word-row">
-              <div className="bl-word-half bl-word-bass"
-                onMouseEnter={isMobile ? undefined : () => setBassHov(true)}
-                onMouseLeave={isMobile ? undefined : () => setBassHov(false)}
-                onClick={(e) => navigateToSections(e, 0)}
-                onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 0)}
-                onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 0); } : undefined}
-                role="button"
-                tabIndex={0}
-                aria-label="Ir a Bass — agenda de fiestas, shows y festivales">
-                {"Bass".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (bassLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
-              </div>
-              <div className="bl-word-half bl-word-layer"
-                onMouseEnter={isMobile ? undefined : () => setLayerHov(true)}
-                onMouseLeave={isMobile ? undefined : () => setLayerHov(false)}
-                onClick={(e) => navigateToSections(e, 1)}
-                onKeyDown={(e) => e.key === "Enter" && navigateToSections(e, 1)}
-                onTouchEnd={isMobile ? (e) => { e.preventDefault(); navigateToSections(e, 1); } : undefined}
-                role="button"
-                tabIndex={0}
-                aria-label="Ir a Layer - Crypto y noticias">
-                {"Layer".split("").map((ch, i) => <span key={i} className="bl-letter" ref={(el) => (layerLetters.current[i] = el)} aria-hidden="true">{ch}</span>)}
-              </div>
-            </div>
-            {/* Hover-reveal solo en desktop: en mobile .bl-concepts está en
-                display:none (no hay hover que asocie el concepto a cada palabra). */}
-            <div className="bl-concepts bl-concepts-bass" aria-hidden="true">
-              <div className={`bl-concept-text${bassHov ? " show" : ""}`}>{t("home.bass")}</div>
-            </div>
-            <div className="bl-concepts bl-concepts-layer" aria-hidden="true">
-              <div className={`bl-concept-text${layerHov ? " show" : ""}`}>{t("home.blockchain")}</div>
-            </div>
-          </div>
+          {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
+          {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : <h1 className="bl-sr-only">BassLayer</h1>}
+          <HomeFusion events={events} prices={prices} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
 
         </main>
       </div>
