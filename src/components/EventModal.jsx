@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
-import { Poster } from "./BlThumb";
+import { Poster, ArtistPhoto } from "./BlThumb";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX, eventStamp } from "../i18n/strings";
@@ -120,6 +120,7 @@ export function EventModal({ event, onClose, onShare }) {
   const [artistInfo, setArtistInfo] = useState(null);
   const [artistLoading, setArtistLoading] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [artistImageFailed, setArtistImageFailed] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
@@ -240,6 +241,15 @@ export function EventModal({ event, onClose, onShare }) {
               loading="lazy"
               onError={() => setImageFailed(true)}
             />
+          ) : event.artistImage && !artistImageFailed ? (
+            <div className="bl-modal-artist" aria-hidden="true">
+              <ArtistPhoto
+                src={event.artistImage}
+                name={event.artistImageName || (event.artists && event.artists[0]) || event.name}
+                family={event.family}
+                onFail={() => setArtistImageFailed(true)}
+              />
+            </div>
           ) : (
             <div className="bl-modal-poster" aria-hidden="true">
               <Poster text={(event.artists && event.artists[0]) || event.name} family={event.family} />

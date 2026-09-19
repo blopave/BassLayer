@@ -4514,12 +4514,18 @@ select.bl-venue-input { cursor:pointer; }
     linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%);
 }
 .bl-poster { position:absolute; inset:0; display:flex; padding:8px 9px; overflow:hidden; font-size:12px; }
-.bl-poster[data-family="live"]     { --poster-tint:#C87A6C; --poster-ink:#E5A296; --poster-wash:rgba(200,122,108,0.10); }
-.bl-poster[data-family="urbano"]   { --poster-tint:#A88BC0; --poster-ink:#C9B2DC; --poster-wash:rgba(168,139,192,0.10); }
-.bl-poster[data-family="raiz"]     { --poster-tint:#9BAF7E; --poster-ink:#BCCC9F; --poster-wash:rgba(155,175,126,0.10); }
-.bl-poster[data-family="festival"] { --poster-tint:#D2A85C; --poster-ink:#E9C98A; --poster-wash:rgba(210,168,92,0.10); }
+.bl-poster[data-family="live"],
+.bl-artist-photo[data-family="live"]     { --poster-tint:#C87A6C; --poster-ink:#E5A296; --poster-wash:rgba(200,122,108,0.10); }
+.bl-poster[data-family="urbano"],
+.bl-artist-photo[data-family="urbano"]   { --poster-tint:#A88BC0; --poster-ink:#C9B2DC; --poster-wash:rgba(168,139,192,0.10); }
+.bl-poster[data-family="raiz"],
+.bl-artist-photo[data-family="raiz"]     { --poster-tint:#9BAF7E; --poster-ink:#BCCC9F; --poster-wash:rgba(155,175,126,0.10); }
+.bl-poster[data-family="festival"],
+.bl-artist-photo[data-family="festival"] { --poster-tint:#D2A85C; --poster-ink:#E9C98A; --poster-wash:rgba(210,168,92,0.10); }
 .bl-poster[data-family="news"],
-.bl-poster[data-family="other"]    { --poster-tint:#A39E93; --poster-ink:#C6C1B6; --poster-wash:rgba(163,158,147,0.08); }
+.bl-poster[data-family="other"],
+.bl-artist-photo[data-family="news"],
+.bl-artist-photo[data-family="other"]    { --poster-tint:#A39E93; --poster-ink:#C6C1B6; --poster-wash:rgba(163,158,147,0.08); }
 .bl-root.day-mode .bl-poster                        { --poster-ink:#8A5A38; }
 .bl-root.day-mode .bl-poster[data-family="live"]    { --poster-ink:#93503F; }
 .bl-root.day-mode .bl-poster[data-family="urbano"]  { --poster-ink:#6F5389; }
@@ -4566,6 +4572,59 @@ select.bl-venue-input { cursor:pointer; }
 .bl-ev-item[data-featured="true"] .bl-poster { font-size:17px; }
 .bl-ev-item-festival .bl-poster,
 .bl-bass-news-item .bl-poster { font-size:10px; }
+
+/* ── Foto de artista como afiche — fallback cuando no hay flyer ──
+   Duotono: la foto de prensa (Deezer) en grises, tintada por familia con
+   mix-blend color + nombre del headliner abajo. Se distingue a propósito del
+   flyer real: es tratamiento editorial nuestro, no arte del evento. */
+.bl-artist-photo {
+  position:absolute; inset:0; overflow:hidden;
+  --poster-tint:#C49070;
+}
+.bl-artist-photo-img {
+  width:100%; height:100%;
+  object-fit:cover; object-position:center 20%;
+  display:block;
+  filter:grayscale(1) contrast(1.08) brightness(0.92);
+  transition:transform .35s var(--ease-out-expo);
+}
+/* Capa de tinte que colorea los grises + scrim inferior para el nombre */
+.bl-artist-photo::before {
+  content:""; position:absolute; inset:0; z-index:1;
+  background:var(--poster-tint);
+  mix-blend-mode:color; opacity:0.85;
+  pointer-events:none;
+}
+.bl-artist-photo::after {
+  content:""; position:absolute; inset:0; z-index:2;
+  background:linear-gradient(180deg, transparent 45%, rgba(10,9,8,0.72) 100%);
+  pointer-events:none;
+}
+.bl-artist-photo .bl-poster-rule { z-index:3; }
+.bl-artist-photo-name {
+  position:absolute; left:9px; right:8px; bottom:7px; z-index:3;
+  font-family:var(--font-bass), sans-serif;
+  font-weight:800; text-transform:uppercase;
+  letter-spacing:-0.02em; line-height:1;
+  font-size:11px;
+  color:rgba(246,242,235,0.94);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.bl-ev-item:hover .bl-artist-photo-img,
+.bl-hero-tile:hover .bl-artist-photo-img { transform:scale(1.05); }
+/* Filas chicas: la foto tintada alcanza — el nombre no entra legible */
+.bl-ev-row .bl-artist-photo-name { display:none; }
+.bl-ev-row .bl-artist-photo .bl-poster-rule { width:8px; left:6px; top:5px; }
+
+/* Modal: mismo tratamiento a escala hero */
+.bl-modal-artist {
+  position:relative; width:100%; aspect-ratio:21/9;
+  border-radius:8px; overflow:hidden;
+  border:1px solid var(--bl-border-sub);
+  background:var(--bl-subtle-bg);
+}
+.bl-modal-artist .bl-artist-photo-name { left:20px; right:20px; bottom:14px; font-size:20px; }
+.bl-modal-artist .bl-poster-rule { left:20px; top:18px; width:22px; height:3px; }
 
 /* Layer: thumb vacío con accent cyan en vez de Bass amber */
 .bl-layer-news-item .bl-thumb-empty {

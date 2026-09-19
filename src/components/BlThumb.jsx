@@ -22,8 +22,29 @@ export function Poster({ text, family }) {
   );
 }
 
-export function BlThumb({ image, poster, onImgFail }) {
+// Foto de prensa del artista tratada como afiche: duotono tintado por familia
+// + nombre abajo. Distinta a propósito del flyer real — es un fallback
+// honesto, no una imagen que finge ser el arte del evento.
+export function ArtistPhoto({ src, name, family, onFail }) {
+  return (
+    <div className="bl-artist-photo" data-family={family || "other"}>
+      <img
+        className="bl-artist-photo-img"
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={onFail}
+      />
+      <span className="bl-poster-rule" />
+      {name && <span className="bl-artist-photo-name">{name}</span>}
+    </div>
+  );
+}
+
+export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [artistImgFailed, setArtistImgFailed] = useState(false);
   const hasImage = image && !imgFailed;
 
   if (hasImage) {
@@ -36,6 +57,19 @@ export function BlThumb({ image, poster, onImgFail }) {
           loading="lazy"
           decoding="async"
           onError={() => { setImgFailed(true); onImgFail?.(); }}
+        />
+      </div>
+    );
+  }
+
+  if (artistImage && !artistImgFailed) {
+    return (
+      <div className="bl-thumb bl-thumb-artist" aria-hidden="true">
+        <ArtistPhoto
+          src={artistImage}
+          name={artistImageName || poster?.text}
+          family={poster?.family}
+          onFail={() => setArtistImgFailed(true)}
         />
       </div>
     );

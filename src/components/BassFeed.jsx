@@ -203,7 +203,7 @@ function WeekendHero({ events, onSelect }) {
             onClick={() => onSelect(ev)}
             aria-label={`${ev.name} — ${ev.venue}`}
           >
-            <BlThumb image={ev.image} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+            <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
             <div className="bl-hero-tile-name">{ev.name}</div>
             <div className="bl-hero-tile-meta bl-bass-t-label">
               {(dayNames[date.getDay()] || "").slice(0, 3)} · {ev.venue}
@@ -635,7 +635,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   {/* El flyer es diseño gráfico hecho para este show: va de
                       portada, no de miniatura. La fecha no se repite acá —
                       la dice el encabezado del día, una sola vez. */}
-                  <BlThumb image={ev.image} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+                  <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{ev.name}</div>
                     {isLead && ev.artists && ev.artists.length >= 2 && (
