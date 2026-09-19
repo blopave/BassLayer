@@ -6,6 +6,8 @@ import { CryptoBATimeline } from "./CryptoBATimeline";
 import { DolarCripto } from "./DolarCripto";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
+import { FinanceNews } from "./FinanceNews";
+import { MarketList } from "./MarketList";
 import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
@@ -73,7 +75,7 @@ function LayerEmptySignal({ filter, hasAnyNews, onFilter, onRetry }) {
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
-  const [section, setSection] = useState("noticias"); // "noticias" | "eventos" | "predicciones" | "ciclos"
+  const [section, setSection] = useState("noticias"); // crypto: noticias|eventos|predicciones|ciclos · mercados: finanzas|etfs|acciones
 
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
@@ -118,6 +120,27 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
           <span className="bl-layer-section-label">{t("section.cycles")}</span>
           <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
         </button>
+        <button
+          className={`bl-layer-section-btn${section === "finanzas" ? " active" : ""}`}
+          onClick={() => setSection("finanzas")}
+        >
+          <span className="bl-layer-section-label">{t("section.finance")}</span>
+          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+        </button>
+        <button
+          className={`bl-layer-section-btn${section === "etfs" ? " active" : ""}`}
+          onClick={() => setSection("etfs")}
+        >
+          <span className="bl-layer-section-label">{t("section.etfs")}</span>
+          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+        </button>
+        <button
+          className={`bl-layer-section-btn${section === "acciones" ? " active" : ""}`}
+          onClick={() => setSection("acciones")}
+        >
+          <span className="bl-layer-section-label">{t("section.stocks")}</span>
+          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+        </button>
       </div>
 
       {/* Noticias section */}
@@ -154,6 +177,27 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
                 </div>
               </div>}
         </div>
+      )}
+
+      {/* Finanzas section — noticias financieras generales (macro/mercados/empresas) */}
+      {section === "finanzas" && <FinanceNews />}
+
+      {/* ETFs section — cotizaciones de ETFs (índices + Bitcoin) */}
+      {section === "etfs" && (
+        <MarketList
+          kinds={["etf"]}
+          titleKey="markets.etfs.title"
+          subtitleKey="markets.etfs.subtitle"
+        />
+      )}
+
+      {/* Acciones section — tech mega-caps + ADRs LATAM */}
+      {section === "acciones" && (
+        <MarketList
+          kinds={["stock", "adr"]}
+          titleKey="markets.stocks.title"
+          labels={{ stock: "markets.group.tech", adr: "markets.group.latam" }}
+        />
       )}
 
       {/* Eventos section */}

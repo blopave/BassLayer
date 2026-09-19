@@ -4430,6 +4430,22 @@ select.bl-venue-input { cursor:pointer; }
   border:1px solid rgba(108,184,200,0.22);
   border-radius:4px;
 }
+/* Meta de noticias financieras: fuente · idioma · antigüedad */
+.bl-finance-news-meta {
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  font-family:var(--font-mono), monospace;
+  font-size:11px; letter-spacing:0.4px;
+  color:var(--bl-500);
+}
+.bl-finance-news-source { color:var(--bl-300); font-weight:600; }
+.bl-finance-news-lang {
+  padding:1px 5px;
+  font-size:9.5px; letter-spacing:1px; font-weight:600;
+  color:var(--bl-accent-layer);
+  border:1px solid rgba(108,184,200,0.22);
+  border-radius:3px;
+}
+.bl-finance-news-time::before { content:"· "; color:var(--bl-600); }
 .bl-layer-news-item .bl-thumb {
   flex-basis:84px;
   width:84px; height:84px;
@@ -4443,6 +4459,81 @@ select.bl-venue-input { cursor:pointer; }
   .bl-layer-news-title { font-size:15px; -webkit-line-clamp:3; }
   .bl-layer-news-tag-pill { font-size:10px; }
   .bl-layer-news-item .bl-thumb { flex-basis:60px; width:60px; height:60px; border-radius:8px; }
+}
+
+/* ═══════════════════════════════════════════
+   Mercado — tarjetas de cotización (ETFs · acciones)
+   ═══════════════════════════════════════════ */
+.bl-mkt-head { padding:14px 20px 4px; }
+.bl-mkt-title {
+  font-family:var(--font-layer);
+  font-size:18px; font-weight:600; letter-spacing:0.3px;
+  color:var(--bl-100); margin:0;
+}
+.bl-mkt-subtitle {
+  font-family:var(--font-mono), monospace;
+  font-size:11.5px; letter-spacing:0.4px;
+  color:var(--bl-500); margin:4px 0 0;
+}
+.bl-mkt-group { padding:8px 0 4px; }
+.bl-mkt-group-label {
+  font-family:var(--font-mono), monospace;
+  font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; font-weight:600;
+  color:var(--bl-400);
+  margin:12px 20px 8px;
+}
+.bl-mkt-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+  gap:10px;
+  padding:6px 20px 8px;
+}
+.bl-mkt-card {
+  display:flex; flex-direction:column; gap:6px;
+  padding:14px;
+  border:1px solid var(--bl-line, rgba(255,255,255,0.08));
+  border-radius:12px;
+  background:rgba(255,255,255,0.015);
+  transition:border-color .2s ease, background .2s ease;
+}
+.bl-mkt-card:hover { border-color:rgba(108,184,200,0.3); background:rgba(108,184,200,0.03); }
+.bl-mkt-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bl-mkt-symbol {
+  font-family:var(--font-mono), monospace;
+  font-size:13px; font-weight:700; letter-spacing:0.6px;
+  color:var(--bl-100);
+}
+.bl-mkt-chg {
+  font-family:var(--font-mono), monospace;
+  font-size:12px; font-weight:600; letter-spacing:0.3px;
+}
+.bl-mkt-chg.up { color:#4ea88c; }
+.bl-mkt-chg.down { color:#c96a6a; }
+.bl-mkt-name {
+  font-family:var(--font-layer);
+  font-size:12.5px; color:var(--bl-400);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.bl-mkt-price {
+  font-family:var(--font-mono), monospace;
+  font-size:19px; font-weight:600; letter-spacing:0.2px;
+  color:var(--bl-white, #fff);
+}
+.bl-mkt-card-skel { height:92px; opacity:.5; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+@keyframes bl-skel-pulse { 0%,100%{opacity:.35} 50%{opacity:.6} }
+.bl-mkt-foot {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:10px 20px 20px;
+  font-family:var(--font-mono), monospace;
+  font-size:10.5px; letter-spacing:0.4px;
+  color:var(--bl-600);
+}
+.bl-mkt-disclaimer::before { content:"· "; }
+@media (max-width:768px) {
+  .bl-mkt-grid { grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); gap:8px; padding:6px 16px 8px; }
+  .bl-mkt-head { padding:12px 16px 4px; }
+  .bl-mkt-group-label { margin:10px 16px 6px; }
+  .bl-mkt-price { font-size:17px; }
 }
 
 /* ═══════════════════════════════════════════

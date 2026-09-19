@@ -30,6 +30,13 @@ const supabase = SUPABASE_URL && SUPABASE_KEY
 
 if (!supabase) console.warn("⚠ SUPABASE_URL or SUPABASE_SERVICE_KEY missing — venue/project features disabled");
 
+// ── Datos de mercado (ETFs + acciones) ──
+// Principal: CNBC quote webservice (SIN key ni cuenta) — ver fetchMarketsCNBC.
+// Twelve Data / Finnhub son fallback OPCIONAL: si se define su key, dan
+// real-time de mayor calidad, pero /api/markets funciona sin ninguna key.
+const TWELVEDATA_KEY = process.env.TWELVEDATA_KEY;
+const FINNHUB_KEY = process.env.FINNHUB_KEY;
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.set("trust proxy", 1);
@@ -136,6 +143,8 @@ if (IS_PROD) {
 const cache = {
   prices:      { data: null, ts: 0, ttl: 30_000 },
   news:        { data: null, ts: 0, ttl: 5 * 60_000 },
+  financeNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — noticias financieras generales (RSS macro/mercados)
+  markets:     { data: null, ts: 0, ttl: 15 * 60_000 },  // 15min — quotes ETFs + acciones (Twelve Data / Finnhub)
   events:      { data: null, ts: 0, ttl: 60 * 60_000 },
   bassNews:    { data: null, ts: 0, ttl: 30 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
@@ -862,6 +871,275 @@ app.get("/api/news", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  GET /api/finance-news — Noticias financieras generales (?lang=es|en, ?tag=)
+//  Layer es un mundo de inversiones anclado en crypto+tech: esta sección suma
+//  macro/mercados/empresas más allá de crypto. Feeds RSS (no APIs: las free
+//  prohíben producción o tienen 12-24h de delay). Cada feed trae `lang` para
+//  filtrar/badgear por locale; misma canería y fallback que /api/bass-news.
+// ─────────────────────────────────────────────
+
+const FINANCE_NEWS_FEEDS = [
+  // ES / LATAM — núcleo (Argentina macro/mercados + regional)
+  { url: "https://www.bloomberglinea.com/arc/outboundfeeds/rss/category/mercados/?outputType=xml", source: "Bloomberg Línea", slug: "bloomberglinea", lang: "es" },
+  { url: "https://www.ambito.com/rss/pages/economia.xml", source: "Ámbito", slug: "ambito-eco", lang: "es" },
+  { url: "https://www.ambito.com/rss/pages/finanzas.xml", source: "Ámbito", slug: "ambito-fin", lang: "es" },
+  { url: "https://www.infobae.com/arc/outboundfeeds/rss/category/economia/?outputType=xml", source: "Infobae", slug: "infobae-eco", lang: "es" },
+  // EN — contexto global
+  { url: "https://www.cnbc.com/id/20910258/device/rss/rss.html", source: "CNBC", slug: "cnbc-markets", lang: "en" },
+  { url: "https://feeds.content.dowjones.io/public/rss/mw_topstories", source: "MarketWatch", slug: "marketwatch", lang: "en" },
+];
+
+// Antigüedad máxima y tope por fuente (mismo criterio que bass-news: evita que
+// Infobae —muy prolífico— eclipse a los demás y mantiene el feed fresco).
+const FINANCE_NEWS_MAX_AGE_DAYS = 4;
+const FINANCE_MAX_ITEMS_PER_SOURCE = 6;
+
+// Tagger liviano bilingüe → clave neutra (se traduce en el cliente vía labels).
+// Orden: lo específico primero, "Global" como fallback.
+const FINANCE_TAG_RULES = [
+  { tag: "Crypto",    pats: [/\bbitcoin\b/i, /\bbtc\b/i, /\bether(eum)?\b/i, /\bcrypto\b/i, /\bcripto\b/i, /\bblockchain\b/i, /\bstablecoin\b/i] },
+  { tag: "Companies", pats: [/\bearnings\b/i, /\bipo\b/i, /\bmerger\b/i, /\badquisici[óo]n\b/i, /\bbalance\b/i, /\bganancias\b/i, /\bresults?\b/i, /\bceo\b/i, /\bcompany\b/i, /\bempresa\b/i] },
+  { tag: "Economy",   pats: [/\binflaci[óo]n\b/i, /\binflation\b/i, /\bgdp\b/i, /\bpbi\b/i, /\bfed\b/i, /\brates?\b/i, /\btasas?\b/i, /\beconom(y|[íi]a)\b/i, /\bunemployment\b/i, /\bempleo\b/i, /\bbanco central\b/i, /\briesgo pa[íi]s\b/i] },
+  { tag: "Markets",   pats: [/\bacciones\b/i, /\bbolsa\b/i, /\bmerval\b/i, /\bwall street\b/i, /\bs&p\b/i, /\bnasdaq\b/i, /\bdow\b/i, /\bd[óo]lar\b/i, /\bbonos?\b/i, /\bbonds?\b/i, /\bstocks?\b/i, /\bshares?\b/i, /\b[íi]ndice\b/i, /\bmercados?\b/i, /\brally\b/i, /\betf\b/i] },
+];
+function detectFinanceTag(title, categories = []) {
+  const haystack = `${title} ${categories.join(" ")}`;
+  for (const rule of FINANCE_TAG_RULES) {
+    if (rule.pats.some((p) => p.test(haystack))) return rule.tag;
+  }
+  return "Global";
+}
+
+async function fetchFinanceNewsRSSFeed(feed) {
+  const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
+  if (!r.ok) return [];
+  const xml = await safeText(r, 2 * 1024 * 1024);
+  const parsed = xmlParser.parse(xml);
+  let items = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
+  if (!Array.isArray(items)) items = [items];
+  return items.slice(0, 12).map((item) => {
+    const title = cleanNewsTitle(item.title?.["#text"] || item.title || "");
+    const rawLink = item.link?.["@_href"] || item.link || "";
+    const link = typeof rawLink === "object" ? (rawLink["@_href"] || "") : String(rawLink);
+    const url = sanitizeUrl(link);
+    const date = item.pubDate || item.published || item.updated || "";
+    const descCandidates = [item.description, item.summary, item["content:encoded"], item.content];
+    let descStr = "";
+    for (const c of descCandidates) {
+      if (!c) continue;
+      const s = typeof c === "object" ? (c["#text"] || "") : String(c);
+      if (s.length > descStr.length) descStr = s;
+    }
+    const image = pickItemImage(item, descStr);
+    const description = htmlToText(descStr).slice(0, 320);
+    const categories = extractCategories(item);
+    const rel = relativeTime(date);
+    return {
+      time: rel,
+      _mins: timeToMins(rel),
+      _pubDate: date,
+      tag: detectFinanceTag(title, categories),
+      title,
+      description,
+      image: image ? sanitizeUrl(image) : null,
+      source: feed.source,
+      source_slug: feed.slug,
+      lang: feed.lang,
+      url,
+    };
+  });
+}
+
+app.get("/api/finance-news", async (req, res) => {
+  const rawLang = Array.isArray(req.query.lang) ? req.query.lang[0] : req.query.lang;
+  const langFilter = rawLang?.toLowerCase();
+  const rawTag = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
+  const tagFilter = rawTag && rawTag.toLowerCase() !== "all" ? rawTag.toLowerCase() : null;
+  const applyFilter = (arr) => {
+    let out = arr;
+    if (langFilter === "es" || langFilter === "en") out = out.filter((n) => n.lang === langFilter);
+    if (tagFilter) out = out.filter((n) => n.tag.toLowerCase() === tagFilter);
+    return out;
+  };
+
+  const hit = cached("financeNews");
+  if (hit) return res.json(applyFilter(hit));
+
+  try {
+    const results = await Promise.all(FINANCE_NEWS_FEEDS.map((feed) =>
+      fetchSourceWithFallback(feed.slug, () => fetchFinanceNewsRSSFeed(feed), "finance-news")
+    ));
+    const maxAgeMins = FINANCE_NEWS_MAX_AGE_DAYS * 24 * 60;
+    const all = refreshItemAges(results.flat())
+      .filter((item) => item.title && item.url && item._mins < maxAgeMins)
+      .sort((a, b) => a._mins - b._mins);
+
+    // Quota por fuente para diversidad (ver FINANCE_MAX_ITEMS_PER_SOURCE).
+    const perSource = new Map();
+    const quotaApplied = [];
+    for (const item of all) {
+      const used = perSource.get(item.source_slug) || 0;
+      if (used >= FINANCE_MAX_ITEMS_PER_SOURCE) continue;
+      perSource.set(item.source_slug, used + 1);
+      quotaApplied.push(item);
+    }
+    const news = quotaApplied.slice(0, 40).map(({ _mins, _pubDate, ...rest }) => rest);
+    if (news.length) setCache("financeNews", news);
+    const serve = news.length ? news : (cache.financeNews.data || news);
+    res.json(applyFilter(serve));
+  } catch (e) {
+    console.error("[finance-news]", e.message);
+    if (cache.financeNews.data) return res.json(applyFilter(cache.financeNews.data));
+    res.status(502).json({ error: "Finance news unavailable" });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/markets — Quotes ETFs + acciones (Twelve Data / Finnhub)
+//  Curaduría con sesgo tech/crypto (Layer = inversiones ancladas en crypto):
+//  ETFs de índices + BTC ETFs, tech mega-caps y ADRs LATAM (todos US-listed).
+// ─────────────────────────────────────────────
+
+const MARKET_SYMBOLS = [
+  // ETFs — índices core + exposición Bitcoin (ancla crypto)
+  { symbol: "QQQ",  name: "Nasdaq 100",         kind: "etf" },
+  { symbol: "SPY",  name: "S&P 500",            kind: "etf" },
+  { symbol: "VOO",  name: "Vanguard S&P 500",   kind: "etf" },
+  { symbol: "GLD",  name: "Oro",                kind: "etf" },
+  { symbol: "IBIT", name: "iShares Bitcoin",    kind: "etf" },
+  { symbol: "FBTC", name: "Fidelity Bitcoin",   kind: "etf" },
+  // Acciones — tech mega-caps
+  { symbol: "NVDA", name: "NVIDIA",             kind: "stock" },
+  { symbol: "AAPL", name: "Apple",              kind: "stock" },
+  { symbol: "MSFT", name: "Microsoft",          kind: "stock" },
+  { symbol: "GOOGL",name: "Alphabet",           kind: "stock" },
+  { symbol: "AMZN", name: "Amazon",             kind: "stock" },
+  { symbol: "META", name: "Meta",               kind: "stock" },
+  { symbol: "TSLA", name: "Tesla",              kind: "stock" },
+  // ADRs LATAM (cotizan en NYSE/NASDAQ)
+  { symbol: "MELI", name: "MercadoLibre",       kind: "adr" },
+  { symbol: "NU",   name: "Nubank",             kind: "adr" },
+  { symbol: "VIST", name: "Vista Energy",       kind: "adr" },
+  { symbol: "GGAL", name: "Grupo Galicia",      kind: "adr" },
+  { symbol: "YPF",  name: "YPF",                kind: "adr" },
+];
+const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+// CNBC devuelve strings con separador de miles ("1,787.39") y % con signo
+// ("+6.28%"): hay que sacar comas/símbolos antes de parsear.
+const numLoose = (v) => { const n = parseFloat(String(v ?? "").replace(/[,%\s]/g, "")); return Number.isFinite(n) ? n : null; };
+
+// CNBC quote webservice — SIN API key ni cuenta. Un batch para todos los
+// símbolos (pipe-separados). Es el backend público de los widgets de cotización
+// de CNBC: endpoint no oficial (sin TOS formal), mitigado con caché + fallback.
+// Los datos numéricos (precio, %var) no son material con copyright.
+async function fetchMarketsCNBC() {
+  const symbols = MARKET_SYMBOLS.map((s) => s.symbol).join("|");
+  const url = `https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=${symbols}&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json`;
+  const r = await fetchSafe(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; BassLayer/1.0)" } }, 12000);
+  if (!r.ok) throw new Error(`cnbc HTTP ${r.status}`);
+  const j = JSON.parse(await safeText(r));
+  let quotes = j?.FormattedQuoteResult?.FormattedQuote || [];
+  if (!Array.isArray(quotes)) quotes = [quotes];
+  const bySym = new Map(quotes.map((q) => [q.symbol, q]));
+  const rows = [];
+  for (const { symbol, name, kind } of MARKET_SYMBOLS) {
+    const q = bySym.get(symbol);
+    if (!q) continue;
+    const price = numLoose(q.last);
+    if (price == null) continue;
+    rows.push({
+      symbol,
+      name: name || q.name,   // preferimos la curaduría local (más corta/limpia)
+      price,
+      changePct: numLoose(q.change_pct),
+      currency: q.currencyCode || "USD",
+      kind,
+    });
+  }
+  return rows;
+}
+
+// Twelve Data — un solo batch para todos los símbolos (1 crédito por símbolo).
+async function fetchMarketsTwelveData() {
+  const symbols = MARKET_SYMBOLS.map((s) => s.symbol).join(",");
+  const url = `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${TWELVEDATA_KEY}`;
+  const r = await fetchSafe(url, {}, 12000);
+  if (!r.ok) throw new Error(`twelvedata HTTP ${r.status}`);
+  const j = JSON.parse(await safeText(r));
+  // Respuesta batch: objeto keyed por símbolo. Si mandó un error global viene
+  // { code, message, status:"error" } sin las claves de símbolo.
+  if (j && j.status === "error") throw new Error(`twelvedata: ${j.message || j.code}`);
+  const rows = [];
+  for (const { symbol, name, kind } of MARKET_SYMBOLS) {
+    const q = j[symbol];
+    if (!q || q.status === "error") continue;
+    const price = num(q.close);
+    if (price == null) continue;
+    rows.push({
+      symbol,
+      name: name || q.name,
+      price,
+      changePct: num(q.percent_change),
+      currency: q.currency || "USD",
+      kind,
+    });
+  }
+  return rows;
+}
+
+// Finnhub — fallback per-símbolo (sin nombre: usamos la curaduría local).
+async function fetchMarketsFinnhub() {
+  const results = await Promise.all(MARKET_SYMBOLS.map(async ({ symbol, name, kind }) => {
+    try {
+      const r = await fetchSafe(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`, {}, 10000);
+      if (!r.ok) return null;
+      const q = JSON.parse(await safeText(r));
+      const price = num(q.c);
+      if (price == null || price === 0) return null; // Finnhub devuelve c:0 para símbolos sin dato
+      return { symbol, name, price, changePct: num(q.dp), currency: "USD", kind };
+    } catch { return null; }
+  }));
+  return results.filter(Boolean);
+}
+
+app.get("/api/markets", async (req, res) => {
+  const hit = cached("markets");
+  if (hit) return res.json(hit);
+
+  // Cadena de fuentes: CNBC (sin key) primero; Twelve Data / Finnhub solo si
+  // hay key configurada (mejor calidad/real-time, opcional). La primera que
+  // devuelve filas gana.
+  let rows = [];
+  const errors = [];
+  try { rows = await fetchMarketsCNBC(); }
+  catch (e) { errors.push(e.message); console.error("[markets] cnbc:", e.message); }
+  if (rows.length === 0 && TWELVEDATA_KEY) {
+    try { rows = await fetchMarketsTwelveData(); }
+    catch (e) { errors.push(e.message); console.error("[markets] twelvedata:", e.message); }
+  }
+  if (rows.length === 0 && FINNHUB_KEY) {
+    try { rows = await fetchMarketsFinnhub(); }
+    catch (e) { errors.push(e.message); console.error("[markets] finnhub:", e.message); }
+  }
+
+  if (rows.length === 0) {
+    if (cache.markets.data) return res.json(cache.markets.data); // último bueno aunque vencido
+    return res.status(502).json({ error: "Market data unavailable", detail: errors.join("; ") });
+  }
+
+  const payload = {
+    asof: Date.now(),
+    groups: [
+      { kind: "etf",   items: rows.filter((r) => r.kind === "etf") },
+      { kind: "stock", items: rows.filter((r) => r.kind === "stock") },
+      { kind: "adr",   items: rows.filter((r) => r.kind === "adr") },
+    ].filter((g) => g.items.length > 0),
+  };
+  setCache("markets", payload);
+  res.json(payload);
+});
+
+// ─────────────────────────────────────────────
 //  GET /api/bass-news — Música electrónica BA + LatAm
 //  Fuentes: Buenos Aliens (scrape) + Mixmag Latam (RSS)
 //  Curaduría chica y local-first; ver memoria del proyecto.
@@ -1127,10 +1405,10 @@ async function fetchBuenosAliensNotas() {
 const bassNewsLastGood = new Map(); // slug → { items, ts }
 const BASS_NEWS_LAST_GOOD_MAX_AGE_MS = 24 * 60 * 60 * 1000; // descartar fallback si lleva +24h sin éxito
 
-async function fetchSourceWithFallback(slug, fetcher) {
+async function fetchSourceWithFallback(slug, fetcher, label = "bass-news") {
   let items = [];
   try { items = await fetcher(); } catch (e) {
-    console.error(`[bass-news] ${slug}: fetch threw — ${e.message}`);
+    console.error(`[${label}] ${slug}: fetch threw — ${e.message}`);
   }
   if (Array.isArray(items) && items.length > 0) {
     bassNewsLastGood.set(slug, { items, ts: Date.now() });
@@ -1139,7 +1417,7 @@ async function fetchSourceWithFallback(slug, fetcher) {
   const last = bassNewsLastGood.get(slug);
   if (last && (Date.now() - last.ts) < BASS_NEWS_LAST_GOOD_MAX_AGE_MS) {
     const ageMin = Math.round((Date.now() - last.ts) / 60_000);
-    console.log(`[bass-news] ${slug}: 0 ítems frescos, reutilizando últimos buenos (${last.items.length} ítems, hace ${ageMin}m)`);
+    console.log(`[${label}] ${slug}: 0 ítems frescos, reutilizando últimos buenos (${last.items.length} ítems, hace ${ageMin}m)`);
     return last.items;
   }
   return [];
