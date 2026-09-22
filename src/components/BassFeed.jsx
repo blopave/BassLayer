@@ -6,7 +6,7 @@ import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
-import { IG_HANDLE, IG_URL, useIsMobile } from "../utils/constants";
+import { useIsMobile } from "../utils/constants";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
 import { useSavedEvents } from "../hooks/useSavedEvents";
@@ -46,15 +46,6 @@ function EndOfSet() {
   return (
     <div className="bl-end-of-set">
       <div aria-hidden="true">{t("feed.endOfSet")}</div>
-      <a
-        className="bl-end-of-set-ig"
-        href={IG_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Instagram — ${IG_HANDLE}`}
-      >
-        La agenda también en Instagram → {IG_HANDLE}
-      </a>
       {/* webcal: suscripción viva (iOS/macOS la abren en Calendario; Google
           Calendar la acepta como "agregar por URL"). Nadie más lo ofrece
           en la escena BA. */}

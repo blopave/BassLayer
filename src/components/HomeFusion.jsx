@@ -269,8 +269,6 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
           <span className="blf-cross tl" /><span className="blf-cross tr" />
           <span className="blf-cross bl" /><span className="blf-cross br" />
           <span className="blf-spine l" /><span className="blf-spine r" />
-          <span className="blf-margin ml">01 · Bass</span>
-          <span className="blf-margin mr">Layer · 02</span>
         </div>
       )}
 

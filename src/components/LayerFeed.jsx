@@ -12,7 +12,6 @@ import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
-import { IG_HANDLE, IG_URL } from "../utils/constants";
 
 // El dashboard de ciclos (charts SVG + data horneada) solo carga al abrir su
 // sección — es el módulo más pesado de Layer y la mayoría no llega hasta ahí.
@@ -165,15 +164,6 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
                 <div className="bl-end-of-feed">
                   <span aria-hidden="true">{t("feed.endOfFeed")}</span>
                   <span className="bl-end-cursor" aria-hidden="true" />
-                  <a
-                    className="bl-end-of-feed-ig"
-                    href={IG_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Instagram — ${IG_HANDLE}`}
-                  >
-                    Las noticias también en Instagram → {IG_HANDLE}
-                  </a>
                 </div>
               </div>}
         </div>

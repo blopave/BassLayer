@@ -3,7 +3,7 @@ import { flushSync } from "react-dom";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
-import { useIsMobile, IG_HANDLE, IG_URL } from "./utils/constants";
+import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { supabase } from "./utils/supabase";
 import { dismissCurtain } from "./utils/curtain";
@@ -995,16 +995,6 @@ export default function App() {
         <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
           about
         </button>
-        <a
-          className="bl-util-toggle bl-util-ig"
-          href={IG_URL}
-          target="_blank"
-          rel="noopener"
-          aria-label="Instagram de BassLayer"
-        >
-          <span className="bl-util-ig-short" aria-hidden="true">IG</span>
-          <span className="bl-util-ig-full" aria-hidden="true">{IG_HANDLE}</span>
-        </a>
         <button
           className="bl-lang-toggle"
           onClick={() => setLocale(locale === "es" ? "en" : "es")}
