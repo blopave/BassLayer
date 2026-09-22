@@ -1033,9 +1033,9 @@ a.bl-util-ig .bl-util-ig-full  { display:inline; }
 }
 .bl-info { position:absolute; font-family:var(--font-mono); font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--bl-700); z-index:50; transition:color .4s; opacity:0; }
 .bl-home.hero-entered .bl-info { animation:info-fade .8s var(--ease-out-expo) forwards; }
-.bl-info-tl { top:32px; left:40px; animation-delay:1.2s!important; }
-.bl-info-tr { top:32px; right:40px; animation-delay:1.35s!important; }
-.bl-info-bl { bottom:32px; left:40px; animation-delay:1.5s!important; }
+.bl-info-tl { top:32px; left:32px; animation-delay:1.2s!important; }
+.bl-info-tr { top:32px; right:32px; animation-delay:1.35s!important; }
+.bl-info-bl { bottom:32px; left:32px; animation-delay:1.5s!important; }
 .bl-home:hover .bl-info { color:var(--bl-600); }
 @media (max-width:768px) {
   .bl-info-tl, .bl-info-tr { top:20px; }
@@ -5380,9 +5380,9 @@ select.bl-venue-input { cursor:pointer; }
 .blf-cta:focus-visible, .blf-dotnav:focus-visible{ outline:2px solid var(--bl-text); outline-offset:3px; }
 
 /* ── mundos: datos de cada lado de fondo, DESENFOCADOS SUAVE (se leen); se ACTIVAN al pasar por su nombre ── */
-.blf-side{ position:absolute; top:0; bottom:0; width:42%; display:flex; flex-direction:column; justify-content:center; gap:15px;
-  padding:clamp(20px,3vw,48px); z-index:2; min-width:0; pointer-events:none;
-  filter:blur(3px) brightness(.7) saturate(.7); opacity:.5;   /* igualado al pórtico mobile (luce más atmosférico) */
+.blf-side{ position:absolute; top:0; bottom:0; width:42%; display:flex; flex-direction:column; justify-content:space-between; gap:14px;
+  padding:clamp(20px,3vw,48px) clamp(20px,3vw,48px) clamp(28px,4vh,56px); z-index:2; min-width:0; pointer-events:none;
+  filter:blur(2px) brightness(.82) saturate(.82); opacity:.64;   /* reposo legible: los datos se leen como teaser fantasma detrás del wordmark */
   transition:opacity 1.1s cubic-bezier(.4,0,.2,1), filter 1.1s cubic-bezier(.4,0,.2,1), transform 1.1s cubic-bezier(.4,0,.2,1); will-change:filter,opacity,transform; }
 .blf-bass{ left:0; align-items:flex-start; text-align:left; }
 .blf-layer{ right:0; align-items:flex-end; text-align:right; }
@@ -5398,7 +5398,7 @@ select.bl-venue-input { cursor:pointer; }
 .blf-dot{ width:7px; height:7px; border-radius:50%; }
 .blf-bass .blf-dot{ background:var(--bl-accent-bass); box-shadow:0 0 10px var(--bl-accent-bass); }
 .blf-layer .blf-dot{ background:var(--bl-accent-layer); box-shadow:0 0 10px var(--bl-accent-layer); }
-.blf-big{ font-weight:800; font-size:clamp(34px,4.4vw,66px); line-height:.9; letter-spacing:-.03em; color:var(--bl-text); }
+.blf-big{ font-weight:800; font-size:clamp(40px,5.4vw,84px); line-height:.86; letter-spacing:-.04em; color:var(--bl-text); }
 .blf-big em{ font-style:normal; color:var(--bl-accent-bass); }
 .blf-flyrow{ display:flex; gap:10px; margin-top:2px; }
 .blf-layer .blf-flyrow{ justify-content:flex-end; }
@@ -5409,15 +5409,15 @@ select.bl-venue-input { cursor:pointer; }
 .blf-fvn{ font-family:var(--font-mono); font-size:7.5px; letter-spacing:.4px; text-transform:uppercase; color:rgba(255,255,255,.72); margin-top:2px; }
 .blf-genres{ display:flex; gap:7px; flex-wrap:wrap; }
 .blf-layer .blf-genres{ justify-content:flex-end; }
-.blf-genres span{ font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--bl-text-sec);
-  border:1px solid var(--bl-border); border-radius:999px; padding:4px 11px; }
+.blf-genres span{ font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--bl-text-ter);
+  border:1px solid var(--bl-border); border-radius:999px; padding:4px 11px; }   /* susurro: metadata, no compite con el kicker */
 
 .blf-chartwrap{ width:100%; max-width:460px; }
 .blf-chart{ width:100%; height:clamp(120px,15vh,166px); display:block; }
 .blf-caxis{ display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:8px; letter-spacing:1px;
   text-transform:uppercase; color:#4a5a5e; margin-top:4px; }
 .blf-lstats{ display:flex; gap:22px; justify-content:flex-end; flex-wrap:wrap; margin-top:4px; }
-.blf-v{ font-family:var(--font-mono); font-weight:600; font-size:clamp(20px,2.2vw,30px); color:#eafcff; font-variant-numeric:tabular-nums; }
+.blf-v{ font-family:var(--font-mono); font-weight:600; font-size:clamp(22px,2.6vw,36px); color:#eafcff; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 .blf-k{ font-family:var(--font-mono); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#6a8088; margin-top:2px; }
 .blf-halv{ font-family:var(--font-mono); font-size:clamp(12px,1.3vw,16px); color:#cfe8ee; letter-spacing:.5px; }
 .blf-halv b{ color:#fff; font-weight:600; font-variant-numeric:tabular-nums; }
@@ -5447,26 +5447,88 @@ select.bl-venue-input { cursor:pointer; }
 .blf-half{ position:relative; display:flex; flex-direction:column; gap:10px; background:transparent; border:0; padding:0;
   font:inherit; color:inherit; cursor:pointer; pointer-events:auto; align-items:flex-start; }
 .blf-half.l{ align-items:flex-end; }
-.blf-wd{ line-height:.9; padding-bottom:7px; border-bottom:2px solid transparent; color:var(--bl-text);
-  transition:border-color .9s cubic-bezier(.4,0,.2,1), text-shadow .95s cubic-bezier(.4,0,.2,1), opacity .95s cubic-bezier(.4,0,.2,1); }
-.blf-half.b .blf-wd{ font-weight:700; font-size:clamp(38px,4.6vw,82px); letter-spacing:-.03em; }
-.blf-half.l .blf-wd{ font-weight:300; font-size:clamp(30px,3.7vw,66px); text-transform:uppercase; letter-spacing:clamp(2px,.4vw,6px); }
-.blf-half.b:hover .blf-wd{ border-color:var(--bl-accent-bass); text-shadow:0 0 24px rgba(196,144,112,.5); }
-.blf-half.l:hover .blf-wd{ border-color:var(--bl-accent-layer); text-shadow:0 0 24px rgba(108,184,200,.5); }
-.blf-home.focus-bass .blf-half.b .blf-wd{ text-shadow:0 0 26px rgba(196,144,112,.6); }
-.blf-home.focus-bass .blf-half.l .blf-wd{ opacity:.3; }
-.blf-home.focus-layer .blf-half.l .blf-wd{ text-shadow:0 0 24px rgba(108,184,200,.6); }
-.blf-home.focus-layer .blf-half.b .blf-wd{ opacity:.3; }
-.blf-door{ position:absolute; top:calc(100% + 7px); left:0; font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px;
-  text-transform:uppercase; opacity:0; transform:translateY(-2px); white-space:nowrap; transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1); }
+.blf-wd{ position:relative; display:inline-block; line-height:.9; color:var(--bl-text);
+  transition:text-shadow .9s cubic-bezier(.4,0,.2,1), opacity .95s cubic-bezier(.4,0,.2,1); }
+/* base NUNCA blanca: el nombre vive dentro del color de su mundo (acento apenas atenuado, theme-aware) */
+.blf-half.b .blf-wd{ font-weight:700; font-size:clamp(38px,4.6vw,82px); letter-spacing:-.03em;
+  color:color-mix(in srgb, var(--bl-accent-bass) 86%, var(--bl-text)); }
+.blf-half.l .blf-wd{ font-weight:300; font-size:clamp(30px,3.7vw,66px); text-transform:uppercase; letter-spacing:clamp(2px,.4vw,6px);
+  color:color-mix(in srgb, var(--bl-accent-layer) 86%, var(--bl-text)); }
+/* ── PORTAL FILL: capa que llena el nombre con la textura VIVA de su mundo (revela en hover/foco).
+   Bass = flyer real + lavado cálido; Layer = data cyan. La palabra es una ventana al mundo. ── */
+.blf-wd-fill{ position:absolute; inset:0; display:inline-block; color:transparent; white-space:nowrap;
+  -webkit-background-clip:text; background-clip:text; background-repeat:no-repeat; background-size:260% 260%; background-position:12% 50%;
+  opacity:0; transition:opacity .7s cubic-bezier(.19,1,.22,1); pointer-events:none; }
+/* stops SIEMPRE dentro del hue — del tono profundo al claro, nunca blanco */
+.blf-half.b .blf-wd-fill{ background-image:linear-gradient(115deg,#C49070,#E0A579,#B5704E,#D98F6B,#C49070); }
+.blf-half.l .blf-wd-fill{ background-image:linear-gradient(115deg,#6CB8C8,#8FD0DC,#4D8A9A,#6FBECE,#6CB8C8); }
+.blf-half:hover .blf-wd-fill,
+.blf-home.focus-bass .blf-half.b .blf-wd-fill,
+.blf-home.focus-layer .blf-half.l .blf-wd-fill{ opacity:1; animation:blf-fill 5.2s ease-in-out infinite alternate; }
+/* el brillo respira: drift orgánico ida-y-vuelta (no un loop que salta) */
+@keyframes blf-fill{ from{ background-position:8% 50%; } to{ background-position:92% 50%; } }
+/* halo doble del color del mundo al encender — en hover directo Y en foco por zona */
+.blf-half.b:hover .blf-wd, .blf-home.focus-bass .blf-half.b .blf-wd{ text-shadow:0 0 26px rgba(196,144,112,.5), 0 0 58px rgba(196,144,112,.24); }
+.blf-half.l:hover .blf-wd, .blf-home.focus-layer .blf-half.l .blf-wd{ text-shadow:0 0 24px rgba(108,184,200,.5), 0 0 54px rgba(108,184,200,.24); }
+/* al enfocar/hover un mundo, su nombre SE LLENA con la textura del mundo (atrae, es la puerta);
+   el otro nombre se retira para que la elección sea inequívoca. */
+.blf-home.focus-bass .blf-half.l .blf-wd{ opacity:.24; }
+.blf-home.focus-layer .blf-half.b .blf-wd{ opacity:.24; }
+/* subtítulo: entra un pelín DESPUÉS del encendido (delay), subiendo y con el tracking asentándose */
+.blf-door{ position:absolute; top:calc(100% + 9px); left:0; font-family:var(--font-mono); font-size:10px; letter-spacing:2.6px;
+  text-transform:uppercase; opacity:0; transform:translateY(5px); white-space:nowrap;
+  transition:opacity .55s cubic-bezier(.19,1,.22,1) .1s, transform .6s cubic-bezier(.19,1,.22,1) .1s, letter-spacing .6s cubic-bezier(.19,1,.22,1) .1s; }
 .blf-half.l .blf-door{ left:auto; right:0; }
 .blf-half.b .blf-door{ color:var(--bl-accent-bass); }
 .blf-half.l .blf-door{ color:var(--bl-accent-layer); }
-.blf-half:hover .blf-door{ opacity:1; transform:translateY(0); }
+.blf-half:hover .blf-door,
+.blf-home.focus-bass .blf-half.b .blf-door,
+.blf-home.focus-layer .blf-half.l .blf-door{ opacity:1; transform:translateY(0); letter-spacing:1.5px; }
 .blf-hint{ font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec);
   display:flex; align-items:center; gap:9px; transition:opacity .3s; }
 .blf-home.focus-bass .blf-hint, .blf-home.focus-layer .blf-hint{ opacity:0; }
 .blf-hint .blf-a{ color:var(--bl-accent-bass); } .blf-hint .blf-a2{ color:var(--bl-accent-layer); }
+
+/* ── zonas verticales del mundo: top·mid·bot distribuidas (matan las bandas muertas) ── */
+.blf-top, .blf-mid, .blf-bot{ display:flex; flex-direction:column; width:100%; min-width:0; }
+.blf-top{ gap:8px; } .blf-mid{ gap:15px; } .blf-bot{ gap:12px; }
+.blf-bass .blf-top, .blf-bass .blf-mid, .blf-bass .blf-bot{ align-items:flex-start; }
+.blf-layer .blf-top, .blf-layer .blf-mid, .blf-layer .blf-bot{ align-items:flex-end; }
+
+/* ── marquesina de datos vivos (broadcast): eventos (Bass) / precios (Layer) ── */
+.blf-marq{ position:relative; width:100%; max-width:460px; overflow:hidden; padding-top:10px; border-top:1px solid var(--bl-border);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent); }
+.blf-marq-track{ display:inline-flex; gap:24px; white-space:nowrap; animation:blf-marq 48s linear infinite; will-change:transform; }
+/* la duración de cada barra la fija JS (measure width → velocidad px/seg constante en ambas: mismo paso real) */
+@keyframes blf-marq{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+.blf-tk{ font-family:var(--font-mono); font-size:10px; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--bl-text-sec); display:inline-flex; align-items:center; gap:7px; }
+.blf-tk b{ color:var(--bl-accent-bass); font-weight:600; font-variant-numeric:tabular-nums; }
+.blf-layer .blf-tk b{ color:var(--bl-accent-layer); }
+.blf-tk i{ font-style:normal; color:var(--bl-text-ter); }
+.blf-tk i.up{ color:#5fbf8f; } .blf-tk i.down{ color:#d97a7a; }
+.blf-tk::before{ content:"·"; color:var(--bl-text-ter); }   /* separador entre ítems: el fade nunca corta una palabra en seco */
+.blf-marq-track{ animation-play-state:paused; }   /* en reposo la marquesina está quieta (menos ruido periférico)… */
+.blf-home.focus-bass .blf-bass .blf-marq-track,
+.blf-home.focus-layer .blf-layer .blf-marq-track{ animation-play-state:running; }   /* …y "cobra vida" al enfocar el mundo */
+
+/* ── chrome blueprint (desktop): crop marks + spines + índice dual rotado ── */
+.blf-grid{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+.blf-cross{ position:absolute; width:12px; height:12px; opacity:.62; }
+.blf-cross::before, .blf-cross::after{ content:""; position:absolute; background:var(--bl-border); }
+.blf-cross::before{ left:50%; top:0; width:1px; height:100%; transform:translateX(-.5px); }
+.blf-cross::after{ top:50%; left:0; height:1px; width:100%; transform:translateY(-.5px); }
+.blf-cross.tl{ left:20px; top:20px; } .blf-cross.tr{ right:20px; top:20px; }
+.blf-cross.bl{ left:20px; bottom:20px; } .blf-cross.br{ right:20px; bottom:20px; }
+.blf-spine{ position:absolute; top:13%; bottom:13%; width:1px; opacity:.4;
+  background:linear-gradient(180deg,transparent,var(--bl-border) 18%,var(--bl-border) 82%,transparent); }
+.blf-spine.l{ left:42%; } .blf-spine.r{ right:42%; }
+.blf-margin{ position:absolute; top:0; bottom:0; display:flex; align-items:center; writing-mode:vertical-rl;
+  font-family:var(--font-mono); font-size:9px; letter-spacing:4px; text-transform:uppercase; opacity:.42; white-space:nowrap; }
+.blf-margin.ml{ left:20px; transform:rotate(180deg); color:var(--bl-accent-bass); }
+.blf-margin.mr{ right:20px; color:var(--bl-accent-layer); }
+.blf-home.focus-bass .blf-margin.ml, .blf-home.focus-layer .blf-margin.mr{ opacity:.72; }
 
 /* ── dots (mobile) ── */
 .blf-dots{ display:none; }
@@ -5492,21 +5554,42 @@ select.bl-venue-input { cursor:pointer; }
         wordmark hero centrado y "elegí un mundo" — réplica del reposo desktop.
         Tap en un nombre / dot o swipe → ENTRA al mundo real completo (onEnter). ── */
   .blf-home.is-mobile.pre .blf-track{ transform:none!important; width:100vw; }
+  /* ── MOBILE = el MISMO home dual, girado 90° a portrait: Bass (arriba) + wordmark EJE (medio)
+        + Layer (abajo). Los dos mundos con músculo y datos vivos; el wordmark es el chooser.
+        Es HOME (chooser dual), no una sección. Traducción del Bass-izq/Layer-der del desktop. ── */
   .blf-home.is-mobile.pre .blf-side{
-    position:absolute; inset:0 auto 0 auto; top:0; bottom:0; height:100%; width:58%;
-    padding:96px 18px; justify-content:center; gap:12px;
-    filter:blur(3px) brightness(.7) saturate(.7)!important; opacity:.5!important; transform:none!important;
-    pointer-events:none;
-    transition:filter 1.1s cubic-bezier(.4,0,.2,1), opacity 1.1s cubic-bezier(.4,0,.2,1); }
-  .blf-home.is-mobile.pre .blf-bass{ left:0; align-items:flex-start; text-align:left; }
-  .blf-home.is-mobile.pre .blf-layer{ right:0; align-items:flex-end; text-align:right; }
-  .blf-home.is-mobile.pre .blf-cta{ opacity:0!important; }   /* sin CTAs en el chooser */
-  /* wordmark al centro como héroe, con el hint "elegí un mundo" visible */
-  .blf-home.is-mobile.pre .blf-axis{ inset:0; padding:0; align-items:center; }
+    position:absolute; left:0; right:0; width:100%; height:auto; padding:0 20px; gap:10px;
+    align-items:flex-start; text-align:left;
+    filter:none!important; opacity:1!important; transform:none!important; pointer-events:none; transition:none; }
+  .blf-home.is-mobile.pre .blf-bass{ top:0; bottom:auto; padding-top:58px; justify-content:flex-start; }
+  .blf-home.is-mobile.pre .blf-layer{ bottom:0; top:auto; padding-bottom:48px; justify-content:flex-end; }
+  /* Layer alineado a la izquierda como Bass (ritmo vertical consistente, no espejado) */
+  .blf-home.is-mobile.pre .blf-layer .blf-top, .blf-home.is-mobile.pre .blf-layer .blf-mid,
+  .blf-home.is-mobile.pre .blf-layer .blf-bot, .blf-home.is-mobile.pre .blf-layer .blf-kick,
+  .blf-home.is-mobile.pre .blf-layer .blf-lstats{ align-items:flex-start; justify-content:flex-start; }
+  /* condensar cada mundo para que los dos + el eje entren sin scroll */
+  .blf-home.is-mobile.pre .blf-genres, .blf-home.is-mobile.pre .blf-halv{ display:none; }
+  .blf-home.is-mobile.pre .blf-cta{ display:none; }   /* sin CTA en el chooser: el tap entra */
+  .blf-home.is-mobile.pre .blf-fcard{ width:62px; height:84px; }   /* 4 flyers compactos con aire al borde */
+  .blf-home.is-mobile.pre .blf-flyrow{ gap:8px; }
+  .blf-home.is-mobile.pre .blf-kick{ font-size:9px; letter-spacing:1.5px; }   /* entra en 1 línea (Bass y Layer) */
+  .blf-home.is-mobile.pre .blf-chart{ height:92px; }
+  .blf-home.is-mobile .blf-marq{ display:block; max-width:100%; }
+  .blf-home.is-mobile .blf-marq-track{ animation-play-state:running; }   /* ambos tickers vivos (mobile no tiene foco) */
+  .blf-top, .blf-mid, .blf-bot{ gap:10px; }
+  /* wordmark EJE centrado en el seam entre los dos mundos, con "elegí un mundo" */
+  .blf-home.is-mobile.pre .blf-axis{ inset:0; align-items:center; padding:0 20px; }
+  /* mobile no tiene hover: el portal fill se muestra SIEMPRE (Bass cálido / LAYER cyan) → marca los dos mundos */
+  .blf-home.is-mobile.pre .blf-wd-fill{ opacity:1; animation:blf-fill 7s ease-in-out infinite alternate; }
+  /* color por mundo: glow cálido arriba (Bass) / frío abajo (Layer) — marca el split dual */
+  .blf-home.is-mobile.pre .blf-tint-bass{ opacity:1; background:radial-gradient(92% 40% at 50% 18%, rgba(196,144,112,.13), transparent 72%); }
+  .blf-home.is-mobile.pre .blf-tint-layer{ opacity:1; background:radial-gradient(92% 40% at 50% 84%, rgba(108,184,200,.13), transparent 72%); }
 }
 @media (prefers-reduced-motion:reduce){
   .blf-side, .blf-wm, .blf-tint, .blf-track, .blf-wd, .blf-cursor{ transition:none!important; }
   .blf-curveline{ animation:none; stroke-dashoffset:0; }
+  .blf-marq-track{ animation:none; }
+  .blf-wd-fill{ animation:none; }
 }
 
 

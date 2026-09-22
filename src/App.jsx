@@ -851,7 +851,11 @@ export default function App() {
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
 
           {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
-          {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : <h1 className="bl-sr-only">BassLayer</h1>}
+          {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : (
+            <h1 className="bl-sr-only">
+              {`BassLayer — Bass: ${events.length} ${events.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
+            </h1>
+          )}
           <HomeFusion events={events} prices={prices} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
 
         </main>

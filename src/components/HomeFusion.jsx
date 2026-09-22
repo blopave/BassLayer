@@ -41,7 +41,8 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
   const eventCount = (events || []).length;
   const btcPrice = useMemo(() => {
     const b = (prices || []).find((p) => String(p.sym || "").toUpperCase().startsWith("BTC"));
-    return b && b.price != null ? b.price : cyclesData.current.price;
+    const v = b ? (b.usd ?? b.price) : null;   // la API expone `usd`; `price` queda como compat
+    return v != null ? v : cyclesData.current.price;
   }, [prices]);
   const cycleDay = useMemo(() => daysBetween(cyclesData.keyDates.halving, new Date()), []);
   const halvingDays = useMemo(() => daysBetween(new Date(), cyclesData.keyDates.nextHalving), []);
@@ -52,6 +53,16 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
   const phase = cyclesData.current.phaseLabel || cyclesData.current.phase || "";
   const curve = useMemo(() => buildCurve(CURVE, 500, 166), []);
   const fmtBtc = "$" + Number(btcPrice).toLocaleString(loc);
+
+  // ── tickers de datos vivos (broadcast): eventos reales (hora·artista·venue·ciudad) y precios reales ──
+  const bassTicker = useMemo(() => (events || [])
+    .filter((e) => e.time && ((e.artists && e.artists[0]) || e.name))
+    .slice(0, 16)
+    .map((e) => ({ time: e.time, act: (e.artists && e.artists[0]) || e.name, venue: (e.venue || "").split(",")[0].trim(), city: e.city || "" })), [events]);
+  const layerTicker = useMemo(() => (prices || [])
+    .filter((p) => p && p.sym && (p.usd ?? p.price) != null)
+    .slice(0, 12)
+    .map((p) => ({ sym: p.sym, val: "$" + Number(p.usd ?? p.price).toLocaleString(loc), chg: typeof p.change === "number" ? p.change : null })), [prices, loc]);
 
   // El home mobile es SIEMPRE el pórtico neutro: ambos mundos de fondo desenfocados +
   // "elegí un mundo". Tap en un nombre/dot o swipe = ENTRA al mundo real completo
@@ -96,6 +107,7 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
   // (idle = 0 frames); se relanza en el próximo movimiento. .blf-home llena el
   // viewport, así que usamos clientX/Y directo (sin getBoundingClientRect por evento). ──
   const cursorRef = useRef(null);
+  const rootRef = useRef(null);
   const target = useRef({ x: -1, y: -1, side: "bass" });
   const cur = useRef({ x: -1, y: -1 });
   const rafRef = useRef(0);
@@ -143,8 +155,20 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
 
   const rootCls = `${cls}${idle === "bass" ? " idle-bass" : ""}${idle === "layer" ? " idle-layer" : ""}`;
 
+  // ── MISMA VELOCIDAD (no misma duración) en ambas barras: mido el ancho real de cada track
+  // y fijo la duración para una velocidad px/seg constante. Así Bass (más ítems) y Layer marchan al mismo paso. ──
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const SPEED = 30; // px por segundo
+    root.querySelectorAll(".blf-marq-track").forEach((tr) => {
+      const half = tr.scrollWidth / 2;   // el contenido está duplicado 2× para el loop
+      if (half > 4) tr.style.animationDuration = (half / SPEED).toFixed(1) + "s";
+    });
+  }, [bassTicker, layerTicker, isMobile, loc]);
+
   return (
-    <div className={rootCls}
+    <div className={rootCls} ref={rootRef}
       onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE} onMouseMove={onMove}>
       {!isMobile && <div className="blf-cursor" ref={cursorRef} aria-hidden="true" />}
       {/* tintes de color por mundo: se funden por OPACIDAD (fluido) en vez de animar el gradiente */}
@@ -165,23 +189,39 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
       <div className="blf-track">
         {/* ── BASS ── */}
         <section className="blf-side blf-bass" aria-hidden="true">
-          <div className="blf-kick"><span className="blf-dot" /> Bass · {t("home.bass")}</div>
-          <div className="blf-big"><em>{eventCount || "—"}</em> {eventCount === 1 ? t("home.evento") : t("home.eventos")}<br />{t("home.enAgenda")}</div>
-          <div className="blf-flyrow">
-            {flyers.map((e, i) => (
-              <div className="blf-fcard" key={i} style={{ backgroundImage: `linear-gradient(180deg,rgba(0,0,0,.05) 45%,rgba(0,0,0,.88)),url('${e.image}')` }}>
-                <span className="blf-fnm">{(e.artists && e.artists[0]) || e.name}</span>
-                <span className="blf-fvn">{e.venue || ""}</span>
-              </div>
-            ))}
+          <div className="blf-top">
+            <div className="blf-kick"><span className="blf-dot" /> Bass · {t("home.bass")}</div>
           </div>
-          <div className="blf-genres"><span>techno</span><span>house</span><span>club</span></div>
-          <button className="blf-cta blf-cta-bass" tabIndex={-1} onClick={(e) => onEnter(e, 0)}>{t("home.verAgenda")} →</button>
+          <div className="blf-mid">
+            <div className="blf-big"><em>{eventCount || "—"}</em> {eventCount === 1 ? t("home.evento") : t("home.eventos")}<br />{t("home.enAgenda")}</div>
+            <div className="blf-flyrow">
+              {flyers.map((e, i) => (
+                <div className="blf-fcard" key={i} style={{ backgroundImage: `linear-gradient(180deg,rgba(0,0,0,.05) 45%,rgba(0,0,0,.88)),url('${e.image}')` }}>
+                  <span className="blf-fnm">{(e.artists && e.artists[0]) || e.name}</span>
+                  <span className="blf-fvn">{e.venue || ""}</span>
+                </div>
+              ))}
+            </div>
+            <div className="blf-genres"><span>techno</span><span>house</span><span>club</span></div>
+          </div>
+          <div className="blf-bot">
+            {bassTicker.length >= 3 && (
+              <div className="blf-marq" aria-hidden="true"><div className="blf-marq-track">
+                {[...bassTicker, ...bassTicker].map((it, i) => (
+                  <span className="blf-tk" key={i}><b>{it.time}</b> {it.act} <i>{it.venue}{it.city ? ` · ${it.city}` : ""}</i></span>
+                ))}
+              </div></div>
+            )}
+            <button className="blf-cta blf-cta-bass" tabIndex={-1} onClick={(e) => onEnter(e, 0)}>{t("home.verAgenda")} →</button>
+          </div>
         </section>
 
         {/* ── LAYER ── */}
         <section className="blf-side blf-layer" aria-hidden="true">
-          <div className="blf-kick">{t("home.blockchain")} · Layer <span className="blf-dot" /></div>
+          <div className="blf-top">
+            <div className="blf-kick">{t("home.blockchain")} · Layer <span className="blf-dot" /></div>
+          </div>
+          <div className="blf-mid">
           <div className="blf-chartwrap">
             <svg className="blf-chart" viewBox="0 0 500 166" preserveAspectRatio="none">
               <defs>
@@ -209,9 +249,30 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
             <div className="blf-lstat"><div className="blf-v">{cycleDay}</div><div className="blf-k">{t("home.diaDelCiclo")} · {phase}</div></div>
           </div>
           <div className="blf-halv">{t("home.proximoHalving", { days: <b key="d">{halvingDays}</b>, date: halvingLabel })}</div>
-          <button className="blf-cta blf-cta-layer" tabIndex={-1} onClick={(e) => onEnter(e, 1)}>{t("home.verCiclo")} →</button>
+          </div>
+          <div className="blf-bot">
+            {layerTicker.length >= 3 && (
+              <div className="blf-marq blf-marq-r" aria-hidden="true"><div className="blf-marq-track">
+                {[...layerTicker, ...layerTicker].map((it, i) => (
+                  <span className="blf-tk" key={i}><b>{it.sym}</b> {it.val}{it.chg != null && <i className={it.chg >= 0 ? "up" : "down"}>{it.chg >= 0 ? "+" : ""}{it.chg}%</i>}</span>
+                ))}
+              </div></div>
+            )}
+            <button className="blf-cta blf-cta-layer" tabIndex={-1} onClick={(e) => onEnter(e, 1)}>{t("home.verCiclo")} →</button>
+          </div>
         </section>
       </div>
+
+      {/* chrome blueprint (desktop): crop marks, spines que enmarcan el gap central e índice dual rotado */}
+      {!isMobile && (
+        <div className="blf-grid" aria-hidden="true">
+          <span className="blf-cross tl" /><span className="blf-cross tr" />
+          <span className="blf-cross bl" /><span className="blf-cross br" />
+          <span className="blf-spine l" /><span className="blf-spine r" />
+          <span className="blf-margin ml">01 · Bass</span>
+          <span className="blf-margin mr">Layer · 02</span>
+        </div>
+      )}
 
       {/* wordmark central (control + marca) */}
       <div className="blf-axis">
@@ -221,14 +282,14 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
               onMouseEnter={isMobile ? undefined : () => setFocus("bass")}
               onClick={(e) => onEnter(e, 0)}
               aria-label={t("home.bassAria")}>
-              <span className="blf-wd">Bass</span>
+              <span className="blf-wd">Bass<span className="blf-wd-fill" aria-hidden="true">Bass</span></span>
               <span className="blf-door">{t("home.bass")}</span>
             </button>
             <button className="blf-half l"
               onMouseEnter={isMobile ? undefined : () => setFocus("layer")}
               onClick={(e) => onEnter(e, 1)}
               aria-label={t("home.layerAria")}>
-              <span className="blf-wd">Layer</span>
+              <span className="blf-wd">Layer<span className="blf-wd-fill" aria-hidden="true">Layer</span></span>
               <span className="blf-door">{t("home.blockchain")}</span>
             </button>
           </div>
