@@ -263,15 +263,6 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
         </section>
       </div>
 
-      {/* chrome blueprint (desktop): crop marks, spines que enmarcan el gap central e índice dual rotado */}
-      {!isMobile && (
-        <div className="blf-grid" aria-hidden="true">
-          <span className="blf-cross tl" /><span className="blf-cross tr" />
-          <span className="blf-cross bl" /><span className="blf-cross br" />
-          <span className="blf-spine l" /><span className="blf-spine r" />
-        </div>
-      )}
-
       {/* wordmark central (control + marca) */}
       <div className="blf-axis">
         <div className="blf-wm">

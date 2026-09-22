@@ -5501,18 +5501,6 @@ select.bl-venue-input { cursor:pointer; }
 .blf-home.focus-bass .blf-bass .blf-marq-track,
 .blf-home.focus-layer .blf-layer .blf-marq-track{ animation-play-state:running; }   /* …y "cobra vida" al enfocar el mundo */
 
-/* ── chrome blueprint (desktop): crop marks + spines + índice dual rotado ── */
-.blf-grid{ position:absolute; inset:0; z-index:3; pointer-events:none; }
-.blf-cross{ position:absolute; width:12px; height:12px; opacity:.62; }
-.blf-cross::before, .blf-cross::after{ content:""; position:absolute; background:var(--bl-border); }
-.blf-cross::before{ left:50%; top:0; width:1px; height:100%; transform:translateX(-.5px); }
-.blf-cross::after{ top:50%; left:0; height:1px; width:100%; transform:translateY(-.5px); }
-.blf-cross.tl{ left:20px; top:20px; } .blf-cross.tr{ right:20px; top:20px; }
-.blf-cross.bl{ left:20px; bottom:20px; } .blf-cross.br{ right:20px; bottom:20px; }
-.blf-spine{ position:absolute; top:13%; bottom:13%; width:1px; opacity:.4;
-  background:linear-gradient(180deg,transparent,var(--bl-border) 18%,var(--bl-border) 82%,transparent); }
-.blf-spine.l{ left:42%; } .blf-spine.r{ right:42%; }
-
 /* ── dots (mobile) ── */
 .blf-dots{ display:none; }
 
