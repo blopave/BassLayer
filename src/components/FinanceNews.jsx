@@ -78,7 +78,7 @@ export function FinanceNews() {
       {loading ? <NewsSkeleton />
         : error ? <div className="bl-feed"><div className="bl-error" onClick={load} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && load()}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-empty">{t("finance.empty")}</div>
-        : <div className="bl-layer-news-list" role="feed" aria-label={t("finance.title")} ref={listRef}>
+        : <div className="bl-layer-news-list" role="region" aria-label={t("finance.title")} ref={listRef}>
             {filtered.map((item, idx) => (
               <FinanceNewsItem key={`${item.source_slug || item.source}-${(item.title || "").slice(0, 40)}-${idx}`} item={item} idx={idx} />
             ))}

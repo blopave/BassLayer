@@ -71,7 +71,7 @@ export function PredictionMarkets() {
   }
 
   return (
-    <div className="bl-feed bl-predict-feed" role="feed" aria-label={t("predict.aria")} ref={listRef}>
+    <div className="bl-feed bl-predict-feed" role="region" aria-label={t("predict.aria")} ref={listRef}>
       <div className="bl-predict-header">
         <span className="bl-predict-source">POLYMARKET</span>
         <span className="bl-predict-sub">{t("predict.sub")}</span>

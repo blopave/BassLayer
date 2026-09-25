@@ -216,7 +216,9 @@ export function CryptoDashboard() {
     return () => { mounted = false; clearInterval(iv); };
   }, []);
 
-  if (loading || (!data && !error)) return null;
+  // Reservar la altura mientras carga: si devolvemos null, el terminal aparece
+  // después y empuja todo Layer hacia abajo (CLS 0,56 medido en mobile).
+  if (loading || (!data && !error)) return <div className="bl-terminal-skel" aria-hidden="true" />;
   if (error && !data) return null;
 
   const openIndicator = (key, displayValue, matchValue) => setSelected({ key, displayValue, matchValue });

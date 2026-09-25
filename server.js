@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════
-//  BassLayer API — v1.5
+//  BassLayer API — versión en package.json
 //  Bass: BA electronic events (Buenos Aliens + RA + fallback)
 //  Layer: Crypto news (16 RSS feeds) + prices (CoinGecko)
 // ═══════════════════════════════════════════════════════
@@ -20,6 +20,11 @@ import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
+
+const PKG_VERSION = (() => {
+  try { return JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version; }
+  catch { return "unknown"; }
+})();
 
 // ── Supabase ──
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -73,18 +78,10 @@ app.use(cors({
 app.use(express.json({ limit: "10kb" }));
 
 // Rate limiter — sliding window, per IP, bounded map size
-const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60_000;
-const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_API_MAX = 300; // la SPA sola hace ~9 req por carga + /api/prices cada 30 s
+const RATE_LIMIT_OG_MAX = 60;   // satori+resvg: CPU-intensivo, slugs enumerables
 const RATE_LIMIT_MAP_MAX = 10_000; // Max tracked IPs to prevent memory exhaustion
-
-// Sweep expired rate limit entries every 2 minutes
-const rateLimitSweep = setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now - entry.start > RATE_LIMIT_WINDOW) rateLimitMap.delete(ip);
-  }
-}, 120_000);
 
 // Supabase keep-alive: free-tier projects auto-pause after ~7 días sin queries.
 async function pingSupabase() {
@@ -99,7 +96,16 @@ const supabaseKeepAlive = supabase
   ? (pingSupabase(), setInterval(pingSupabase, 48 * 60 * 60 * 1000))
   : null;
 
-function rateLimit(req, res, next) {
+function makeRateLimit(max) {
+  const rateLimitMap = new Map();
+  // Sweep expired entries every 2 minutes; unref → no retiene el proceso al apagar.
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitMap) {
+      if (now - entry.start > RATE_LIMIT_WINDOW) rateLimitMap.delete(ip);
+    }
+  }, 120_000).unref();
+  return (req, res, next) => {
   const now = Date.now();
   const ip = req.ip || req.socket?.remoteAddress || "unknown";
   const entry = rateLimitMap.get(ip);
@@ -112,7 +118,7 @@ function rateLimit(req, res, next) {
     } else {
       entry.count++;
     }
-    if (entry.count > RATE_LIMIT_MAX) {
+    if (entry.count > max) {
       res.set("Retry-After", String(Math.ceil((entry.start + RATE_LIMIT_WINDOW - now) / 1000)));
       return res.status(429).json({ error: "Too many requests" });
     }
@@ -125,12 +131,57 @@ function rateLimit(req, res, next) {
     rateLimitMap.set(ip, { count: 1, start: now });
   }
   next();
+  };
 }
-app.use("/api", rateLimit);
-// /og también: los endpoints de OG image son CPU-intensivos (satori+resvg) y sus
-// slugs son enumerables desde el sitemap → sin límite, un loop puede saturar el
-// event loop y tumbar el proceso. Comparten el mismo presupuesto por IP.
-app.use("/og", rateLimit);
+app.use("/api", makeRateLimit(RATE_LIMIT_API_MAX));
+// /og en bucket aparte: los endpoints de OG image son CPU-intensivos (satori+resvg)
+// y sus slugs son enumerables desde el sitemap → sin límite, un loop puede saturar
+// el event loop. Un crawler de previews no debe consumir la cuota de la SPA.
+app.use("/og", makeRateLimit(RATE_LIMIT_OG_MAX));
+
+// Cache-Control para los JSON públicos de /api: sin esto ni el browser ni el
+// borde (Cloudflare) reutilizan un dato que el server considera fresco por
+// minutos u horas. max-age = mitad del TTL con que la ruta cachea en memoria
+// (clave de `cache`, o ms para las rutas con cache propio); SWR cubre el hueco.
+// Solo GET con 2xx; las rutas autenticadas no figuran y quedan sin header.
+const API_PUBLIC_TTL = {
+  "/api/prices": "prices", "/api/news": "news", "/api/finance-news": "financeNews",
+  "/api/markets": "markets", "/api/events": "events", "/api/bass-news": "bassNews",
+  "/api/dashboard": "dashboard", "/api/prediction-markets": "predictions",
+  "/api/btc-cycles": "btcCycles", "/api/dolar": "dolar", "/api/onchain": "onchain",
+  "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
+  "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000, "/api/meta": 24 * 60 * 60_000,
+  "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
+};
+app.use("/api", (req, res, next) => {
+  if (req.method !== "GET") return next();
+  const ttl = API_PUBLIC_TTL[req.baseUrl + req.path]; // req.path es relativo al mount
+  const ttlMs = typeof ttl === "string" ? cache[ttl].ttl : ttl;
+  if (!ttlMs) return next();
+  const maxAge = Math.max(5, Math.round(ttlMs / 2000));
+  const json = res.json.bind(res);
+  res.json = (body) => {
+    if (res.statusCode < 300 && !res.get("Cache-Control")) {
+      res.set("Cache-Control", `public, max-age=${maxAge}, stale-while-revalidate=60`);
+    }
+    return json(body);
+  };
+  next();
+});
+
+// Express 4 no captura rechazos de handlers async: sin esto, un throw dentro de
+// una ruta Supabase deja la request colgada hasta el timeout del proxy.
+for (const method of ["get", "post", "put", "delete"]) {
+  const orig = app[method].bind(app);
+  app[method] = (path, ...handlers) => {
+    if (handlers.length === 0) return orig(path); // app.get("setting")
+    return orig(path, ...handlers.map((h) =>
+      typeof h === "function"
+        ? (req, res, next) => Promise.resolve(h(req, res, next)).catch(next)
+        : h
+    ));
+  };
+}
 
 if (IS_PROD) {
   app.use(express.static(join(__dirname, "dist"), { index: false }));
@@ -2193,29 +2244,6 @@ async function fetchRAHtml() {
   }
 }
 
-// ── Strategy 4: Curated fallback ──
-
-// Fallback events are generated dynamically to always show future dates
-function generateFallbackEvents() {
-  const templates = [
-    { name:"Techno Night",           genre:"Techno",      time:"23:59", venue:"Blow",              address:"Blow, Palermo, Buenos Aires",              city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"House Session",          genre:"House",       time:"23:00", venue:"La Biblioteca",     address:"La Biblioteca, Buenos Aires",              city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"Progressive Sunday",     genre:"Progressive", time:"18:00", venue:"Club de Pescadores", address:"Club de Pescadores, Costanera Norte, Buenos Aires", city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
-    { name:"Electronic Underground", genre:"Electronic",  time:"23:00", venue:"Crobar",            address:"Crobar, Palermo, Buenos Aires",            city:"CABA", artists:["TBA"], url:"", source:"fallback", image:null },
-  ];
-  const events = [];
-  const now = new Date();
-  for (let i = 0; i < templates.length; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + (i + 1) * 3); // space events every 3 days starting from tomorrow-ish
-    events.push({
-      day: String(d.getDate()).padStart(2, "0"),
-      month: MONTHS_ES[d.getMonth()],
-      ...templates[i],
-    });
-  }
-  return events;
-}
 
 // ── Featured detection ──
 
@@ -2542,8 +2570,10 @@ async function resolveFestivalMeta(festival) {
 
   const imgFresh = imgCached && (now - imgCached.ts) < FESTIVAL_IMAGE_TTL;
   const linkFresh = linkCached && (now - linkCached.ts) < FESTIVAL_LINK_TTL;
+  // Con image explícita la imagen sale siempre del JSON: solo el link decide si hay que fetchear.
+  const imgResolved = hasExplicitImage || imgFresh;
 
-  if (imgFresh && linkFresh) {
+  if (imgResolved && linkFresh) {
     return {
       image: hasExplicitImage ? festival.image : imgCached.image,
       linkStatus: linkCached.status,
@@ -2560,9 +2590,7 @@ async function resolveFestivalMeta(festival) {
 
     if (!r.ok || hasExplicitImage) {
       // No parseamos imagen si la URL falló o si ya tenemos image explícita.
-      if (!imgFresh && !hasExplicitImage) {
-        festivalImageCache.set(festival.id, { image: null, ts: now });
-      }
+      if (!imgResolved) festivalImageCache.set(festival.id, { image: null, ts: now });
       return { image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null), linkStatus };
     }
 
@@ -2575,9 +2603,7 @@ async function resolveFestivalMeta(festival) {
   } catch (e) {
     console.error(`[festivals] meta ${festival.id}:`, e.message);
     festivalLinkCache.set(festival.id, { status: "broken", ts: now });
-    if (!imgFresh && !hasExplicitImage) {
-      festivalImageCache.set(festival.id, { image: null, ts: now });
-    }
+    if (!imgResolved) festivalImageCache.set(festival.id, { image: null, ts: now });
     return {
       image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null),
       linkStatus: "broken",
@@ -2723,7 +2749,7 @@ app.get("/api/events", async (req, res) => {
   // If nothing worked, use curated fallback
   if (allEvents.length === 0) {
     console.log("[events] All sources failed, using curated fallback");
-    allEvents = generateFallbackEvents();
+    allEvents = []; // sin fuentes no inventamos eventos: el front muestra el estado vacío
   }
 
   // Toda fuente local (Buenos Aliens, RA HTML, fallback) es Argentina por
@@ -3698,7 +3724,7 @@ app.get("/api/meta", (req, res) => res.json({
 }));
 
 app.get("/api/health", (req, res) => {
-  const data = { status: "ok", version: "1.5" };
+  const data = { status: "ok", version: PKG_VERSION };
   // Only expose internals in development
   if (!IS_PROD) {
     data.uptime = Math.floor(process.uptime());
@@ -3978,7 +4004,7 @@ async function requireAdmin(req, res, next) {
 
 // ── Venue Profile ──
 
-app.get("/api/venue/me", requireAuth, async (req, res) => {
+app.get(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -3989,7 +4015,7 @@ app.get("/api/venue/me", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-app.put("/api/venue/me", requireAuth, async (req, res) => {
+app.put(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
   const allowed = [
     "display_name", "slug", "description", "venue_type", "address",
     "barrio", "city", "capacity", "logo_url", "cover_url",
@@ -4719,7 +4745,6 @@ app.get("/sitemap.xml", (req, res) => {
       alternates: [
         { hreflang: "es-AR", href: `${PROD_ORIGIN}/` },
         { hreflang: "es", href: `${PROD_ORIGIN}/` },
-        { hreflang: "en", href: `${PROD_ORIGIN}/?lang=en` },
         { hreflang: "x-default", href: `${PROD_ORIGIN}/` },
       ],
     },
@@ -5867,9 +5892,18 @@ if (IS_PROD) {
   });
 }
 
+// Último recurso: cualquier error propagado con next(err) responde JSON, nunca HTML con stack.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (res.headersSent) return;
+  const status = err?.status || err?.statusCode || 500;
+  if (status >= 500) console.error("[error]", req.method, req.originalUrl, err?.message || err);
+  res.status(status).json({ error: status >= 500 ? "Internal error" : (err?.message || "Bad request") });
+});
+
 const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────────┐
-  │  BassLayer API v1.6                      │
+  │  BassLayer API v${PKG_VERSION}${" ".repeat(Math.max(0, 26 - PKG_VERSION.length))}│
   │  http://localhost:${PORT}                  │
   │                                          │
   │  Layer ─────────────────────             │
@@ -5900,7 +5934,6 @@ const server = app.listen(PORT, () => console.log(`
 // Graceful shutdown
 function shutdown(signal) {
   console.log(`\n[${signal}] Shutting down gracefully...`);
-  clearInterval(rateLimitSweep);
   if (supabaseKeepAlive) clearInterval(supabaseKeepAlive);
   server.close(() => {
     console.log("Server closed.");

@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from "react";
+import { tickerItemA11y } from "../utils/constants";
+import { memo, useMemo, useState, useEffect } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, getEventDate } from "../i18n/strings";
 
@@ -45,7 +46,7 @@ function Equalizer() {
   );
 }
 
-export function LineupTicker({ events, onSelect, region = "AR" }) {
+export const LineupTicker = memo(function LineupTicker({ events, onSelect, region = "AR", loading }) {
   const { t, locale } = useLocale();
   const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
 
@@ -78,7 +79,18 @@ export function LineupTicker({ events, onSelect, region = "AR" }) {
       .map((x) => ({ ev: x.ev, label: x.artists.slice(0, 2).join(", "), venue: cleanVenue(x.ev.venue), date: x.date }));
   }, [events, region]);
 
-  if (items.length < 3) return null;
+  // Mientras cargan los eventos reservamos la barra con un item invisible: la
+  // altura sale de las mismas reglas que la barra real (si aparece después,
+  // empuja tabs y filtros hacia abajo: CLS 0,40 medido).
+  if (items.length < 3) {
+    return loading ? (
+      <div className="bl-lineup-bar" aria-hidden="true">
+        <div className="bl-lineup-viewport">
+          <div className="bl-lineup-item bl-skel-invisible"><Equalizer /><span className="bl-lineup-act">&nbsp;</span><span className="bl-lineup-when">&nbsp;</span></div>
+        </div>
+      </div>
+    ) : null;
+  }
 
   const now = Date.now();
   const renderItem = (it, suffix) => {
@@ -88,8 +100,7 @@ export function LineupTicker({ events, onSelect, region = "AR" }) {
         className="bl-lineup-item"
         key={`${it.ev.day}-${it.ev.month}-${it.ev.venue}-${it.label}-${suffix}`}
         onClick={() => onSelect?.(it.ev)}
-        role="button"
-        tabIndex={0}
+        {...tickerItemA11y(suffix === "b")}
         onKeyDown={(e) => e.key === "Enter" && onSelect?.(it.ev)}
       >
         <Equalizer />
@@ -115,4 +126,4 @@ export function LineupTicker({ events, onSelect, region = "AR" }) {
       </div>
     </div>
   );
-}
+});

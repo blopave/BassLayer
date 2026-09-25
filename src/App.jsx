@@ -5,7 +5,7 @@ import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } 
 import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
-import { supabase } from "./utils/supabase";
+import { storage } from "./utils/storage";
 import { dismissCurtain } from "./utils/curtain";
 import { shareEventCard } from "./utils/shareCard";
 import { Preloader } from "./components/Preloader";
@@ -29,6 +29,21 @@ const VenueDashboard = lazyNamed(() => import("./components/VenueDashboard"), "V
 const AdminPanel = lazyNamed(() => import("./components/AdminPanel"), "AdminPanel");
 const ProjectAuth = lazyNamed(() => import("./components/ProjectAuth"), "ProjectAuth");
 const ProjectDashboard = lazyNamed(() => import("./components/ProjectDashboard"), "ProjectDashboard");
+
+// Atributos del panel fuera de pantalla: sin foco ni presencia en el árbol accesible.
+const HIDDEN_PROPS = { inert: "", "aria-hidden": "true" };
+
+// Reloj de Buenos Aires con estado propio: su tick no debe re-renderizar App.
+function BaClock() {
+  const [clock, setClock] = useState("");
+  useEffect(() => {
+    const update = () => setClock(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, []);
+  return clock;
+}
 
 // Antes de tratar un arrastre horizontal como swipe de mundo (Bass↔Layer),
 // vemos si el dedo arrancó dentro de un elemento con scroll horizontal propio
@@ -75,7 +90,7 @@ export default function App() {
   const [circleExpand, setCircleExpand] = useState(false);
 
   // Data state
-  const [prices, setPrices] = useState([]);
+  const [prices, setPrices] = useState(null); // null = todavía no respondió (el ticker reserva su barra)
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState(null);
@@ -107,26 +122,37 @@ export default function App() {
   // La cortina de index.html tapa el prerender SEO hasta este primer commit.
   useEffect(() => { dismissCurtain(); }, []);
 
-  // Restore auth session on load
+  // Restore auth session on load. El cliente Supabase pesa 52 kB gz (36 % del
+  // JS inicial) y lo usa una fracción mínima de visitas: se importa bajo demanda
+  // cuando hay una sesión guardada, se entra por /admin o se abre un panel.
+  const [authWanted, setAuthWanted] = useState(() => !!storage.get("bl-token") || window.location.pathname === "/admin");
+  useEffect(() => { if (venueView || projectView) setAuthWanted(true); }, [venueView, projectView]);
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setVenueUser(session.user);
-        localStorage.setItem("bl-token", session.access_token);
-      }
-      setAuthReady(true);
+    if (!authWanted) { setAuthReady(true); return; }
+    let subscription = null;
+    let cancelled = false;
+    import("./utils/supabase").then(({ supabase }) => {
+      if (cancelled) return;
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (cancelled) return;
+        if (session) {
+          setVenueUser(session.user);
+          storage.set("bl-token", session.access_token);
+        }
+        setAuthReady(true);
+      });
+      subscription = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          setVenueUser(session.user);
+          storage.set("bl-token", session.access_token);
+        } else {
+          setVenueUser(null);
+          storage.remove("bl-token");
+        }
+      }).data.subscription;
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setVenueUser(session.user);
-        localStorage.setItem("bl-token", session.access_token);
-      } else {
-        setVenueUser(null);
-        localStorage.removeItem("bl-token");
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => { cancelled = true; subscription?.unsubscribe(); };
+  }, [authWanted]);
 
   // Acceso al panel: /admin abre el login (o el dashboard si ya hay sesión).
   // El botón "Panel admin" del dashboard (gateado por rol) lleva al AdminPanel.
@@ -425,7 +451,7 @@ export default function App() {
   // Day/Night mode — dark por defecto. Si el usuario alguna vez toggleó a día,
   // respetamos esa preferencia guardada en localStorage.
   const [dayMode, setDayMode] = useState(() => {
-    const saved = localStorage.getItem("bl-mode");
+    const saved = storage.get("bl-mode");
     if (saved) return saved === "day";
     return false;
   });
@@ -437,7 +463,7 @@ export default function App() {
     }
     const flip = () => setDayMode((prev) => {
       const next = !prev;
-      localStorage.setItem("bl-mode", next ? "day" : "night");
+      storage.set("bl-mode", next ? "day" : "night");
       return next;
     });
     // View Transition (~92% soporte): el flip de tema cruza en un snapshot
@@ -450,14 +476,6 @@ export default function App() {
     }
   }, []);
 
-  // BA Clock
-  const [clock, setClock] = useState("");
-  useEffect(() => {
-    const update = () => setClock(new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-    update();
-    const iv = setInterval(update, 1000);
-    return () => clearInterval(iv);
-  }, []);
 
   // Hero entrance / exit
   const [heroEntered, setHeroEntered] = useState(false);
@@ -553,7 +571,7 @@ export default function App() {
 
   // Prices
   useEffect(() => {
-    const load = () => api.prices().then(setPrices).catch(() => {});
+    const load = () => api.prices().then(setPrices).catch(() => setPrices((p) => p ?? []));
     load();
     const iv = setInterval(load, 30_000);
     return () => clearInterval(iv);
@@ -629,7 +647,7 @@ export default function App() {
   // el timer de salida del preloader y lo dejaba colgado en pantalla.
   const finishPreload = useCallback(() => {
     setLoaded(true);
-    if (!localStorage.getItem("bl-onboarded")) setShowOnboarding(true);
+    if (!storage.get("bl-onboarded")) setShowOnboarding(true);
   }, []);
 
   // ── Wipe circular ──────────────────────────────────────────
@@ -826,6 +844,16 @@ export default function App() {
   // Render
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
 
+  // El panel que no se ve (trasladado a -100vw) no debe recibir foco ni aparecer
+  // en el árbol accesible: sin esto el teclado recorre ~500 controles invisibles
+  // antes de llegar al contenido. (La vista inactiva ya la oculta CSS con
+  // visibility:hidden; el fondo de un modal lo aísla useFocusTrap.)
+  const panelInert = (idx) => (activePanel !== idx ? HIDDEN_PROPS : null);
+  // Layer se monta la primera vez que se entra (deep-link o toggle) y queda:
+  // sus widgets fetchean y pollean, y el visitante Bass-only nunca los ve.
+  const layerSeen = useRef(activePanel === 1);
+  if (activePanel === 1) layerSeen.current = true;
+
   return (
     <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
       {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
@@ -848,7 +876,7 @@ export default function App() {
           {!isMobile && <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />}
           <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
           <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
-          <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — {clock}</div>
+          <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — <BaClock /></div>
 
           {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
           {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : (
@@ -856,7 +884,7 @@ export default function App() {
               {`BassLayer — Bass: ${events.length} ${events.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
             </h1>
           )}
-          <HomeFusion events={events} prices={prices} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
+          <HomeFusion events={events} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
 
         </main>
       </div>
@@ -908,9 +936,9 @@ export default function App() {
           onTouchEnd={onTouchEnd}
         >
           {/* Panel 0: BASS */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
+          <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" {...panelInert(0)} ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <LineupTicker events={events} onSelect={openEvent} />
+            <LineupTicker events={events} loading={eventsLoading} onSelect={openEvent} />
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
@@ -918,10 +946,10 @@ export default function App() {
           </div>
 
           {/* Panel 1: LAYER */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
+          <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" {...panelInert(1)} ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <PriceTicker prices={prices} onSelect={setSelectedPrice} />
-            <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />
+            <PriceTicker prices={prices} loading={prices === null} onSelect={setSelectedPrice} />
+            {layerSeen.current && <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />}
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
             </footer>
@@ -956,7 +984,7 @@ export default function App() {
 
       {/* ONBOARDING */}
       {showOnboarding && (
-        <div className="bl-onboarding" onClick={() => { localStorage.setItem("bl-onboarded", "1"); setShowOnboarding(false); }}>
+        <div className="bl-onboarding" onClick={() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }}>
           <div className="bl-onboarding-card" onClick={(e) => e.stopPropagation()}>
             <div className="bl-onboarding-title">{t("onboarding.welcome")}</div>
             <div className="bl-onboarding-tips">
@@ -973,7 +1001,7 @@ export default function App() {
                 {t("onboarding.tip.layer")}
               </div>
             </div>
-            <button className="bl-onboarding-btn" onClick={() => { localStorage.setItem("bl-onboarded", "1"); setShowOnboarding(false); }}>
+            <button className="bl-onboarding-btn" onClick={() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }}>
               {t("onboarding.cta")}
             </button>
           </div>

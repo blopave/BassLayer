@@ -1,3 +1,4 @@
+import { storage } from "../utils/storage";
 import { useState } from "react";
 import { supabase } from "../utils/supabase";
 
@@ -35,7 +36,7 @@ export function VenueAuth({ onAuth, onBack }) {
 
           // Check if email confirmation is required
           if (data.session) {
-            localStorage.setItem("bl-token", data.session.access_token);
+            storage.set("bl-token", data.session.access_token);
             onAuth(data.user, data.session);
           } else {
             setConfirmSent(true);
@@ -44,7 +45,7 @@ export function VenueAuth({ onAuth, onBack }) {
       } else {
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
         if (signInErr) throw signInErr;
-        localStorage.setItem("bl-token", data.session.access_token);
+        storage.set("bl-token", data.session.access_token);
         onAuth(data.user, data.session);
       }
     } catch (err) {

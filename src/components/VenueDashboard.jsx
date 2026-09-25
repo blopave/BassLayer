@@ -1,3 +1,4 @@
+import { storage } from "../utils/storage";
 import { useState, useEffect, useCallback } from "react";
 import { venueApi } from "../utils/api";
 import { supabase } from "../utils/supabase";
@@ -40,7 +41,7 @@ export function VenueDashboard({ user, onLogout, onBack, onAdmin }) {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    localStorage.removeItem("bl-token");
+    storage.remove("bl-token");
     onLogout();
   }
 

@@ -27,9 +27,22 @@ export function useFocusTrap(active) {
       }
     }
 
+    // Todo lo que no contiene al diálogo queda inert: el cursor virtual de un
+    // lector de pantalla no se escapa al fondo y Tab no llega a los paneles.
+    // Se sube desde el diálogo hasta <body> marcando hermanos en cada nivel.
+    const hidden = [];
+    for (let node = el; node && node.parentElement && node !== document.body; node = node.parentElement) {
+      for (const sib of node.parentElement.children) {
+        if (sib === node || sib.hasAttribute("inert") || sib.tagName === "SCRIPT") continue;
+        sib.setAttribute("inert", "");
+        hidden.push(sib);
+      }
+    }
+
     el.addEventListener("keydown", onKeyDown);
     return () => {
       el.removeEventListener("keydown", onKeyDown);
+      hidden.forEach((n) => n.removeAttribute("inert"));
       if (prev && prev.focus) prev.focus();
     };
   }, [active]);

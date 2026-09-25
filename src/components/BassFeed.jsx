@@ -586,7 +586,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
-        : <div className="bl-ev-list" role="feed" aria-label={t("section.events")} ref={listRef}>
+        : <div className="bl-ev-list" role="region" aria-label={t("section.events")} ref={listRef}>
             {grouped.map((item, gIdx) => {
               if (item.type === "month") {
                 return (
@@ -617,12 +617,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   data-genre={ev.genre}
                   data-featured={ev.featured ? "true" : undefined}
                   onClick={() => onSelect(ev)}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(ev))}
                   style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${ev.name} - ${ev.day} ${ev.month} en ${ev.venue}`}
                 >
+                  {/* Un solo control accesible por card: botón estirado (invisible,
+                      focusable) que abre el modal. Así el SaveButton no queda
+                      anidado dentro de otro botón (axe nested-interactive). */}
+                  <button type="button" className="bl-ev-open" onClick={(e) => { e.stopPropagation(); onSelect(ev); }} aria-label={`${ev.name} - ${ev.day} ${ev.month} en ${ev.venue}`} />
                   {/* El flyer es diseño gráfico hecho para este show: va de
                       portada, no de miniatura. La fecha no se repite acá —
                       la dice el encabezado del día, una sola vez. */}
@@ -687,7 +687,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   }
 
   return (
-    <div className="bl-bass-news-list" role="feed" aria-label={t("section.news")} ref={listRef}>
+    <div className="bl-bass-news-list" role="region" aria-label={t("section.news")} ref={listRef}>
       {news.map((item, idx) => (
         <BassNewsItem
           key={`${item.source_slug || item.source}-${item.url || idx}`}
@@ -784,7 +784,7 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
          </div>
        )
        : (
-         <div className="bl-ev-list" role="feed" aria-label={t("section.festivals")} ref={listRef}>
+         <div className="bl-ev-list" role="region" aria-label={t("section.festivals")} ref={listRef}>
            {festivals.map((f, idx) => (
              <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
            ))}

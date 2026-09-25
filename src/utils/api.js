@@ -1,5 +1,6 @@
+import { storage } from "./storage";
 function authHeaders() {
-  const token = localStorage.getItem("bl-token");
+  const token = storage.get("bl-token");
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 }
 

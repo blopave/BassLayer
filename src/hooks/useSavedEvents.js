@@ -1,3 +1,4 @@
+import { storage } from "../utils/storage";
 import { useSyncExternalStore, useCallback } from "react";
 
 // "Mi agenda" sin login: slugs guardados en localStorage. Guardamos SOLO el
@@ -8,7 +9,7 @@ const KEY = "bl-saved-events";
 
 function read() {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "[]");
+    const raw = JSON.parse(storage.get(KEY) || "[]");
     return Array.isArray(raw) ? raw : [];
   } catch { return []; }
 }
@@ -18,7 +19,7 @@ const listeners = new Set();
 
 function write(next) {
   slugs = next;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* lleno/privado */ }
+  storage.set(KEY, JSON.stringify(next));
   listeners.forEach((l) => l());
 }
 

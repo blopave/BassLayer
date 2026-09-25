@@ -152,7 +152,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
             : filtered.length === 0 ? (
               <LayerEmptySignal filter={filter} hasAnyNews={news.length > 0} onFilter={onFilter} onRetry={onRetry} />
             )
-            : <div className="bl-layer-news-list" role="feed" aria-label="Noticias crypto" ref={listRef}>
+            : <div className="bl-layer-news-list" role="region" aria-label={t("section.news")} ref={listRef}>
                 {filtered.map((item, idx) => (
                   <LayerNewsItem
                     key={`${item.source}-${(item.title || "").slice(0,40)}-${idx}`}

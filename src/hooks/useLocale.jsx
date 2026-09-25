@@ -1,3 +1,4 @@
+import { storage } from "../utils/storage";
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { STRINGS } from "../i18n/strings";
 
@@ -20,10 +21,8 @@ const LocaleContext = createContext(null);
 
 function detectInitialLocale() {
   // Spanish by default. Only honour an explicit prior choice.
-  try {
-    const saved = localStorage.getItem("bl-locale");
-    if (saved === "es" || saved === "en") return saved;
-  } catch {}
+  const saved = storage.get("bl-locale");
+  if (saved === "es" || saved === "en") return saved;
   return "es";
 }
 
@@ -32,7 +31,7 @@ export function LocaleProvider({ children }) {
 
   const setLocale = useCallback((next) => {
     if (next !== "es" && next !== "en") return;
-    try { localStorage.setItem("bl-locale", next); } catch {}
+    storage.set("bl-locale", next);
     setLocaleState(next);
   }, []);
 

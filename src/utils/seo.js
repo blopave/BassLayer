@@ -17,6 +17,8 @@ function snapshotDefaults() {
     ogUrl: getMeta("property", "og:url")?.content || `${ORIGIN}/`,
     twTitle: getMeta("name", "twitter:title")?.content || "",
     twDescription: getMeta("name", "twitter:description")?.content || "",
+    ogImage: getMeta("property", "og:image")?.content || "",
+    twImage: getMeta("name", "twitter:image")?.content || "",
     canonical: document.querySelector('link[rel="canonical"]')?.href || `${ORIGIN}/`,
   };
   return defaults;
@@ -75,6 +77,13 @@ export function applyEventMeta(ev, slug) {
   setMeta("property", "og:url", meta.url);
   setMeta("name", "twitter:title", meta.title);
   setMeta("name", "twitter:description", meta.description);
+  if (slug) {
+    // El server ya emite /og/event/<slug>.png en el prerender; la SPA debe
+    // seguirlo para que compartir desde el modal muestre el flyer, no el OG genérico.
+    const og = `${ORIGIN}/og/event/${slug}.png`;
+    setMeta("property", "og:image", og);
+    setMeta("name", "twitter:image", og);
+  }
   setCanonical(meta.url);
 }
 
@@ -87,6 +96,8 @@ export function resetMeta() {
   if (d.ogUrl) setMeta("property", "og:url", d.ogUrl);
   if (d.twTitle) setMeta("name", "twitter:title", d.twTitle);
   if (d.twDescription) setMeta("name", "twitter:description", d.twDescription);
+  if (d.ogImage) setMeta("property", "og:image", d.ogImage);
+  if (d.twImage) setMeta("name", "twitter:image", d.twImage);
   if (d.canonical) setCanonical(d.canonical);
 }
 

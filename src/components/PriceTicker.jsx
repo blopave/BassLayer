@@ -1,3 +1,5 @@
+import { memo } from "react";
+import { tickerItemA11y } from "../utils/constants";
 import { formatPrice } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 
@@ -23,11 +25,20 @@ function Sparkline({ data, up }) {
   );
 }
 
-export function PriceTicker({ prices, onSelect }) {
+export const PriceTicker = memo(function PriceTicker({ prices, onSelect, loading }) {
   const { t } = useLocale();
-  if (!prices?.length) return null;
+  // Misma lógica que el LineupTicker: reservar la barra con un item invisible mientras llegan los precios.
+  if (!prices?.length) {
+    return loading ? (
+      <div className="bl-price-bar" aria-hidden="true">
+        <div className="bl-price-track">
+          <div className="bl-price-item bl-skel-invisible"><span className="bl-price-sym">&nbsp;</span><Sparkline data={[1, 1]} up /><span className="bl-price-val">&nbsp;</span><span className="bl-price-chg">&nbsp;</span></div>
+        </div>
+      </div>
+    ) : null;
+  }
   const renderItem = (p, suffix) => (
-    <div className="bl-price-item bl-price-clickable" key={`${p.id}-${suffix}`} onClick={() => onSelect?.(p)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onSelect?.(p)}>
+    <div className="bl-price-item bl-price-clickable" key={`${p.id}-${suffix}`} onClick={() => onSelect?.(p)} {...tickerItemA11y(suffix === "b")} onKeyDown={(e) => e.key === "Enter" && onSelect?.(p)}>
       <span className="bl-price-sym">{p.sym}</span>
       <Sparkline data={p.sparkline} up={p.change >= 0} />
       <span className="bl-price-val">{formatPrice(p.usd)}</span>
@@ -44,4 +55,4 @@ export function PriceTicker({ prices, onSelect }) {
       </div>
     </div>
   );
-}
+});
