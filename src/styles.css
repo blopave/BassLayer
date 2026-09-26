@@ -2871,67 +2871,61 @@
    Layer Section Toggle (Noticias / Eventos)
    ═══════════════════════════════════════════ */
 
-.bl-layer-sections {
-  display:flex;
-  gap:8px;
-  padding:12px 32px;
+/* ── Layer: tabs de sección + grilla desktop (2026-09, dirección "Terminal doble") ── */
+.bl-layer-tabs {
+  display:flex; gap:22px; margin:6px 32px 0; border-bottom:1px solid var(--bl-border);
+  overflow-x:auto; scrollbar-width:none;
 }
-.bl-layer-section-btn {
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:14px 16px;
-  border-radius:8px;
-  background:var(--bl-subtle-bg);
-  border:1px solid var(--bl-border-sub);
-  cursor:pointer;
-  transition:all .25s var(--ease-out-expo);
+.bl-layer-tabs::-webkit-scrollbar { display:none; }
+.bl-layer-tab {
+  display:inline-flex; align-items:center; gap:6px; padding:12px 2px 11px;
+  background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer;
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec);
+  white-space:nowrap; transition:color var(--duration-fast), border-color var(--duration-fast);
 }
-.bl-layer-section-btn:hover {
-  background:var(--bl-subtle);
-  border-color:var(--bl-450);
+.bl-layer-tab:hover { color:var(--bl-text); }
+.bl-layer-tab.active { color:var(--bl-accent-layer); border-bottom-color:var(--bl-accent-layer); }
+.bl-layer-tab:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
+.bl-layer-tab-cnt { color:var(--bl-indicator); letter-spacing:1px; }
+.bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
+
+.bl-layer-grid { display:grid; grid-template-columns:minmax(0, 1fr) 380px; align-items:start; padding-bottom:24px; }
+.bl-layer-main { min-width:0; }
+.bl-layer-aside { position:sticky; top:12px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
+.bl-aside-card { border:1px solid var(--bl-border); border-radius:6px; background:var(--bl-surface); padding:14px 16px; }
+.bl-aside-lab {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:2.2px; text-transform:uppercase; color:var(--bl-indicator);
 }
-.bl-layer-section-btn.active {
-  background:var(--bl-surface);
-  border-color:var(--bl-accent-layer);
-  box-shadow:0 0 12px rgba(108,184,200,0.08);
-  position:relative;
+.bl-aside-cnt { color:var(--bl-text-sec); letter-spacing:1px; }
+.bl-aside-more {
+  margin-left:auto; background:none; border:0; padding:0; cursor:pointer;
+  font:inherit; letter-spacing:1.5px; color:var(--bl-accent-layer);
 }
-/* Active indicator — terminal cursor bar */
-.bl-layer-section-btn.active::after {
-  content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
-  width:20px; height:2px; background:var(--bl-accent-layer); border-radius:1px;
-  box-shadow:0 0 8px rgba(108,184,200,0.3);
+.bl-aside-more:hover { text-decoration:underline; }
+.bl-aside-skel { border-radius:4px; background:var(--bl-surface-alt); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+.bl-aside-rows { list-style:none; margin:0; padding:0; }
+.bl-aside-row {
+  display:grid; grid-template-columns:52px minmax(0, 1fr) auto 62px; gap:12px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--bl-border-sub);
+  font-family:var(--font-mono); font-size:11.5px; font-variant-numeric:tabular-nums;
 }
-.bl-layer-section-label {
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:14px;
-  letter-spacing:-0.3px;
-  color:var(--bl-text-sec);
+.bl-aside-row:last-child { border-bottom:0; }
+.bl-aside-sym { font-weight:700; letter-spacing:1px; color:var(--bl-100); }
+.bl-aside-name { font-family:var(--font-sans); font-size:12.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-aside-price { color:var(--bl-text); }
+.bl-aside-chg { text-align:right; }
+.bl-aside-chg.up, .bl-aside-kv dd.up { color:var(--bl-up); }
+.bl-aside-chg.down, .bl-aside-kv dd.down { color:var(--bl-down); }
+.bl-aside-kvs { margin:0; }
+.bl-aside-kv {
+  display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:7px 0; border-bottom:1px solid var(--bl-border-sub);
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--bl-text-sec);
 }
-.bl-layer-section-btn.active .bl-layer-section-label {
-  color:var(--bl-text);
-}
-.bl-layer-section-count {
-  font-family:var(--font-mono);
-  font-size:9px;
-  letter-spacing:1px;
-  color:var(--bl-text-ter);
-}
-.bl-layer-section-btn.active .bl-layer-section-count {
-  color:var(--bl-accent-layer);
-}
-.bl-layer-section-chevron {
-  color:var(--bl-text-ter);
-  transition:transform .25s var(--ease-out-expo);
-}
-.bl-layer-section-btn.active .bl-layer-section-chevron {
-  transform:rotate(180deg);
-  color:var(--bl-accent-layer);
-}
+.bl-aside-kv:last-child { border-bottom:0; }
+.bl-aside-kv dt { flex-shrink:0; }
+.bl-aside-kv dd { margin:0; text-align:right; text-transform:none; letter-spacing:0; font-size:13px; font-weight:600; color:var(--bl-text); }
+.bl-aside-sub { font-weight:500; font-size:11px; color:var(--bl-text-sec); }
 
 .bl-layer-content {
   animation:bl-wp-fadein .25s var(--ease-out-expo);
@@ -2941,9 +2935,23 @@
   /* 4 pestañas no entran en una fila en pantallas angostas ("Predicciones" es
      largo y los botones no encogen): la fila se desbordaba y "Ciclos" quedaba
      recortado fuera de la vista. En mobile las acomodamos en grid 2×2. */
-  .bl-layer-sections { display:grid; grid-template-columns:1fr 1fr; padding:10px 16px; gap:6px; }
-  .bl-layer-section-btn { min-width:0; padding:14px 10px; }
-  .bl-layer-section-label { font-size:13px; }
+  .bl-layer-tabs { margin:2px 16px 0; gap:18px; }
+  .bl-layer-tab { font-size:10px; padding:10px 2px 9px; }
+  .bl-layer-grid { grid-template-columns:1fr; }
+  /* En mobile la columna lateral quedaría después de todo el feed: los tabs
+     ya llevan a ETFs/Acciones/Ciclos y el ticker muestra precios. */
+  .bl-layer-aside { display:none; }
+  /* Terminal comprimido: cuatro cifras en una fila; lectura y trending quedan en desktop. */
+  .bl-terminal-reading, .bl-term-trending { display:none; }
+  .bl-terminal-grid { grid-template-columns:repeat(4, 1fr); }
+  .bl-term-cell { padding:9px 8px 8px; min-height:0; }
+  .bl-term-cell-label { font-size:8px; letter-spacing:1px; margin-bottom:5px; }
+  .bl-term-cell-value { font-size:15px; gap:4px; }
+  .bl-term-cell-change { display:none; }
+  .bl-terminal-skel { min-height:112px; }
+  /* Dólar: una línea, scroll horizontal en vez de apilar. */
+  .bl-dolar-summary { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:12px; }
+  .bl-dolar-summary::-webkit-scrollbar { display:none; }
 }
 
 /* ═══════════════════════════════════════════

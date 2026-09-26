@@ -8,6 +8,7 @@ import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
 import { FinanceNews } from "./FinanceNews";
 import { MarketList } from "./MarketList";
+import { LayerAside } from "./LayerAside";
 import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
@@ -16,6 +17,12 @@ import { useLocale } from "../hooks/useLocale";
 // El dashboard de ciclos (charts SVG + data horneada) solo carga al abrir su
 // sección — es el módulo más pesado de Layer y la mayoría no llega hasta ahí.
 const BtcCycles = lazyNamed(() => import("./BtcCycles"), "BtcCycles");
+
+// Orden del toggle: crypto primero, mercados tradicionales después (identidad Layer).
+const SECTIONS = [
+  ["noticias", "section.news"], ["eventos", "section.events"], ["predicciones", "section.predictions"],
+  ["ciclos", "section.cycles"], ["finanzas", "section.finance"], ["etfs", "section.etfs"], ["acciones", "section.stocks"],
+];
 
 function LayerNewsItem({ item, idx, onSelect }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -88,60 +95,25 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         <CryptoBATimeline />
       </div>
 
-      {/* Section toggle */}
-      <div className="bl-layer-sections">
-        <button
-          className={`bl-layer-section-btn${section === "noticias" ? " active" : ""}`}
-          onClick={() => setSection("noticias")}
-        >
-          <span className="bl-layer-section-label">{t("section.news")}</span>
-          <span className="bl-layer-section-count">{news.length}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "eventos" ? " active" : ""}`}
-          onClick={() => setSection("eventos")}
-        >
-          <span className="bl-layer-section-label">{t("section.events")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "predicciones" ? " active" : ""}`}
-          onClick={() => setSection("predicciones")}
-        >
-          <span className="bl-layer-section-label">{t("section.predictions")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "ciclos" ? " active" : ""}`}
-          onClick={() => setSection("ciclos")}
-        >
-          <span className="bl-layer-section-label">{t("section.cycles")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "finanzas" ? " active" : ""}`}
-          onClick={() => setSection("finanzas")}
-        >
-          <span className="bl-layer-section-label">{t("section.finance")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "etfs" ? " active" : ""}`}
-          onClick={() => setSection("etfs")}
-        >
-          <span className="bl-layer-section-label">{t("section.etfs")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-        <button
-          className={`bl-layer-section-btn${section === "acciones" ? " active" : ""}`}
-          onClick={() => setSection("acciones")}
-        >
-          <span className="bl-layer-section-label">{t("section.stocks")}</span>
-          <svg className="bl-layer-section-chevron" viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-        </button>
-      </div>
+      {/* Secciones como tabs: una línea, Noticias abierta por defecto. */}
+      <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
+        {SECTIONS.map(([key, labelKey]) => (
+          <button
+            key={key}
+            type="button"
+            className={`bl-layer-tab${section === key ? " active" : ""}`}
+            aria-current={section === key ? "page" : undefined}
+            onClick={() => setSection(key)}
+          >
+            {t(labelKey)}
+            {key === "noticias" && news.length > 0 && <span className="bl-layer-tab-cnt">{news.length}</span>}
+          </button>
+        ))}
+      </nav>
 
+      {/* Desktop: contenido a la izquierda, mercado y ciclo a la derecha. */}
+      <div className="bl-layer-grid">
+      <div className="bl-layer-main">
       {/* Noticias section */}
       {section === "noticias" && (
         <div className="bl-layer-content">
@@ -215,6 +187,9 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
           </Suspense>
         </div>
       )}
+      </div>
+      <LayerAside onGo={setSection} />
+      </div>
     </>
   );
 }
