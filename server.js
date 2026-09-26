@@ -2799,7 +2799,12 @@ async function buildEvents() {
 
   // Toda fuente local (Buenos Aliens, RA HTML, fallback) es Argentina por
   // definición; solo RA GraphQL multi-área trae otras regiones.
-  allEvents.forEach(ev => { if (!ev.region) ev.region = "AR"; });
+  allEvents.forEach(ev => {
+    if (!ev.region) ev.region = "AR";
+    // Una sola etiqueta para la ciudad: "Buenos Aires" (RA, QH) y "CABA" (BA)
+    // eran dos ciudades para el filtro y para el dedup (auditoría 2026-09).
+    if (/^(buenos aires|ciudad de buenos aires|capital federal)$/i.test((ev.city || "").trim())) ev.city = "CABA";
+  });
 
   // Deduplicate (same day+city+venue = same event)
   const deduped = deduplicateEvents(allEvents);
@@ -3723,6 +3728,13 @@ function parseMaybeJSONArray(v) {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
+// Layer es inversión anclada en crypto + tech: de Polymarket entran solo los
+// mercados de ese universo (crypto, tech, macro, política con impacto
+// económico). Deportes y entretenimiento quedan afuera aunque muevan volumen.
+const PREDICTION_TOPIC = /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|crypto|token|stablecoin|usdc|usdt|coinbase|binance|etf|fed|fomc|rate cut|interest rate|inflation|cpi|gdp|recession|tariff|treasury|stock|s&p|nasdaq|dow|nvidia|apple|tesla|microsoft|google|alphabet|amazon|meta|openai|chatgpt|anthropic|ai model|gpt|elon|spacex|starship|ipo|earnings|oil|gold|dollar|euro|argentina|milei|china|trump|election|congress|senate|supreme court|shutdown|debt ceiling)\b/i;
+const PREDICTION_OFFTOPIC = /\b(vs\.?|nfl|nba|mlb|nhl|mls|wta|atp|ufc|f1|premier league|la liga|serie a|champions|world cup|super bowl|playoffs?|open:|grand slam|match|game \d|touchdown|home run|oscar|grammy|emmy|box office|bachelor|survivor)\b/i;
+const isLayerTopic = (m) => !PREDICTION_OFFTOPIC.test(m.question) && PREDICTION_TOPIC.test(m.question);
+
 app.get("/api/prediction-markets", async (req, res) => {
   const hit = cached("predictions");
   if (hit) return res.json(hit);
@@ -3771,6 +3783,7 @@ app.get("/api/prediction-markets", async (req, res) => {
         m.volume24h >= 1000 &&
         (!m.endTs || m.endTs > now)
       )
+      .filter(isLayerTopic)
       .slice(0, 12)
       // Drop the temp endTs field before responding
       .map(({ endTs: _t, ...rest }) => rest);
