@@ -2701,7 +2701,9 @@ app.get("/api/festivals", async (req, res) => {
 // Construye la agenda completa (todas las fuentes, dedup, orden, familias,
 // fotos de artista). Solo la llama swr(): una build en vuelo, el resto sirve
 // el último dato bueno mientras tanto.
+let lastEventsBuild = null;
 async function buildEvents() {
+  const buildStart = Date.now();
   let allEvents = [];
 
   // Fuentes independientes EN PARALELO (antes secuenciales → suma de latencias).
@@ -2865,6 +2867,12 @@ async function buildEvents() {
   await Promise.race([enriching, new Promise(r => { budgetTimer = setTimeout(r, ARTIST_IMAGE_BUDGET_MS); })]);
   clearTimeout(budgetTimer);
 
+  // Estado de la última build para /api/health: cuántos eventos aportó cada
+  // fuente. Con RA en 0 el sitio "funciona" pero está degradado, y antes el
+  // health decía ok igual.
+  const bySource = {};
+  for (const ev of events) bySource[ev.source] = (bySource[ev.source] || 0) + 1;
+  lastEventsBuild = { ts: Date.now(), ms: Date.now() - buildStart, total: events.length, sources: bySource };
   return events;
 }
 
@@ -3807,13 +3815,21 @@ app.get("/api/meta", (req, res) => res.json({
 }));
 
 app.get("/api/health", (req, res) => {
-  const data = { status: "ok", version: PKG_VERSION };
-  // Only expose internals in development
-  if (!IS_PROD) {
-    data.uptime = Math.floor(process.uptime());
-    data.cache = Object.fromEntries(Object.entries(cache).map(([k]) => [k, cached(k) ? "fresh" : "stale"]));
-  }
-  res.json(data);
+  // Edad de cada cache en segundos (null = nunca cargó) y estado de la última
+  // build de eventos por fuente. "degraded" si no hay eventos o RA no aportó:
+  // el sitio responde, pero con la agenda a medias.
+  const ages = Object.fromEntries(Object.entries(cache).map(([k, c]) => [k, c.data ? Math.round((Date.now() - c.ts) / 1000) : null]));
+  const ev = lastEventsBuild;
+  const degraded = !cache.events.data?.length || (ev && !ev.sources.ra);
+  const data = {
+    status: degraded ? "degraded" : "ok",
+    version: PKG_VERSION,
+    uptime: Math.floor(process.uptime()),
+    events: ev ? { total: ev.total, sources: ev.sources, builtAgo: Math.round((Date.now() - ev.ts) / 1000), buildMs: ev.ms } : (cache.events.data ? { total: cache.events.data.length, fromSnapshot: true } : null),
+    cacheAge: ages,
+    supabase: !!supabase,
+  };
+  res.status(degraded ? 503 : 200).json(data);
 });
 
 // ═══════════════════════════════════════════════════════
