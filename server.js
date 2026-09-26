@@ -97,6 +97,14 @@ const supabaseKeepAlive = supabase
   ? (pingSupabase(), setInterval(pingSupabase, 48 * 60 * 60 * 1000))
   : null;
 
+// Prod va usuario → Cloudflare → edge de Railway → app: con trust proxy 1,
+// req.ip es el nodo de Cloudflare y toda una ciudad compartiría el cupo.
+// Cloudflare manda la IP real en CF-Connecting-IP (spoofeable solo pegándole
+// directo a Railway, y ahí lo único que se gana es otro bucket de rate limit).
+function clientIp(req) {
+  return req.get("cf-connecting-ip") || req.ip || req.socket?.remoteAddress || "unknown";
+}
+
 function makeRateLimit(max) {
   const rateLimitMap = new Map();
   // Sweep expired entries every 2 minutes; unref → no retiene el proceso al apagar.
@@ -108,7 +116,7 @@ function makeRateLimit(max) {
   }, 120_000).unref();
   return (req, res, next) => {
   const now = Date.now();
-  const ip = req.ip || req.socket?.remoteAddress || "unknown";
+  const ip = clientIp(req);
   const entry = rateLimitMap.get(ip);
 
   if (entry) {

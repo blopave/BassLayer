@@ -35,5 +35,8 @@
     "concurrently": "^8.2.2",
     "playwright": "1.59",
     "vite": "^5.1.4"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
