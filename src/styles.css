@@ -5344,7 +5344,7 @@ select.bl-venue-input { cursor:pointer; }
 /* ── mundos: datos de cada lado de fondo, DESENFOCADOS SUAVE (se leen); se ACTIVAN al pasar por su nombre ── */
 .blf-side{ position:absolute; top:0; bottom:0; width:42%; display:flex; flex-direction:column; justify-content:space-between; gap:14px;
   padding:clamp(20px,3vw,48px) clamp(20px,3vw,48px) clamp(80px,10vh,96px); z-index:2; min-width:0; pointer-events:none;   /* piso alto: los CTA no pisan reloj (izq) ni util-bar (der) */
-  filter:blur(2px) brightness(.82) saturate(.82); opacity:.64;   /* reposo legible: los datos se leen como teaser fantasma detrás del wordmark */
+  filter:brightness(.9) saturate(.9); opacity:.94;   /* reposo NÍTIDO: los dos mundos se leen de entrada; el blur queda para el lado no elegido al hacer hover (auditoría 2026-09: el desenfoque en reposo se leía como "sin cargar") */
   transition:opacity 1.1s cubic-bezier(.4,0,.2,1), filter 1.1s cubic-bezier(.4,0,.2,1), transform 1.1s cubic-bezier(.4,0,.2,1); will-change:filter,opacity,transform; }
 .blf-bass{ left:0; align-items:flex-start; text-align:left; }
 .blf-layer{ right:0; align-items:flex-end; text-align:right; }
@@ -5538,3 +5538,15 @@ select.bl-venue-input { cursor:pointer; }
 }
 
 
+
+/* ── Agenda mobile: menos chrome sobre el pliegue (auditoría 2026-09) ──
+   Antes la primera card arrancaba en y≈433 de 844: header + ticker + tabs +
+   chips + buscador + contador. El contador se compacta (el chip "Todos" ya
+   trae el número), tabs/chips/buscador pierden aire vertical. */
+@media (max-width:768px) {
+  .bl-bass-sections { padding:8px 16px 0; gap:18px; }
+  .bl-filters.bass-filters { padding:8px 16px; }
+  .bl-ctrl-bar { margin:8px 16px 0; }
+  .bl-feed-head { margin:10px 16px 0; padding-bottom:8px; gap:10px; }
+  .bl-feed-head-n { font-size:18px; }
+}
