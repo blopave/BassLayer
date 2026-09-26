@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
+import { imgUrl } from "../utils/img";
 
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -25,10 +26,12 @@ export function FestivalModal({ festival, onClose }) {
   const { locale, t } = useLocale();
   const trapRef = useFocusTrap(!!festival);
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
 
   useEffect(() => {
     if (!festival) return;
     setImageFailed(false);
+    setImageDirect(false);
     document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -60,10 +63,10 @@ export function FestivalModal({ festival, onClose }) {
           {hasImage ? (
             <img
               className="bl-festival-modal-image"
-              src={festival.image}
+              src={imageDirect ? festival.image : imgUrl(festival.image, 320)}
               alt={festival.name}
               loading="lazy"
-              onError={() => setImageFailed(true)}
+              onError={() => { if (imageDirect) setImageFailed(true); else setImageDirect(true); }}
             />
           ) : (
             <div className="bl-festival-modal-image-placeholder" aria-hidden="true">

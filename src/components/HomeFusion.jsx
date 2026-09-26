@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import cyclesData from "../../data/btc-cycles.json";
+import { imgUrl } from "../utils/img";
 
 const FCARD_GRADIENT = "linear-gradient(180deg,rgba(0,0,0,.05) 45%,rgba(0,0,0,.88))";
 
@@ -198,7 +199,7 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
             <div className="blf-big"><em>{eventCount || "—"}</em> {eventCount === 1 ? t("home.evento") : t("home.eventos")}<br />{t("home.enAgenda")}</div>
             <div className="blf-flyrow">
               {flyers.map((e, i) => (
-                <div className="blf-fcard" key={i} style={{ backgroundImage: `${FCARD_GRADIENT},url('${e.image || e.artistImage || ""}')` }}>
+                <div className="blf-fcard" key={i} style={{ backgroundImage: `${FCARD_GRADIENT},url('${imgUrl(e.image, 120) || e.artistImage || ""}')` }}>
                   {/* El flyer ya trae el nombre en su propia tipografía; el rótulo
                       solo cuando mostramos la foto del artista como reemplazo. */}
                   {!e.image && (

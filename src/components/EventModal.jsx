@@ -3,6 +3,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useSheetDrag } from "../hooks/useSheetDrag";
 import { cleanArtists } from "../utils/artists";
 import { Poster, ArtistPhoto } from "./BlThumb";
+import { imgUrl } from "../utils/img";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX, eventStamp } from "../i18n/strings";
@@ -128,12 +129,14 @@ export function EventModal({ event, onClose, onShare }) {
   const [infos, setInfos] = useState({});         // nombre → info del artista (o null mientras carga)
   const [openArtist, setOpenArtist] = useState(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
   const [artistImageFailed, setArtistImageFailed] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     if (!event) return;
     setImageFailed(false);
+    setImageDirect(false);
     setArtistImageFailed(false);
     setCalOpen(false);
     setOpenArtist(null);
@@ -218,12 +221,12 @@ export function EventModal({ event, onClose, onShare }) {
           <span className="bl-em-grab" aria-hidden="true" />
           {showFlyer ? (
             <>
-              <div className="bl-em-fly-blur" style={{ backgroundImage: `url("${event.image}")` }} aria-hidden="true" />
+              <div className="bl-em-fly-blur" style={{ backgroundImage: `url("${imageDirect ? event.image : imgUrl(event.image, 80)}")` }} aria-hidden="true" />
               <img
                 className="bl-em-fly-img"
-                src={event.image}
+                src={imageDirect ? event.image : imgUrl(event.image, 400)}
                 alt={event.name}
-                onError={() => setImageFailed(true)}
+                onError={() => { if (imageDirect) setImageFailed(true); else setImageDirect(true); }}
               />
             </>
           ) : showArtistPhoto ? (

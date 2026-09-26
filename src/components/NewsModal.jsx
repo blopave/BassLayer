@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
+import { imgUrl } from "../utils/img";
 
 // Limpia el resumen para que no repita el título (común en RSS) y descarta
 // si lo único que queda es el mismo título o un fragmento muy corto.
@@ -26,10 +27,12 @@ export function NewsModal({ item, onClose }) {
   const { t } = useLocale();
   const trapRef = useFocusTrap(!!item);
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
 
   useEffect(() => {
     if (!item) return;
     setImageFailed(false);
+    setImageDirect(false);
     document.body.style.overflow = "hidden";
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -56,10 +59,10 @@ export function NewsModal({ item, onClose }) {
           {hasImage ? (
             <img
               className="bl-news-modal-image"
-              src={item.image}
+              src={imageDirect ? item.image : imgUrl(item.image, 320)}
               alt={item.title}
               loading="lazy"
-              onError={() => setImageFailed(true)}
+              onError={() => { if (imageDirect) setImageFailed(true); else setImageDirect(true); }}
             />
           ) : (
             <div className="bl-news-modal-image-placeholder" aria-hidden="true">

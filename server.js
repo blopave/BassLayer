@@ -16,6 +16,7 @@ import { dirname, join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { marked } from "marked";
 import matter from "gray-matter";
@@ -138,6 +139,7 @@ app.use("/api", makeRateLimit(RATE_LIMIT_API_MAX));
 // y sus slugs son enumerables desde el sitemap → sin límite, un loop puede saturar
 // el event loop. Un crawler de previews no debe consumir la cuota de la SPA.
 app.use("/og", makeRateLimit(RATE_LIMIT_OG_MAX));
+app.use("/img", makeRateLimit(600)); // una agenda carga ~90 miniaturas
 
 // Cache-Control para los JSON públicos de /api: sin esto ni el browser ni el
 // borde (Cloudflare) reutilizan un dato que el server considera fresco por
@@ -232,6 +234,21 @@ function saveSnapshot(key, data) {
     writeFileSync(join(SNAPSHOT_DIR, `${key}.json`), JSON.stringify({ ts: Date.now(), data }));
   } catch (e) { console.warn(`[cache] snapshot ${key}:`, e.message); }
 }
+// ── Imágenes que el server publicó (flyers, fotos de noticias) ──
+// Es la única lista que acepta el proxy /img: sin allowlist de hosts que
+// mantener y sin riesgo de proxy abierto. Se llena en cada build y desde los
+// snapshots al arrancar.
+const knownImages = new Set();
+const KNOWN_IMAGES_MAX = 6000;
+function registerImages(list, field = "image") {
+  for (const it of list || []) {
+    const u = it && it[field];
+    if (typeof u !== "string" || !/^https?:\/\//.test(u)) continue;
+    if (knownImages.size >= KNOWN_IMAGES_MAX) knownImages.delete(knownImages.values().next().value);
+    knownImages.add(u);
+  }
+}
+
 function loadSnapshots() {
   for (const key of SNAPSHOT_KEYS) {
     try {
@@ -239,6 +256,7 @@ function loadSnapshots() {
       if (!existsSync(file)) continue;
       const { ts, data } = JSON.parse(readFileSync(file, "utf-8"));
       if (Array.isArray(data) && data.length) {
+        registerImages(data);
         cache[key] = { ...cache[key], data, ts: ts || 0 };
         const age = Math.round((Date.now() - (ts || 0)) / 60000);
         console.log(`[cache] ${key}: snapshot cargado (${data.length} items, ${age} min)`);
@@ -971,7 +989,7 @@ app.get("/api/news", async (req, res) => {
     // Cache negativo: si TODOS los feeds fallaron, allSettled no lanza y news
     // queda []. No lo guardamos como hit válido (taparía 5 min los datos buenos);
     // servimos el último cache bueno si existe.
-    if (news.length) setCache("news", news);
+    if (news.length) { registerImages(news); setCache("news", news); }
     const serve = news.length ? news : (cache.news.data || news);
     res.json(applyFilter(serve));
   } catch (e) {
@@ -1095,7 +1113,7 @@ app.get("/api/finance-news", async (req, res) => {
       quotaApplied.push(item);
     }
     const news = quotaApplied.slice(0, 40).map(({ _mins, _pubDate, ...rest }) => rest);
-    if (news.length) setCache("financeNews", news);
+    if (news.length) { registerImages(news); setCache("financeNews", news); }
     const serve = news.length ? news : (cache.financeNews.data || news);
     res.json(applyFilter(serve));
   } catch (e) {
@@ -1573,6 +1591,7 @@ async function buildBassNews() {
     .map(({ _mins, _pubDate, ...rest }) => rest);
   // No cachear vacío como hit válido (taparía el último cache bueno); si el
   // scrape volvió vacío, servimos el último bueno disponible.
+  registerImages(news);
   return news; // vacío → swr conserva el último bueno
 }
 
@@ -2873,6 +2892,7 @@ async function buildEvents() {
   const bySource = {};
   for (const ev of events) bySource[ev.source] = (bySource[ev.source] || 0) + 1;
   lastEventsBuild = { ts: Date.now(), ms: Date.now() - buildStart, total: events.length, sources: bySource };
+  registerImages(events);
   return events;
 }
 
@@ -2892,6 +2912,62 @@ app.get("/api/events", async (req, res) => {
   try { events = await swr("events", buildEvents); }
   catch { return res.status(502).json({ error: "Events unavailable" }); }
   res.json(applyFilter(events));
+});
+
+// ─────────────────────────────────────────────
+//  GET /img?u=<url>&w=<160|320|640|1000> — proxy + resize de imágenes
+//  Los flyers de RA (1080 px, 2 MB) y las fotos de las noticias (hasta 4,6 MB)
+//  se mostraban a 60–400 px: Lighthouse medía 25 MB por carga de Layer mobile.
+//  Acá se sirven a 2× del ancho mostrado, en WebP, cacheadas 7 días. Solo se
+//  aceptan URLs que el propio server publicó (knownImages).
+// ─────────────────────────────────────────────
+
+const IMG_WIDTHS = new Set([160, 320, 640, 1000]);
+const IMG_MAX_INPUT = 6 * 1024 * 1024;
+const IMG_TTL = 7 * 24 * 60 * 60_000;
+const IMG_CACHE_MAX = 800;               // ~12 KB c/u a 160–320 px → ≈10 MB
+const imgCache = new Map();              // `${w}:${url}` → { buf, ts } | { miss:true, ts }
+const imgInflight = new Map();
+
+async function resizeRemoteImage(u, w) {
+  const r = await fetchSafe(u, { headers: { ...BROWSER_HEADERS, Accept: "image/avif,image/webp,image/*,*/*;q=0.8" } }, 8000);
+  if (!r.ok) return null;
+  const input = Buffer.from(await r.arrayBuffer());
+  if (!input.length || input.length > IMG_MAX_INPUT) return null;
+  return sharp(input, { failOn: "none", limitInputPixels: 30_000_000 })
+    .rotate()
+    .resize({ width: w, withoutEnlargement: true, fit: "inside" })
+    .webp({ quality: 78, effort: 3 })
+    .toBuffer();
+}
+
+app.get("/img", async (req, res) => {
+  const u = String(req.query.u || "");
+  const w = Number(req.query.w);
+  if (!IMG_WIDTHS.has(w)) return res.status(400).json({ error: "Invalid width" });
+  if (!knownImages.has(u)) return res.status(404).json({ error: "Unknown image" });
+  const key = `${w}:${u}`;
+  const hit = imgCache.get(key);
+  if (hit && Date.now() - hit.ts < IMG_TTL) {
+    if (hit.miss) return res.status(404).json({ error: "Unavailable" });
+    imgCache.delete(key); imgCache.set(key, hit); // bump LRU
+    res.set("Content-Type", "image/webp");
+    res.set("Cache-Control", "public, max-age=604800, immutable");
+    return res.send(hit.buf);
+  }
+  let p = imgInflight.get(key);
+  if (!p) {
+    p = resizeRemoteImage(u, w).catch((e) => { console.error("[img]", e.message); return null; })
+      .finally(() => imgInflight.delete(key));
+    imgInflight.set(key, p);
+  }
+  const buf = await p;
+  if (imgCache.size >= IMG_CACHE_MAX) imgCache.delete(imgCache.keys().next().value);
+  imgCache.set(key, buf ? { buf, ts: Date.now() } : { miss: true, ts: Date.now() });
+  if (!buf) return res.status(404).json({ error: "Unavailable" });
+  res.set("Content-Type", "image/webp");
+  res.set("Cache-Control", "public, max-age=604800, immutable");
+  res.send(buf);
 });
 
 // ─────────────────────────────────────────────

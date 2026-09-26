@@ -1,5 +1,25 @@
 import { useState } from "react";
 import { hashStr } from "../utils/slug";
+import { imgUrl } from "../utils/img";
+
+// Miniatura de 60–120 px: pedimos 2× por el proxy; si el proxy no la tiene
+// (404/caída), un segundo intento con la URL original antes del fallback.
+function ProxiedImg({ src, width, className, onFail }) {
+  const [direct, setDirect] = useState(false);
+  const proxied = imgUrl(src, width);
+  const useDirect = direct || proxied === src;
+  return (
+    <img
+      className={className}
+      src={useDirect ? src : proxied}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => { if (!useDirect) setDirect(true); else onFail?.(); }}
+    />
+  );
+}
+export { ProxiedImg };
 
 // Mini-afiche tipográfico para items sin flyer: el headliner (o el nombre) en
 // grotesca pesada, tintado por familia. Tres variantes (sólida / primera
@@ -50,13 +70,11 @@ export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail
   if (hasImage) {
     return (
       <div className="bl-thumb" aria-hidden="true">
-        <img
+        <ProxiedImg
           className="bl-thumb-img"
           src={image}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => { setImgFailed(true); onImgFail?.(); }}
+          width={120}
+          onFail={() => { setImgFailed(true); onImgFail?.(); }}
         />
       </div>
     );

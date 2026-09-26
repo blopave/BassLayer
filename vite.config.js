@@ -10,6 +10,7 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:3001",
       "/og": "http://localhost:3001",
+      "/img": "http://localhost:3001",
     },
   },
   build: {
