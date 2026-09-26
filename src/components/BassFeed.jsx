@@ -222,7 +222,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // /eventos/este-finde) lo presetea vía prop. Va por efecto y no por estado
   // inicial: el feed ya está montado cuando App resuelve el deep link (los
   // paneles viven en el DOM incluso en la vista home).
-  const [when, setWhen] = useState("");
+  const [when, setWhen] = useState(presetWhen || ""); // desde el deep-link en el primer paint: sin hero fantasma que después desaparece
   useEffect(() => { if (presetWhen) setWhen(presetWhen); }, [presetWhen]);
   // En mobile los tres segmentos de control se apilaban y empujaban el primer
   // evento a 548px de un viewport de 667. Pasan a un bottom sheet detrás de un
@@ -500,7 +500,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         <>
       {/* Portada editorial: solo sin búsqueda ni filtro temporal — cuando el
           usuario ya está buscando algo puntual, el hero es ruido. */}
-      {!search && !when && <WeekendHero events={regionEvents} onSelect={onSelect} />}
+      {/* El hero del finde aparece con los eventos: reservamos su alto mientras cargan (CLS). */}
+      {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <WeekendHero events={regionEvents} onSelect={onSelect} />)}
 
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />

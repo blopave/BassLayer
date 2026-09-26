@@ -85,19 +85,33 @@ export default function App() {
   const { locale, setLocale, t } = useLocale();
   const isMobile = useIsMobile();
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState("home");
+  // Estado inicial desde la URL en el PRIMER render (el efecto de deep-link
+  // de abajo sigue resolviendo slugs y carga de datos). Antes cada deep-link
+  // pintaba el home y recién después cambiaba de vista: un layout shift
+  // entero por visita desde Google o desde un link compartido.
+  const initialRoute = (() => {
+    const path = window.location.pathname;
+    const layer = new URLSearchParams(window.location.search).get("view") === "layer";
+    const temporal = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
+    const deep = layer || /^\/(eventos|noticias|festivales)\//.test(path);
+    return { view: deep ? "sections" : "home", presetWhen: temporal ? (temporal[1] === "hoy" ? "hoy" : "finde") : "" };
+  })();
+  const [view, setView] = useState(initialRoute.view);
   const [circleStyle, setCircleStyle] = useState({});
   const [circleExpand, setCircleExpand] = useState(false);
 
   // Data state
   const [prices, setPrices] = useState(null); // null = todavía no respondió (el ticker reserva su barra)
   const [news, setNews] = useState([]);
-  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(null);
   const [newsFilter, setNewsFilter] = useState("All");
   const [newsUpdated, setNewsUpdated] = useState(0);
   const [events, setEvents] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
+  // Arrancan en true: el primer paint ya muestra skeletons a altura real. Si
+  // empezaran en false, se pintaba el estado vacío y recién después el
+  // skeleton, y ese cambio de altura era el mayor CLS de Layer mobile.
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
   const [eventsFilter, setEventsFilter] = useState("All");
   const [eventsUpdated, setEventsUpdated] = useState(0);
@@ -190,7 +204,7 @@ export default function App() {
   const pendingEventSlugRef = useRef(null);
   const pendingVenueSlugRef = useRef(null);
   // Filtro temporal preseteado por deep link (/eventos/hoy | /este-finde)
-  const [presetWhen, setPresetWhen] = useState("");
+  const [presetWhen, setPresetWhen] = useState(initialRoute.presetWhen);
   const pendingNewsSlugRef = useRef(null);
 
   const openEvent = useCallback((ev) => {
@@ -550,7 +564,9 @@ export default function App() {
   useHomeCanvas(canvasRef, view);
 
   // Navigation
-  const [activePanel, setActivePanel] = useState(0);
+  // Desde la URL en el primer render: con /?view=layer antes se pintaba Bass
+  // un instante y recién el efecto de deep-link cambiaba de panel.
+  const [activePanel, setActivePanel] = useState(() => new URLSearchParams(window.location.search).get("view") === "layer" ? 1 : 0);
   // Wipe flash trigger when switching worlds (header animation)
   const [wiping, setWiping] = useState(null); // null | "bass" | "layer"
 

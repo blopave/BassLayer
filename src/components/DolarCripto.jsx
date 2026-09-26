@@ -8,18 +8,20 @@ import { useLocale } from "../hooks/useLocale";
 export function DolarCripto() {
   const { t } = useLocale();
   const [data, setData] = useState(null);
+  const [pending, setPending] = useState(true); // primera respuesta en camino: reservamos la fila
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    const load = () => api.dolar().then((d) => { if (alive) setData(d); }).catch(() => {});
+    const load = () => api.dolar().then((d) => { if (alive) setData(d); }).catch(() => {}).finally(() => { if (alive) setPending(false); });
     load();
     const iv = setInterval(load, 5 * 60_000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
 
-  // Sin señal → sin módulo. Nada de esqueletos permanentes.
-  if (!data) return null;
+  // Sin señal → sin módulo. Solo mientras la primera respuesta está en camino
+  // reservamos la fila (si aparece después, empuja todo Layer hacia abajo).
+  if (!data) return pending ? <section className="bl-dolar bl-dolar-skel" aria-hidden="true" /> : null;
 
   const fmt0 = (n) => (n != null ? `$${Math.round(n).toLocaleString("es-AR")}` : "—");
   const fmt2 = (n) => (n != null ? n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—");

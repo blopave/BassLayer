@@ -1319,6 +1319,8 @@
 /* Contador único del header mobile — hereda de .bl-hero-stat, esto es solo
    el toggle de visibilidad (en desktop no existe). */
 .bl-hero-count { display:none; }
+.bl-hero-skel { min-height:301px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+@media (max-width:768px) { .bl-hero-skel { min-height:185px; } }
 .bl-hero-tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .bl-hero-tile {
   text-align:left; background:none; border:none; padding:0; margin:0;
@@ -1748,6 +1750,17 @@
   font-size:10px; letter-spacing:0.8px; color:var(--bl-text-ter);
 }
 .bl-dolar-q { white-space:nowrap; }
+.bl-dolar-skel { min-height:40px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+/* Skeleton de noticias con la silueta real de las cards (126 px desktop /
+   122 mobile + gap) y alto de viewport: el reemplazo skeleton→lista no mueve
+   nada y el footer arranca debajo del pliegue. */
+.bl-skeleton-newsfeed { display:flex; flex-direction:column; gap:14px; min-height:100vh; }
+.bl-skeleton-newsfeed .bl-skeleton-news { min-height:126px; padding:0 14px; border:1px solid var(--bl-border-sub); border-bottom:1px solid var(--bl-border-sub); border-radius:6px; background:var(--bl-surface); }
+@media (max-width:768px) {
+  .bl-dolar-skel { min-height:61px; }
+  .bl-skeleton-newsfeed { gap:12px; }
+  .bl-skeleton-newsfeed .bl-skeleton-news { min-height:122px; }
+}
 .bl-dolar-q b { color:var(--bl-text); font-weight:600; margin-left:4px; font-variant-numeric:tabular-nums; }
 .bl-dolar-brecha b { color:var(--bl-accent-layer); }
 .bl-dolar-chevron { transition:transform .25s var(--ease-out-expo); color:var(--bl-text-ter); flex-shrink:0; }

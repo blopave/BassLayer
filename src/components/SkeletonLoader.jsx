@@ -18,7 +18,7 @@ export function EventSkeleton({ count = 5 }) {
 
 export function NewsSkeleton({ count = 5 }) {
   return (
-    <div className="bl-feed" aria-label="Cargando noticias" role="status">
+    <div className="bl-feed bl-skeleton-newsfeed" aria-label="Cargando noticias" role="status">
       {Array.from({ length: count }, (_, i) => (
         <div className="bl-skeleton-news" key={i}>
           <div className="bl-skeleton-bone bl-skeleton-news-time" />
