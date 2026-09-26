@@ -1,0 +1,10 @@
+#!/bin/sh
+# Nada sale al remote sin pasar el chequeo completo (build + contenido + smoke
+# en navegador mobile/desktop). Necesita `npm run dev` corriendo.
+# Saltearlo a conciencia: SKIP_CHECK=1 git push
+[ -n "$SKIP_CHECK" ] && { echo "pre-push: chequeo salteado (SKIP_CHECK)"; exit 0; }
+if ! curl -s -o /dev/null --max-time 3 http://localhost:3000/ || ! curl -s -o /dev/null --max-time 3 http://localhost:3001/api/health; then
+  echo "pre-push: levantá 'npm run dev' (necesito :3000 y :3001 para el chequeo)."
+  exit 1
+fi
+npm run check --silent || { echo "pre-push: el chequeo falló — push frenado."; exit 1; }

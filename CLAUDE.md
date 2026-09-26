@@ -26,6 +26,20 @@ Pablo quiere ver el sitio **SIEMPRE en las dos versiones a la vez — mobile + d
 
 > La técnica de fit-ambos-completos está portada del `/ver` de otro proyecto de Pablo (`~/Desktop/blopa/src/pages/ver.astro`).
 
+## Control de calidad al cierre de cada sesión (OBLIGATORIO)
+
+Nada se da por terminado sin esto. Nació de sept 2026: un refactor + un ban del CDN de Deezer dejaron el modal de evento con cajas vacías y nadie lo vio.
+
+1. Con `npm run dev` corriendo: **`npm run check`** = `vite build` + `check:content` (invariantes de la data servida) + **`smoke`** (Playwright real, mobile 390 + desktop 1440 + mobile con fotos de artista caídas: home → onboarding → Bass → abrir evento → line-up/imágenes/CTA → Escape libera scroll e inert → Layer).
+2. Si falla: se arregla o se reporta a Pablo con el output. **No** se commitea "para después".
+3. Mirar los screenshots de `.pw-shots/smoke-*.png` y mostrarle a Pablo mobile + desktop.
+4. Feature nueva o flujo tocado → sumar su paso a `scripts/smoke.mjs` en la misma sesión, y comprobar que el paso **falla sin el cambio** (si no falla, no protege nada).
+5. Post-deploy: `npm run smoke -- https://basslayer.io`.
+
+El hook `.githooks/pre-push` (activo vía `git config core.hooksPath .githooks`) corre `npm run check` y frena el push si falla. Saltearlo solo a conciencia: `SKIP_CHECK=1 git push`.
+
+Regla de diseño que sale de esto: **toda imagen externa necesita fallback** (`onError` → inicial / póster). Las fuentes externas (Deezer, RA, CDNs) se caen; la UI no puede depender de que respondan.
+
 ## Cómo trabajar (preferencias de Pablo)
 
 - **Director + ejecutor:** research y opciones antes de implementar; en tareas con muchas confirmaciones, ofrecer "modo automático" (avanzar con defaults sensatos, frenar solo en bifurcaciones clave o lo irreversible).
