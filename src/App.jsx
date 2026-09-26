@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { flushSync } from "react-dom";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
-import { applyEventMeta, applyEventJsonLd, resetMeta, removeEventJsonLd } from "./utils/seo";
+import { applyEventMeta, applyEventJsonLd, applyLayerMeta, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { storage } from "./utils/storage";
@@ -91,7 +91,7 @@ export default function App() {
   // entero por visita desde Google o desde un link compartido.
   const initialRoute = (() => {
     const path = window.location.pathname;
-    const layer = new URLSearchParams(window.location.search).get("view") === "layer";
+    const layer = new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path);
     const temporal = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
     const deep = layer || /^\/(eventos|noticias|festivales)\//.test(path);
     return { view: deep ? "sections" : "home", presetWhen: temporal ? (temporal[1] === "hoy" ? "hoy" : "finde") : "" };
@@ -297,9 +297,11 @@ export default function App() {
     const path = window.location.pathname;
     // /?view=layer — el link "Crypto" del prerender SEO y el shortcut del
     // manifest aterrizan directo en el mundo Layer.
-    if (new URLSearchParams(window.location.search).get("view") === "layer") {
+    if (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path)) {
       setView("sections");
       setActivePanel(1);
+      // La URL canónica del mundo es /layer (indexable, prerenderizada).
+      if (path !== "/layer") window.history.replaceState({}, "", "/layer");
       if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
       if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
       return;
@@ -355,6 +357,9 @@ export default function App() {
 
     const onPopState = () => {
       const p = window.location.pathname;
+      // /layer ↔ / son los dos mundos: back/forward cambia de panel.
+      if (/^\/layer\/?$/.test(p)) { setView("sections"); setActivePanel(1); }
+      else if (p === "/" && view === "sections") setActivePanel(0);
       const em = p.match(/^\/eventos\/([^/]+)\/?$/);
       const nm = p.match(/^\/noticias\/([^/]+)\/?$/);
       const fm = p.match(/^\/festivales\/([^/]+)\/?$/);
@@ -566,7 +571,7 @@ export default function App() {
   // Navigation
   // Desde la URL en el primer render: con /?view=layer antes se pintaba Bass
   // un instante y recién el efecto de deep-link cambiaba de panel.
-  const [activePanel, setActivePanel] = useState(() => new URLSearchParams(window.location.search).get("view") === "layer" ? 1 : 0);
+  const [activePanel, setActivePanel] = useState(() => (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(window.location.pathname)) ? 1 : 0);
   // Wipe flash trigger when switching worlds (header animation)
   const [wiping, setWiping] = useState(null); // null | "bass" | "layer"
 
@@ -859,6 +864,21 @@ export default function App() {
 
   // Render
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
+
+  // Al cambiar de mundo en secciones, la URL y el <title> siguen al panel:
+  // /layer con su meta propia, / con la del home. Solo cuando la URL es una
+  // de las dos (no pisa /eventos/... ni un modal abierto).
+  useEffect(() => {
+    if (view !== "sections") return;
+    const p = window.location.pathname;
+    if (activePanel === 1) {
+      if (p === "/") window.history.replaceState({}, "", "/layer");
+      applyLayerMeta();
+    } else {
+      if (/^\/layer\/?$/.test(p)) window.history.replaceState({}, "", "/");
+      if (!selectedEvent) resetMeta();
+    }
+  }, [view, activePanel, selectedEvent]);
 
   // El panel que no se ve (trasladado a -100vw) no debe recibir foco ni aparecer
   // en el árbol accesible: sin esto el teclado recorre ~500 controles invisibles

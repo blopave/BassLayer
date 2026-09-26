@@ -4927,6 +4927,7 @@ app.get("/sitemap.xml", (req, res) => {
 
   // Páginas temporales — cambian a diario de verdad; lastmod=today es honesto
   // acá y solo acá (Google usa lastmod para programar recrawl).
+  urls.push({ loc: `${PROD_ORIGIN}/layer`, lastmod: today, changefreq: "hourly", priority: "0.9" });
   urls.push({ loc: `${PROD_ORIGIN}/eventos/hoy`, lastmod: today, changefreq: "daily", priority: "0.9" });
   urls.push({ loc: `${PROD_ORIGIN}/eventos/este-finde`, lastmod: today, changefreq: "daily", priority: "0.9" });
 
@@ -5090,7 +5091,7 @@ if (IS_PROD) {
     // Navegación semántica
     lines.push('<nav aria-label="Secciones" style="margin-bottom:2.5rem;display:flex;gap:1rem;flex-wrap:wrap">');
     lines.push(`<a href="/" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Eventos</a>`);
-    lines.push(`<a href="/?view=layer" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Crypto</a>`);
+    lines.push(`<a href="/layer" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">Crypto</a>`);
     lines.push(`<a href="/?lang=en" style="${linkStyle};padding:0.4rem 0.85rem;border:1px solid #333;border-radius:999px">English</a>`);
     lines.push("</nav>");
 
@@ -5895,6 +5896,40 @@ if (IS_PROD) {
     });
   }
 
+  // ── /layer — el mundo crypto con URL propia e indexable ──
+  // Hasta ahora Layer vivía en /?view=layer con el title, description y
+  // canonical del home: invisible para búsqueda. Esta página prerenderiza
+  // titulares, precios y ETFs reales (los mismos caches que sirve la API).
+  function renderLayerPage() {
+    const news = (cached("news") || []).slice(0, 12);
+    const fin = (cached("financeNews") || []).slice(0, 6);
+    const prices = cached("prices") || [];
+    const markets = cached("markets");
+    const etfs = ((markets && markets.groups) || []).find((g) => g.kind === "etf")?.items || [];
+    const h1 = "Bitcoin, ETFs y noticias crypto en español";
+    const intro = "Precios en vivo, noticias crypto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin. El mundo Layer de BassLayer, actualizado a cada hora.";
+    const fmtUsd = (n) => n >= 1000 ? `$${Math.round(n).toLocaleString("en-US")}` : `$${Number(n).toFixed(2)}`;
+    const li = (n) => `<li style="margin:0 0 .6rem"><a href="${escHtml(n.url || `/noticias/${newsSlug(n)}`)}" rel="noopener" style="color:#e5e5e5;text-decoration:none">${escHtml(n.title)}</a> <span style="color:#7a8b98;font-size:.85em">— ${escHtml(n.source || "")}</span></li>`;
+    const body = `
+      <section aria-label="${escHtml(h1)}" style="max-width:820px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif;color:#e5e5e5">
+        <nav aria-label="Migas" style="font-size:.85rem;color:#7a8b98;margin-bottom:1rem"><a href="/" style="color:#7a8b98;text-decoration:none">BassLayer</a> › Layer</nav>
+        <h1 style="font-size:2rem;line-height:1.15;margin:0 0 .75rem">${escHtml(h1)}</h1>
+        <p style="color:#aaa;line-height:1.55;margin:0 0 2rem">${escHtml(intro)}</p>
+        ${prices.length ? `<h2 style="font-size:1.1rem;margin:0 0 .5rem">Precios ahora</h2><p style="color:#ccc;margin:0 0 1.5rem">${prices.slice(0, 8).map((p) => `${escHtml(p.sym)} ${fmtUsd(p.usd)} (${p.change >= 0 ? "+" : ""}${p.change}%)`).join(" · ")}</p>` : ""}
+        ${etfs.length ? `<h2 style="font-size:1.1rem;margin:0 0 .5rem">ETFs</h2><p style="color:#ccc;margin:0 0 1.5rem">${etfs.map((e) => `${escHtml(e.symbol)} ${escHtml(e.name)} ${fmtUsd(e.price)} (${e.changePct >= 0 ? "+" : ""}${e.changePct}%)`).join(" · ")}</p>` : ""}
+        ${news.length ? `<h2 style="font-size:1.1rem;margin:0 0 .5rem">Noticias crypto</h2><ul style="list-style:none;padding:0;margin:0 0 1.5rem">${news.map(li).join("")}</ul>` : ""}
+        ${fin.length ? `<h2 style="font-size:1.1rem;margin:0 0 .5rem">Finanzas y mercados</h2><ul style="list-style:none;padding:0;margin:0 0 1.5rem">${fin.map(li).join("")}</ul>` : ""}
+        <p style="margin:0"><a href="/" style="color:#7ec8ff;text-decoration:none">→ Ver la agenda de eventos (Bass)</a></p>
+      </section>`;
+    return renderHtmlWithMeta({
+      title: `${h1} | BassLayer`,
+      description: intro.slice(0, 300),
+      canonical: `${PROD_ORIGIN}/layer`,
+      image: `${PROD_ORIGIN}/og-image.png`,
+      body,
+    });
+  }
+
   // ── Páginas de venue: /eventos/venue/:slug ──
   // "crobar eventos" tiene intención altísima y competencia local baja.
   function venueEvents(vslug) {
@@ -5987,6 +6022,12 @@ if (IS_PROD) {
           return res.send(renderGenrePage(genre));
         }
         return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+      }
+
+      // /layer — mundo crypto con URL propia
+      if (/^\/layer\/?$/.test(req.path)) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderLayerPage());
       }
 
       // /eventos/hoy · /eventos/este-finde — páginas temporales programáticas
@@ -6084,6 +6125,15 @@ for (const [key, build] of KEEP_WARM) {
   setTimeout(() => swr(key, build).catch(() => {}), 1500);
   setInterval(() => swr(key, build).catch(() => {}), Math.round(cache[key].ttl * 0.8)).unref();
 }
+
+// Las caches de Layer (noticias, precios, mercados) se llenan con el primer
+// visitante; el prerender de /layer las lee, así que las pedimos a la propia
+// API al arrancar para que Google nunca vea la página vacía tras un deploy.
+setTimeout(() => {
+  for (const p of ["/api/news", "/api/finance-news", "/api/prices", "/api/markets"]) {
+    fetch(`http://127.0.0.1:${PORT}${p}`).catch(() => {});
+  }
+}, 2500);
 
 const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────────┐
