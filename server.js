@@ -213,6 +213,66 @@ function cached(key) {
 }
 function setCache(key, data) {
   cache[key] = { ...cache[key], data, ts: Date.now() };
+  if (SNAPSHOT_KEYS.has(key)) saveSnapshot(key, data);
+}
+
+// ── Stale-while-revalidate + snapshot en disco ──
+// Las fuentes lentas (events: 16 áreas de RA + BA + QH ≈ 25 s en frío;
+// bassNews ≈ 7 s) no deben hacer esperar a nadie: si hay un dato vencido se
+// sirve ya y se refresca en background, con una sola build en vuelo. El
+// último dato bueno se persiste en data/cache/<key>.json para que un
+// reinicio arranque servido y no en frío.
+const SNAPSHOT_KEYS = new Set(["events", "bassNews"]);
+const SNAPSHOT_DIR = join(__dirname, "data", "cache");
+const swrInflight = new Map();
+
+function saveSnapshot(key, data) {
+  try {
+    if (!existsSync(SNAPSHOT_DIR)) mkdirSync(SNAPSHOT_DIR, { recursive: true });
+    writeFileSync(join(SNAPSHOT_DIR, `${key}.json`), JSON.stringify({ ts: Date.now(), data }));
+  } catch (e) { console.warn(`[cache] snapshot ${key}:`, e.message); }
+}
+function loadSnapshots() {
+  for (const key of SNAPSHOT_KEYS) {
+    try {
+      const file = join(SNAPSHOT_DIR, `${key}.json`);
+      if (!existsSync(file)) continue;
+      const { ts, data } = JSON.parse(readFileSync(file, "utf-8"));
+      if (Array.isArray(data) && data.length) {
+        cache[key] = { ...cache[key], data, ts: ts || 0 };
+        const age = Math.round((Date.now() - (ts || 0)) / 60000);
+        console.log(`[cache] ${key}: snapshot cargado (${data.length} items, ${age} min)`);
+      }
+    } catch (e) { console.warn(`[cache] snapshot ${key} ilegible:`, e.message); }
+  }
+}
+loadSnapshots();
+
+// Devuelve el dato de `key`: fresco → directo; vencido → el viejo ya, refresh
+// atrás; sin nada → espera la build. `build` debe devolver el dato final (o
+// lanzar / devolver vacío, en cuyo caso se conserva el último bueno).
+function swr(key, build) {
+  const c = cache[key];
+  const fresh = c.data && Date.now() - c.ts < c.ttl;
+  if (fresh) return Promise.resolve(c.data);
+  let p = swrInflight.get(key);
+  if (!p) {
+    p = build()
+      .then((data) => {
+        const ok = Array.isArray(data) ? data.length > 0 : data != null;
+        if (ok) setCache(key, data);
+        else if (c.data) cache[key].ts = Date.now(); // vacío: estirá el último bueno
+        return ok ? data : (c.data || data);
+      })
+      .catch((e) => {
+        console.error(`[${key}] refresh:`, e.message);
+        if (c.data) return c.data;
+        throw e;
+      })
+      .finally(() => swrInflight.delete(key));
+    swrInflight.set(key, p);
+  }
+  return c.data ? Promise.resolve(c.data) : p;
 }
 
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024; // 5MB max response
@@ -1485,50 +1545,46 @@ function refreshItemAges(items) {
   });
 }
 
+async function buildBassNews() {
+  const [notas, ...rssResults] = await Promise.all([
+    fetchSourceWithFallback("buenosaliens", fetchBuenosAliensNotas),
+    ...BASS_NEWS_FEEDS.map((feed) =>
+      fetchSourceWithFallback(feed.slug, () => fetchBassNewsRSSFeed(feed))
+    ),
+  ]);
+  const maxAgeMins = MAX_NEWS_AGE_DAYS * 24 * 60;
+  const all = refreshItemAges([...notas, ...rssResults.flat()])
+    .filter((item) => item.title && item._mins < maxAgeMins)
+    .sort((a, b) => a._mins - b._mins);
+
+  // Quota por fuente para garantizar diversidad (ver MAX_ITEMS_PER_SOURCE).
+  const perSource = new Map();
+  const quotaApplied = [];
+  for (const item of all) {
+    const slug = item.source_slug || item.source;
+    const used = perSource.get(slug) || 0;
+    if (used >= MAX_ITEMS_PER_SOURCE) continue;
+    perSource.set(slug, used + 1);
+    quotaApplied.push(item);
+  }
+
+  const news = quotaApplied
+    .slice(0, 40)
+    .map(({ _mins, _pubDate, ...rest }) => rest);
+  // No cachear vacío como hit válido (taparía el último cache bueno); si el
+  // scrape volvió vacío, servimos el último bueno disponible.
+  return news; // vacío → swr conserva el último bueno
+}
+
 app.get("/api/bass-news", async (req, res) => {
   const tagFilter = Array.isArray(req.query.tag) ? req.query.tag[0] : req.query.tag;
   const applyFilter = (arr) => tagFilter && tagFilter.toLowerCase() !== "all"
     ? arr.filter((n) => n.tag.toLowerCase() === tagFilter.toLowerCase()) : arr;
 
-  const hit = cached("bassNews");
-  if (hit) return res.json(applyFilter(hit));
-
-  try {
-    const [notas, ...rssResults] = await Promise.all([
-      fetchSourceWithFallback("buenosaliens", fetchBuenosAliensNotas),
-      ...BASS_NEWS_FEEDS.map((feed) =>
-        fetchSourceWithFallback(feed.slug, () => fetchBassNewsRSSFeed(feed))
-      ),
-    ]);
-    const maxAgeMins = MAX_NEWS_AGE_DAYS * 24 * 60;
-    const all = refreshItemAges([...notas, ...rssResults.flat()])
-      .filter((item) => item.title && item._mins < maxAgeMins)
-      .sort((a, b) => a._mins - b._mins);
-
-    // Quota por fuente para garantizar diversidad (ver MAX_ITEMS_PER_SOURCE).
-    const perSource = new Map();
-    const quotaApplied = [];
-    for (const item of all) {
-      const slug = item.source_slug || item.source;
-      const used = perSource.get(slug) || 0;
-      if (used >= MAX_ITEMS_PER_SOURCE) continue;
-      perSource.set(slug, used + 1);
-      quotaApplied.push(item);
-    }
-
-    const news = quotaApplied
-      .slice(0, 40)
-      .map(({ _mins, _pubDate, ...rest }) => rest);
-    // No cachear vacío como hit válido (taparía el último cache bueno); si el
-    // scrape volvió vacío, servimos el último bueno disponible.
-    if (news.length) setCache("bassNews", news);
-    const serve = news.length ? news : (cache.bassNews.data || news);
-    res.json(applyFilter(serve));
-  } catch (e) {
-    console.error("[bass-news]", e.message);
-    if (cache.bassNews.data) return res.json(cache.bassNews.data);
-    res.status(502).json({ error: "Bass news unavailable" });
-  }
+  let news;
+  try { news = await swr("bassNews", buildBassNews); }
+  catch { return res.status(502).json({ error: "Bass news unavailable" }); }
+  res.json(applyFilter(news));
 });
 
 // ─────────────────────────────────────────────
@@ -2642,21 +2698,10 @@ app.get("/api/festivals", async (req, res) => {
   res.json(enriched);
 });
 
-app.get("/api/events", async (req, res) => {
-  const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
-  const regionFilter = Array.isArray(req.query.region) ? req.query.region[0] : req.query.region;
-  const applyFilter = (arr) => {
-    let out = arr;
-    if (genreFilter && genreFilter.toLowerCase() !== "all")
-      out = out.filter(e => e.genre.toLowerCase() === genreFilter.toLowerCase());
-    if (regionFilter && regionFilter.toLowerCase() !== "all")
-      out = out.filter(e => e.region.toLowerCase() === regionFilter.toLowerCase());
-    return out;
-  };
-
-  const hit = cached("events");
-  if (hit) return res.json(applyFilter(hit));
-
+// Construye la agenda completa (todas las fuentes, dedup, orden, familias,
+// fotos de artista). Solo la llama swr(): una build en vuelo, el resto sirve
+// el último dato bueno mientras tanto.
+async function buildEvents() {
   let allEvents = [];
 
   // Fuentes independientes EN PARALELO (antes secuenciales → suma de latencias).
@@ -2815,7 +2860,24 @@ app.get("/api/events", async (req, res) => {
   await Promise.race([enriching, new Promise(r => { budgetTimer = setTimeout(r, ARTIST_IMAGE_BUDGET_MS); })]);
   clearTimeout(budgetTimer);
 
-  setCache("events", events);
+  return events;
+}
+
+app.get("/api/events", async (req, res) => {
+  const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
+  const regionFilter = Array.isArray(req.query.region) ? req.query.region[0] : req.query.region;
+  const applyFilter = (arr) => {
+    let out = arr;
+    if (genreFilter && genreFilter.toLowerCase() !== "all")
+      out = out.filter(e => e.genre.toLowerCase() === genreFilter.toLowerCase());
+    if (regionFilter && regionFilter.toLowerCase() !== "all")
+      out = out.filter(e => e.region.toLowerCase() === regionFilter.toLowerCase());
+    return out;
+  };
+
+  let events;
+  try { events = await swr("events", buildEvents); }
+  catch { return res.status(502).json({ error: "Events unavailable" }); }
   res.json(applyFilter(events));
 });
 
@@ -5908,6 +5970,15 @@ app.use((err, req, res, next) => {
   if (status >= 500) console.error("[error]", req.method, req.originalUrl, err?.message || err);
   res.status(status).json({ error: status >= 500 ? "Internal error" : (err?.message || "Bad request") });
 });
+
+// Warm-up: las dos fuentes lentas se construyen apenas arranca el proceso
+// (el snapshot ya sirve mientras tanto) y se mantienen calientes aunque no
+// haya tráfico, para que ningún visitante pague el frío.
+const KEEP_WARM = [["events", () => buildEvents()], ["bassNews", () => buildBassNews()]];
+for (const [key, build] of KEEP_WARM) {
+  setTimeout(() => swr(key, build).catch(() => {}), 1500);
+  setInterval(() => swr(key, build).catch(() => {}), Math.round(cache[key].ttl * 0.8)).unref();
+}
 
 const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────────┐
