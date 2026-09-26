@@ -2854,6 +2854,7 @@ app.get("/api/prices/:id/chart", async (req, res) => {
 //  GET /api/artist?name=X — bio + thumbnail (Wikipedia REST, public)
 // ─────────────────────────────────────────────
 const artistCache = new Map();
+const artistInflight = new Map(); // key → Promise en curso (dedup entre aperturas simultáneas)
 const ARTIST_CACHE_MAX = 200;
 const ARTIST_TTL = 24 * 60 * 60_000;
 
@@ -3048,7 +3049,14 @@ app.get("/api/artist", async (req, res) => {
   if (hit && Date.now() - hit.ts < ARTIST_TTL) return res.json(hit.data);
 
   try {
-    const data = await fetchArtistInfo(raw, locale);
+    // Dos aperturas del mismo evento (o dos usuarios) no deben disparar dos
+    // cadenas Wikipedia→Deezer→iTunes→MusicBrainz en paralelo: una sola en vuelo.
+    let p = artistInflight.get(key);
+    if (!p) {
+      p = fetchArtistInfo(raw, locale).finally(() => artistInflight.delete(key));
+      artistInflight.set(key, p);
+    }
+    const data = await p;
     if (artistCache.size >= ARTIST_CACHE_MAX) {
       const oldest = artistCache.keys().next().value;
       artistCache.delete(oldest);

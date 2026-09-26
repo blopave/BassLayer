@@ -2,13 +2,21 @@ import { useEffect, useRef } from "react";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function useFocusTrap(active) {
+// `onClose` es opcional: si se pasa, Escape cierra y el scroll del body queda
+// bloqueado mientras el diálogo está activo (antes cada modal lo repetía).
+export function useFocusTrap(active, onClose) {
   const ref = useRef(null);
 
   useEffect(() => {
     if (!active || !ref.current) return;
     const el = ref.current;
     const prev = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    const onEsc = (e) => { if (e.key === "Escape") onClose?.(); };
+    if (onClose) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", onEsc);
+    }
 
     const getFocusable = () => [...el.querySelectorAll(FOCUSABLE)];
     const first = getFocusable()[0];
@@ -42,10 +50,14 @@ export function useFocusTrap(active) {
     el.addEventListener("keydown", onKeyDown);
     return () => {
       el.removeEventListener("keydown", onKeyDown);
+      if (onClose) {
+        window.removeEventListener("keydown", onEsc);
+        document.body.style.overflow = prevOverflow;
+      }
       hidden.forEach((n) => n.removeAttribute("inert"));
       if (prev && prev.focus) prev.focus();
     };
-  }, [active]);
+  }, [active, onClose]);
 
   return ref;
 }

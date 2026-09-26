@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useSheetDrag } from "../hooks/useSheetDrag";
+import { cleanArtists } from "../utils/artists";
 import { Poster, ArtistPhoto } from "./BlThumb";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
@@ -22,22 +24,13 @@ function eventTimes(event) {
 }
 
 function buildEventDescription(event) {
-  const artistStr = event.artists?.filter(a => a && a !== "TBA").join(", ") || "";
+  const artistStr = cleanArtists(event.artists).join(", ");
   return [
     artistStr ? `Line-up: ${artistStr}` : "",
     event.genre ? `Género: ${event.genre}` : "",
     event.url ? `Info: ${event.url}` : "",
-    `https://basslayer.io/eventos/${eventPageSlug(event)}`,
+    `https://basslayer.io/eventos/${eventSlug(event)}`,
   ].filter(Boolean).join("\n");
-}
-
-// Slug estilo server (mismo formato usado por App.jsx para deep links)
-function eventPageSlug(event) {
-  const slugify = (s) => String(s || "").normalize("NFD").replace(/\p{Mn}/gu, "").toLowerCase()
-    .replace(/&/g, " y ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
-  const namePart = slugify(event.name);
-  const datePart = slugify(`${event.day || ""}-${event.month || ""}`);
-  return [namePart, datePart].filter(Boolean).join("-");
 }
 
 function buildICS(event) {
@@ -113,12 +106,27 @@ function searchArtistUrl(name) {
   return `https://www.google.com/search?q=${encodeURIComponent(`${name} dj`)}`;
 }
 
+// Nombre corto de la ticketera a partir del link del evento, para que el CTA
+// diga a dónde lleva ("Entradas en RA") en vez de un genérico.
+const TICKET_HOSTS = [
+  ["ra.co", "RA"], ["passline", "Passline"], ["venti", "Venti"],
+  ["allaccess", "All Access"], ["entradauno", "EntradaUno"], ["ticketek", "Ticketek"],
+];
+function ticketHostLabel(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    const hit = TICKET_HOSTS.find(([k]) => host === k || host.endsWith("." + k) || host.includes(k));
+    return hit ? hit[1] : null;
+  } catch { return null; }
+}
+
 export function EventModal({ event, onClose, onShare }) {
   const { locale, t } = useLocale();
-  const trapRef = useFocusTrap(!!event);
-  const [selectedArtist, setSelectedArtist] = useState(null);
-  const [artistInfo, setArtistInfo] = useState(null);
-  const [artistLoading, setArtistLoading] = useState(false);
+  const trapRef = useFocusTrap(!!event, onClose);
+  const dragRef = useSheetDrag(onClose);
+  const { isSaved, toggle } = useSavedEvents();
+  const [infos, setInfos] = useState({});         // nombre → info del artista (o null mientras carga)
+  const [openArtist, setOpenArtist] = useState(null);
   const [imageFailed, setImageFailed] = useState(false);
   const [artistImageFailed, setArtistImageFailed] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
@@ -126,12 +134,10 @@ export function EventModal({ event, onClose, onShare }) {
   useEffect(() => {
     if (!event) return;
     setImageFailed(false);
+    setArtistImageFailed(false);
     setCalOpen(false);
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [event, onClose]);
+    setOpenArtist(null);
+  }, [event]);
 
   useEffect(() => {
     if (!calOpen) return;
@@ -142,29 +148,26 @@ export function EventModal({ event, onClose, onShare }) {
     return () => document.removeEventListener("click", handler);
   }, [calOpen]);
 
-  // Pre-select headliner when modal opens / event changes
+  // Info de cada artista del line-up (foto, descripción corta, link), en
+  // paralelo y fila a fila: el server cachea 12 h y el browser respeta ese
+  // Cache-Control, así que reabrir no repite el viaje. null = pendiente.
   useEffect(() => {
-    if (!event) { setSelectedArtist(null); setArtistInfo(null); return; }
-    const list = (event.artists || []).filter(a => a && a !== "TBA" && !a.match(/^(b2b|más a confirmar)/i));
-    setSelectedArtist(list[0] || null);
-  }, [event]);
-
-  // Fetch info for the selected artist
-  useEffect(() => {
-    if (!selectedArtist) { setArtistInfo(null); return; }
+    if (!event) { setInfos({}); return; }
+    const names = cleanArtists(event.artists);
     let cancelled = false;
-    setArtistLoading(true);
-    setArtistInfo(null);
-    api.artist(selectedArtist, locale)
-      .then((data) => { if (!cancelled) setArtistInfo(data); })
-      .catch(() => { if (!cancelled) setArtistInfo({ name: selectedArtist, found: false }); })
-      .finally(() => { if (!cancelled) setArtistLoading(false); });
+    setInfos(Object.fromEntries(names.map((n) => [n, null])));
+    names.forEach((name) => {
+      api.artist(name, locale)
+        .catch(() => ({ name, found: false }))
+        .then((data) => { if (!cancelled) setInfos((prev) => ({ ...prev, [name]: data })); });
+    });
     return () => { cancelled = true; };
-  }, [selectedArtist, locale]);
+  }, [event, locale]);
 
   if (!event) return null;
 
   const hasDirectLink = !!event.url;
+  const hostLabel = hasDirectLink ? ticketHostLabel(event.url) : null;
 
   function ticketUrl() {
     if (event.url) return event.url;
@@ -192,321 +195,224 @@ export function EventModal({ event, onClose, onShare }) {
   const mapsViewUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsLocationQuery)}`;
   const mapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapsLocationQuery)}`;
 
-  const artists = event.artists?.filter(a => a && a !== "TBA" && !a.match(/^(b2b|más a confirmar)/i)) || [];
-  const headliner = artists[0];
-  const supporting = artists.slice(1);
-
+  const artists = cleanArtists(event.artists);
   const longDate = formatLongDateLocale(event.day, event.month, locale);
   const stamp = eventStamp(event, t);
-  const { isSaved, toggle } = useSavedEvents();
   const slug = eventSlug(event);
   const savedOn = isSaved(slug);
-  // El precio venía en los datos y no se mostraba en ninguna parte. Es dato de
-  // decisión: va arriba, con el resto de lo que define si vas o no.
   const priceNum = Number(event.ticket_price);
   const priceLabel = isFinite(priceNum) && priceNum > 0
     ? `${t("event.priceFrom")} $${priceNum.toLocaleString(locale === "en" ? "en-US" : "es-AR")}`
     : null;
+  const showFlyer = event.image && !imageFailed;
+  const showArtistPhoto = !showFlyer && event.artistImage && !artistImageFailed;
 
   return (
-    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name} ref={trapRef}>
+    <div className="bl-modal-overlay bl-modal-overlay--sheet open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={event.name} ref={trapRef}>
       <div className="bl-modal bl-event-modal">
         <button className="bl-modal-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
 
-        <div className="bl-modal-header">
-          <div className="bl-modal-date">
-            <div className="bl-modal-date-d">{event.day}</div>
-            <div className="bl-modal-date-m">{monthAbbrLocale(event.month, locale)}</div>
-          </div>
-          <div className="bl-modal-title-area">
-            <h1 className="bl-modal-name">{event.name}</h1>
-            {/* La fecha larga sube acá desde la tabla de INFORMACIÓN, que se
-                borró por redundante: sus cuatro filas repetían este header o la
-                tarjeta de ubicación. Así no se pierde el día de la semana. */}
-            <div className="bl-em-meta">
-              <span className="bl-em-meta-date">{longDate}</span>
-              {event.time && <span className="bl-em-meta-time">{event.time} hs</span>}
-              {stamp && <span className="bl-modal-genre">{stamp}</span>}
-              {priceLabel && <span className="bl-em-meta-price">{priceLabel}</span>}
-            </div>
-          </div>
-        </div>
-
-        <div className="bl-modal-image-wrap">
-          {event.image && !imageFailed ? (
-            <img
-              className="bl-modal-image"
-              src={event.image}
-              alt={event.name}
-              loading="lazy"
-              onError={() => setImageFailed(true)}
-            />
-          ) : event.artistImage && !artistImageFailed ? (
-            <div className="bl-modal-artist" aria-hidden="true">
+        {/* Columna del flyer: el afiche entero sobre su propia copia desenfocada.
+            Sin flyer, la foto del artista a escala hero; sin foto, el mini-afiche. */}
+        <div className="bl-em-fly" ref={dragRef}>
+          <span className="bl-em-grab" aria-hidden="true" />
+          {showFlyer ? (
+            <>
+              <div className="bl-em-fly-blur" style={{ backgroundImage: `url("${event.image}")` }} aria-hidden="true" />
+              <img
+                className="bl-em-fly-img"
+                src={event.image}
+                alt={event.name}
+                onError={() => setImageFailed(true)}
+              />
+            </>
+          ) : showArtistPhoto ? (
+            <div className="bl-em-fly-photo" aria-hidden="true">
               <ArtistPhoto
                 src={event.artistImage}
-                name={event.artistImageName || (event.artists && event.artists[0]) || event.name}
+                name={event.artistImageName || artists[0] || event.name}
                 family={event.family}
                 onFail={() => setArtistImageFailed(true)}
               />
             </div>
           ) : (
-            <div className="bl-modal-poster" aria-hidden="true">
-              <Poster text={(event.artists && event.artists[0]) || event.name} family={event.family} />
+            <div className="bl-em-fly-poster" aria-hidden="true">
+              <Poster text={artists[0] || event.name} family={event.family} />
             </div>
           )}
+          <div className="bl-em-stamp" aria-hidden="true">
+            <b>{event.day}</b>
+            <span>{monthAbbrLocale(event.month, locale)}</span>
+          </div>
         </div>
 
-
-        <div className="bl-modal-body">
-          {artists.length > 0 && (
-            <div className="bl-modal-section">
-              <div className="bl-modal-label bl-bass-t-label">
-                {t("event.lineup")} · {artists.length} {artists.length === 1 ? t("event.lineupSingle") : t("event.lineupPlural")}
-              </div>
-              {headliner && (
-                <div className="bl-em-headliner">
-                  <button
-                    type="button"
-                    className={`bl-em-headliner-name${selectedArtist === headliner ? " active" : ""}`}
-                    onClick={() => setSelectedArtist(headliner)}
-                    title={`${t("event.viewArtist")} ${headliner}`}
-                  >
-                    {headliner}
-                  </button>
-                </div>
-              )}
-              {supporting.length > 0 && (
-                <div className="bl-modal-artists">
-                  {supporting.map((a, i) => (
-                    <button
-                      type="button"
-                      key={i}
-                      className={`bl-modal-artist${selectedArtist === a ? " active" : ""}`}
-                      onClick={() => setSelectedArtist(a)}
-                      title={`${t("event.viewArtist")} ${a}`}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {selectedArtist && (
-                <ArtistPanel
-                  name={selectedArtist}
-                  info={artistInfo}
-                  loading={artistLoading}
-                  t={t}
-                />
-              )}
+        <div className="bl-em-body">
+          <div className="bl-em-scroll">
+            <div className="bl-em-eyebrow">
+              <span>{longDate}</span>
+              {event.time && <><i aria-hidden="true">·</i><b>{event.time}</b></>}
+              {stamp && <><i aria-hidden="true">·</i><span>{stamp}</span></>}
+              {priceLabel && <><i aria-hidden="true">·</i><span className="bl-em-price">{priceLabel}</span></>}
             </div>
-          )}
+            <h1 className="bl-em-title">{event.name}</h1>
 
-          {event.description && (
-            <div className="bl-modal-section">
-              <div className="bl-modal-label bl-bass-t-label">{t("event.about")}</div>
+            {event.description && (
               <p className="bl-em-desc bl-bass-t-body">{event.description}</p>
-            </div>
-          )}
-
-          <div className="bl-modal-section">
-            <div className="bl-modal-label bl-bass-t-label">{t("event.location")}</div>
-            <div className="bl-em-loc-card">
-              <div className="bl-em-loc-pin" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z" />
-                  <circle cx="12" cy="9" r="2.5" />
-                </svg>
-              </div>
-              <div className="bl-em-loc-body">
-                <div className="bl-em-loc-venue">{event.venue}</div>
-                {event.address && (
-                  <div className="bl-em-loc-addr">{event.address}</div>
-                )}
-                <div className="bl-em-loc-actions">
-                  <a
-                    className="bl-em-loc-btn"
-                    href={mapsViewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t("event.viewOnMaps")} &#x2197;
-                  </a>
-                  <a
-                    className="bl-em-loc-btn bl-em-loc-btn-primary"
-                    href={mapsDirectionsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t("event.directions")} &rarr;
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bl-modal-actions">
-          <a className={`bl-modal-btn bl-modal-btn-primary${hasDirectLink ? "" : " bl-modal-btn-search"}`} href={ticketUrl()} target="_blank" rel="noopener noreferrer">
-            {hasDirectLink ? `${t("event.buyTickets")} →` : `${t("event.searchTickets")} →`}
-          </a>
-          <button
-            type="button"
-            className={`bl-modal-btn bl-modal-btn-secondary bl-modal-btn-save${savedOn ? " on" : ""}`}
-            aria-pressed={savedOn}
-            onClick={() => toggle(slug)}
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style={{ marginRight: 6, verticalAlign: -1 }}>
-              <path d="M6 3h12v18l-6-4.5L6 21V3z" fill={savedOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-            </svg>
-            {savedOn ? t("saved.remove") : t("saved.add")}
-          </button>
-          <div className="bl-cal-menu-wrap">
-            <button
-              className="bl-modal-btn bl-modal-btn-calendar"
-              onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
-              aria-label={t("common.calendar")}
-              aria-haspopup="menu"
-              aria-expanded={calOpen}
-            >
-              <svg className="bl-cal-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="2" y="4" width="16" height="14" rx="2" />
-                <line x1="2" y1="9" x2="18" y2="9" />
-                <line x1="6" y1="2" x2="6" y2="6" />
-                <line x1="14" y1="2" x2="14" y2="6" />
-              </svg>
-              {t("common.calendar")}
-            </button>
-            {calOpen && (
-              <div className="bl-cal-menu" role="menu">
-                <a
-                  className="bl-cal-menu-item"
-                  href={googleCalendarUrl(event) || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  role="menuitem"
-                  onClick={() => setCalOpen(false)}
-                >
-                  Google Calendar
-                </a>
-                <button
-                  className="bl-cal-menu-item"
-                  onClick={async () => {
-                    setCalOpen(false);
-                    // El server sirve el .ics con Content-Type text/calendar:
-                    // en iOS eso lo abre Calendario directo, sin pasos de
-                    // descarga. Si el server no lo tiene, blob local.
-                    const href = `/api/ics/${eventSlug(event)}.ics`;
-                    try {
-                      const r = await fetch(href, { method: "HEAD" });
-                      if (r.ok) { window.location.assign(href); return; }
-                    } catch { /* offline → local */ }
-                    downloadICS(event);
-                  }}
-                  role="menuitem"
-                >
-                  Descargar .ics
-                </button>
-              </div>
             )}
+
+            {artists.length > 0 && (
+              <section className="bl-em-sec" aria-label={t("event.lineup")}>
+                <div className="bl-em-label bl-bass-t-label">
+                  {t("event.lineup")} · {artists.length} {artists.length === 1 ? t("event.lineupSingle") : t("event.lineupPlural")}
+                </div>
+                <ul className="bl-em-lineup">
+                  {artists.map((name, i) => (
+                    <LineupRow
+                      key={name}
+                      name={name}
+                      info={infos[name]}
+                      headliner={i === 0}
+                      open={openArtist === name}
+                      onToggle={() => setOpenArtist(openArtist === name ? null : name)}
+                      t={t}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section className="bl-em-sec bl-em-loc" aria-label={t("event.where")}>
+              <div className="bl-em-label bl-bass-t-label">{t("event.where")}</div>
+              <div className="bl-em-loc-venue">{event.venue}</div>
+              {event.address && <div className="bl-em-loc-addr">{event.address}</div>}
+              <div className="bl-em-loc-links">
+                <a href={mapsViewUrl} target="_blank" rel="noopener noreferrer">{t("event.viewOnMaps")} &#x2197;</a>
+                <a href={mapsDirectionsUrl} target="_blank" rel="noopener noreferrer">{t("event.directions")} &rarr;</a>
+              </div>
+            </section>
           </div>
-          <button className="bl-modal-btn bl-modal-btn-secondary" onClick={() => onShare?.(event)} aria-label={t("common.share")}>
-            {t("common.share")}
-          </button>
+
+          <div className="bl-em-act">
+            <a className="bl-em-cta" href={ticketUrl()} target="_blank" rel="noopener noreferrer">
+              {hasDirectLink
+                ? (hostLabel ? `${t("event.ticketsOn")} ${hostLabel}` : t("event.tickets"))
+                : t("event.searchTickets")}
+              <small aria-hidden="true">&#x2197;</small>
+            </a>
+            <div className="bl-em-ghosts">
+              <button
+                type="button"
+                className={`bl-em-gh${savedOn ? " on" : ""}`}
+                aria-pressed={savedOn}
+                onClick={() => toggle(slug)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21V3z" fill={savedOn ? "currentColor" : "none"} /></svg>
+                {savedOn ? t("saved.remove") : t("saved.add")}
+              </button>
+              <div className="bl-cal-menu-wrap">
+                <button
+                  type="button"
+                  className="bl-em-gh"
+                  onClick={(e) => { e.stopPropagation(); setCalOpen((v) => !v); }}
+                  aria-haspopup="menu"
+                  aria-expanded={calOpen}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+                  {t("common.calendar")}
+                </button>
+                {calOpen && (
+                  <div className="bl-cal-menu" role="menu">
+                    <a
+                      className="bl-cal-menu-item"
+                      href={googleCalendarUrl(event) || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                      onClick={() => setCalOpen(false)}
+                    >
+                      Google Calendar
+                    </a>
+                    <button
+                      className="bl-cal-menu-item"
+                      onClick={async () => {
+                        setCalOpen(false);
+                        // El server sirve el .ics con Content-Type text/calendar:
+                        // en iOS eso lo abre Calendario directo, sin pasos de
+                        // descarga. Si el server no lo tiene, blob local.
+                        const href = `/api/ics/${eventSlug(event)}.ics`;
+                        try {
+                          const r = await fetch(href, { method: "HEAD" });
+                          if (r.ok) { window.location.assign(href); return; }
+                        } catch { /* offline → local */ }
+                        downloadICS(event);
+                      }}
+                      role="menuitem"
+                    >
+                      {t("event.downloadIcs")}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button type="button" className="bl-em-gh" onClick={() => onShare?.(event)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v13M7 8l5-5 5 5M5 14v6h14v-6" /></svg>
+                {t("common.share")}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function ArtistPanel({ name, info, loading, t }) {
-  const tFn = t || ((k) => k);
+const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wikipedia-es": "Wikipedia (ES)", itunes: "Apple Music", musicbrainz: "MusicBrainz" };
 
-  if (loading) {
-    return (
-      <div className="bl-em-artist-panel">
-        <div className="bl-em-artist-loading">
-          <span className="bl-em-artist-pulse">{name}</span>
-          <span className="bl-em-artist-pulse-sub">{tFn("common.loading")}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!info || !info.found) {
-    return (
-      <div className="bl-em-artist-panel">
-        <div className="bl-em-artist-body">
-          <div className="bl-em-artist-name">{name}</div>
-          <div className="bl-em-artist-desc">{tFn("artist.noBio")}</div>
-          <div className="bl-em-artist-links">
-            <a
-              href={searchArtistUrl(name)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bl-em-artist-link"
-            >
-              {tFn("common.searchOnGoogle")} &#x2197;
-            </a>
-            <a
-              href={`https://soundcloud.com/search?q=${encodeURIComponent(name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bl-em-artist-link"
-            >
-              SoundCloud &#x2197;
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const sourceLabel = info.source === "deezer"
-    ? "Deezer"
-    : info.source === "wikipedia-en"
-      ? "Wikipedia (EN)"
-      : info.source === "wikipedia-es"
-        ? "Wikipedia (ES)"
-        : "Wikipedia";
+// Fila del line-up: foto (o inicial), nombre, una línea de contexto y el link
+// a la fuente. Tocarla despliega la bio debajo cuando hay algo que contar.
+function LineupRow({ name, info, headliner, open, onToggle, t }) {
+  const loading = info === null;
+  const found = !!(info && info.found);
+  const thumb = found && info.thumbnail;
+  const sub = headliner ? t("event.headliner") : (found && info.description) || null;
+  const sourceLabel = found ? (SOURCE_LABELS[info.source] || "Wikipedia") : null;
+  const hasMore = found && (info.extract || info.description);
+  const initial = name.replace(/^[^\p{L}\p{N}]+/u, "").charAt(0).toUpperCase() || "·";
 
   return (
-    <div className="bl-em-artist-panel">
-      {info.thumbnail && (
-        <div className="bl-em-artist-thumb-wrap">
-          <img className="bl-em-artist-thumb" src={info.thumbnail} alt={info.title || name} loading="lazy" />
+    <li className={`bl-em-row${open ? " is-open" : ""}${headliner ? " is-headliner" : ""}`}>
+      <button type="button" className="bl-em-row-btn" onClick={onToggle} aria-expanded={open}>
+        {thumb ? (
+          <img className="bl-em-av" src={thumb} alt="" loading="lazy" decoding="async" />
+        ) : (
+          <span className={`bl-em-av bl-em-av-ph${loading ? " is-loading" : ""}`} aria-hidden="true">{initial}</span>
+        )}
+        <span className="bl-em-row-txt">
+          <b>{name}</b>
+          {sub && <span className={`bl-em-row-sub${headliner ? " is-h" : ""}`}>{sub}</span>}
+        </span>
+        <span className="bl-em-row-chev" aria-hidden="true">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div className="bl-em-bio">
+          {loading ? (
+            <div className="bl-em-bio-loading">{t("common.loading")}</div>
+          ) : (
+            <>
+              {found && info.extract && <p className="bl-em-bio-extract">{info.extract}</p>}
+              {!hasMore && <p className="bl-em-bio-extract bl-em-bio-none">{t("artist.noBio")}</p>}
+              <div className="bl-em-bio-links">
+                {found && info.url && (
+                  <a href={info.url} target="_blank" rel="noopener noreferrer">{sourceLabel} &#x2197;</a>
+                )}
+                <a href={`https://soundcloud.com/search?q=${encodeURIComponent(name)}`} target="_blank" rel="noopener noreferrer">SoundCloud &#x2197;</a>
+                {!found && (
+                  <a href={searchArtistUrl(name)} target="_blank" rel="noopener noreferrer">{t("common.searchOnGoogle")} &#x2197;</a>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
-      <div className="bl-em-artist-body">
-        <div className="bl-em-artist-name">{info.title || name}</div>
-        {info.description && (
-          <div className="bl-em-artist-desc">{info.description}</div>
-        )}
-        {info.extract && (
-          <p className="bl-em-artist-extract">{info.extract}</p>
-        )}
-        <div className="bl-em-artist-links">
-          {info.url && (
-            <a
-              href={info.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bl-em-artist-link"
-            >
-              {sourceLabel} &#x2197;
-            </a>
-          )}
-          <a
-            href={`https://soundcloud.com/search?q=${encodeURIComponent(name)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bl-em-artist-link"
-          >
-            SoundCloud &#x2197;
-          </a>
-        </div>
-      </div>
-    </div>
+    </li>
   );
 }

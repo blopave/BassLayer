@@ -1,3 +1,4 @@
+import { cleanArtists } from "../utils/artists";
 import { useEffect, useMemo } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, MONTH_ABBR_INDEX } from "../i18n/strings";
@@ -34,7 +35,7 @@ function isThisWeekend(eventDate) {
 }
 
 function formatArtists(artists) {
-  const clean = (artists || []).filter(a => a && a !== "TBA" && !a.match(/^(b2b|más a confirmar)/i));
+  const clean = cleanArtists(artists);
   if (clean.length === 0) return null;
   if (clean.length <= 3) return clean.join(", ");
   return clean.slice(0, 3).join(", ") + ` +${clean.length - 3}`;
