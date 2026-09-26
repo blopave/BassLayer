@@ -3264,6 +3264,10 @@ function pickHeadliners(ev) {
 // cache sin volver al CDN.
 const artistImageBytes = new Map();   // cdn url → { buf, type, ts } | { placeholder:true, ts }
 const ARTIST_IMAGE_BYTES_MAX = 200;   // ~100KB c/u → tope ~20MB
+// Cuando el CDN nos banea (403/429) seguir pegándole alarga el ban: se pausa
+// un rato y los misses fallan rápido (el front cae a inicial / póster).
+const ARTIST_CDN_PAUSE_MS = 30 * 60 * 1000;
+let artistCdnPausedUntil = 0;
 
 async function fetchArtistImageBytes(cdnUrl) {
   const hit = artistImageBytes.get(cdnUrl);
@@ -3272,8 +3276,12 @@ async function fetchArtistImageBytes(cdnUrl) {
     artistImageBytes.set(cdnUrl, hit);   // bump LRU: las fotos calientes no se evictan
     return hit;
   }
+  if (Date.now() < artistCdnPausedUntil) throw new Error("CDN paused");
   const r = await fetchSafe(cdnUrl, {}, 8000);
-  if (!r.ok) throw new Error(`CDN ${r.status}`);
+  if (!r.ok) {
+    if (r.status === 403 || r.status === 429) artistCdnPausedUntil = Date.now() + ARTIST_CDN_PAUSE_MS;
+    throw new Error(`CDN ${r.status}`);
+  }
   let entry;
   // El CDN redirige al avatar genérico cuando el artista no tiene foto real.
   if (isDeezerPlaceholderUrl(r.url || "")) {

@@ -375,7 +375,9 @@ const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wik
 function LineupRow({ name, info, headliner, open, onToggle, t }) {
   const loading = info === null;
   const found = !!(info && info.found);
-  const thumb = found && info.thumbnail;
+  const [thumbFailed, setThumbFailed] = useState(false);
+  // Si la foto falla (p. ej. el CDN de Deezer corta el proxy) cae a la inicial.
+  const thumb = found && !thumbFailed && info.thumbnail;
   const sub = headliner ? t("event.headliner") : (found && info.description) || null;
   const sourceLabel = found ? (SOURCE_LABELS[info.source] || "Wikipedia") : null;
   const hasMore = found && (info.extract || info.description);
@@ -385,7 +387,7 @@ function LineupRow({ name, info, headliner, open, onToggle, t }) {
     <li className={`bl-em-row${open ? " is-open" : ""}${headliner ? " is-headliner" : ""}`}>
       <button type="button" className="bl-em-row-btn" onClick={onToggle} aria-expanded={open}>
         {thumb ? (
-          <img className="bl-em-av" src={thumb} alt="" loading="lazy" decoding="async" />
+          <img className="bl-em-av" src={thumb} alt="" loading="lazy" decoding="async" onError={() => setThumbFailed(true)} />
         ) : (
           <span className={`bl-em-av bl-em-av-ph${loading ? " is-loading" : ""}`} aria-hidden="true">{initial}</span>
         )}
