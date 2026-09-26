@@ -347,16 +347,8 @@ function activeZoneIndex(value, zones) {
 
 export function IndicatorModal({ indicator, onClose }) {
   const { locale, t } = useLocale();
-  const trapRef = useFocusTrap(!!indicator);
+  const trapRef = useFocusTrap(!!indicator, onClose);
   const data = indicator ? (INDICATORS[locale] || INDICATORS.es)[indicator.key] : null;
-
-  useEffect(() => {
-    if (!indicator) return;
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [indicator, onClose]);
 
   if (!indicator || !data) return null;
 

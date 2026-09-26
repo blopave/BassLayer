@@ -5,6 +5,7 @@ import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } 
 import { applyEventMeta, applyEventJsonLd, applyLayerMeta, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile } from "./utils/constants";
 import { useHomeCanvas } from "./hooks/useHomeCanvas";
+import { useFocusTrap } from "./hooks/useFocusTrap";
 import { storage } from "./utils/storage";
 import { dismissCurtain } from "./utils/curtain";
 import { shareEventCard } from "./utils/shareCard";
@@ -227,7 +228,7 @@ export default function App() {
     // replaceState (no pushState): evita dejar una entrada "/" fantasma que
     // haría que el botón Atrás reabra el modal recién cerrado.
     if (window.location.pathname.startsWith("/eventos/")) {
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", worldUrlRef.current());
     }
     resetMeta();
     removeEventJsonLd();
@@ -249,7 +250,7 @@ export default function App() {
   const closeNews = useCallback(() => {
     setSelectedNews(null);
     if (window.location.pathname.startsWith("/noticias/")) {
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", worldUrlRef.current());
     }
   }, []);
 
@@ -269,7 +270,7 @@ export default function App() {
   const closeFestival = useCallback(() => {
     setSelectedFestival(null);
     if (window.location.pathname.startsWith("/festivales/")) {
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", worldUrlRef.current());
     }
   }, []);
 
@@ -287,7 +288,7 @@ export default function App() {
       }
     } else {
       if (window.location.pathname.startsWith("/eventos/genero/")) {
-        window.history.pushState({}, "", "/");
+        window.history.pushState({}, "", worldUrlRef.current());
       }
     }
   }, []);
@@ -571,6 +572,10 @@ export default function App() {
   // Navigation
   // Desde la URL en el primer render: con /?view=layer antes se pintaba Bass
   // un instante y recién el efecto de deep-link cambiaba de panel.
+  // URL "base" del mundo activo: al cerrar un modal con deep-link (/noticias/x,
+  // /eventos/x) volvemos a /layer o a /, según dónde estemos. Va por ref para
+  // que los callbacks de cierre (memoizados sin deps) lean el panel actual.
+  const worldUrlRef = useRef(() => "/");
   const [activePanel, setActivePanel] = useState(() => (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(window.location.pathname)) ? 1 : 0);
   // Wipe flash trigger when switching worlds (header animation)
   const [wiping, setWiping] = useState(null); // null | "bass" | "layer"
@@ -865,6 +870,14 @@ export default function App() {
   // Render
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
 
+  worldUrlRef.current = () => (view === "sections" && activePanel === 1 ? "/layer" : "/");
+
+  // About y Onboarding con el mismo contrato que los modales: foco atrapado,
+  // Escape cierra, fondo inert, scroll bloqueado.
+  const finishOnboarding = useCallback(() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }, []);
+  const aboutRef = useFocusTrap(showAbout, () => setShowAbout(false));
+  const onboardingRef = useFocusTrap(showOnboarding, finishOnboarding);
+
   // Al cambiar de mundo en secciones, la URL y el <title> siguen al panel:
   // /layer con su meta propia, / con la del home. Solo cuando la URL es una
   // de las dos (no pisa /eventos/... ni un modal abierto).
@@ -875,7 +888,7 @@ export default function App() {
       if (p === "/") window.history.replaceState({}, "", "/layer");
       applyLayerMeta();
     } else {
-      if (/^\/layer\/?$/.test(p)) window.history.replaceState({}, "", "/");
+      if (/^\/layer\/?$/.test(p)) window.history.replaceState({}, "", worldUrlRef.current());
       if (!selectedEvent) resetMeta();
     }
   }, [view, activePanel, selectedEvent]);
@@ -1020,8 +1033,8 @@ export default function App() {
 
       {/* ONBOARDING */}
       {showOnboarding && (
-        <div className="bl-onboarding" onClick={() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }}>
-          <div className="bl-onboarding-card" onClick={(e) => e.stopPropagation()}>
+        <div className="bl-onboarding" onClick={finishOnboarding}>
+          <div className="bl-onboarding-card" role="dialog" aria-modal="true" aria-label={t("onboarding.welcome")} ref={onboardingRef} onClick={(e) => e.stopPropagation()}>
             <div className="bl-onboarding-title">{t("onboarding.welcome")}</div>
             <div className="bl-onboarding-tips">
               <div className="bl-onboarding-tip">
@@ -1037,7 +1050,7 @@ export default function App() {
                 {t("onboarding.tip.layer")}
               </div>
             </div>
-            <button className="bl-onboarding-btn" onClick={() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }}>
+            <button className="bl-onboarding-btn" onClick={finishOnboarding}>
               {t("onboarding.cta")}
             </button>
           </div>
@@ -1089,7 +1102,7 @@ export default function App() {
       {/* ABOUT MODAL */}
       {showAbout && (
         <div className="bl-about-overlay" onClick={() => setShowAbout(false)}>
-          <div className="bl-about-card" onClick={(e) => e.stopPropagation()}>
+          <div className="bl-about-card" role="dialog" aria-modal="true" aria-label={t("topbar.about")} ref={aboutRef} onClick={(e) => e.stopPropagation()}>
             <button className="bl-modal-close" onClick={() => setShowAbout(false)} aria-label={t("common.close")}>&times;</button>
             <div className="bl-about-logo">
               <span className="bl-about-bass">Bass</span>

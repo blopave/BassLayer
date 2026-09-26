@@ -59,15 +59,7 @@ function mapsUrl(item) {
 
 export function CryptoEventModal({ item, onClose }) {
   const { t, locale } = useLocale();
-  const trapRef = useFocusTrap(!!item);
-
-  useEffect(() => {
-    if (!item) return;
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [item, onClose]);
+  const trapRef = useFocusTrap(!!item, onClose);
 
   if (!item) return null;
 

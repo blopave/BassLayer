@@ -25,7 +25,7 @@ function cleanSummary(desc, title) {
 
 export function NewsModal({ item, onClose }) {
   const { t } = useLocale();
-  const trapRef = useFocusTrap(!!item);
+  const trapRef = useFocusTrap(!!item, onClose);
   const [imageFailed, setImageFailed] = useState(false);
   const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
 
@@ -33,11 +33,7 @@ export function NewsModal({ item, onClose }) {
     if (!item) return;
     setImageFailed(false);
     setImageDirect(false);
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [item, onClose]);
+  }, [item]);
 
   if (!item) return null;
 

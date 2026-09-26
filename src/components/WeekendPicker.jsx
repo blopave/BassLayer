@@ -1,5 +1,6 @@
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { cleanArtists } from "../utils/artists";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, MONTH_ABBR_INDEX } from "../i18n/strings";
 
@@ -68,20 +69,12 @@ export function WeekendPicker({ events, onClose, onSelect }) {
 
   const total = grouped.reduce((sum, g) => sum + g.events.length, 0);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => {
-      window.removeEventListener("keydown", handler);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
+  const trapRef = useFocusTrap(true, onClose);
 
   if (total === 0) {
     return (
       <div className="bl-wp-overlay" onClick={onClose}>
-        <div className="bl-wp-panel" onClick={e => e.stopPropagation()}>
+        <div className="bl-wp-panel" role="dialog" aria-modal="true" aria-label={t("weekend.title")} ref={trapRef} onClick={e => e.stopPropagation()}>
           <div className="bl-wp-panel-header">
             <div className="bl-wp-panel-title">{t("weekend.title")}</div>
             <button className="bl-wp-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
@@ -94,7 +87,7 @@ export function WeekendPicker({ events, onClose, onSelect }) {
 
   return (
     <div className="bl-wp-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bl-wp-panel" onClick={e => e.stopPropagation()}>
+      <div className="bl-wp-panel" role="dialog" aria-modal="true" aria-label={t("weekend.title")} ref={trapRef} onClick={e => e.stopPropagation()}>
         <div className="bl-wp-panel-header">
           <div>
             <div className="bl-wp-panel-title">{t("weekend.title")}</div>

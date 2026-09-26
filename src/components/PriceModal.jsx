@@ -5,19 +5,11 @@ import { useLocale } from "../hooks/useLocale";
 
 export function PriceModal({ price, onClose }) {
   const { t } = useLocale();
-  const trapRef = useFocusTrap(!!price);
+  const trapRef = useFocusTrap(!!price, onClose);
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chartError, setChartError] = useState(false);
   const canvasRef = useRef(null);
-
-  useEffect(() => {
-    if (!price) return;
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [price, onClose]);
 
   useEffect(() => {
     if (!price) return;

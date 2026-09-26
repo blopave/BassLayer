@@ -5,15 +5,7 @@ import { useLocale } from "../hooks/useLocale";
 
 export function TimelineEventModal({ event, onClose }) {
   const { t } = useLocale();
-  const trapRef = useFocusTrap(!!event);
-
-  useEffect(() => {
-    if (!event) return;
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [event, onClose]);
+  const trapRef = useFocusTrap(!!event, onClose);
 
   if (!event) return null;
 

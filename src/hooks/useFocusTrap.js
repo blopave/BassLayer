@@ -6,13 +6,18 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 // bloqueado mientras el diálogo está activo (antes cada modal lo repetía).
 export function useFocusTrap(active, onClose) {
   const ref = useRef(null);
+  // onClose vive en un ref: un callback inline no debe re-correr el trap
+  // (re-enfocar el primer control, re-aplicar inert) en cada render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!active || !ref.current) return;
     const el = ref.current;
     const prev = document.activeElement;
     const prevOverflow = document.body.style.overflow;
-    const onEsc = (e) => { if (e.key === "Escape") onClose?.(); };
+    const onClose = onCloseRef.current;
+    const onEsc = (e) => { if (e.key === "Escape") onCloseRef.current?.(); };
     if (onClose) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", onEsc);
@@ -57,7 +62,7 @@ export function useFocusTrap(active, onClose) {
       hidden.forEach((n) => n.removeAttribute("inert"));
       if (prev && prev.focus) prev.focus();
     };
-  }, [active, onClose]);
+  }, [active]);
 
   return ref;
 }

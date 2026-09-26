@@ -229,14 +229,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // disparador compacto; en desktop la barra de una fila se queda como está.
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const sheetRef = useFocusTrap(sheetOpen);
-  // Escape cierra el sheet — mismo contrato que los modales.
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const onKey = (e) => { if (e.key === "Escape") setSheetOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sheetOpen]);
+  // Escape, bloqueo de scroll e inert del fondo: mismo contrato que los modales.
+  const sheetRef = useFocusTrap(sheetOpen, () => setSheetOpen(false));
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"

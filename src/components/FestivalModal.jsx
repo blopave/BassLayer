@@ -24,7 +24,7 @@ function formatDateRange(start, end, locale) {
 
 export function FestivalModal({ festival, onClose }) {
   const { locale, t } = useLocale();
-  const trapRef = useFocusTrap(!!festival);
+  const trapRef = useFocusTrap(!!festival, onClose);
   const [imageFailed, setImageFailed] = useState(false);
   const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
 
@@ -32,11 +32,7 @@ export function FestivalModal({ festival, onClose }) {
     if (!festival) return;
     setImageFailed(false);
     setImageDirect(false);
-    document.body.style.overflow = "hidden";
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => { window.removeEventListener("keydown", handler); document.body.style.overflow = ""; };
-  }, [festival, onClose]);
+  }, [festival]);
 
   if (!festival) return null;
 
