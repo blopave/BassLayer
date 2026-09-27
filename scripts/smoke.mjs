@@ -13,6 +13,7 @@
 
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
+import { lowContrast, homeCollisions, posterOverflow, floatingOverlaps } from "./lib/ui-checks.mjs";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3000";
 const SHOTS = ".pw-shots";
@@ -67,6 +68,11 @@ async function run(vp) {
     if (m.type() === "error" && !IGNORED_CONSOLE.test(m.text())) fail(vp.name, "console", m.text().slice(0, 200));
   });
 
+  // Corre un chequeo de ui-checks en la página y registra cada problema.
+  const expectNone = async (step, check) => {
+    for (const issue of await page.evaluate(check)) fail(vp.name, step, issue);
+  };
+
   try {
     // 1. Home → onboarding de primera visita → Bass
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
@@ -78,6 +84,9 @@ async function run(vp) {
     await onboardingBtn.click();
     await page.locator(".bl-onboarding").waitFor({ state: "detached", timeout: 5_000 });
     if ((await page.evaluate(() => document.body.style.overflow)) === "hidden") fail(vp.name, "onboarding", "al cerrarlo el scroll sigue bloqueado");
+    await page.waitForTimeout(1200); // entrada del home (fade de los mundos)
+    if (!vp.isMobile) await expectNone("home", homeCollisions);
+    await expectNone("home", lowContrast);
     await page.getByRole("button", { name: /^Bass —/ }).first().click();
 
     // 2. Feed con eventos
@@ -85,6 +94,10 @@ async function run(vp) {
     await firstEvent.waitFor({ state: "attached", timeout: 30_000 });
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);
+    await page.waitForTimeout(800);
+    await expectNone("feed", lowContrast);
+    await expectNone("feed", posterOverflow);
+    await expectNone("feed", floatingOverlaps);
 
     // 3. Abrir un evento con line-up (el caso que se rompió) o el primero
     const withLineup = page.locator(".bl-ev-item:has(.bl-ev-lineup) > .bl-ev-open").first();
@@ -114,6 +127,8 @@ async function run(vp) {
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);
 
     await checkModalFits(page, dialog, vp.name);
+    await expectNone("modal", lowContrast);
+    await expectNone("modal", posterOverflow);
 
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal.png` });
 
@@ -124,6 +139,15 @@ async function run(vp) {
     if (overflow === "hidden") fail(vp.name, "modal", "al cerrar, el body sigue con scroll bloqueado");
     const inertAfter = await inertCount();
     if (inertAfter !== inertBefore) fail(vp.name, "modal", `al cerrar quedan elementos inert (${inertBefore} → ${inertAfter})`);
+
+    // 4b. Mobile: el FAB se esconde al bajar leyendo (en desktop vive en el header)
+    if (vp.isMobile) {
+    await page.evaluate(() => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollBy(0, 900));
+    await page.waitForTimeout(600);
+    if (!(await page.evaluate(() => document.querySelector(".bl-util-bar")?.classList.contains("is-hidden"))))
+      fail(vp.name, "feed", "la barra flotante no se esconde al scrollear hacia abajo");
+    await page.evaluate(() => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollTo(0, 0));
+    }
 
     // 5. Feed sin imágenes rotas visibles
     const feedBroken = await brokenImages(page.locator("body"));
@@ -152,6 +176,18 @@ async function run(vp) {
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
     if (!page.url().endsWith("/layer")) fail(vp.name, "layer", `no quedó en /layer (${page.url()})`);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
+    await expectNone("layer", lowContrast);
+
+    // 7. Modo día: el mismo contraste con la paleta clara (Layer y agenda)
+    await page.evaluate(() => document.querySelector(".bl-mode-toggle")?.click());
+    await page.waitForTimeout(900);
+    if (!(await page.evaluate(() => !!document.querySelector(".bl-root.day-mode")))) fail(vp.name, "día", "el toggle no activa el modo día");
+    await expectNone("layer día", lowContrast);
+    await page.goto(BASE + "/eventos/genero/techno", { waitUntil: "domcontentloaded" });
+    await page.locator(".bl-ev-open").first().waitFor({ state: "attached", timeout: 30_000 });
+    await page.waitForTimeout(800);
+    await expectNone("agenda día", lowContrast);
+    await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-dia.png` });
   } catch (e) {
     fail(vp.name, "flujo", e.message.split("\n")[0]);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-error.png` }).catch(() => {});

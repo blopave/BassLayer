@@ -239,7 +239,7 @@ export function EventModal({ event, onClose, onShare }) {
               />
             </div>
           ) : (
-            <div className="bl-em-fly-poster" aria-hidden="true">
+            <div className="bl-em-fly-poster bl-thumb-poster" aria-hidden="true">
               <Poster text={artists[0] || event.name} family={event.family} />
             </div>
           )}

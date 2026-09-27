@@ -2933,6 +2933,9 @@ app.get("/api/events", async (req, res) => {
 const IMG_WIDTHS = new Set([160, 320, 640, 1000]);
 const IMG_MAX_INPUT = 6 * 1024 * 1024;
 const IMG_TTL = 7 * 24 * 60 * 60_000;
+// Un fallo de resize suele ser transitorio (timeout del CDN de origen): con el
+// TTL de 7 días un solo timeout dejaba ese flyer como póster una semana.
+const IMG_MISS_TTL = 10 * 60_000;
 const IMG_CACHE_MAX = 800;               // ~12 KB c/u a 160–320 px → ≈10 MB
 const imgCache = new Map();              // `${w}:${url}` → { buf, ts } | { miss:true, ts }
 const imgInflight = new Map();
@@ -2956,7 +2959,7 @@ app.get("/img", async (req, res) => {
   if (!knownImages.has(u)) return res.status(404).json({ error: "Unknown image" });
   const key = `${w}:${u}`;
   const hit = imgCache.get(key);
-  if (hit && Date.now() - hit.ts < IMG_TTL) {
+  if (hit && Date.now() - hit.ts < (hit.miss ? IMG_MISS_TTL : IMG_TTL)) {
     if (hit.miss) return res.status(404).json({ error: "Unavailable" });
     imgCache.delete(key); imgCache.set(key, hit); // bump LRU
     res.set("Content-Type", "image/webp");

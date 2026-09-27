@@ -31,7 +31,7 @@ export function Poster({ text, family }) {
   const size = longest > 9 ? "s" : longest > 5 ? "m" : "l";
   const variant = hashStr(String(text)) % 3;
   return (
-    <div className="bl-poster" data-family={family || "other"} data-variant={variant} data-size={size}>
+    <div className="bl-poster" data-family={family || "other"} data-variant={variant} data-size={size} style={{ "--len": longest }}>
       <span className="bl-poster-rule" />
       <div className="bl-poster-words">
         {words.map((w, i) => (

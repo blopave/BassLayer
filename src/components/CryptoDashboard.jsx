@@ -78,7 +78,7 @@ function FearGreedCell({ value, label, history, onClick, t }) {
   const flash = useTickFlash(value);
   if (value == null) return null;
   const hue = (value / 100) * 120;
-  const color = `hsl(${hue}, 55%, 50%)`;
+  const color = `hsl(${hue}, 55%, var(--bl-fng-l, 50%))`;
   return (
     <div
       className={`bl-term-cell bl-term-cell-clickable${flash ? " bl-term-cell-flash-" + flash : ""}`}

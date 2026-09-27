@@ -179,8 +179,13 @@
 
   /* Section accent colors (day) */
   --bl-accent-bass:  #A0714D;
-  --bl-accent-layer: #4D8A9A;
+  --bl-accent-layer: #3A7282;
   --bl-750:         #DDDDD8;
+  /* Verde/rojo de noche dan 2.5–3:1 sobre el fondo claro: se oscurecen. */
+  --bl-up:          #2A7148;
+  --bl-down:        #B23A3A;
+  /* Luminosidad del texto de FNG.IDX (el tono lo pone el valor) */
+  --bl-fng-l:       32%;
 }
 .bl-root.day-mode .bl-home::after { background:radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(245,245,240,0.5) 100%); }
 
@@ -543,6 +548,31 @@
   display:flex; align-items:center;
 }
 .bl-util-items { display:flex; align-items:center; gap:10px; }
+.bl-util-bar { transition:transform .4s var(--ease-out-expo), opacity .25s; }
+/* Mobile: el FAB vive abajo (alcance del pulgar) y se esconde al bajar leyendo
+   para no tapar el guardar de las cards; vuelve al subir. */
+@media (max-width:768px) {
+  .bl-util-bar.is-hidden { transform:translateY(calc(100% + 32px)); opacity:0; pointer-events:none; }
+}
+/* Desktop, dentro de las secciones: la barra completa (~330px) tapaba el
+   buscador, las cuentas regresivas y el panel Mercados. Colapsa a un botón
+   que vive en el header fijo (arriba a la derecha, zona libre) y despliega
+   hacia abajo: nunca queda sobre contenido. El home conserva la barra entera. */
+@media (min-width:769px) {
+  .bl-util-bar.is-compact { top:38px; bottom:auto; right:28px; z-index:950; }
+  .bl-util-bar.is-compact .bl-mode-toggle.bl-util-fab {
+    display:flex; width:44px; height:44px;
+    color:var(--bl-text-sec); font-family:var(--font-mono); font-size:20px; line-height:1;
+  }
+  .bl-util-bar.is-compact.is-open .bl-util-fab { color:var(--bl-text); border-color:var(--bl-text-sec); }
+  .bl-util-bar.is-compact .bl-util-items {
+    position:absolute; top:54px; right:0;
+    flex-direction:column; align-items:flex-end; gap:8px;
+    opacity:0; transform:translateY(-8px); pointer-events:none; visibility:hidden;
+    transition:opacity .3s var(--ease-out-expo), transform .3s var(--ease-out-expo), visibility .3s;
+  }
+  .bl-util-bar.is-compact.is-open .bl-util-items { opacity:1; transform:none; pointer-events:auto; visibility:visible; }
+}
 /* El botón que colapsa la barra sólo existe en mobile. Comparte base circular
    con .bl-mode-toggle (mismo className en el JSX); acá solo los deltas. */
 .bl-util-fab { display:none; }
@@ -687,7 +717,7 @@
 }
 .bl-about-section-title {
   font-family:var(--font-mono); font-size:9px; letter-spacing:2px;
-  text-transform:uppercase; color:var(--bl-indicator); margin-bottom:8px;
+  text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:8px;
 }
 .bl-about-section-text {
   font-family:var(--font-body); font-size:12px; line-height:1.5;
@@ -1225,6 +1255,11 @@
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
+/* El crema cálido de los títulos es de noche: en modo día pasaba a blanco
+   sobre fondo claro (ilegible). */
+.bl-root.day-mode .bl-ev-name,
+.bl-root.day-mode .bl-ev-item-festival .bl-ev-date-d { color:var(--bl-text); }
+.bl-root.day-mode .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
 .bl-ev-meta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .bl-ev-venue-inline {
   font-family:var(--font-bass-mono), monospace;
@@ -2101,7 +2136,7 @@
 .bl-modal-body { padding:0 28px 24px; }
 
 .bl-modal-section { margin-bottom:20px; }
-.bl-modal-label { color:var(--bl-indicator); margin-bottom:8px; }
+.bl-modal-label { color:var(--bl-text-ter); margin-bottom:8px; }
 
 .bl-modal-info-grid {
   display:grid; grid-template-columns:auto 1fr; gap:0;
@@ -2363,7 +2398,9 @@
 }
 .bl-em-fly-photo, .bl-em-fly-poster { position:absolute; inset:0; }
 .bl-em-fly-photo .bl-artist-photo-name { left:22px; right:22px; bottom:22px; font-size:26px; }
-.bl-em-fly-poster .bl-poster { position:absolute; inset:0; font-size:28px; padding:22px; }
+.bl-em-fly-poster .bl-poster { position:absolute; inset:0; font-size:46px; padding:22px; }
+/* El guión-ancla del póster cae justo debajo de la estampilla de fecha. */
+.bl-em-fly .bl-poster-rule { display:none; }
 .bl-em-fly::after {
   content:""; position:absolute; inset:auto 0 0 0; height:120px; pointer-events:none;
   background:linear-gradient(180deg, transparent, rgba(0,0,0,.35));
@@ -2398,7 +2435,7 @@
 }
 .bl-em-desc { margin:-8px 0 22px; font-size:14.5px; line-height:1.6; color:var(--bl-150); max-width:62ch; }
 .bl-em-sec { margin-bottom:24px; }
-.bl-em-label { color:var(--bl-indicator); margin-bottom:10px; }
+.bl-em-label { color:var(--bl-text-ter); margin-bottom:10px; }
 
 /* line-up */
 .bl-em-lineup { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
@@ -2430,7 +2467,7 @@
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .bl-em-row-sub.is-h { color:var(--bl-accent-bass); }
-.bl-em-row-chev { font-family:var(--font-mono); font-size:14px; color:var(--bl-indicator); width:20px; text-align:center; flex-shrink:0; }
+.bl-em-row-chev { font-family:var(--font-mono); font-size:14px; color:var(--bl-text-ter); width:20px; text-align:center; flex-shrink:0; }
 .bl-em-row.is-open .bl-em-row-chev { color:var(--bl-accent-bass); }
 .bl-em-bio {
   margin:0 0 12px 58px; padding:12px 14px;
@@ -2511,9 +2548,9 @@
 .bl-price-modal-chart { padding:0 28px 16px; }
 .bl-price-canvas { width:100%; height:120px; display:block; }
 .bl-price-modal-loading { font-family:var(--font-mono); font-size:10px; color:var(--bl-text-sec); text-align:center; padding:40px 0; letter-spacing:2px; }
-.bl-price-modal-period { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-indicator); text-align:right; margin-top:6px; }
+.bl-price-modal-period { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-ter); text-align:right; margin-top:6px; }
 .bl-price-modal-meta { padding:0 28px 16px; display:flex; justify-content:space-between; border-top:1px solid var(--bl-border-sub); padding-top:12px; margin:0 28px; padding-left:0; padding-right:0; }
-.bl-price-modal-label { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-indicator); }
+.bl-price-modal-label { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-ter); }
 .bl-price-modal-value { font-family:var(--font-mono); font-size:13px; color:var(--bl-150); }
 .bl-price-modal-footer { padding:0 28px 28px; }
 
@@ -2549,7 +2586,7 @@
 .bl-indicator-modal-section:last-child { border-bottom:none; padding-bottom:28px; }
 .bl-indicator-modal-label {
   font-family:var(--font-mono); font-size:8px; letter-spacing:2px;
-  text-transform:uppercase; color:var(--bl-indicator); margin-bottom:10px;
+  text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:10px;
 }
 .bl-indicator-modal-text {
   font-family:var(--font-body); font-size:13.5px; line-height:1.55;
@@ -2902,7 +2939,7 @@
 .bl-layer-tab:hover { color:var(--bl-text); }
 .bl-layer-tab.active { color:var(--bl-accent-layer); border-bottom-color:var(--bl-accent-layer); }
 .bl-layer-tab:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
-.bl-layer-tab-cnt { color:var(--bl-indicator); letter-spacing:1px; }
+.bl-layer-tab-cnt { color:var(--bl-text-ter); letter-spacing:1px; }
 .bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
 
 .bl-layer-grid { display:grid; grid-template-columns:minmax(0, 1fr) 380px; align-items:start; padding-bottom:24px; }
@@ -2911,7 +2948,7 @@
 .bl-aside-card { border:1px solid var(--bl-border); border-radius:6px; background:var(--bl-surface); padding:14px 16px; }
 .bl-aside-lab {
   display:flex; align-items:center; gap:8px; margin-bottom:8px;
-  font-family:var(--font-mono); font-size:9.5px; letter-spacing:2.2px; text-transform:uppercase; color:var(--bl-indicator);
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:2.2px; text-transform:uppercase; color:var(--bl-text-ter);
 }
 .bl-aside-cnt { color:var(--bl-text-sec); letter-spacing:1px; }
 .bl-aside-more {
@@ -4591,7 +4628,10 @@ select.bl-venue-input { cursor:pointer; }
     radial-gradient(circle at 30% 20%, var(--poster-wash, rgba(196,144,112,0.10)) 0%, transparent 70%),
     linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%);
 }
-.bl-poster { position:absolute; inset:0; display:flex; padding:8px 9px; overflow:hidden; font-size:12px; }
+.bl-poster { position:absolute; inset:0; display:flex; padding:8px 9px; overflow:hidden; font-size:12px; container-type:inline-size;
+  /* Paleta "club" por defecto en el póster mismo: fuera de .bl-thumb-poster
+     (modal) la tinta quedaba indefinida y la variante outline era invisible. */
+  --poster-tint:#C49070; --poster-ink:#E2B896; }
 .bl-poster[data-family="live"],
 .bl-artist-photo[data-family="live"]     { --poster-tint:#C87A6C; --poster-ink:#E5A296; --poster-wash:rgba(200,122,108,0.10); }
 .bl-poster[data-family="urbano"],
@@ -4627,6 +4667,12 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-poster[data-size="m"] .bl-poster-word { font-size:1.25em; }
 .bl-poster[data-size="s"] .bl-poster-word { font-size:0.95em; letter-spacing:-0.02em; }
+/* Tope por ancho real: la palabra más larga (--len letras, ~0.66em cada una
+   en mayúscula heavy) nunca pasa el ancho de la caja. Los escalones de arriba
+   solo miraban la cantidad de letras y cortaban "HOBELA|R" en thumbs chicos. */
+.bl-poster .bl-poster-word { font-size:min(1.6em, calc(100cqi / (var(--len, 6) * 0.66))); }
+.bl-poster[data-size="m"] .bl-poster-word { font-size:min(1.25em, calc(100cqi / (var(--len, 6) * 0.66))); }
+.bl-poster[data-size="s"] .bl-poster-word { font-size:min(0.95em, calc(100cqi / (var(--len, 6) * 0.64))); }
 /* Ancla: guión de tinta en la esquina, espejo del stamp editorial */
 .bl-poster-rule {
   position:absolute; left:9px; top:8px;
@@ -5380,6 +5426,8 @@ select.bl-venue-input { cursor:pointer; }
 .blf-big em{ font-style:normal; color:var(--bl-accent-bass); }
 .blf-flyrow{ display:flex; gap:10px; margin-top:2px; }
 .blf-layer .blf-flyrow{ justify-content:flex-end; }
+/* Laptops chicas: 4 flyers de 92px se metían debajo del wordmark central. */
+@media (min-width:769px) and (max-width:1199px){ .blf-bass .blf-fcard:nth-child(n+4){ display:none; } .blf-kick{ letter-spacing:2px; white-space:nowrap; } }
 .blf-fcard{ position:relative; width:92px; height:124px; border-radius:5px; overflow:hidden; flex:0 0 auto;
   border:1px solid rgba(196,144,112,.22); background-size:cover; background-position:center;
   display:flex; flex-direction:column; justify-content:flex-end; padding:8px; }

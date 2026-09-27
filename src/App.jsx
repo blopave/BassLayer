@@ -126,7 +126,16 @@ export default function App() {
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile)
+  const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile y secciones)
+  // El speed-dial abierto se cierra con Escape o tocando fuera de él.
+  useEffect(() => {
+    if (!utilOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setUtilOpen(false); };
+    const onDown = (e) => { if (!e.target.closest?.(".bl-util-bar")) setUtilOpen(false); };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
+  }, [utilOpen]);
   const [venueUser, setVenueUser] = useState(null);
   const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
   const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
@@ -582,13 +591,23 @@ export default function App() {
 
   // Scroll progress
   const [scrollProgress, setScrollProgress] = useState(0);
+  // Los controles flotantes se esconden al bajar leyendo y vuelven al subir o
+  // al llegar al final: fijos tapaban el guardar de las cards y el aside.
+  const [utilHidden, setUtilHidden] = useState(false);
   useEffect(() => {
+    setUtilHidden(false);
     if (view !== "sections") return;
     const panel = activePanel === 0 ? bassPanelRef.current : layerPanelRef.current;
     if (!panel) return;
+    let lastTop = panel.scrollTop;
     const onScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = panel;
       setScrollProgress(scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0);
+      const delta = scrollTop - lastTop;
+      if (Math.abs(delta) < 8) return;
+      lastTop = scrollTop;
+      const atEnd = scrollTop + clientHeight >= scrollHeight - 40;
+      setUtilHidden(delta > 0 && scrollTop > 120 && !atEnd);
     };
     panel.addEventListener("scroll", onScroll, { passive: true });
     onScroll(); // sincronizar el fill al panel actual (evita progreso stale al cambiar de mundo)
@@ -923,8 +942,8 @@ export default function App() {
         <main className={`bl-home${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}`}>
           {/* canvas generativo solo en desktop — en mobile es un drena-batería sin retorno visible */}
           {!isMobile && <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />}
-          <div className="bl-info bl-info-tl" ref={(el) => (parallaxRefs.current.tl = el)} aria-hidden="true">BassLayer</div>
-          <div className="bl-info bl-info-tr" ref={(el) => (parallaxRefs.current.tr = el)} aria-hidden="true">&mdash;&mdash; {new Date().getFullYear()}</div>
+          {/* Las esquinas de arriba (marca y año) se pisaban con las bajadas de
+              cada mundo del home dual; queda solo el reloj de abajo. */}
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — <BaClock /></div>
 
           {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
@@ -1061,7 +1080,7 @@ export default function App() {
           En mobile los controles viven colapsados detrás de un único botón
           (speed-dial vertical): cinco pastillas fijas a lo ancho de 390px
           eran una barrera visual sobre cada pantalla de contenido. */}
-      <div className={`bl-util-bar${utilOpen ? " is-open" : ""}`}>
+      <div className={`bl-util-bar${utilOpen ? " is-open" : ""}${utilHidden && !utilOpen ? " is-hidden" : ""}${view === "sections" ? " is-compact" : ""}`}>
         <div className="bl-util-items" onClick={() => setUtilOpen(false)}>
         {view === "sections" && (
           <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label={t("util.back")}>
