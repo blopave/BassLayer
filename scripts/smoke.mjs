@@ -229,7 +229,9 @@ async function run(vp) {
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `el acceso a Ciclos abre "${active}"`);
       if (!narrow && !(await page.locator(".bl-idx-row.is-on").filter({ hasText: /Ciclos|Cycles/ }).count()))
         fail(vp.name, "layer", "el índice no marca la sección abierta");
-      await page.locator(".bl-layer-tab").first().click();
+      await (narrow ? page.locator(".bl-layer-tab").first() : nav.first()).click();
+      await page.waitForTimeout(500);
+      if (narrow && (await page.locator(".bl-door").count()) !== 6) fail(vp.name, "layer", "volver a Noticias no muestra la grilla");
     }
 
     // 7. Modo día: el mismo contraste con la paleta clara (Layer y agenda)

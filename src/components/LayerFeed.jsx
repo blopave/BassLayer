@@ -87,17 +87,25 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
   const listRef = useScrollReveal(loading, section);
-  // Desde la grilla de la portada: cambia de sección y sube a las pestañas,
-  // si no el cambio pasaba fuera de vista (la grilla está más abajo).
+  // Desde la grilla o el índice: cambia de sección y lleva la vista al
+  // comienzo del contenido (las pestañas en mobile; en desktop no hay).
   const tabsRef = useRef(null);
+  const contentRef = useRef(null);
   const goSection = (key) => {
     setSection(key);
-    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    requestAnimationFrame(() => {
+      const tabs = tabsRef.current;
+      const target = tabs && tabs.offsetParent !== null ? tabs : contentRef.current;
+      target?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
   };
 
   return (
     <>
       <CryptoDashboard />
+      {/* Portada mobile: las secciones apenas debajo del terminal, antes de las
+          herramientas (dólar, timeline). En desktop las muestra el índice. */}
+      {section === "noticias" && <LayerDoors onGo={goSection} />}
       <DolarCripto />
       <div className="bl-layer-tools">
         <CryptoBATimeline />
@@ -120,12 +128,11 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       </nav>
 
       {/* Desktop: contenido a la izquierda, mercado y ciclo a la derecha. */}
-      <div className="bl-layer-grid">
+      <div className="bl-layer-grid" ref={contentRef}>
       <div className="bl-layer-main">
       {/* Noticias section */}
       {section === "noticias" && (
         <div className="bl-layer-content">
-          <LayerDoors onGo={goSection} />
           <h2 className="bl-layer-h">{t("section.news")}</h2>
           <FilterBar items={tags} active={filter} onChange={onFilter} className="layer-filters" />
           {loading ? <NewsSkeleton />

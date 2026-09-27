@@ -3018,7 +3018,8 @@
 .bl-door-s .up { color:var(--bl-up); } .bl-door-s .down { color:var(--bl-down); }
 /* Desktop: índice de secciones en la columna lateral (fijo al scrollear). La
    grilla de tarjetas queda solo para mobile: en desktop repetía el índice. */
-@media (min-width:769px) { .bl-doors { display:none; } }
+/* Desktop: el índice lateral navega; la grilla y las pestañas chicas sobran. */
+@media (min-width:769px) { .bl-doors, .bl-layer-tabs { display:none; } .bl-layer-grid { scroll-margin-top:12px; } }
 .bl-idx { border:1px solid var(--bl-border); border-radius:12px; background:var(--bl-surface); padding:14px 8px 8px; }
 .bl-idx .bl-doors-lab { padding:0 8px; }
 .bl-idx-row {
