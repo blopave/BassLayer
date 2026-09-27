@@ -89,12 +89,11 @@ async function checkEndpoint({ path, minItems, required }) {
   for (const item of items) for (const a of item?.artists || []) if (isNotArtist(a)) noArtistas.add(a);
   if (noArtistas.size) fail(path, "line-up", `no son artistas: ${[...noArtistas].slice(0, 5).join(", ")}`);
 
-  // Agenda musical: nada de fútbol, desayunos ni visitas guiadas desde
-  // QuéHacemos (los tipea como "recital"; sept 2026). Solo esa fuente: RA y
-  // Buenos Aliens son agendas curadas de música ("Techno Yoga" en RA es una
-  // clase con DJ, un caso límite que decide Pablo, no la regla).
+  // Agenda musical: nada de fútbol, desayunos, visitas guiadas ni yoga, venga
+  // de la fuente que venga (sept 2026: QuéHacemos los tipea como "recital" y
+  // RA listó "Techno Yoga").
   if (path === "/api/events") {
-    const noShows = items.filter((it) => it?.source === "quehacemos" && NOT_A_SHOW_TITLE.test(it?.name || ""));
+    const noShows = items.filter((it) => NOT_A_SHOW_TITLE.test(it?.name || ""));
     if (noShows.length) fail(path, "no-musical", noShows.slice(0, 3).map((it) => it.name).join(" | "));
   }
 

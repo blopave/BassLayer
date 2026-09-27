@@ -264,6 +264,9 @@ function registerImages(list, field = "image") {
 // snapshot en disco: después de un deploy se sirve el snapshot hasta que la
 // build nueva termina, y tiene que salir igual de limpio.
 function tidyEvents(events) {
+  // Actividades que no son shows, de cualquier fuente (QuéHacemos las filtra
+  // antes; RA listó "Techno Yoga", una clase con DJ — Pablo decidió afuera).
+  for (let i = events.length - 1; i >= 0; i--) if (NOT_A_SHOW_TITLE.test(events[i].name || "")) events.splice(i, 1);
   for (const ev of events) {
     ev.artists = cleanLineup(ev.artists);
     // "A · B": el separador se pega a lo anterior (espacio no separable) para
