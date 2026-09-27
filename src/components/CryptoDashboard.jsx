@@ -7,7 +7,6 @@ const IndicatorModal = lazyNamed(() => import("./IndicatorModal"), "IndicatorMod
 import { useLocale } from "../hooks/useLocale";
 import { formatMarketCap } from "../utils/format";
 
-
 // Cambio porcentual con signo: 5 → "+5%", -2 → "-2%". Compartido por StatCell
 // (grid) y TrendingRow.
 const signedPct = (n) => `${n > 0 ? "+" : ""}${n}%`;

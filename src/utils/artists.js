@@ -1,8 +1,8 @@
-// Qué cuenta como artista real en un line-up. Las fuentes traen placeholders
-// ("TBA", "b2b", "más a confirmar") que no son nombres y no deben renderizarse
-// ni pedirse a /api/artist. Un solo filtro para el modal, el picker y el share.
-const PLACEHOLDER = /^(tba|tbd|tbc|b2b|más a confirmar|mas a confirmar|line-?up|varios artistas|dj set)$/i;
+// Qué cuenta como artista real en un line-up: misma regla que aplica el
+// server (lib/content-rules.js) — placeholders ("TBA", "b2b") y nombres de
+// escenario ("Main Stage") no se renderizan ni se piden a /api/artist.
+import { isNotArtist } from "../../lib/content-rules.js";
 
 export function cleanArtists(list) {
-  return (list || []).filter((a) => typeof a === "string" && a.trim() && !PLACEHOLDER.test(a.trim()));
+  return (list || []).filter((a) => typeof a === "string" && !isNotArtist(a));
 }

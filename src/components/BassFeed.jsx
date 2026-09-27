@@ -11,6 +11,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
 import { useSavedEvents } from "../hooks/useSavedEvents";
 import { eventSlug } from "../utils/slug";
+import { noOrphanSep } from "../utils/format";
 
 // Señalador de guardado — vive en cada card y en el modal. Para el feed con
 // muchas filas conviene un componente chico: solo re-renderiza él al togglear.
@@ -195,7 +196,7 @@ function WeekendHero({ events, onSelect }) {
             aria-label={`${ev.name} — ${ev.venue}`}
           >
             <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} fit="contain" width={200} />
-            <div className="bl-hero-tile-name">{ev.name}</div>
+            <div className="bl-hero-tile-name">{noOrphanSep(ev.name)}</div>
             <div className="bl-hero-tile-meta bl-bass-t-label">
               {(dayNames[date.getDay()] || "").slice(0, 3)} · {ev.venue}
             </div>
@@ -623,7 +624,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       la dice el encabezado del día, una sola vez. */}
                   <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
                   <div className="bl-ev-body">
-                    <div className="bl-ev-name">{ev.name}</div>
+                    <div className="bl-ev-name">{noOrphanSep(ev.name)}</div>
                     {isLead && ev.artists && ev.artists.length >= 2 && (
                       <div className="bl-ev-lineup">{ev.artists.slice(0, 4).join(" · ")}</div>
                     )}

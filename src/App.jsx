@@ -134,15 +134,6 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile y secciones)
-  // El speed-dial abierto se cierra con Escape o tocando fuera de él.
-  useEffect(() => {
-    if (!utilOpen) return;
-    const onKey = (e) => { if (e.key === "Escape") setUtilOpen(false); };
-    const onDown = (e) => { if (!e.target.closest?.(".bl-util-bar")) setUtilOpen(false); };
-    window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
-    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
-  }, [utilOpen]);
   const [venueUser, setVenueUser] = useState(null);
   const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
   const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
@@ -1214,7 +1205,7 @@ export default function App() {
         </div>
       )}
 
-      {/* TOAST (placeholder for future use) */}
+      {/* TOAST: avisos breves (p. ej. link a un evento que ya pasó) */}
       <div className={`bl-toast${toast ? " show" : ""}`} role="status" aria-live="polite">{toast}</div>
     </div>
   );

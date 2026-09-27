@@ -48,7 +48,7 @@ const brokenImages = (root) => root.evaluate((el) =>
 // El modal entero tiene que entrar en pantalla: CTA dentro del viewport y el
 // flyer visible dentro del modal (sept 2026: con line-ups largos la grilla
 // crecía, el flyer se iba fuera de vista y la botonera quedaba recortada).
-async function checkModalFits(page, dialog, vpName) {
+async function checkModalFits(page, vpName) {
   const r = await page.evaluate(() => {
     const box = (s) => document.querySelector(s)?.getBoundingClientRect();
     const modal = box(".bl-event-modal"), cta = box(".bl-em-cta"), fly = box(".bl-em-fly");
@@ -130,7 +130,7 @@ async function run(vp) {
     const broken = await brokenImages(dialog);
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);
 
-    await checkModalFits(page, dialog, vp.name);
+    await checkModalFits(page, vp.name);
     await expectNone("modal", lowContrast);
     await expectNone("modal", posterOverflow);
 
@@ -167,11 +167,12 @@ async function run(vp) {
 
     // 4b. Mobile: el FAB se esconde al bajar leyendo (en desktop vive en el header)
     if (vp.isMobile) {
-    await page.evaluate(() => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollBy(0, 900));
-    await page.waitForTimeout(600);
-    if (!(await page.evaluate(() => document.querySelector(".bl-util-bar")?.classList.contains("is-hidden"))))
-      fail(vp.name, "feed", "la barra flotante no se esconde al scrollear hacia abajo");
-    await page.evaluate(() => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollTo(0, 0));
+      const scrollPanel = (y) => page.evaluate((y) => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollTo(0, y), y);
+      await scrollPanel(900);
+      await page.waitForTimeout(600);
+      if (!(await page.evaluate(() => document.querySelector(".bl-util-bar")?.classList.contains("is-hidden"))))
+        fail(vp.name, "feed", "la barra flotante no se esconde al scrollear hacia abajo");
+      await scrollPanel(0);
     }
 
     // 5. Feed sin imágenes rotas visibles
@@ -184,12 +185,12 @@ async function run(vp) {
       return evs.filter((e) => e.image).sort((a, b) => (b.artists?.length || 0) - (a.artists?.length || 0))[0];
     }));
     if (longest) {
-      const idx = await page.locator(".bl-ev-name").evaluateAll((els, name) => els.findIndex((e) => e.textContent === name), longest.name);
+      const idx = await page.locator(".bl-ev-name").evaluateAll((els, name) => els.findIndex((e) => e.textContent.replace(/\u00A0/g, " ") === name), longest.name);
       if (idx >= 0) {
         await page.locator(".bl-ev-open").nth(idx).click();
         await dialog.waitFor({ state: "visible", timeout: 10_000 });
         await page.waitForTimeout(800);
-        await checkModalFits(page, dialog, `${vp.name} line-up ${longest.artists?.length}`);
+        await checkModalFits(page, `${vp.name} line-up ${longest.artists?.length}`);
         await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal-largo.png` });
         await page.keyboard.press("Escape");
         await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});

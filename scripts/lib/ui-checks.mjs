@@ -1,6 +1,6 @@
 // Chequeos que corren DENTRO de la página (page.evaluate). Cada uno devuelve
-// una lista de problemas legibles; vacía = bien. Los usan smoke.mjs (falla)
-// y audit-ux.mjs (reporta).
+// una lista de problemas legibles; vacía = bien. Los usa smoke.mjs, que falla
+// si alguno devuelve algo.
 
 // Texto visible con contraste < 3:1 contra su fondo. Ignora texto sobre
 // imágenes (no hay un color de fondo que medir) y elementos inert/ocultos.

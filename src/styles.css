@@ -59,6 +59,7 @@
   --bl-border:      var(--bl-600);
   --bl-border-sub:  var(--bl-700);
   --bl-text:        var(--bl-50);
+  --bl-title:       #F0EDE6;   /* crema cálido de los títulos de la agenda */
   --bl-text-sec:    var(--bl-350);
   --bl-text-ter:    var(--bl-400);
   --bl-text-muted:  var(--bl-250);
@@ -149,6 +150,7 @@
   --bl-border:      #C8C8C3;
   --bl-border-sub:  #D5D5D0;
   --bl-text:        #1A1A1A;
+  --bl-title:       var(--bl-text);
   --bl-text-sec:    #666666;
   --bl-text-ter:    #888888;
   --bl-text-muted:  #555555;
@@ -212,6 +214,7 @@
   --bl-subtle-hover:rgba(196, 144, 112, 0.10);
   --bl-subtle-bg:   rgba(196, 144, 112, 0.03);
   --bl-accent:      var(--bl-accent-bass);
+  --bl-on-accent:   #1A120C;   /* texto sobre el acento (botones primarios) */
   --bl-radius:      8px;
   --bl-radius-sm:   5px;
   --bl-radius-pill: 100px;
@@ -303,6 +306,7 @@
   --bl-subtle-hover:rgba(108, 184, 200, 0.1);
   --bl-subtle-bg:   rgba(108, 184, 200, 0.03);
   --bl-accent:      var(--bl-accent-layer);
+  --bl-on-accent:   #0B1518;   /* texto sobre el acento (botones primarios) */
   --bl-radius:      4px;
   --bl-radius-sm:   2px;
   --bl-radius-pill: 4px;
@@ -324,6 +328,7 @@
   --bl-subtle:      rgba(160, 113, 77, 0.07);
   --bl-subtle-hover:rgba(160, 113, 77, 0.12);
   --bl-accent:      var(--bl-accent-bass);
+  --bl-on-accent:   #1A120C;   /* texto sobre el acento (botones primarios) */
   --bl-radius:      8px;
   --bl-radius-sm:   5px;
   --bl-radius-pill: 100px;
@@ -343,6 +348,7 @@
   --bl-subtle:      rgba(77, 138, 154, 0.07);
   --bl-subtle-hover:rgba(77, 138, 154, 0.12);
   --bl-accent:      var(--bl-accent-layer);
+  --bl-on-accent:   #fff;   /* texto sobre el acento (botones primarios) */
   --bl-radius:      4px;
   --bl-radius-sm:   2px;
   --bl-radius-pill: 4px;
@@ -541,6 +547,7 @@
 
 /* ── Utility cluster — bottom-right ─────── */
 .bl-util-bar {
+  transition:transform .4s var(--ease-out-expo), opacity .25s;
   position:fixed;
   bottom:max(24px, env(safe-area-inset-bottom, 0px) + 12px);
   right:24px;
@@ -548,7 +555,6 @@
   display:flex; align-items:center;
 }
 .bl-util-items { display:flex; align-items:center; gap:10px; }
-.bl-util-bar { transition:transform .4s var(--ease-out-expo), opacity .25s; }
 /* Mobile: el FAB vive abajo (alcance del pulgar) y se esconde al bajar leyendo
    para no tapar el guardar de las cards; vuelve al subir. */
 @media (max-width:768px) {
@@ -1239,7 +1245,7 @@
   font-family:var(--font-bass), sans-serif;
   font-style:normal; font-weight:700;
   font-size:20px; letter-spacing:-0.025em; line-height:1.15;
-  color:#F0EDE6;
+  color:var(--bl-title);
   text-decoration:none;
   display:-webkit-box;
   -webkit-line-clamp:2;
@@ -1255,11 +1261,6 @@
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
-/* El crema cálido de los títulos es de noche: en modo día pasaba a blanco
-   sobre fondo claro (ilegible). */
-.bl-root.day-mode .bl-ev-name,
-.bl-root.day-mode .bl-ev-item-festival .bl-ev-date-d { color:var(--bl-text); }
-.bl-root.day-mode .bl-ev-item:hover .bl-ev-name { color:var(--bl-white); }
 .bl-ev-meta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .bl-ev-venue-inline {
   font-family:var(--font-bass-mono), monospace;
@@ -1312,7 +1313,7 @@
   font-family:var(--font-bass-mono), monospace;
   font-weight:600; font-style:normal;
   font-size:27px; letter-spacing:-1px;
-  color:#F0EDE6;
+  color:var(--bl-title);
   line-height:1;
   font-feature-settings:"tnum" 1;
 }
@@ -2168,9 +2169,7 @@
 /* Mismo botón principal que la ficha de evento: el acento del mundo (cobre en
    Bass, turquesa en Layer). Antes noticias, festivales y precios lo tenían
    blanco y el evento cobre. */
-.bl-root[data-section="bass"] .bl-modal-btn-primary { background:var(--bl-accent-bass); border-color:var(--bl-accent-bass); color:#1A120C; }
-.bl-root[data-section="layer"] .bl-modal-btn-primary { background:var(--bl-accent-layer); border-color:var(--bl-accent-layer); color:#0B1518; }
-.bl-root.day-mode[data-section="layer"] .bl-modal-btn-primary { color:#fff; }
+.bl-root[data-section] .bl-modal-btn-primary { background:var(--bl-accent); border-color:var(--bl-accent); color:var(--bl-on-accent); }
 .bl-root[data-section] .bl-modal-btn-primary:hover { filter:brightness(1.08); }
 .bl-modal-btn-calendar {
   background:var(--bl-surface); border:1px solid var(--bl-border); color:var(--bl-200);
@@ -2468,8 +2467,8 @@
 .bl-em-head-bio { grid-area:bio; margin:0 0 12px; }
 .bl-em-head-bio p { margin:0; font-size:13px; line-height:1.5; color:var(--bl-150); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 /* "Traducción automática": el texto no es de la fuente, se avisa. */
-.bl-em-tr-bio { margin:-6px 0 10px; }
 .bl-em-tr { display:block; margin-top:4px; font-family:var(--font-mono); font-size:9px; letter-spacing:1.4px; text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-em-tr-bio { margin:-6px 0 10px; }
 .bl-em-head-act { grid-area:act; display:flex; align-items:center; flex-wrap:wrap; gap:6px 18px; margin-top:4px; }
 
 .bl-em-grid { list-style:none; margin:10px 0 0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
@@ -2525,7 +2524,6 @@
 }
 @keyframes bl-em-bio-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
 .bl-em-bio-extract { margin:0 0 10px; font-size:13px; line-height:1.55; color:var(--bl-150); display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden; }
-.bl-em-bio-none { color:var(--bl-text-sec); }
 .bl-em-bio-loading { font-family:var(--font-mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec); }
 .bl-em-bio-links { display:flex; gap:16px; flex-wrap:wrap; }
 .bl-em-bio-links a { font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-accent-bass); text-decoration:none; }
@@ -2579,7 +2577,6 @@
   .bl-em-stamp { top:14px; left:14px; }
   .bl-em-scroll { padding:20px 20px 12px; }
   .bl-em-title { font-size:26px; margin:8px 0 18px; }
-  .bl-em-bio { margin:0 8px 8px; }
   .bl-em-head { grid-template-columns:72px minmax(0,1fr); grid-template-areas:"av id" "bio bio" "act act"; gap:0 14px; padding:14px; }
   .bl-em-head-id { align-self:center; }
   .bl-em-head-av { width:72px; height:72px; margin-bottom:12px; }
@@ -4689,8 +4686,6 @@ select.bl-venue-input { cursor:pointer; }
    se define dos veces: pastel sobre oscuro, profunda en day-mode. Decorativo
    (aria-hidden): el dato real vive en el cuerpo de la card. */
 .bl-thumb-poster {
-  --poster-tint: #C49070;
-  --poster-ink:  #E2B896;
   background:
     radial-gradient(circle at 30% 20%, var(--poster-wash, rgba(196,144,112,0.10)) 0%, transparent 70%),
     linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%);
@@ -4727,14 +4722,12 @@ select.bl-venue-input { cursor:pointer; }
   font-family:var(--font-bass), sans-serif;
   font-weight:800; text-transform:uppercase;
   letter-spacing:-0.04em; line-height:0.95;
-  font-size:1.6em;
   color:var(--poster-ink);
   white-space:nowrap;
   transition:color .35s ease-out;
 }
-.bl-poster[data-size="m"] .bl-poster-word { font-size:1.25em; }
-.bl-poster[data-size="s"] .bl-poster-word { font-size:0.95em; letter-spacing:-0.02em; }
-/* Tope por ancho real: la palabra más larga (--len letras, ~0.66em cada una
+.bl-poster[data-size="s"] .bl-poster-word { letter-spacing:-0.02em; }
+/* Tamaño por escalón (l 1.6em · m 1.25em · s 0.95em) con tope por ancho real: la palabra más larga (--len letras, ~0.66em cada una
    en mayúscula heavy) nunca pasa el ancho de la caja. Los escalones de arriba
    solo miraban la cantidad de letras y cortaban "HOBELA|R" en thumbs chicos. */
 .bl-poster .bl-poster-word { font-size:min(1.6em, calc(100cqi / (var(--len, 6) * 0.66))); }

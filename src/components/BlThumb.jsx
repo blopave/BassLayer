@@ -72,7 +72,7 @@ export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail
   if (hasImage) {
     return (
       <div className={`bl-thumb${fit === "contain" ? " bl-thumb-contain" : ""}`} aria-hidden="true">
-        {fit === "contain" && <div className="bl-thumb-blur" style={{ backgroundImage: `url("${imgUrl(image, 80)}")` }} />}
+        {fit === "contain" && <div className="bl-thumb-blur" style={{ backgroundImage: `url("${imgUrl(image, width)}")` }} />}
         <ProxiedImg
           className="bl-thumb-img"
           src={image}

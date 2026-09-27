@@ -2,17 +2,8 @@
 // /eventos/[slug] funcionen en deep link tanto del lado server (prerender) como
 // del lado cliente (modal open).
 
-export function slugify(s) {
-  return String(s || "")
-    .normalize("NFD").replace(/\p{Mn}/gu, "")
-    .toLowerCase()
-    // Letras que NFD no descompone: sin esto "Geøvhän" daba "ge-vhan".
-    .replace(/[øœæßłđþðı]/g, (c) => ({ ø: "o", œ: "oe", æ: "ae", ß: "ss", ł: "l", đ: "d", þ: "th", ð: "d", ı: "i" })[c])
-    .replace(/&/g, " y ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
+import { slugify } from "../../lib/slug.js";
+export { slugify };
 
 export function eventSlug(ev) {
   if (!ev || !ev.name) return "";

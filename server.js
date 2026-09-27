@@ -19,9 +19,11 @@ import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE } from "./lib/content-rules.js";
+import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 
 const PKG_VERSION = (() => {
   try { return JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version; }
@@ -267,12 +269,7 @@ function tidyEvents(events) {
   // Actividades que no son shows, de cualquier fuente (QuéHacemos las filtra
   // antes; RA listó "Techno Yoga", una clase con DJ — Pablo decidió afuera).
   for (let i = events.length - 1; i >= 0; i--) if (NOT_A_SHOW_TITLE.test(events[i].name || "")) events.splice(i, 1);
-  for (const ev of events) {
-    ev.artists = cleanLineup(ev.artists);
-    // "A · B": el separador se pega a lo anterior (espacio no separable) para
-    // que un título que parte en dos líneas no arranque la segunda con "·".
-    if (ev.name) ev.name = ev.name.replace(/ · /g, "\u00A0· ");
-  }
+  for (const ev of events) ev.artists = cleanLineup(ev.artists);
   return events;
 }
 
@@ -391,17 +388,6 @@ const MONTH_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,
 
 // ─── Slug helpers (SEO URLs) ─────────────────
 // Determinista: el mismo evento siempre produce el mismo slug en server y cliente.
-function slugify(s) {
-  return String(s || "")
-    .normalize("NFD").replace(/\p{Mn}/gu, "")
-    .toLowerCase()
-    // Letras que NFD no descompone: sin esto "Geøvhän" daba "ge-vhan".
-    .replace(/[øœæßłđþðı]/g, (c) => ({ ø: "o", œ: "oe", æ: "ae", ß: "ss", ł: "l", đ: "d", þ: "th", ð: "d", ı: "i" })[c])
-    .replace(/&/g, " y ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
 function eventSlug(ev) {
   if (!ev || !ev.name) return "";
   const namePart = slugify(ev.name);
@@ -2493,8 +2479,7 @@ function deduplicateEvents(events) {
   const GENERIC = new Set(["club","session","sessions","fiesta","party","presenta","presents","pres","live","night","noche","edicion","vol","the","and","con","del","los","las","una","por","para","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","setiembre","octubre","noviembre","diciembre"]);
   const nameCore = (name) => {
     const head = String(name || "").split(/\s+(?:@|—|–|-|\||·|en|at)\s+|:/i)[0];
-    const toks = head.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-      .split(/[^a-z0-9]+/).map(w => w.replace(/^0+(?=\d)/, ""))
+    const toks = qhNormTitle(head).split(" ").map(w => w.replace(/^0+(?=\d)/, ""))
       .filter(w => w && (/^\d+$/.test(w) || w.length >= 3) && !GENERIC.has(w));
     if (!toks.some(w => !/^\d+$/.test(w) && w.length >= 4)) return "";
     return [...new Set(toks)].sort().join(" ");
@@ -3152,12 +3137,24 @@ function normalizeArtistName(s) {
 
 // Búsqueda cruda compartida por la bio del modal (tryDeezer) y el fallback de
 // flyer (fetchArtistImage). Devuelve null en falla transitoria (cuota, red).
-async function deezerSearchArtist(name) {
-  const url = `https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=3`;
-  const r = await fetchSafe(url, {}, 6000);
-  if (!r.ok) return null;
-  const j = JSON.parse(await safeText(r));
-  return Array.isArray(j.data) ? j.data : null;
+// Cacheada 1 h con dedup en vuelo: el backfill de fotos y /api/artist buscan
+// los mismos headliners, y cada request de más cuenta para el ban por IP.
+const deezerSearchCache = new Map();   // nombre normalizado → { p, ts }
+function deezerSearchArtist(name) {
+  const key = normalizeArtistName(name);
+  const hit = deezerSearchCache.get(key);
+  if (hit && Date.now() - hit.ts < 60 * 60_000) return hit.p;
+  const p = (async () => {
+    const r = await fetchSafe(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=3`, {}, 6000);
+    if (!r.ok) return null;
+    const j = JSON.parse(await safeText(r));
+    return Array.isArray(j.data) ? j.data : null;
+  })();
+  // Fallas y "sin datos" no se cachean: se reintentan en el próximo pedido.
+  p.then((v) => { if (!v) deezerSearchCache.delete(key); }, () => deezerSearchCache.delete(key));
+  if (deezerSearchCache.size >= 1000) deezerSearchCache.delete(deezerSearchCache.keys().next().value);
+  deezerSearchCache.set(key, { p, ts: Date.now() });
+  return p;
 }
 
 // El CDN de Deezer marca "sin foto" con el md5 vacío en el path: o directo
@@ -3166,8 +3163,10 @@ function isDeezerPlaceholderUrl(u) {
   return !u || u.includes("/artist//") || u.includes("d41d8cd98f00b204e9800998ecf8427e");
 }
 
+// 500px alcanza para todo (tarjeta del headliner, foto de card, hero del
+// modal): una sola URL por artista = un solo fetch al CDN y un solo archivo.
 function deezerPickPicture(match) {
-  const pic = match && (match.picture_xl || match.picture_big || match.picture_medium);
+  const pic = match && (match.picture_big || match.picture_xl || match.picture_medium);
   return isDeezerPlaceholderUrl(pic) ? null : pic;
 }
 
@@ -3178,26 +3177,24 @@ function deezerPickPicture(match) {
 // por id (y fallas transitorias no se cachean).
 const ELECTRONIC_GENRE = /electro|dance|techno|house/i;
 const DEEZER_VERIFY_FAMILIES = new Set(["club"]);
-const deezerGenreCache = new Map();   // artist id → { share, ts }
-async function deezerElectronicShare(artistId) {
+const deezerGenreCache = new Map();   // artist id → { p, ts } (promesa: dedup en vuelo)
+function deezerElectronicShare(artistId) {
   const hit = deezerGenreCache.get(artistId);
-  if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) return hit.share;
-  const r = await fetchSafe(`https://api.deezer.com/artist/${artistId}/albums?limit=4`, {}, 6000);
-  if (!r.ok) throw new Error(`deezer albums ${r.status}`);
-  const albums = (JSON.parse(await safeText(r)).data || []).slice(0, 4);
-  let electronic = 0, total = 0;
-  for (const al of albums) {
-    const ar = await fetchSafe(`https://api.deezer.com/album/${al.id}`, {}, 6000);
-    if (!ar.ok) continue;
-    for (const g of JSON.parse(await safeText(ar)).genres?.data || []) {
-      total++;
-      if (ELECTRONIC_GENRE.test(g.name)) electronic++;
-    }
-  }
-  const share = total ? electronic / total : 0;
+  if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) return hit.p;
+  const p = (async () => {
+    const r = await fetchSafe(`https://api.deezer.com/artist/${artistId}/albums?limit=4`, {}, 6000);
+    if (!r.ok) throw new Error(`deezer albums ${r.status}`);
+    const albums = (JSON.parse(await safeText(r)).data || []).slice(0, 4);
+    const genres = (await Promise.all(albums.map(async (al) => {
+      const ar = await fetchSafe(`https://api.deezer.com/album/${al.id}`, {}, 6000).catch(() => null);
+      return ar?.ok ? (JSON.parse(await safeText(ar)).genres?.data || []) : [];
+    }))).flat();
+    return genres.length ? genres.filter((g) => ELECTRONIC_GENRE.test(g.name)).length / genres.length : 0;
+  })();
+  p.catch(() => deezerGenreCache.delete(artistId));   // fallas transitorias no se cachean
   if (deezerGenreCache.size >= 2000) deezerGenreCache.delete(deezerGenreCache.keys().next().value);
-  deezerGenreCache.set(artistId, { share, ts: Date.now() });
-  return share;
+  deezerGenreCache.set(artistId, { p, ts: Date.now() });
+  return p;
 }
 async function deezerVerified(match, family) {
   if (!DEEZER_VERIFY_FAMILIES.has(family)) return true;
@@ -3234,8 +3231,7 @@ async function tryDeezer(name, locale = "es", family = "") {
       albums > 0 ? (en ? `${albums} ${albums === 1 ? "album" : "albums"}` : `${albums} ${albums === 1 ? "álbum" : "álbumes"}`) : null,
     ].filter(Boolean).join(" · ");
     // El thumbnail va proxeado: el CDN de Deezer da 403 a hotlinks del browser.
-    // 500px alcanza para la tarjeta del headliner (la de 1000 pesaba ~260 KB).
-    const pic = isDeezerPlaceholderUrl(match.picture_big) ? null : match.picture_big;
+    const pic = deezerPickPicture(match);
     return {
       name,
       found: true,
@@ -3252,10 +3248,12 @@ async function tryDeezer(name, locale = "es", family = "") {
   }
 }
 
+const ITUNES_ELECTRONIC = "electr|dance|house|techno|trance|ambient|downtempo|drum|bass|dubstep|idm|disco|breakbeat";
+const ITUNES_URBAN = "hip.?hop|rap|reggaet|latin|urban|trap|r&b|soul|pop|dancehall|cumbia|dance";
 const ITUNES_GENRES_BY_FAMILY = {
-  club: /electr|dance|house|techno|trance|ambient|downtempo|drum|bass|dubstep|idm|disco|breakbeat/i,
-  festival: /electr|dance|house|techno|trance|ambient|downtempo|drum|bass|dubstep|idm|disco|breakbeat|pop|hip.?hop|rap|latin|urban/i,
-  urbano: /hip.?hop|rap|reggaet|latin|urban|trap|r&b|soul|pop|dancehall|cumbia|dance/i,
+  club: new RegExp(ITUNES_ELECTRONIC, "i"),
+  festival: new RegExp(`${ITUNES_ELECTRONIC}|pop|hip.?hop|rap|latin|urban`, "i"),
+  urbano: new RegExp(ITUNES_URBAN, "i"),
 };
 
 async function tryItunes(name, family = "") {
@@ -3293,18 +3291,15 @@ async function tryItunes(name, family = "") {
 // MyMemory: sin cuenta ni key; cupo anónimo ~5.000 caracteres/día, así que
 // cada bio se traduce UNA vez y queda en disco. Sin cupo o con error se
 // muestra el original (nunca un mensaje del servicio como si fuera la bio).
-const TRANSLATIONS_FILE = join(SNAPSHOT_DIR, "translations.json");
 let translations = {};
-try { if (existsSync(TRANSLATIONS_FILE)) translations = JSON.parse(readFileSync(TRANSLATIONS_FILE, "utf-8")); } catch {}
+try {
+  const raw = JSON.parse(readFileSync(join(SNAPSHOT_DIR, "translations.json"), "utf-8"));
+  translations = raw.data || raw;
+} catch {}
 let translationsSaveTimer = null;
 function saveTranslationsSoon() {
   clearTimeout(translationsSaveTimer);
-  translationsSaveTimer = setTimeout(() => {
-    try {
-      if (!existsSync(SNAPSHOT_DIR)) mkdirSync(SNAPSHOT_DIR, { recursive: true });
-      writeFileSync(TRANSLATIONS_FILE, JSON.stringify(translations));
-    } catch (e) { console.warn("[translate] disco:", e.message); }
-  }, 2000);
+  translationsSaveTimer = setTimeout(() => saveSnapshot("translations", translations), 2000);
   translationsSaveTimer.unref?.();
 }
 let translateQuotaUntil = 0;
@@ -3332,18 +3327,20 @@ async function translateText(text, from, to) {
 async function fetchArtistInfo(name, locale = "es", family = "") {
   const primary = locale === "en" ? "en" : "es";
   const fallback = primary === "en" ? "es" : "en";
+  // Deezer se necesita en todos los caminos (foto y tema cuando Wikipedia
+  // tiene la bio, o como fuente cuando no): arranca ya, en paralelo.
+  const deezerP = tryDeezer(name, locale, family).catch(() => null);
   // 1–2. Wikipedia en el idioma del usuario y después en el otro. Si está
   // pausada (429) se sigue con Deezer/iTunes y el resultado se marca
   // degradado para cachearlo corto.
   let degraded = false;
+  const mark = (r) => (degraded ? { ...r, degraded } : r);
   for (const lang of [primary, fallback]) {
     try {
       const wiki = await tryWikipediaLang(name, lang);
       if (wiki) {
-        // Muchas páginas de DJs no tienen imagen: la foto la pone Deezer
-        // (mismo match exacto) para que la fila no quede con la inicial.
         // Deezer completa lo que Wikipedia no tiene: foto y tema para escuchar.
-        const dz = await tryDeezer(name, locale, family).catch(() => null);
+        const dz = await deezerP;
         if (!wiki.thumbnail && dz?.thumbnail) wiki.thumbnail = dz.thumbnail;
         if (dz?.track) wiki.track = dz.track;
         // Bio en el otro idioma: se traduce y se marca como automática.
@@ -3358,16 +3355,14 @@ async function fetchArtistInfo(name, locale = "es", family = "") {
       if (e.transient) { degraded = true; break; }
     }
   }
-  // 3. Deezer (photo + fan count, great for DJs)
-  const deezer = await tryDeezer(name, locale, family);
-  if (deezer) return degraded ? { ...deezer, degraded } : deezer;
-  // 4. iTunes (genre + official link), solo si el género cuadra con el evento
+  // 3. Deezer (foto + tema, lo mejor para DJs)
+  const deezer = await deezerP;
+  if (deezer) return mark(deezer);
+  // 4. iTunes (género + link oficial), solo si el género cuadra con el evento
   const itunes = await tryItunes(name, family);
-  if (itunes) return degraded ? { ...itunes, degraded } : itunes;
-  // MusicBrainz ya no se muestra: su aporte era "país · tipo" (FR · Person),
-  // sin forma de verificar que fuera la persona del line-up. Sin match
-  // confiable, la fila muestra la inicial y los links de búsqueda.
-  return degraded ? { name, found: false, degraded } : { name, found: false };
+  if (itunes) return mark(itunes);
+  // Sin match confiable, la fila muestra la inicial y los links de búsqueda.
+  return mark({ name, found: false });
 }
 
 app.get("/api/artist", async (req, res) => {
@@ -3487,32 +3482,33 @@ const genericArtistHashes = new Set();  // md5 vistos bajo 2+ artistas = avatar 
 // IP por volumen (nos pasó en sept 2026 y el line-up quedó sin fotos).
 const ARTIST_IMG_DIR = join(SNAPSHOT_DIR, "artist-img");
 const artistImgFile = (cdnUrl) => join(ARTIST_IMG_DIR, crypto.createHash("md5").update(cdnUrl).digest("hex"));
-function readArtistImageFromDisk(cdnUrl) {
-  try {
-    const f = artistImgFile(cdnUrl);
-    if (existsSync(f + ".none")) return { placeholder: true, ts: Date.now() };
-    if (existsSync(f + ".jpg")) return { buf: readFileSync(f + ".jpg"), type: "image/jpeg", ts: Date.now() };
-  } catch {}
+try { mkdirSync(ARTIST_IMG_DIR, { recursive: true }); } catch {}
+async function readArtistImageFromDisk(cdnUrl) {
+  const f = artistImgFile(cdnUrl);
+  try { await readFile(f + ".none"); return { placeholder: true, ts: Date.now() }; } catch {}
+  try { return { buf: await readFile(f + ".jpg"), type: "image/jpeg", ts: Date.now() }; } catch {}
   return null;
 }
 function writeArtistImageToDisk(cdnUrl, entry) {
-  try {
-    if (!existsSync(ARTIST_IMG_DIR)) mkdirSync(ARTIST_IMG_DIR, { recursive: true });
-    const f = artistImgFile(cdnUrl);
-    if (entry.placeholder) writeFileSync(f + ".none", "");
-    else writeFileSync(f + ".jpg", entry.buf);
-  } catch (e) { console.warn("[artist-image] disco:", e.message); }
+  const f = artistImgFile(cdnUrl);
+  (entry.placeholder ? writeFile(f + ".none", "") : writeFile(f + ".jpg", entry.buf))
+    .catch((e) => console.warn("[artist-image] disco:", e.message));
+}
+// Entrada en el cache de bytes con tope (LRU por orden de inserción).
+function setArtistImageBytes(cdnUrl, entry) {
+  artistImageBytes.delete(cdnUrl);
+  if (artistImageBytes.size >= ARTIST_IMAGE_BYTES_MAX) artistImageBytes.delete(artistImageBytes.keys().next().value);
+  artistImageBytes.set(cdnUrl, entry);
 }
 
 async function fetchArtistImageBytes(cdnUrl) {
   const hit = artistImageBytes.get(cdnUrl);
   if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) {
-    artistImageBytes.delete(cdnUrl);
-    artistImageBytes.set(cdnUrl, hit);   // bump LRU: las fotos calientes no se evictan
+    setArtistImageBytes(cdnUrl, hit);   // bump LRU: las fotos calientes no se evictan
     return hit;
   }
-  const disk = readArtistImageFromDisk(cdnUrl);
-  if (disk) { artistImageBytes.set(cdnUrl, disk); return disk; }
+  const disk = await readArtistImageFromDisk(cdnUrl);
+  if (disk) { setArtistImageBytes(cdnUrl, disk); return disk; }
   if (Date.now() < artistCdnPausedUntil) throw new Error("CDN paused");
   const r = await fetchSafe(cdnUrl, {}, 8000);
   if (!r.ok) {
@@ -3544,11 +3540,7 @@ async function fetchArtistImageBytes(cdnUrl) {
       ? { placeholder: true, ts: Date.now() }
       : { buf, type: r.headers.get("content-type") || "image/jpeg", ts: Date.now() };
   }
-  if (artistImageBytes.size >= ARTIST_IMAGE_BYTES_MAX) {
-    const oldest = artistImageBytes.keys().next().value;
-    artistImageBytes.delete(oldest);
-  }
-  artistImageBytes.set(cdnUrl, entry);
+  setArtistImageBytes(cdnUrl, entry);
   writeArtistImageToDisk(cdnUrl, entry);
   return entry;
 }

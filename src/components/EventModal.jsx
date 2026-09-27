@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useSheetDrag } from "../hooks/useSheetDrag";
 import { cleanArtists } from "../utils/artists";
@@ -9,6 +9,7 @@ import { useLocale } from "../hooks/useLocale";
 import { formatLongDateLocale, monthAbbrLocale, MONTH_ABBR_INDEX, eventStamp } from "../i18n/strings";
 import { useSavedEvents } from "../hooks/useSavedEvents";
 import { eventSlug } from "../utils/slug";
+import { noOrphanSep } from "../utils/format";
 
 // Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
 // para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
@@ -258,7 +259,7 @@ export function EventModal({ event, onClose, onShare }) {
               {stamp && <><i aria-hidden="true">·</i><span>{stamp}</span></>}
               {priceLabel && <><i aria-hidden="true">·</i><span className="bl-em-price">{priceLabel}</span></>}
             </div>
-            <h1 className="bl-em-title">{event.name}</h1>
+            <h1 className="bl-em-title">{noOrphanSep(event.name)}</h1>
 
             {event.description && (
               <p className="bl-em-desc bl-bass-t-body">{event.description}</p>
@@ -378,34 +379,42 @@ const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wik
 // lo corta todo. La URL la resuelve /api/preview (la de Deezer vence en ~15 min).
 function usePreviewPlayer() {
   const audioRef = useRef(null);
+  const playingRef = useRef(null);   // espejo de `playing` para que toggle sea estable
   const [playing, setPlaying] = useState(null);   // track id sonando
-  const [progress, setProgress] = useState(0);
   useEffect(() => {
     const a = new Audio();
     a.preload = "none";
-    const onTime = () => setProgress(a.duration ? a.currentTime / a.duration : 0);
-    const onEnd = () => { setPlaying(null); setProgress(0); };
-    a.addEventListener("timeupdate", onTime);
+    const onEnd = () => { playingRef.current = null; setPlaying(null); };
     a.addEventListener("ended", onEnd);
     a.addEventListener("error", onEnd);
     audioRef.current = a;
-    return () => { a.pause(); a.removeAttribute("src"); a.removeEventListener("timeupdate", onTime); a.removeEventListener("ended", onEnd); a.removeEventListener("error", onEnd); };
+    return () => { a.pause(); a.removeAttribute("src"); a.removeEventListener("ended", onEnd); a.removeEventListener("error", onEnd); };
   }, []);
   const toggle = useCallback((trackId) => {
     const a = audioRef.current;
     if (!a) return;
-    if (playing === trackId) { a.pause(); setPlaying(null); setProgress(0); return; }
+    if (playingRef.current === trackId) { a.pause(); playingRef.current = null; setPlaying(null); return; }
     a.src = `/api/preview/${trackId}`;
-    setProgress(0);
+    playingRef.current = trackId;
     setPlaying(trackId);
-    a.play().catch(() => { setPlaying(null); });
-  }, [playing]);
-  return { playing, progress, toggle };
+    a.play().catch(() => { playingRef.current = null; setPlaying(null); });
+  }, []);
+  return useMemo(() => ({ playing, toggle, audioRef }), [playing, toggle]);
 }
 
 function PlayButton({ track, artist, player, withTitle, t }) {
+  const on = !!track && player.playing === track.id;
+  const icRef = useRef(null);
+  // El progreso va directo al anillo del botón que suena (timeupdate ~4/s):
+  // como estado de React re-renderizaba la ficha entera durante 30 s.
+  useEffect(() => {
+    const a = player.audioRef.current, ic = icRef.current;
+    if (!on || !a || !ic) return;
+    const onTime = () => ic.style.setProperty("--p", a.duration ? a.currentTime / a.duration : 0);
+    a.addEventListener("timeupdate", onTime);
+    return () => { a.removeEventListener("timeupdate", onTime); ic.style.removeProperty("--p"); };
+  }, [on, player.audioRef]);
   if (!track) return null;
-  const on = player.playing === track.id;
   return (
     <button
       type="button"
@@ -414,7 +423,7 @@ function PlayButton({ track, artist, player, withTitle, t }) {
       aria-pressed={on}
       aria-label={`${on ? t("event.pause") : t("event.listen")}: ${track.title} — ${artist}`}
     >
-      <span className="bl-em-play-ic" style={on ? { "--p": player.progress } : undefined} aria-hidden="true">
+      <span className="bl-em-play-ic" ref={icRef} aria-hidden="true">
         {on ? <svg viewBox="0 0 10 10"><path d="M0 0h3.5v10H0zM6.5 0H10v10H6.5z" /></svg>
             : <svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z" /></svg>}
       </span>

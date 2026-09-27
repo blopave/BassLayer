@@ -123,7 +123,7 @@ async function run(vp) {
     if (!ev) continue;
     await step(`modal-${kind}`, async () => {
       await page.evaluate((name) => {
-        const i = [...document.querySelectorAll(".bl-ev-name")].findIndex((e) => e.textContent === name);
+        const i = [...document.querySelectorAll(".bl-ev-name")].findIndex((e) => e.textContent.replace(/\u00A0/g, " ") === name);
         if (i < 0) throw new Error("no está en el feed: " + name);
         document.querySelectorAll(".bl-ev-open")[i].click();
       }, ev.name);
