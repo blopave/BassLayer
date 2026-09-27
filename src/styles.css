@@ -2380,7 +2380,10 @@
 .bl-em-stamp span { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.75); margin-top:4px; }
 
 /* ── cuerpo ── */
-.bl-em-body { display:flex; flex-direction:column; min-height:0; min-width:0; }
+/* El tope de alto va en el cuerpo, no en la grilla: con max-height solo en el
+   contenedor la fila crece al contenido (line-ups de 10 artistas), el flyer se
+   centra en esa fila gigante fuera de vista y las acciones quedan recortadas. */
+.bl-em-body { display:flex; flex-direction:column; min-height:0; min-width:0; max-height:calc(100dvh - 48px); }
 .bl-em-scroll { flex:1; min-height:0; overflow-y:auto; padding:36px 40px 20px; scrollbar-width:thin; scrollbar-color:var(--bl-border) transparent; }
 .bl-em-eyebrow {
   display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px;

@@ -21,6 +21,8 @@ mkdirSync(SHOTS, { recursive: true });
 const VIEWPORTS = [
   { name: "mobile", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: "desktop", viewport: { width: 1440, height: 900 } },
+  // Laptop chica con dock: el alto es lo que rompe los modales.
+  { name: "laptop-bajo", viewport: { width: 1000, height: 647 } },
   // Deezer banea el proxy cada tanto: el modal tiene que seguir viéndose bien
   // sin fotos de artista (inicial en vez de caja vacía / ícono roto).
   { name: "mobile-sin-fotos", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, blockArtistImages: true },
@@ -39,6 +41,20 @@ const brokenImages = (root) => root.evaluate((el) =>
   [...el.querySelectorAll("img")]
     .filter((i) => i.complete && i.naturalWidth === 0 && i.getBoundingClientRect().width > 0)
     .map((i) => i.getAttribute("src")?.slice(0, 100)));
+
+// El modal entero tiene que entrar en pantalla: CTA dentro del viewport y el
+// flyer visible dentro del modal (sept 2026: con line-ups largos la grilla
+// crecía, el flyer se iba fuera de vista y la botonera quedaba recortada).
+async function checkModalFits(page, dialog, vpName) {
+  const r = await page.evaluate(() => {
+    const box = (s) => document.querySelector(s)?.getBoundingClientRect();
+    const modal = box(".bl-event-modal"), cta = box(".bl-em-cta"), fly = box(".bl-em-fly");
+    return { vh: innerHeight, modal: modal && [modal.top, modal.bottom], cta: cta && [cta.top, cta.bottom], fly: fly && [fly.top, fly.bottom] };
+  });
+  if (!r.cta) return fail(vpName, "modal", "no hay botón de entradas");
+  if (r.cta[1] > r.vh || r.cta[1] > r.modal[1] + 1) fail(vpName, "modal", `el botón de entradas queda fuera de pantalla (bottom ${Math.round(r.cta[1])} > ${r.vh})`);
+  if (r.fly && r.fly[1] > r.modal[1] + 1) fail(vpName, "modal", "la columna del flyer es más alta que el modal (queda recortado)");
+}
 
 async function run(vp) {
   const browser = await chromium.launch();
@@ -97,8 +113,7 @@ async function run(vp) {
     const broken = await brokenImages(dialog);
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);
 
-    const cta = dialog.locator(".bl-em-cta");
-    if (!(await cta.isVisible().catch(() => false))) fail(vp.name, "modal", "no se ve el botón de entradas");
+    await checkModalFits(page, dialog, vp.name);
 
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal.png` });
 
@@ -113,6 +128,24 @@ async function run(vp) {
     // 5. Feed sin imágenes rotas visibles
     const feedBroken = await brokenImages(page.locator("body"));
     if (feedBroken.length) fail(vp.name, "feed", `${feedBroken.length} imágenes rotas visibles`);
+
+    // 5b. Line-up más largo de la agenda en la pantalla del viewport
+    const longest = await page.evaluate(() => fetch("/api/events").then((r) => r.json()).then((d) => {
+      const evs = Array.isArray(d) ? d : d.events || [];
+      return evs.filter((e) => e.image).sort((a, b) => (b.artists?.length || 0) - (a.artists?.length || 0))[0];
+    }));
+    if (longest) {
+      const idx = await page.locator(".bl-ev-name").evaluateAll((els, name) => els.findIndex((e) => e.textContent === name), longest.name);
+      if (idx >= 0) {
+        await page.locator(".bl-ev-open").nth(idx).click();
+        await dialog.waitFor({ state: "visible", timeout: 10_000 });
+        await page.waitForTimeout(800);
+        await checkModalFits(page, dialog, `${vp.name} line-up ${longest.artists?.length}`);
+        await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal-largo.png` });
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+      }
+    }
 
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
