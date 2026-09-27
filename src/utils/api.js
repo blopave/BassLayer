@@ -1,5 +1,18 @@
 import { storage } from "./storage";
 const ARTIST_RULES_V = 3;
+
+// Un mismo dato pedido por varios componentes a la vez (p. ej. mercados: la
+// grilla de secciones y el panel lateral) viaja una sola vez; se reutiliza
+// 60 s y un error no queda guardado.
+const sharedCache = new Map();
+export function shared(key, fn, ttl = 60_000) {
+  const hit = sharedCache.get(key);
+  if (hit && Date.now() - hit.ts < ttl) return hit.p;
+  const p = fn();
+  p.catch(() => sharedCache.delete(key));
+  sharedCache.set(key, { p, ts: Date.now() });
+  return p;
+}
 function authHeaders() {
   const token = storage.get("bl-token");
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
@@ -64,6 +77,7 @@ export const api = {
   btcCycles: () => fetch("/api/btc-cycles").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  predictionMarkets: () => fetch("/api/prediction-markets").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   // v: versión de las reglas de la ficha. La respuesta se cachea 12 h en el
   // browser; al cambiar qué se considera match (sept 2026: verificación por
   // género, previews) se sube para no servir fichas viejas durante medio día.

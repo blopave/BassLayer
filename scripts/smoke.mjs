@@ -210,6 +210,20 @@ async function run(vp) {
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
 
+    // 6b. Portada de Layer: 6 tarjetas de sección dentro de la pantalla y cada
+    // una lleva a su sección (sept 2026: grilla 2×3 elegida por Pablo).
+    const doors = page.locator(".bl-door");
+    if ((await doors.count()) !== 6) fail(vp.name, "layer", `la portada tiene ${await doors.count()} tarjetas de sección (esperaba 6)`);
+    else {
+      const g = await page.locator(".bl-doors-grid").boundingBox();
+      if (g && (g.x < 0 || g.x + g.width > vp.viewport.width + 1)) fail(vp.name, "layer", "la grilla de secciones se sale de la pantalla");
+      await doors.nth(1).click();
+      await page.waitForTimeout(600);
+      const active = await page.locator(".bl-layer-tab.active").textContent();
+      if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `la tarjeta de Ciclos abre "${active}"`);
+      await page.locator(".bl-layer-tab").first().click();
+    }
+
     // 7. Modo día: el mismo contraste con la paleta clara (Layer y agenda)
     await page.evaluate(() => document.querySelector(".bl-mode-toggle")?.click());
     await page.waitForTimeout(900);

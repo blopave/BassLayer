@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../utils/api";
+import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 
 // Columna derecha de Layer en desktop (debajo del contenido en mobile): el
@@ -25,7 +25,7 @@ function MarketsMini({ onGo }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    api.markets().then((d) => alive && setData(d)).catch(() => alive && setFailed(true));
+    shared("markets", api.markets).then((d) => alive && setData(d)).catch(() => alive && setFailed(true));
     return () => { alive = false; };
   }, []);
   if (failed) return null;
@@ -65,7 +65,7 @@ function CyclesMini({ onGo }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    api.btcCycles().then((d) => alive && setData(d)).catch(() => alive && setFailed(true));
+    shared("btcCycles", api.btcCycles).then((d) => alive && setData(d)).catch(() => alive && setFailed(true));
     return () => { alive = false; };
   }, []);
   if (failed) return null;

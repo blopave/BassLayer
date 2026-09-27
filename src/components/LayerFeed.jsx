@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useRef, useState, Suspense } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoDashboard } from "./CryptoDashboard";
@@ -9,6 +9,7 @@ import { PredictionMarkets } from "./PredictionMarkets";
 import { FinanceNews } from "./FinanceNews";
 import { MarketList } from "./MarketList";
 import { LayerAside } from "./LayerAside";
+import { LayerDoors } from "./LayerDoors";
 import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
@@ -86,6 +87,13 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
   const listRef = useScrollReveal(loading, section);
+  // Desde la grilla de la portada: cambia de sección y sube a las pestañas,
+  // si no el cambio pasaba fuera de vista (la grilla está más abajo).
+  const tabsRef = useRef(null);
+  const goSection = (key) => {
+    setSection(key);
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  };
 
   return (
     <>
@@ -96,7 +104,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       </div>
 
       {/* Secciones como tabs: una línea, Noticias abierta por defecto. */}
-      <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
+      <nav className="bl-layer-tabs" aria-label={t("aside.sections")} ref={tabsRef}>
         {SECTIONS.map(([key, labelKey]) => (
           <button
             key={key}
@@ -117,7 +125,8 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       {/* Noticias section */}
       {section === "noticias" && (
         <div className="bl-layer-content">
-          <h2 className="bl-sr-only">{t("section.news")}</h2>
+          <LayerDoors onGo={goSection} />
+          <h2 className="bl-layer-h">{t("section.news")}</h2>
           <FilterBar items={tags} active={filter} onChange={onFilter} className="layer-filters" />
           {loading ? <NewsSkeleton />
             : error ? <div className="bl-feed"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onRetry()}>{error}</div></div>
