@@ -240,6 +240,7 @@ export const STRINGS = {
     "news.openSource": "Abrir en",
 
     "artist.noBio": "Sin biografía pública.",
+    "artist.autoTranslated": "Traducción automática",
 
     "indicator.now": "Ahora",
     "indicator.whatIs": "Qué es",
@@ -556,6 +557,7 @@ export const STRINGS = {
     "news.openSource": "Open in",
 
     "artist.noBio": "No public biography available.",
+    "artist.autoTranslated": "Machine-translated",
 
     "indicator.now": "Now",
     "indicator.whatIs": "What it is",

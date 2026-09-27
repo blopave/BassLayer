@@ -2465,7 +2465,11 @@
 .bl-em-head-av.bl-em-av-ph { font-size:34px; }
 .bl-em-head-tag { font-family:var(--font-mono); font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--bl-accent-bass); }
 .bl-em-head-name { font-size:24px; font-weight:700; letter-spacing:-0.02em; line-height:1.1; color:var(--bl-text); margin:6px 0 6px; overflow-wrap:anywhere; }
-.bl-em-head-bio { grid-area:bio; margin:0 0 12px; font-size:13px; line-height:1.5; color:var(--bl-150); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-em-head-bio { grid-area:bio; margin:0 0 12px; }
+.bl-em-head-bio p { margin:0; font-size:13px; line-height:1.5; color:var(--bl-150); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+/* "Traducción automática": el texto no es de la fuente, se avisa. */
+.bl-em-tr-bio { margin:-6px 0 10px; }
+.bl-em-tr { display:block; margin-top:4px; font-family:var(--font-mono); font-size:9px; letter-spacing:1.4px; text-transform:uppercase; color:var(--bl-text-ter); }
 .bl-em-head-act { grid-area:act; display:flex; align-items:center; flex-wrap:wrap; gap:6px 18px; margin-top:4px; }
 
 .bl-em-grid { list-style:none; margin:10px 0 0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }

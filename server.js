@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE } from "./lib/content-rules.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
@@ -1842,6 +1842,7 @@ const NON_MUSIC_MARKERS = [
   [2, /\b(proyecci[oó]n|preestreno)\b/i],
   [2, /\b(exposici[oó]n|muestra de arte|vernissage)\b/i],
   [2, /\b(conferencia|seminario|taller|masterclass|charla)\b/i],
+  [2, /\b(puro humor|show de humor|noche de humor)\b/i],
   [1, /\bpuesta en escena\b/i],
   [1, /\b(la|una|esta|su) obra\b/i],
   [1, /\bdirigid[oa] por\b/i],
@@ -1881,6 +1882,19 @@ const THEATER_VENUES = [
   "teatro del pueblo", "border", "el extranjero",
 ];
 
+// Salas de teatro puro cuyo nombre incluye "club"/"bar" (Bululú, club de
+// comedia) o que no estaban en la lista: se chequean ANTES de las pistas de
+// sala musical, siempre que no haya ninguna señal musical específica.
+const PURE_THEATER_VENUES = [
+  "el crisol", "la maza teatro", "bululú", "bululu", "el portón de sánchez", "el porton de sanchez",
+  "ítaca, complejo teatral", "itaca, complejo teatral", "el taller teatro", "sala teatral inda ledesma",
+];
+
+// Exclusiones puntuales revisadas a mano (sept 2026): obras cuya descripción
+// completa trae alguna palabra que el filtro lee como música. Título
+// normalizado (qhNormTitle). Mantener corta: si crece, falta una regla.
+const QH_MANUAL_EXCLUDE = new Set(["problema 1", "microdosis de sexo en savia"]);
+
 // Salas de música que viven dentro de un complejo teatral (Cervelar y The
 // Cavern en Paseo La Plaza) o cuyo nombre ya declara que son sala de shows.
 // Anulan el match por sala teatral: ahí sí hay recitales.
@@ -1914,6 +1928,9 @@ function isNonMusicalQHEvent(e, nonMusicTitles) {
   // para teatro, y su descripción a veces pertenece a otro show (bug de origen).
   if (e.event_type === "cuarteto") return false;
 
+  if (NOT_A_SHOW_TITLE.test(e.title || "")) return true;
+  if (QH_MANUAL_EXCLUDE.has(qhNormTitle(e.title))) return true;
+
   if (nonMusicTitles && nonMusicTitles.size) {
     const n = qhNormTitle(e.title);
     for (const t of nonMusicTitles) {
@@ -1929,6 +1946,7 @@ function isNonMusicalQHEvent(e, nonMusicTitles) {
   const musicStrict = markerScore(MUSIC_MARKERS_STRICT, text);
   const venue = (e.venue || "").toLowerCase();
   if (musicStrict === 0 && !MUSIC_VENUE_HINTS.test(venue) && THEATER_VENUES.some(v => venue.includes(v))) return true;
+  if (musicStrict === 0 && PURE_THEATER_VENUES.some(v => venue.includes(v))) return true;
 
   return false;
 }
@@ -2460,6 +2478,36 @@ function deduplicateEvents(events) {
         if (drop === evs[i]) break; // i was dropped, advance outer loop
       }
     }
+  }
+  // Pass 3: el mismo evento publicado por dos ticketeras, sin line-up y con la
+  // sala escrita distinto (sept 2026: "Espresso Club Session 11 @ Llama Café"
+  // en "Puerto Madero" y "ESPRESSO SESSION 011 — PRIMAVERA BRUTAL" en "LLAMA
+  // COFFEE ROASTERS"). Mismo día, ciudad y HORA EXACTA, y el mismo núcleo de
+  // nombre: la parte antes de "@", "—", "-", "|", " en ", sin palabras
+  // genéricas ni meses ("espresso 11" en los dos). Medido sobre la agenda: une
+  // solo ese par; compartir palabras sueltas (productora, barrio) unía 25
+  // pares falsos.
+  const GENERIC = new Set(["club","session","sessions","fiesta","party","presenta","presents","pres","live","night","noche","edicion","vol","the","and","con","del","los","las","una","por","para","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","setiembre","octubre","noviembre","diciembre"]);
+  const nameCore = (name) => {
+    const head = String(name || "").split(/\s+(?:@|—|–|-|\||·|en|at)\s+|:/i)[0];
+    const toks = head.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .split(/[^a-z0-9]+/).map(w => w.replace(/^0+(?=\d)/, ""))
+      .filter(w => w && (/^\d+$/.test(w) || w.length >= 3) && !GENERIC.has(w));
+    if (!toks.some(w => !/^\d+$/.test(w) && w.length >= 4)) return "";
+    return [...new Set(toks)].sort().join(" ");
+  };
+  const byCore = new Map();
+  for (const ev of list) {
+    if (dropped.has(ev) || !ev.time) continue;
+    const core = nameCore(ev.name);
+    if (!core) continue;
+    const k = `${ev.day}-${ev.month}-${ev.city || ""}-${ev.time}-${core}`;
+    const prev = byCore.get(k);
+    if (!prev) { byCore.set(k, ev); continue; }
+    const [keep, drop] = score(prev) >= score(ev) ? [prev, ev] : [ev, prev];
+    mergeFields(keep, drop);
+    dropped.add(drop);
+    byCore.set(k, keep);
   }
   return list.filter(ev => !dropped.has(ev));
 }
@@ -3238,6 +3286,46 @@ async function tryItunes(name, family = "") {
   }
 }
 
+// ── Traducción de bios (Wikipedia en el otro idioma) ──
+// MyMemory: sin cuenta ni key; cupo anónimo ~5.000 caracteres/día, así que
+// cada bio se traduce UNA vez y queda en disco. Sin cupo o con error se
+// muestra el original (nunca un mensaje del servicio como si fuera la bio).
+const TRANSLATIONS_FILE = join(SNAPSHOT_DIR, "translations.json");
+let translations = {};
+try { if (existsSync(TRANSLATIONS_FILE)) translations = JSON.parse(readFileSync(TRANSLATIONS_FILE, "utf-8")); } catch {}
+let translationsSaveTimer = null;
+function saveTranslationsSoon() {
+  clearTimeout(translationsSaveTimer);
+  translationsSaveTimer = setTimeout(() => {
+    try {
+      if (!existsSync(SNAPSHOT_DIR)) mkdirSync(SNAPSHOT_DIR, { recursive: true });
+      writeFileSync(TRANSLATIONS_FILE, JSON.stringify(translations));
+    } catch (e) { console.warn("[translate] disco:", e.message); }
+  }, 2000);
+  translationsSaveTimer.unref?.();
+}
+let translateQuotaUntil = 0;
+async function translateText(text, from, to) {
+  if (!text || from === to) return null;
+  const key = `${from}>${to}:${crypto.createHash("md5").update(text).digest("hex")}`;
+  if (translations[key]) return translations[key];
+  if (Date.now() < translateQuotaUntil) return null;
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 480))}&langpair=${from}|${to === "es" ? "es-AR" : to}`;
+    const r = await fetchSafe(url, {}, 8000);
+    if (!r.ok) return null;
+    const j = JSON.parse(await safeText(r));
+    const out = j?.responseData?.translatedText;
+    if (j.quotaFinished || j.responseStatus !== 200 || !out || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(out)) {
+      if (j.quotaFinished) translateQuotaUntil = Date.now() + 6 * 60 * 60_000;
+      return null;
+    }
+    translations[key] = decodeHtmlEntities(out);
+    saveTranslationsSoon();
+    return translations[key];
+  } catch { return null; }
+}
+
 async function fetchArtistInfo(name, locale = "es", family = "") {
   const primary = locale === "en" ? "en" : "es";
   const fallback = primary === "en" ? "es" : "en";
@@ -3255,6 +3343,12 @@ async function fetchArtistInfo(name, locale = "es", family = "") {
         const dz = await tryDeezer(name, locale, family).catch(() => null);
         if (!wiki.thumbnail && dz?.thumbnail) wiki.thumbnail = dz.thumbnail;
         if (dz?.track) wiki.track = dz.track;
+        // Bio en el otro idioma: se traduce y se marca como automática.
+        const wikiLang = wiki.source.replace("wikipedia-", "");
+        if (wikiLang !== primary && wiki.extract) {
+          const tr = await translateText(wiki.extract, wikiLang, primary);
+          if (tr) { wiki.extract = tr; wiki.translated = true; }
+        }
         return wiki;
       }
     } catch (e) {

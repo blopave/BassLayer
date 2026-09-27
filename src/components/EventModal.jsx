@@ -456,7 +456,12 @@ function LineupHead({ name, info, player, t }) {
         <div className="bl-em-head-tag">{t("event.headliner")}</div>
         <div className="bl-em-head-name">{name}</div>
       </div>
-      {bio && <p className="bl-em-head-bio">{bio}</p>}
+      {bio && (
+        <div className="bl-em-head-bio">
+          <p>{bio}</p>
+          {info.translated && <span className="bl-em-tr">{t("artist.autoTranslated")}</span>}
+        </div>
+      )}
       <div className="bl-em-head-act">
         <PlayButton track={info?.track} artist={name} player={player} withTitle t={t} />
         <ArtistLinks name={name} info={info} t={t} />
@@ -486,6 +491,7 @@ function LineupChip({ name, info, player, open, onToggle, t }) {
           {info === null ? <div className="bl-em-bio-loading">{t("common.loading")}</div> : (
             <>
               <p className="bl-em-bio-extract">{bio || t("artist.noBio")}</p>
+              {bio && info.translated && <span className="bl-em-tr bl-em-tr-bio">{t("artist.autoTranslated")}</span>}
               <ArtistLinks name={name} info={info} t={t} />
             </>
           )}

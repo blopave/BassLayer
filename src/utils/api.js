@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-const ARTIST_RULES_V = 2;
+const ARTIST_RULES_V = 3;
 function authHeaders() {
   const token = storage.get("bl-token");
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };

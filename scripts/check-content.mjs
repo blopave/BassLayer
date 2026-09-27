@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE } from "../lib/content-rules.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
 const JSON_OUT = process.argv.includes("--json");
@@ -89,7 +89,16 @@ async function checkEndpoint({ path, minItems, required }) {
   for (const item of items) for (const a of item?.artists || []) if (isNotArtist(a)) noArtistas.add(a);
   if (noArtistas.size) fail(path, "line-up", `no son artistas: ${[...noArtistas].slice(0, 5).join(", ")}`);
 
-  // Plantillas sin completar del CMS de origen en títulos ("… [FECHA]").
+  // Agenda musical: nada de fútbol, desayunos ni visitas guiadas desde
+  // QuéHacemos (los tipea como "recital"; sept 2026). Solo esa fuente: RA y
+  // Buenos Aliens son agendas curadas de música ("Techno Yoga" en RA es una
+  // clase con DJ, un caso límite que decide Pablo, no la regla).
+  if (path === "/api/events") {
+    const noShows = items.filter((it) => it?.source === "quehacemos" && NOT_A_SHOW_TITLE.test(it?.name || ""));
+    if (noShows.length) fail(path, "no-musical", noShows.slice(0, 3).map((it) => it.name).join(" | "));
+  }
+
+    // Plantillas sin completar del CMS de origen en títulos ("… [FECHA]").
   const plantillas = items.filter((it) => TEMPLATE_TOKEN.test(it?.title || it?.name || ""));
   if (plantillas.length) fail(path, "plantilla", JSON.stringify((plantillas[0].title || plantillas[0].name).slice(0, 90)));
 
