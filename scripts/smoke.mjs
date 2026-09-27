@@ -120,10 +120,12 @@ async function run(vp) {
     const box = await dialog.locator(".bl-modal, [class*=bl-em]").first().boundingBox();
     if (box && box.width > vp.viewport.width + 1) fail(vp.name, "modal", `más ancho que la pantalla (${Math.round(box.width)}px)`);
 
-    // Filas del line-up: compactas (el bug las dejó como cajas de ~230px vacías)
-    const rows = await dialog.locator(".bl-em-row-btn").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
-    const tall = rows.filter((h) => h > 120);
-    if (tall.length) fail(vp.name, "line-up", `${tall.length} filas miden más de 120px (${tall.join(", ")})`);
+    // Line-up "Cartel": tarjeta del headliner + fichas compactas. Ninguna ficha
+    // se estira (el bug de sept 2026 dejaba cajas de ~230px vacías por artista).
+    if ((await dialog.locator(".bl-em-head").count()) !== 1) fail(vp.name, "line-up", "falta la tarjeta del headliner");
+    const chips = await dialog.locator(".bl-em-chip").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    const tall = chips.filter((h) => h > 90);
+    if (tall.length) fail(vp.name, "line-up", `${tall.length} fichas miden más de 90px (${tall.join(", ")})`);
 
     const broken = await brokenImages(dialog);
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);
@@ -131,6 +133,17 @@ async function run(vp) {
     await checkModalFits(page, dialog, vp.name);
     await expectNone("modal", lowContrast);
     await expectNone("modal", posterOverflow);
+
+    // ▶ del line-up: pide un preview fresco (302 al CDN) y queda sonando.
+    const playBtn = dialog.locator(".bl-em-play").first();
+    if (await playBtn.count()) {
+      const previewReq = page.waitForResponse((r) => r.url().includes("/api/preview/"), { timeout: 10_000 }).catch(() => null);
+      await playBtn.click();
+      const resp = await previewReq;
+      if (!resp || ![200, 206, 302].includes(resp.status())) fail(vp.name, "preview", `el ▶ no consigue audio (${resp ? resp.status() : "sin respuesta"})`);
+      if (!(await playBtn.evaluate((b) => b.classList.contains("is-on")))) fail(vp.name, "preview", "el ▶ no queda en reproducción");
+      await playBtn.click();
+    }
 
     // 3b. El link del modal abre el mismo evento al recargarlo (slugs de front
     // y server iguales; sept 2026: "Geøvhän" generaba un slug que no volvía).

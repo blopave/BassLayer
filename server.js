@@ -66,6 +66,8 @@ app.use(helmet({
       // dominios variados e impredecibles (CDNs, WP, S3, etc.). Las URLs vienen
       // de fuentes que controlamos curatorialmente, no de input de usuario.
       imgSrc: ["'self'", "data:", "https:"],
+      // Previews de 30 s del line-up: /api/preview redirige al CDN de Deezer.
+      mediaSrc: ["'self'", "https://*.dzcdn.net"],
       connectSrc: ["'self'", "https://jbszspnwegykpnlagypf.supabase.co", "https://cloudflareinsights.com"],
     },
   },
@@ -3118,7 +3120,47 @@ function deezerPickPicture(match) {
   return isDeezerPlaceholderUrl(pic) ? null : pic;
 }
 
-async function tryDeezer(name, locale = "es") {
+// ── Verificación de identidad en Deezer (fiestas electrónicas) ──
+// El match exacto de nombre no alcanza: "Anne" en Deezer es una cantante pop,
+// no ANNĒ la DJ de techno. Para eventos club, un artista de Deezer cuenta solo
+// si la mayoría de los géneros de sus álbumes son electrónicos. Cacheado 7 días
+// por id (y fallas transitorias no se cachean).
+const ELECTRONIC_GENRE = /electro|dance|techno|house/i;
+const DEEZER_VERIFY_FAMILIES = new Set(["club"]);
+const deezerGenreCache = new Map();   // artist id → { share, ts }
+async function deezerElectronicShare(artistId) {
+  const hit = deezerGenreCache.get(artistId);
+  if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) return hit.share;
+  const r = await fetchSafe(`https://api.deezer.com/artist/${artistId}/albums?limit=4`, {}, 6000);
+  if (!r.ok) throw new Error(`deezer albums ${r.status}`);
+  const albums = (JSON.parse(await safeText(r)).data || []).slice(0, 4);
+  let electronic = 0, total = 0;
+  for (const al of albums) {
+    const ar = await fetchSafe(`https://api.deezer.com/album/${al.id}`, {}, 6000);
+    if (!ar.ok) continue;
+    for (const g of JSON.parse(await safeText(ar)).genres?.data || []) {
+      total++;
+      if (ELECTRONIC_GENRE.test(g.name)) electronic++;
+    }
+  }
+  const share = total ? electronic / total : 0;
+  if (deezerGenreCache.size >= 2000) deezerGenreCache.delete(deezerGenreCache.keys().next().value);
+  deezerGenreCache.set(artistId, { share, ts: Date.now() });
+  return share;
+}
+async function deezerVerified(match, family) {
+  if (!DEEZER_VERIFY_FAMILIES.has(family)) return true;
+  return (await deezerElectronicShare(match.id)) >= 0.6;
+}
+// Tema más escuchado (id estable; la URL del preview se firma al reproducir).
+async function deezerTopTrack(artistId) {
+  const r = await fetchSafe(`https://api.deezer.com/artist/${artistId}/top?limit=1`, {}, 6000);
+  if (!r.ok) return null;
+  const t = (JSON.parse(await safeText(r)).data || [])[0];
+  return t && t.preview ? { id: t.id, title: t.title, album: t.album?.title || null } : null;
+}
+
+async function tryDeezer(name, locale = "es", family = "") {
   const en = locale === "en";
   try {
     const candidates = (await deezerSearchArtist(name)) || [];
@@ -3133,13 +3175,16 @@ async function tryDeezer(name, locale = "es") {
     // Perfil vacío (0 fans, 0 álbumes): no hay nada que confirme que sea el
     // artista del line-up — mejor la inicial que "Perfil de Deezer".
     if (fans === 0 && albums === 0) return null;
+    if (!(await deezerVerified(match, family))) return null;
+    const track = await deezerTopTrack(match.id).catch(() => null);
     const nf = fans.toLocaleString(en ? "en-US" : "es-AR");
     const desc = [
       fans > 0 ? (en ? `${nf} fans on Deezer` : `${nf} fans en Deezer`) : null,
       albums > 0 ? (en ? `${albums} ${albums === 1 ? "album" : "albums"}` : `${albums} ${albums === 1 ? "álbum" : "álbumes"}`) : null,
     ].filter(Boolean).join(" · ");
     // El thumbnail va proxeado: el CDN de Deezer da 403 a hotlinks del browser.
-    const pic = deezerPickPicture(match);
+    // 500px alcanza para la tarjeta del headliner (la de 1000 pesaba ~260 KB).
+    const pic = isDeezerPlaceholderUrl(match.picture_big) ? null : match.picture_big;
     return {
       name,
       found: true,
@@ -3148,6 +3193,7 @@ async function tryDeezer(name, locale = "es") {
       extract: null,
       thumbnail: pic ? `/api/artist-image?u=${encodeURIComponent(pic)}` : null,
       url: match.link || null,
+      track,
       source: "deezer",
     };
   } catch {
@@ -3202,13 +3248,21 @@ async function fetchArtistInfo(name, locale = "es", family = "") {
   for (const lang of [primary, fallback]) {
     try {
       const wiki = await tryWikipediaLang(name, lang);
-      if (wiki) return wiki;
+      if (wiki) {
+        // Muchas páginas de DJs no tienen imagen: la foto la pone Deezer
+        // (mismo match exacto) para que la fila no quede con la inicial.
+        // Deezer completa lo que Wikipedia no tiene: foto y tema para escuchar.
+        const dz = await tryDeezer(name, locale, family).catch(() => null);
+        if (!wiki.thumbnail && dz?.thumbnail) wiki.thumbnail = dz.thumbnail;
+        if (dz?.track) wiki.track = dz.track;
+        return wiki;
+      }
     } catch (e) {
       if (e.transient) { degraded = true; break; }
     }
   }
   // 3. Deezer (photo + fan count, great for DJs)
-  const deezer = await tryDeezer(name, locale);
+  const deezer = await tryDeezer(name, locale, family);
   if (deezer) return degraded ? { ...deezer, degraded } : deezer;
   // 4. iTunes (genre + official link), solo si el género cuadra con el evento
   const itunes = await tryItunes(name, family);
@@ -3253,6 +3307,29 @@ app.get("/api/artist", async (req, res) => {
   } catch (e) {
     console.error("[artist]", e.message);
     res.json({ name: raw, found: false });
+  }
+});
+
+// Preview de 30 s: la URL de Deezer viene firmada y vence en ~15 min, así que
+// la ficha guarda el id del tema y el <audio> pide acá una URL fresca (302).
+const previewCache = new Map();   // track id → { url, exp }
+app.get("/api/preview/:id", async (req, res) => {
+  const id = String(req.params.id);
+  if (!/^\d{1,12}$/.test(id)) return res.status(400).json({ error: "Invalid id" });
+  const hit = previewCache.get(id);
+  if (hit && Date.now() < hit.exp) return res.redirect(302, hit.url);
+  try {
+    const r = await fetchSafe(`https://api.deezer.com/track/${id}`, {}, 6000);
+    const t = r.ok ? JSON.parse(await safeText(r)) : null;
+    if (!t?.preview) return res.status(404).json({ error: "No preview" });
+    const exp = Number((decodeURIComponent(t.preview).match(/exp=(\d+)/) || [])[1]) * 1000 || Date.now() + 10 * 60_000;
+    if (previewCache.size >= 500) previewCache.delete(previewCache.keys().next().value);
+    previewCache.set(id, { url: t.preview, exp: exp - 60_000 });
+    res.set("Cache-Control", "no-store");
+    res.redirect(302, t.preview);
+  } catch (e) {
+    console.error("[preview]", e.message);
+    res.status(502).json({ error: "Preview failed" });
   }
 });
 
@@ -3308,6 +3385,28 @@ let artistCdnPausedUntil = 0;
 const artistImageHashes = new Map();   // md5 de bytes → primera cdn url vista
 const genericArtistHashes = new Set();  // md5 vistos bajo 2+ artistas = avatar genérico
 
+// Las fotos también van a disco: con el cache solo en memoria, cada reinicio
+// o deploy volvía a pedirle todas las fotos al CDN de Deezer, que banea la
+// IP por volumen (nos pasó en sept 2026 y el line-up quedó sin fotos).
+const ARTIST_IMG_DIR = join(SNAPSHOT_DIR, "artist-img");
+const artistImgFile = (cdnUrl) => join(ARTIST_IMG_DIR, crypto.createHash("md5").update(cdnUrl).digest("hex"));
+function readArtistImageFromDisk(cdnUrl) {
+  try {
+    const f = artistImgFile(cdnUrl);
+    if (existsSync(f + ".none")) return { placeholder: true, ts: Date.now() };
+    if (existsSync(f + ".jpg")) return { buf: readFileSync(f + ".jpg"), type: "image/jpeg", ts: Date.now() };
+  } catch {}
+  return null;
+}
+function writeArtistImageToDisk(cdnUrl, entry) {
+  try {
+    if (!existsSync(ARTIST_IMG_DIR)) mkdirSync(ARTIST_IMG_DIR, { recursive: true });
+    const f = artistImgFile(cdnUrl);
+    if (entry.placeholder) writeFileSync(f + ".none", "");
+    else writeFileSync(f + ".jpg", entry.buf);
+  } catch (e) { console.warn("[artist-image] disco:", e.message); }
+}
+
 async function fetchArtistImageBytes(cdnUrl) {
   const hit = artistImageBytes.get(cdnUrl);
   if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) {
@@ -3315,6 +3414,8 @@ async function fetchArtistImageBytes(cdnUrl) {
     artistImageBytes.set(cdnUrl, hit);   // bump LRU: las fotos calientes no se evictan
     return hit;
   }
+  const disk = readArtistImageFromDisk(cdnUrl);
+  if (disk) { artistImageBytes.set(cdnUrl, disk); return disk; }
   if (Date.now() < artistCdnPausedUntil) throw new Error("CDN paused");
   const r = await fetchSafe(cdnUrl, {}, 8000);
   if (!r.ok) {
@@ -3337,6 +3438,7 @@ async function fetchArtistImageBytes(cdnUrl) {
       genericArtistHashes.add(hash);
       const first = artistImageBytes.get(firstUrl);
       if (first) artistImageBytes.set(firstUrl, { placeholder: true, ts: first.ts });
+      writeArtistImageToDisk(firstUrl, { placeholder: true });   // .none gana sobre el .jpg
     } else if (!firstUrl) {
       if (artistImageHashes.size >= ARTIST_IMAGE_BYTES_MAX * 2) artistImageHashes.delete(artistImageHashes.keys().next().value);
       artistImageHashes.set(hash, cdnUrl);
@@ -3350,24 +3452,28 @@ async function fetchArtistImageBytes(cdnUrl) {
     artistImageBytes.delete(oldest);
   }
   artistImageBytes.set(cdnUrl, entry);
+  writeArtistImageToDisk(cdnUrl, entry);
   return entry;
 }
 
-async function fetchArtistImage(name) {
-  const key = normalizeArtistName(name);
-  if (!key) return null;
+async function fetchArtistImage(name, family = "") {
+  const norm = normalizeArtistName(name);
+  if (!norm) return null;
+  // La verificación por género depende de la familia: mismo nombre, veredictos
+  // distintos para una fiesta de techno y para un recital.
+  const key = DEEZER_VERIFY_FAMILIES.has(family) ? `${family}:${norm}` : norm;
   const hit = artistImageCache.get(key);
   if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) return hit.image;
   // Dedup de requests concurrentes: el mismo DJ suele headlinear varios
   // eventos candidatos a la vez y no queremos golpear Deezer/CDN por cada uno.
   const inflight = artistImageInflight.get(key);
   if (inflight) return inflight;
-  const p = resolveArtistImage(name, key).finally(() => artistImageInflight.delete(key));
+  const p = resolveArtistImage(name, norm, family, key).finally(() => artistImageInflight.delete(key));
   artistImageInflight.set(key, p);
   return p;
 }
 
-async function resolveArtistImage(name, key) {
+async function resolveArtistImage(name, norm, family, key) {
   // Un null solo se cachea si es definitivo (sin match o placeholder); las
   // fallas transitorias (cuota de Deezer, CDN caído) se reintentan después.
   let image = null;
@@ -3376,7 +3482,8 @@ async function resolveArtistImage(name, key) {
     const list = await deezerSearchArtist(name);
     if (list) {
       definitive = true;
-      const match = list.find(a => normalizeArtistName(a.name) === key);
+      const exact = list.find(a => normalizeArtistName(a.name) === norm);
+      const match = exact && (await deezerVerified(exact, family)) ? exact : null;
       const pic = deezerPickPicture(match);
       if (pic) {
         // Bajar los bytes valida (descarta el placeholder tras redirect) y
@@ -3434,7 +3541,7 @@ async function enrichArtistImages(events) {
     while (idx < candidates.length) {
       const { ev, heads } = candidates[idx++];
       for (const who of heads) {
-        const img = await fetchArtistImage(who);
+        const img = await fetchArtistImage(who, ev.family);
         if (img) {
           ev.artistImage = `/api/artist-image?u=${encodeURIComponent(img)}`;
           ev.artistImageName = who;   // la etiqueta del front debe nombrar a quien sale en la foto

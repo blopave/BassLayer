@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useSheetDrag } from "../hooks/useSheetDrag";
 import { cleanArtists } from "../utils/artists";
@@ -128,6 +128,7 @@ export function EventModal({ event, onClose, onShare }) {
   const { isSaved, toggle } = useSavedEvents();
   const [infos, setInfos] = useState({});         // nombre → info del artista (o null mientras carga)
   const [openArtist, setOpenArtist] = useState(null);
+  const player = usePreviewPlayer();
   const [imageFailed, setImageFailed] = useState(false);
   const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
   const [artistImageFailed, setArtistImageFailed] = useState(false);
@@ -268,19 +269,22 @@ export function EventModal({ event, onClose, onShare }) {
                 <div className="bl-em-label bl-bass-t-label">
                   {t("event.lineup")} · {artists.length} {artists.length === 1 ? t("event.lineupSingle") : t("event.lineupPlural")}
                 </div>
-                <ul className="bl-em-lineup">
-                  {artists.map((name, i) => (
-                    <LineupRow
-                      key={name}
-                      name={name}
-                      info={infos[name]}
-                      headliner={i === 0}
-                      open={openArtist === name}
-                      onToggle={() => setOpenArtist(openArtist === name ? null : name)}
-                      t={t}
-                    />
-                  ))}
-                </ul>
+                <LineupHead name={artists[0]} info={infos[artists[0]]} player={player} t={t} />
+                {artists.length > 1 && (
+                  <ul className="bl-em-grid">
+                    {artists.slice(1).map((name) => (
+                      <LineupChip
+                        key={name}
+                        name={name}
+                        info={infos[name]}
+                        player={player}
+                        open={openArtist === name}
+                        onToggle={() => setOpenArtist(openArtist === name ? null : name)}
+                        t={t}
+                      />
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
 
@@ -370,50 +374,119 @@ export function EventModal({ event, onClose, onShare }) {
 
 const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wikipedia-es": "Wikipedia (ES)", itunes: "Apple Music" };
 
-// Fila del line-up: foto (o inicial), nombre, una línea de contexto y el link
-// a la fuente. Tocarla despliega la bio debajo cuando hay algo que contar.
-function LineupRow({ name, info, headliner, open, onToggle, t }) {
-  const loading = info === null;
-  const found = !!(info && info.found);
-  const [thumbFailed, setThumbFailed] = useState(false);
-  // Si la foto falla (p. ej. el CDN de Deezer corta el proxy) cae a la inicial.
-  const thumb = found && !thumbFailed && info.thumbnail;
-  const sub = headliner ? t("event.headliner") : (found && info.description) || null;
-  const sourceLabel = found ? (SOURCE_LABELS[info.source] || "Wikipedia") : null;
-  const hasMore = found && (info.extract || info.description);
-  const initial = name.replace(/^[^\p{L}\p{N}]+/u, "").charAt(0).toUpperCase() || "·";
+// Un solo <audio> por ficha: tocar otro ▶ corta el anterior, cerrar la ficha
+// lo corta todo. La URL la resuelve /api/preview (la de Deezer vence en ~15 min).
+function usePreviewPlayer() {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(null);   // track id sonando
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const a = new Audio();
+    a.preload = "none";
+    const onTime = () => setProgress(a.duration ? a.currentTime / a.duration : 0);
+    const onEnd = () => { setPlaying(null); setProgress(0); };
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("ended", onEnd);
+    a.addEventListener("error", onEnd);
+    audioRef.current = a;
+    return () => { a.pause(); a.removeAttribute("src"); a.removeEventListener("timeupdate", onTime); a.removeEventListener("ended", onEnd); a.removeEventListener("error", onEnd); };
+  }, []);
+  const toggle = useCallback((trackId) => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing === trackId) { a.pause(); setPlaying(null); setProgress(0); return; }
+    a.src = `/api/preview/${trackId}`;
+    setProgress(0);
+    setPlaying(trackId);
+    a.play().catch(() => { setPlaying(null); });
+  }, [playing]);
+  return { playing, progress, toggle };
+}
 
+function PlayButton({ track, artist, player, withTitle, t }) {
+  if (!track) return null;
+  const on = player.playing === track.id;
   return (
-    <li className={`bl-em-row${open ? " is-open" : ""}${headliner ? " is-headliner" : ""}`}>
-      <button type="button" className="bl-em-row-btn" onClick={onToggle} aria-expanded={open}>
-        {thumb ? (
-          <img className="bl-em-av" src={thumb} alt="" loading="lazy" decoding="async" onError={() => setThumbFailed(true)} />
-        ) : (
-          <span className={`bl-em-av bl-em-av-ph${loading ? " is-loading" : ""}`} aria-hidden="true">{initial}</span>
-        )}
-        <span className="bl-em-row-txt">
-          <b>{name}</b>
-          {sub && <span className={`bl-em-row-sub${headliner ? " is-h" : ""}`}>{sub}</span>}
-        </span>
-        <span className="bl-em-row-chev" aria-hidden="true">{open ? "−" : "+"}</span>
-      </button>
+    <button
+      type="button"
+      className={`bl-em-play${on ? " is-on" : ""}`}
+      onClick={(e) => { e.stopPropagation(); player.toggle(track.id); }}
+      aria-pressed={on}
+      aria-label={`${on ? t("event.pause") : t("event.listen")}: ${track.title} — ${artist}`}
+    >
+      <span className="bl-em-play-ic" style={on ? { "--p": player.progress } : undefined} aria-hidden="true">
+        {on ? <svg viewBox="0 0 10 10"><path d="M0 0h3.5v10H0zM6.5 0H10v10H6.5z" /></svg>
+            : <svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z" /></svg>}
+      </span>
+      {withTitle && <span className="bl-em-play-title">{track.title}</span>}
+    </button>
+  );
+}
+
+// Foto del artista o su inicial; si la foto falla (CDN caído) cae a la inicial.
+function ArtistAvatar({ name, info, className }) {
+  const [failed, setFailed] = useState(false);
+  const loading = info === null;
+  const thumb = info?.found && !failed && info.thumbnail;
+  const initial = name.replace(/^[^\p{L}\p{N}]+/u, "").charAt(0).toUpperCase() || "·";
+  return thumb
+    ? <img className={className} src={thumb} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+    : <span className={`${className} bl-em-av-ph${loading ? " is-loading" : ""}`} aria-hidden="true">{initial}</span>;
+}
+
+function ArtistLinks({ name, info, t }) {
+  const found = !!info?.found;
+  return (
+    <div className="bl-em-bio-links">
+      {found && info.url && <a href={info.url} target="_blank" rel="noopener noreferrer">{SOURCE_LABELS[info.source] || "Wikipedia"} &#x2197;</a>}
+      <a href={`https://soundcloud.com/search?q=${encodeURIComponent(name)}`} target="_blank" rel="noopener noreferrer">SoundCloud &#x2197;</a>
+      {!found && <a href={searchArtistUrl(name)} target="_blank" rel="noopener noreferrer">{t("common.searchOnGoogle")} &#x2197;</a>}
+    </div>
+  );
+}
+
+// Headliner: tarjeta grande con foto, bio verificada y su tema para escuchar.
+// Replica la jerarquía del flyer (el nombre grande arriba, el resto abajo).
+function LineupHead({ name, info, player, t }) {
+  const bio = info?.found && info.extract;
+  return (
+    <div className="bl-em-head">
+      <ArtistAvatar name={name} info={info} className="bl-em-head-av" />
+      <div className="bl-em-head-id">
+        <div className="bl-em-head-tag">{t("event.headliner")}</div>
+        <div className="bl-em-head-name">{name}</div>
+      </div>
+      {bio && <p className="bl-em-head-bio">{bio}</p>}
+      <div className="bl-em-head-act">
+        <PlayButton track={info?.track} artist={name} player={player} withTitle t={t} />
+        <ArtistLinks name={name} info={info} t={t} />
+      </div>
+    </div>
+  );
+}
+
+// Resto del line-up: fichas compactas. Tocar el nombre despliega bio y links
+// a lo ancho de la grilla; el ▶ es un botón aparte (no anidado).
+function LineupChip({ name, info, player, open, onToggle, t }) {
+  const bio = info?.found && info.extract;
+  return (
+    <li className={`bl-em-chip${open ? " is-open" : ""}`}>
+      <div className="bl-em-chip-row">
+        <button type="button" className="bl-em-chip-main" onClick={onToggle} aria-expanded={open}>
+          <ArtistAvatar name={name} info={info} className="bl-em-chip-av" />
+          <span className="bl-em-chip-txt">
+            <b>{name}</b>
+            {info?.track && <span className="bl-em-chip-sub">{info.track.title}</span>}
+          </span>
+        </button>
+        <PlayButton track={info?.track} artist={name} player={player} t={t} />
+      </div>
       {open && (
         <div className="bl-em-bio">
-          {loading ? (
-            <div className="bl-em-bio-loading">{t("common.loading")}</div>
-          ) : (
+          {info === null ? <div className="bl-em-bio-loading">{t("common.loading")}</div> : (
             <>
-              {found && info.extract && <p className="bl-em-bio-extract">{info.extract}</p>}
-              {!hasMore && <p className="bl-em-bio-extract bl-em-bio-none">{t("artist.noBio")}</p>}
-              <div className="bl-em-bio-links">
-                {found && info.url && (
-                  <a href={info.url} target="_blank" rel="noopener noreferrer">{sourceLabel} &#x2197;</a>
-                )}
-                <a href={`https://soundcloud.com/search?q=${encodeURIComponent(name)}`} target="_blank" rel="noopener noreferrer">SoundCloud &#x2197;</a>
-                {!found && (
-                  <a href={searchArtistUrl(name)} target="_blank" rel="noopener noreferrer">{t("common.searchOnGoogle")} &#x2197;</a>
-                )}
-              </div>
+              <p className="bl-em-bio-extract">{bio || t("artist.noBio")}</p>
+              <ArtistLinks name={name} info={info} t={t} />
             </>
           )}
         </div>

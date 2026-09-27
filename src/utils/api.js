@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+const ARTIST_RULES_V = 2;
 function authHeaders() {
   const token = storage.get("bl-token");
   return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
@@ -63,7 +64,10 @@ export const api = {
   btcCycles: () => fetch("/api/btc-cycles").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  artist:    (name, locale = "es", family = "") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}${family ? `&family=${encodeURIComponent(family)}` : ""}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  // v: versión de las reglas de la ficha. La respuesta se cachea 12 h en el
+  // browser; al cambiar qué se considera match (sept 2026: verificación por
+  // género, previews) se sube para no servir fichas viejas durante medio día.
+  artist:    (name, locale = "es", family = "") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}${family ? `&family=${encodeURIComponent(family)}` : ""}&v=${ARTIST_RULES_V}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   announcements: () => fetch("/api/announcements").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   submitCryptoIrl: (data) => fetch("/api/crypto-irl", {
     method: "POST",

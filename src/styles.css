@@ -2449,40 +2449,72 @@
 .bl-em-sec { margin-bottom:24px; }
 .bl-em-label { color:var(--bl-text-ter); margin-bottom:10px; }
 
-/* line-up */
-.bl-em-lineup { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
-.bl-em-row { border-bottom:1px solid var(--bl-border-sub); }
-.bl-em-row:last-child { border-bottom:0; }
-.bl-em-row-btn {
-  display:flex; align-items:center; gap:14px; width:100%; padding:10px 0;
-  background:none; border:0; cursor:pointer; text-align:left; color:inherit; font:inherit;
-  border-radius:6px; transition:background var(--duration-fast);
+/* line-up — dirección "Cartel" (sept 2026): el headliner en tarjeta grande
+   con foto, bio y su tema para escuchar; el resto en fichas compactas de dos
+   columnas. Replica la jerarquía del flyer y ocupa menos alto que la lista. */
+/* Desktop: foto a la izquierda de todo. Mobile: foto + nombre arriba, bio y
+   acciones a lo ancho (en 200px los links se apilaban de a uno). */
+.bl-em-head {
+  display:grid; grid-template-columns:96px minmax(0,1fr); grid-template-rows:auto auto 1fr; gap:0 16px; padding:16px;
+  grid-template-areas:"av id" "av bio" "av act";
+  border:1px solid var(--bl-border); border-radius:12px;
+  background:linear-gradient(135deg, rgba(196,144,112,.10), transparent 60%), var(--bl-surface);
 }
-.bl-em-row-btn:hover { background:var(--bl-subtle); }
-.bl-em-row-btn:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
-.bl-em-av {
-  width:44px; height:44px; border-radius:6px; object-fit:cover; flex-shrink:0;
-  background:var(--bl-surface); filter:saturate(.85);
+.bl-em-head-av { grid-area:av; width:96px; height:96px; border-radius:10px; object-fit:cover; background:var(--bl-surface-alt); }
+.bl-em-head-id { grid-area:id; min-width:0; }
+.bl-em-head-av.bl-em-av-ph { font-size:34px; }
+.bl-em-head-tag { font-family:var(--font-mono); font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--bl-accent-bass); }
+.bl-em-head-name { font-size:24px; font-weight:700; letter-spacing:-0.02em; line-height:1.1; color:var(--bl-text); margin:6px 0 6px; overflow-wrap:anywhere; }
+.bl-em-head-bio { grid-area:bio; margin:0 0 12px; font-size:13px; line-height:1.5; color:var(--bl-150); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-em-head-act { grid-area:act; display:flex; align-items:center; flex-wrap:wrap; gap:6px 18px; margin-top:4px; }
+
+.bl-em-grid { list-style:none; margin:10px 0 0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+.bl-em-chip { border:1px solid var(--bl-border-sub); border-radius:10px; min-width:0; transition:border-color var(--duration-fast); }
+.bl-em-chip:hover { border-color:var(--bl-border); }
+.bl-em-chip.is-open { grid-column:1 / -1; border-color:var(--bl-border); }
+.bl-em-chip-row { display:flex; align-items:center; gap:6px; padding-right:8px; }
+.bl-em-chip-main {
+  flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:8px;
+  background:none; border:0; cursor:pointer; text-align:left; color:inherit; font:inherit; border-radius:10px;
 }
+.bl-em-chip-main:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:-2px; }
+.bl-em-chip-av { width:40px; height:40px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--bl-surface-alt); }
+.bl-em-chip-av.bl-em-av-ph { font-size:15px; }
+.bl-em-chip-txt { min-width:0; }
+.bl-em-chip-txt b { display:block; font-size:14.5px; font-weight:600; letter-spacing:-0.01em; color:var(--bl-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-em-chip-sub { display:block; margin-top:2px; font-size:11.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bl-em-av-ph {
   display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-display); font-weight:700; font-size:17px; color:var(--bl-accent-bass);
+  font-family:var(--font-display); font-weight:700; color:var(--bl-accent-bass);
   background:linear-gradient(160deg, rgba(196,144,112,.18), rgba(196,144,112,.04)); border:1px solid var(--bl-border);
-  filter:none;
 }
 .bl-em-av-ph.is-loading { color:transparent; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.bl-em-row-txt { flex:1; min-width:0; }
-.bl-em-row-txt b { display:block; font-size:15px; font-weight:600; letter-spacing:-0.01em; color:var(--bl-text); overflow-wrap:anywhere; }
-.bl-em-row-sub {
-  display:block; margin-top:3px;
-  font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--bl-text-sec);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+
+/* ▶ de 30 s: anillo de progreso con conic-gradient mientras suena */
+.bl-em-play { display:inline-flex; align-items:center; gap:9px; background:none; border:0; padding:0; cursor:pointer; color:var(--bl-accent-bass); font:inherit; min-height:36px; }
+.bl-em-play-ic {
+  position:relative; width:32px; height:32px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid color-mix(in srgb, var(--bl-accent-bass) 55%, transparent);
+  transition:background var(--duration-fast), color var(--duration-fast);
 }
-.bl-em-row-sub.is-h { color:var(--bl-accent-bass); }
-.bl-em-row-chev { font-family:var(--font-mono); font-size:14px; color:var(--bl-text-ter); width:20px; text-align:center; flex-shrink:0; }
-.bl-em-row.is-open .bl-em-row-chev { color:var(--bl-accent-bass); }
+.bl-em-play-ic svg { width:11px; height:11px; fill:currentColor; margin-left:1px; }
+.bl-em-play.is-on .bl-em-play-ic { background:var(--bl-accent-bass); color:#1A120C; }
+.bl-em-play.is-on .bl-em-play-ic svg { margin-left:0; }
+.bl-em-play.is-on .bl-em-play-ic::after {
+  content:""; position:absolute; inset:-4px; border-radius:50%;
+  background:conic-gradient(var(--bl-accent-bass) calc(var(--p, 0) * 1turn), transparent 0);
+  -webkit-mask:radial-gradient(circle, transparent 17px, #000 17.5px); mask:radial-gradient(circle, transparent 17px, #000 17.5px);
+}
+.bl-em-play:hover .bl-em-play-ic { background:color-mix(in srgb, var(--bl-accent-bass) 14%, transparent); }
+.bl-em-play.is-on:hover .bl-em-play-ic { background:var(--bl-accent-bass); }
+.bl-em-play:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:3px; border-radius:20px; }
+.bl-em-play-title { font-size:13px; font-weight:500; color:var(--bl-text); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-em-chip .bl-em-play-ic { width:30px; height:30px; }
+@media (prefers-reduced-motion:reduce) { .bl-em-play.is-on .bl-em-play-ic::after { display:none; } }
+
 .bl-em-bio {
-  margin:0 0 12px 58px; padding:12px 14px;
+  margin:0 8px 8px; padding:12px 14px;
   border:1px solid var(--bl-border-sub); border-left:2px solid var(--bl-accent-bass); border-radius:6px;
   background:var(--bl-surface);
   animation:bl-em-bio-in .25s var(--ease-out-expo);
@@ -2543,7 +2575,12 @@
   .bl-em-stamp { top:14px; left:14px; }
   .bl-em-scroll { padding:20px 20px 12px; }
   .bl-em-title { font-size:26px; margin:8px 0 18px; }
-  .bl-em-bio { margin-left:0; }
+  .bl-em-bio { margin:0 8px 8px; }
+  .bl-em-head { grid-template-columns:72px minmax(0,1fr); grid-template-areas:"av id" "bio bio" "act act"; gap:0 14px; padding:14px; }
+  .bl-em-head-id { align-self:center; }
+  .bl-em-head-av { width:72px; height:72px; margin-bottom:12px; }
+  .bl-em-head-name { font-size:21px; }
+  .bl-em-grid { grid-template-columns:1fr; }
   .bl-em-act { padding:12px 20px calc(16px + env(safe-area-inset-bottom)); }
   .bl-em-gh { gap:6px; font-size:9.5px; letter-spacing:1.2px; }
 }

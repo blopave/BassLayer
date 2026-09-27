@@ -131,7 +131,7 @@ async function run(vp) {
       await page.waitForTimeout(1500);
     });
     if (kind === "flyer") {
-      await step("modal-bio-abierta", async () => { await dialog.locator(".bl-em-row-btn").nth(1).click(); await page.waitForTimeout(1200); });
+      await step("modal-bio-abierta", async () => { await dialog.locator(".bl-em-chip-main").first().click(); await page.waitForTimeout(1200); });
       await step("modal-scroll-fondo", async () => { await dialog.locator(".bl-em-scroll").evaluate((e) => e.scrollTo(0, e.scrollHeight)); });
     }
     await esc();
