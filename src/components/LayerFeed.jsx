@@ -197,7 +197,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         </div>
       )}
       </div>
-      <LayerAside onGo={setSection} />
+      <LayerAside onGo={goSection} active={section} newsCount={news.length} />
       </div>
     </>
   );

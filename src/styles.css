@@ -3016,6 +3016,31 @@
 .bl-door-v.is-loading { width:60%; border-radius:4px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
 .bl-door-s { font-size:11.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bl-door-s .up { color:var(--bl-up); } .bl-door-s .down { color:var(--bl-down); }
+/* Desktop: índice de secciones en la columna lateral (fijo al scrollear). La
+   grilla de tarjetas queda solo para mobile: en desktop repetía el índice. */
+@media (min-width:769px) { .bl-doors { display:none; } }
+.bl-idx { border:1px solid var(--bl-border); border-radius:12px; background:var(--bl-surface); padding:14px 8px 8px; }
+.bl-idx .bl-doors-lab { padding:0 8px; }
+.bl-idx-row {
+  display:grid; grid-template-columns:34px minmax(0,1fr) auto 12px; align-items:center; gap:10px; width:100%;
+  padding:10px 8px; border:0; border-radius:8px; background:none; color:var(--bl-text); font:inherit; text-align:left; cursor:pointer;
+  transition:background var(--duration-fast);
+}
+.bl-idx-row + .bl-idx-row { box-shadow:0 -1px 0 var(--bl-border-sub); }
+.bl-idx-row:hover { background:var(--bl-subtle); }
+.bl-idx-row.is-on { background:color-mix(in srgb, var(--bl-accent-layer) 10%, transparent); box-shadow:none; }
+.bl-idx-row.is-on + .bl-idx-row { box-shadow:none; }
+.bl-idx-row:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
+.bl-idx-ic { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bl-accent-layer) 10%, transparent); }
+.bl-idx-ic svg { width:17px; height:17px; fill:none; stroke:var(--bl-accent-layer); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.bl-idx-n { min-width:0; font-weight:600; font-size:14px; }
+.bl-idx-n small { display:block; margin-top:2px; font-weight:400; font-size:11.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-idx-v { font-family:var(--font-mono); font-weight:600; font-size:12.5px; white-space:nowrap; }
+.bl-idx-v small { font-size:10.5px; font-weight:500; color:var(--bl-text-sec); }
+.bl-idx-v .up { color:var(--bl-up); } .bl-idx-v .down { color:var(--bl-down); }
+.bl-idx-v.is-loading { width:48px; height:12px; border-radius:4px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+.bl-idx-ch { color:var(--bl-text-ter); font-size:16px; }
+.bl-idx-row.is-on .bl-idx-ch { color:var(--bl-accent-layer); }
 .bl-layer-h { margin:22px 32px 4px; font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--bl-text); }
 @media (max-width:768px) {
   .bl-doors { margin:14px 16px 4px; }
@@ -3029,40 +3054,6 @@
    contra el aside parecía meterse debajo del panel Mercados. */
 .bl-layer-main .bl-filters { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
 .bl-layer-aside { position:sticky; top:12px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
-.bl-aside-card { border:1px solid var(--bl-border); border-radius:6px; background:var(--bl-surface); padding:14px 16px; }
-.bl-aside-lab {
-  display:flex; align-items:center; gap:8px; margin-bottom:8px;
-  font-family:var(--font-mono); font-size:9.5px; letter-spacing:2.2px; text-transform:uppercase; color:var(--bl-text-ter);
-}
-.bl-aside-cnt { color:var(--bl-text-sec); letter-spacing:1px; }
-.bl-aside-more {
-  margin-left:auto; background:none; border:0; padding:0; cursor:pointer;
-  font:inherit; letter-spacing:1.5px; color:var(--bl-accent-layer);
-}
-.bl-aside-more:hover { text-decoration:underline; }
-.bl-aside-skel { border-radius:4px; background:var(--bl-surface-alt); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.bl-aside-rows { list-style:none; margin:0; padding:0; }
-.bl-aside-row {
-  display:grid; grid-template-columns:52px minmax(0, 1fr) auto 62px; gap:12px; align-items:center;
-  padding:9px 0; border-bottom:1px solid var(--bl-border-sub);
-  font-family:var(--font-mono); font-size:11.5px; font-variant-numeric:tabular-nums;
-}
-.bl-aside-row:last-child { border-bottom:0; }
-.bl-aside-sym { font-weight:700; letter-spacing:1px; color:var(--bl-100); }
-.bl-aside-name { font-family:var(--font-sans); font-size:12.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bl-aside-price { color:var(--bl-text); }
-.bl-aside-chg { text-align:right; }
-.bl-aside-chg.up, .bl-aside-kv dd.up { color:var(--bl-up); }
-.bl-aside-chg.down, .bl-aside-kv dd.down { color:var(--bl-down); }
-.bl-aside-kvs { margin:0; }
-.bl-aside-kv {
-  display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:7px 0; border-bottom:1px solid var(--bl-border-sub);
-  font-family:var(--font-mono); font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--bl-text-sec);
-}
-.bl-aside-kv:last-child { border-bottom:0; }
-.bl-aside-kv dt { flex-shrink:0; }
-.bl-aside-kv dd { margin:0; text-align:right; text-transform:none; letter-spacing:0; font-size:13px; font-weight:600; color:var(--bl-text); }
-.bl-aside-sub { font-weight:500; font-size:11px; color:var(--bl-text-sec); }
 
 .bl-layer-content {
   animation:bl-wp-fadein .25s var(--ease-out-expo);

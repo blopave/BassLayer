@@ -32,6 +32,7 @@ export const STRINGS = {
 
     "section.news": "Noticias",
     "doors.live": "en vivo",
+    "doors.newsSub": "Portada · crypto y tech",
     "doors.upcoming": "próximos",
     "doors.notes": "notas",
     "doors.markets": "mercados",
@@ -355,6 +356,7 @@ export const STRINGS = {
 
     "section.news": "News",
     "doors.live": "live",
+    "doors.newsSub": "Front page · crypto & tech",
     "doors.upcoming": "upcoming",
     "doors.notes": "stories",
     "doors.markets": "markets",

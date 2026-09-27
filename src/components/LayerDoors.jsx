@@ -35,7 +35,10 @@ function useLayerSnapshot() {
   return s;
 }
 
-export function LayerDoors({ onGo }) {
+// variant="grid": tarjetas (portada mobile). variant="index": lista vertical
+// para la columna lateral de desktop, fija al scrollear, con Noticias arriba y
+// la sección abierta marcada.
+export function LayerDoors({ onGo, variant = "grid", active, newsCount }) {
   const { t, locale } = useLocale();
   const s = useLayerSnapshot();
   const all = (s.markets?.groups || []).flatMap((g) => g.items || []);
@@ -59,6 +62,27 @@ export function LayerDoors({ onGo }) {
       ? { v: <>{list(s.predictions).length} <small>{t("doors.markets")}</small></>, sub: null }
       : { v: "—", sub: t("doors.noMarkets") }),
   };
+
+  const NEWS_ICON = <><path d="M4 5h13v14H6a2 2 0 0 1-2-2z" /><path d="M17 8h3v9a2 2 0 0 1-2 2" /><path d="M7 9h7M7 12h7M7 15h4" /></>;
+  if (variant === "index") {
+    const rows = [["noticias", "section.news", NEWS_ICON], ...ORDER.map(([k, l]) => [k, l, ICONS[k]])];
+    return (
+      <nav className="bl-idx" aria-label={t("aside.sections")}>
+        <div className="bl-doors-lab"><span>{t("aside.sections")}</span><span>{t("doors.live")}</span></div>
+        {rows.map(([key, label, icon]) => {
+          const c = key === "noticias" ? { v: newsCount ? <>{newsCount}</> : null, sub: t("doors.newsSub") } : content[key];
+          return (
+            <button key={key} type="button" className={`bl-idx-row${active === key ? " is-on" : ""}`} onClick={() => onGo(key)} aria-current={active === key ? "page" : undefined}>
+              <span className="bl-idx-ic"><svg viewBox="0 0 24 24" aria-hidden="true">{icon}</svg></span>
+              <span className="bl-idx-n">{t(label)}<small>{c?.sub || "\u00A0"}</small></span>
+              <span className={`bl-idx-v${c ? "" : " is-loading"}`}>{c ? c.v : "\u00A0"}</span>
+              <span className="bl-idx-ch" aria-hidden="true">›</span>
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <section className="bl-doors" aria-label={t("aside.sections")}>

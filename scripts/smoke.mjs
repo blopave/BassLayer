@@ -210,17 +210,25 @@ async function run(vp) {
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
 
-    // 6b. Portada de Layer: 6 tarjetas de sección dentro de la pantalla y cada
-    // una lleva a su sección (sept 2026: grilla 2×3 elegida por Pablo).
-    const doors = page.locator(".bl-door");
-    if ((await doors.count()) !== 6) fail(vp.name, "layer", `la portada tiene ${await doors.count()} tarjetas de sección (esperaba 6)`);
+    // 6b. Secciones de Layer: en mobile/tablet, grilla de 6 tarjetas en la
+    // portada; en desktop, índice lateral de 7 filas que marca la sección
+    // abierta. Tocar Ciclos abre Ciclos (sept 2026, elegidas por Pablo).
+    const narrow = vp.viewport.width <= 768;
+    const nav = page.locator(narrow ? ".bl-door" : ".bl-idx-row");
+    const want = narrow ? 6 : 7;
+    const got = await nav.count();
+    if (got !== want) fail(vp.name, "layer", `hay ${got} accesos a secciones (esperaba ${want})`);
     else {
-      const g = await page.locator(".bl-doors-grid").boundingBox();
-      if (g && (g.x < 0 || g.x + g.width > vp.viewport.width + 1)) fail(vp.name, "layer", "la grilla de secciones se sale de la pantalla");
-      await doors.nth(1).click();
-      await page.waitForTimeout(600);
+      const box = await page.locator(narrow ? ".bl-doors-grid" : ".bl-idx").boundingBox();
+      if (!box) fail(vp.name, "layer", "los accesos a secciones no se ven");
+      else if (box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "los accesos a secciones se salen de la pantalla");
+      const ciclos = nav.filter({ hasText: /Ciclos|Cycles/ }).first();
+      await ciclos.click();
+      await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent();
-      if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `la tarjeta de Ciclos abre "${active}"`);
+      if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `el acceso a Ciclos abre "${active}"`);
+      if (!narrow && !(await page.locator(".bl-idx-row.is-on").filter({ hasText: /Ciclos|Cycles/ }).count()))
+        fail(vp.name, "layer", "el índice no marca la sección abierta");
       await page.locator(".bl-layer-tab").first().click();
     }
 
