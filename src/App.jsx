@@ -118,7 +118,14 @@ export default function App() {
   const [eventsUpdated, setEventsUpdated] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventsSearch, setEventsSearch] = useState("");
-  // toast removed — was unused
+  // Aviso breve (una línea) para lo que no merece un modal: hoy, un deep link
+  // a un evento que ya pasó o no existe.
+  const [toast, setToast] = useState("");
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(""), 4500);
+    return () => clearTimeout(id);
+  }, [toast]);
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [selectedNews, setSelectedNews] = useState(null);
   const [selectedFestival, setSelectedFestival] = useState(null);
@@ -435,6 +442,11 @@ export default function App() {
         setSelectedEvent(found);
         applyEventMeta(found, slug);
         applyEventJsonLd(found, slug);
+      } else {
+        // Link viejo o compartido de un evento que ya pasó: la agenda sola,
+        // sin explicación, parecía un error del sitio.
+        window.history.replaceState({}, "", "/");
+        setToast(t("event.notFound"));
       }
       pendingEventSlugRef.current = null;
     }
@@ -1203,7 +1215,7 @@ export default function App() {
       )}
 
       {/* TOAST (placeholder for future use) */}
-      <div className="bl-toast" aria-live="polite" />
+      <div className={`bl-toast${toast ? " show" : ""}`} role="status" aria-live="polite">{toast}</div>
     </div>
   );
 }

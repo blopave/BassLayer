@@ -6,6 +6,8 @@ export function slugify(s) {
   return String(s || "")
     .normalize("NFD").replace(/\p{Mn}/gu, "")
     .toLowerCase()
+    // Letras que NFD no descompone: sin esto "Geøvhän" daba "ge-vhan".
+    .replace(/[øœæßłđþðı]/g, (c) => ({ ø: "o", œ: "oe", æ: "ae", ß: "ss", ł: "l", đ: "d", þ: "th", ð: "d", ı: "i" })[c])
     .replace(/&/g, " y ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")

@@ -130,6 +130,16 @@ async function run(vp) {
     await expectNone("modal", lowContrast);
     await expectNone("modal", posterOverflow);
 
+    // 3b. El link del modal abre el mismo evento al recargarlo (slugs de front
+    // y server iguales; sept 2026: "Geøvhän" generaba un slug que no volvía).
+    const modalTitle = (await dialog.locator("h1").first().textContent())?.trim();
+    const modalUrl = page.url();
+    await page.goto(modalUrl, { waitUntil: "domcontentloaded" });
+    await dialog.waitFor({ state: "visible", timeout: 30_000 }).catch(() => fail(vp.name, "deep-link", `recargar ${new URL(modalUrl).pathname} no abre el evento`));
+    const reloadedTitle = (await dialog.locator("h1").first().textContent().catch(() => ""))?.trim();
+    if (reloadedTitle && reloadedTitle !== modalTitle) fail(vp.name, "deep-link", `recargar abre "${reloadedTitle}" en vez de "${modalTitle}"`);
+    await page.waitForTimeout(500);
+
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal.png` });
 
     // 4. Cerrar con Escape → vuelve el feed y se libera el scroll
@@ -170,6 +180,12 @@ async function run(vp) {
         await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
       }
     }
+
+    // 5c. Link a un evento que ya no existe: aviso y vuelta a la agenda
+    await page.goto(BASE + "/eventos/evento-que-no-existe-1-ene", { waitUntil: "domcontentloaded" });
+    const toastOk = await page.locator(".bl-toast.show").waitFor({ state: "visible", timeout: 30_000 }).then(() => true).catch(() => false);
+    if (!toastOk) fail(vp.name, "deep-link", "un evento inexistente no muestra aviso");
+    if (new URL(page.url()).pathname !== "/") fail(vp.name, "deep-link", `la URL rota queda en la barra (${new URL(page.url()).pathname})`);
 
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });

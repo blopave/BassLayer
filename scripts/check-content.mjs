@@ -15,6 +15,8 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
+import { isNotArtist, TEMPLATE_TOKEN } from "../lib/content-rules.js";
+
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
 const JSON_OUT = process.argv.includes("--json");
 const TIMEOUT_MS = 180_000;
@@ -80,6 +82,16 @@ async function checkEndpoint({ path, minItems, required }) {
     const vacios = items.filter((it) => !String(it?.[field] ?? "").trim()).length;
     if (vacios > 0) fail(path, "campo-vacio", `${field}: ${vacios}/${items.length} sin valor`);
   }
+
+  // Line-ups: nombres de escenario o placeholders colados como artistas
+  // (sept 2026: "Main Stage" de headliner, "Terraza" con foto de otro).
+  const noArtistas = new Set();
+  for (const item of items) for (const a of item?.artists || []) if (isNotArtist(a)) noArtistas.add(a);
+  if (noArtistas.size) fail(path, "line-up", `no son artistas: ${[...noArtistas].slice(0, 5).join(", ")}`);
+
+  // Plantillas sin completar del CMS de origen en títulos ("… [FECHA]").
+  const plantillas = items.filter((it) => TEMPLATE_TOKEN.test(it?.title || it?.name || ""));
+  if (plantillas.length) fail(path, "plantilla", JSON.stringify((plantillas[0].title || plantillas[0].name).slice(0, 90)));
 
   // Las URLs que van a href/src tienen que ser absolutas y https.
   const malas = new Set();

@@ -160,7 +160,7 @@ export function EventModal({ event, onClose, onShare }) {
     let cancelled = false;
     setInfos(Object.fromEntries(names.map((n) => [n, null])));
     names.forEach((name) => {
-      api.artist(name, locale)
+      api.artist(name, locale, event.family)
         .catch(() => ({ name, found: false }))
         .then((data) => { if (!cancelled) setInfos((prev) => ({ ...prev, [name]: data })); });
     });
@@ -368,7 +368,7 @@ export function EventModal({ event, onClose, onShare }) {
   );
 }
 
-const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wikipedia-es": "Wikipedia (ES)", itunes: "Apple Music", musicbrainz: "MusicBrainz" };
+const SOURCE_LABELS = { deezer: "Deezer", "wikipedia-en": "Wikipedia (EN)", "wikipedia-es": "Wikipedia (ES)", itunes: "Apple Music" };
 
 // Fila del line-up: foto (o inicial), nombre, una línea de contexto y el link
 // a la fuente. Tocarla despliega la bio debajo cuando hay algo que contar.

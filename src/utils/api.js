@@ -63,7 +63,7 @@ export const api = {
   btcCycles: () => fetch("/api/btc-cycles").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoEvents: () => fetch("/api/crypto-events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  artist:    (name, locale = "es") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  artist:    (name, locale = "es", family = "") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}${family ? `&family=${encodeURIComponent(family)}` : ""}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   announcements: () => fetch("/api/announcements").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   submitCryptoIrl: (data) => fetch("/api/crypto-irl", {
     method: "POST",

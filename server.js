@@ -18,6 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
+import { cleanLineup, stripTemplateTokens } from "./lib/content-rules.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
@@ -375,6 +376,8 @@ function slugify(s) {
   return String(s || "")
     .normalize("NFD").replace(/\p{Mn}/gu, "")
     .toLowerCase()
+    // Letras que NFD no descompone: sin esto "Geøvhän" daba "ge-vhan".
+    .replace(/[øœæßłđþðı]/g, (c) => ({ ø: "o", œ: "oe", æ: "ae", ß: "ss", ł: "l", đ: "d", þ: "th", ð: "d", ı: "i" })[c])
     .replace(/&/g, " y ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -704,6 +707,8 @@ function cleanNewsTitle(raw) {
   t = t.replace(/\s*\((?:[a-z0-9.-]+\.[a-z]{2,})\)\s*$/i, "");
   t = t.replace(NEWS_TITLE_PREFIX, "");
   t = t.replace(NEWS_TITLE_SUFFIX, "");
+  // Plantillas sin completar del CMS de origen ("…del mercado [FECHA]").
+  t = stripTemplateTokens(t);
   t = t.replace(/\s{2,}/g, " ").trim();
   return t.slice(0, 140);
 }
@@ -2874,6 +2879,11 @@ async function buildEvents() {
     return da - db;
   });
 
+  // Line-ups: las fuentes (sobre todo RA) mezclan nombres de escenario y
+  // placeholders con los artistas ("Main Stage", "Terraza", "TBA"). Se limpian
+  // acá, una vez, para que ticker, cards, pósters, modal y share los vean igual.
+  for (const ev of events) ev.artists = cleanLineup(ev.artists);
+
   // Clasificación multi-género: cada evento recibe `family` (taxonomía Bass:
   // club/live/festival/urbano/raiz/exp). Los de QuéHacemos toman su label de
   // género desde la familia. MusicBrainz se calienta en background (no bloquea).
@@ -3019,40 +3029,52 @@ const artistCache = new Map();
 const artistInflight = new Map(); // key → Promise en curso (dedup entre aperturas simultáneas)
 const ARTIST_CACHE_MAX = 200;
 const ARTIST_TTL = 24 * 60 * 60_000;
+const ARTIST_DEGRADED_TTL = 10 * 60_000;   // armado sin Wikipedia (pausada por 429)
+
+// Wikipedia rate-limitea (429) a quien le pega seguido. Antes cada artista
+// probaba hasta 12 títulos especulativos ("X (DJ)", "X (productor)"…): un
+// line-up de 10 eran ~100 requests. Ahora: una búsqueda de títulos por idioma
+// y, como mucho, dos resúmenes de los que coinciden exacto. Ante un 429 se
+// pausa Wikipedia un rato y el resultado degradado se cachea corto.
+const WIKI_PAUSE_MS = 15 * 60_000;
+let wikiPausedUntil = 0;
+const WIKI_UA = { "User-Agent": "BassLayer/1.0 (basslayer.io)" };
+const WIKI_MUSICAL = /\b(dj|musician|producer|artist|electronic|techno|house|trance|drum|composer|singer|band|rapper|duo|músico|música|productor|productora|cantante|compositor|compositora|artista|banda|electrónica|electronica|rapero|dúo)\b/;
+
+async function wikiFetch(url) {
+  if (Date.now() < wikiPausedUntil) { const e = new Error("wiki paused"); e.transient = true; throw e; }
+  const r = await fetchSafe(url, { headers: WIKI_UA }, 8000);
+  if (r.status === 429) {
+    wikiPausedUntil = Date.now() + WIKI_PAUSE_MS;
+    const e = new Error("wiki 429"); e.transient = true; throw e;
+  }
+  return r;
+}
 
 async function tryWikipediaLang(name, lang) {
-  const baseCandidates = [name, `${name} (DJ)`, `${name} (musician)`, `${name} (producer)`];
-  const esExtras = lang === "es"
-    ? [`${name} (DJ argentino)`, `${name} (productor)`, `${name} (músico)`, `${name} (cantante)`]
-    : [];
-  const candidates = [...baseCandidates, ...esExtras];
-
-  for (const candidate of candidates) {
-    const slug = candidate.replace(/ /g, "_");
-    const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`;
-    try {
-      const r = await fetchSafe(url, {
-        headers: { "User-Agent": "BassLayer/1.0 (basslayer.io)" },
-      }, 8000);
-      if (!r.ok) continue;
-      const text = await safeText(r);
-      const j = JSON.parse(text);
-      if (j.type === "disambiguation") continue;
-      if (!j.extract) continue;
-      const haystack = `${j.description || ""} ${j.extract || ""}`.toLowerCase();
-      const isMusical = /\b(dj|musician|producer|artist|electronic|techno|house|trance|drum|composer|singer|band|músico|música|productor|productora|cantante|compositor|compositora|artista|banda|electrónica|electronica)\b/.test(haystack);
-      if (!isMusical) continue;
-      return {
-        name,
-        found: true,
-        title: j.title,
-        description: j.description || "",
-        extract: j.extract,
-        thumbnail: j.thumbnail?.source || null,
-        url: j.content_urls?.desktop?.page || null,
-        source: `wikipedia-${lang}`,
-      };
-    } catch {}
+  const target = normalizeArtistName(name);
+  const sr = await wikiFetch(`https://${lang}.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(name)}&limit=6`);
+  if (!sr.ok) return null;
+  const pages = JSON.parse(await safeText(sr)).pages || [];
+  // Título exacto, con o sin desambiguación entre paréntesis: "Ben Klock",
+  // "Nicola Cruz (DJ)". Nunca uno que solo lo contenga.
+  const exact = pages.filter((pg) => normalizeArtistName(String(pg.title || "").replace(/\s*\([^)]*\)\s*$/, "")) === target).slice(0, 2);
+  for (const pg of exact) {
+    const r = await wikiFetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pg.key)}`);
+    if (!r.ok) continue;
+    const j = JSON.parse(await safeText(r));
+    if (j.type === "disambiguation" || !j.extract) continue;
+    if (!WIKI_MUSICAL.test(`${j.description || ""} ${j.extract || ""}`.toLowerCase())) continue;
+    return {
+      name,
+      found: true,
+      title: j.title,
+      description: j.description || "",
+      extract: j.extract,
+      thumbnail: j.thumbnail?.source || null,
+      url: j.content_urls?.desktop?.page || null,
+      source: `wikipedia-${lang}`,
+    };
   }
   return null;
 }
@@ -3088,11 +3110,15 @@ async function tryDeezer(name, locale = "es") {
     const candidates = (await deezerSearchArtist(name)) || [];
     if (candidates.length === 0) return null;
     const target = normalizeArtistName(name);
-    const match = candidates.find(a => normalizeArtistName(a.name) === target)
-                || candidates.find(a => normalizeArtistName(a.name).includes(target) || target.includes(normalizeArtistName(a.name)));
+    // Solo match exacto: con "includes" entraban homónimos y nombres que
+    // contienen al otro (la ficha mostraba a otra persona).
+    const match = candidates.find(a => normalizeArtistName(a.name) === target);
     if (!match) return null;
     const fans = match.nb_fan || 0;
     const albums = match.nb_album || 0;
+    // Perfil vacío (0 fans, 0 álbumes): no hay nada que confirme que sea el
+    // artista del line-up — mejor la inicial que "Perfil de Deezer".
+    if (fans === 0 && albums === 0) return null;
     const nf = fans.toLocaleString(en ? "en-US" : "es-AR");
     const desc = [
       fans > 0 ? (en ? `${nf} fans on Deezer` : `${nf} fans en Deezer`) : null,
@@ -3104,7 +3130,7 @@ async function tryDeezer(name, locale = "es") {
       name,
       found: true,
       title: match.name,
-      description: desc || (en ? "Deezer profile" : "Perfil de Deezer"),
+      description: desc,
       extract: null,
       thumbnail: pic ? `/api/artist-image?u=${encodeURIComponent(pic)}` : null,
       url: match.link || null,
@@ -3115,7 +3141,13 @@ async function tryDeezer(name, locale = "es") {
   }
 }
 
-async function tryItunes(name) {
+const ITUNES_GENRES_BY_FAMILY = {
+  club: /electr|dance|house|techno|trance|ambient|downtempo|drum|bass|dubstep|idm|disco|breakbeat/i,
+  festival: /electr|dance|house|techno|trance|ambient|downtempo|drum|bass|dubstep|idm|disco|breakbeat|pop|hip.?hop|rap|latin|urban/i,
+  urbano: /hip.?hop|rap|reggaet|latin|urban|trap|r&b|soul|pop|dancehall|cumbia|dance/i,
+};
+
+async function tryItunes(name, family = "") {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=musicArtist&limit=3`;
   try {
     const r = await fetchSafe(url, {}, 6000);
@@ -3124,10 +3156,13 @@ async function tryItunes(name) {
     const candidates = j.results || [];
     if (candidates.length === 0) return null;
     const target = normalizeArtistName(name);
-    const match = candidates.find(a => normalizeArtistName(a.artistName) === target)
-                || candidates.find(a => normalizeArtistName(a.artistName).includes(target) || target.includes(normalizeArtistName(a.artistName)));
+    const match = candidates.find(a => normalizeArtistName(a.artistName) === target);
     if (!match) return null;
     const genre = match.primaryGenreName ? match.primaryGenreName : null;
+    // El género tiene que cuadrar con el evento: un "Metal · iTunes" en una
+    // fiesta de techno es un homónimo, no el DJ del line-up.
+    const allowed = ITUNES_GENRES_BY_FAMILY[family];
+    if (allowed && !(genre && allowed.test(genre))) return null;
     return {
       name,
       found: true,
@@ -3143,79 +3178,55 @@ async function tryItunes(name) {
   }
 }
 
-async function tryMusicBrainz(name) {
-  const url = `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(name)}&fmt=json&limit=3`;
-  try {
-    const r = await fetchSafe(url, {
-      headers: {
-        "User-Agent": "BassLayer/1.0 (basslayer.io)",
-        "Accept": "application/json",
-      },
-    }, 7000);
-    if (!r.ok) return null;
-    const j = JSON.parse(await safeText(r));
-    const candidates = j.artists || [];
-    if (candidates.length === 0) return null;
-    const target = normalizeArtistName(name);
-    const match = candidates.find(a => normalizeArtistName(a.name) === target)
-                || candidates.find(a => normalizeArtistName(a.name).includes(target) || target.includes(normalizeArtistName(a.name)));
-    if (!match) return null;
-    const parts = [
-      match.country ? match.country : null,
-      match.type ? match.type : null,
-      match["life-span"]?.begin ? `${match["life-span"].begin}` : null,
-    ].filter(Boolean);
-    return {
-      name,
-      found: true,
-      title: match.name,
-      description: parts.length > 0 ? `${parts.join(" · ")} · MusicBrainz` : "MusicBrainz",
-      extract: match.disambiguation || null,
-      thumbnail: null,
-      url: `https://musicbrainz.org/artist/${match.id}`,
-      source: "musicbrainz",
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function fetchArtistInfo(name, locale = "es") {
+async function fetchArtistInfo(name, locale = "es", family = "") {
   const primary = locale === "en" ? "en" : "es";
   const fallback = primary === "en" ? "es" : "en";
-  // 1. Wikipedia in the user's language (rich bio + thumbnail)
-  const wikiPrimary = await tryWikipediaLang(name, primary);
-  if (wikiPrimary) return wikiPrimary;
-  // 2. Wikipedia in the other language
-  const wikiFallback = await tryWikipediaLang(name, fallback);
-  if (wikiFallback) return wikiFallback;
+  // 1–2. Wikipedia en el idioma del usuario y después en el otro. Si está
+  // pausada (429) se sigue con Deezer/iTunes y el resultado se marca
+  // degradado para cachearlo corto.
+  let degraded = false;
+  for (const lang of [primary, fallback]) {
+    try {
+      const wiki = await tryWikipediaLang(name, lang);
+      if (wiki) return wiki;
+    } catch (e) {
+      if (e.transient) { degraded = true; break; }
+    }
+  }
   // 3. Deezer (photo + fan count, great for DJs)
   const deezer = await tryDeezer(name, locale);
-  if (deezer) return deezer;
-  // 4. iTunes (genre + official link)
-  const itunes = await tryItunes(name);
-  if (itunes) return itunes;
-  // 5. MusicBrainz (country + type + start year, last-resort metadata)
-  const mb = await tryMusicBrainz(name);
-  if (mb) return mb;
-  return { name, found: false };
+  if (deezer) return degraded ? { ...deezer, degraded } : deezer;
+  // 4. iTunes (genre + official link), solo si el género cuadra con el evento
+  const itunes = await tryItunes(name, family);
+  if (itunes) return degraded ? { ...itunes, degraded } : itunes;
+  // MusicBrainz ya no se muestra: su aporte era "país · tipo" (FR · Person),
+  // sin forma de verificar que fuera la persona del line-up. Sin match
+  // confiable, la fila muestra la inicial y los links de búsqueda.
+  return degraded ? { name, found: false, degraded } : { name, found: false };
 }
 
 app.get("/api/artist", async (req, res) => {
   const raw = (req.query.name || "").toString().trim();
   const locale = (req.query.locale || "es").toString().toLowerCase() === "en" ? "en" : "es";
+  const familyRaw = (req.query.family || "").toString();
+  const family = GENRE_LIST.includes(familyRaw) ? familyRaw : "";
   if (!raw || raw.length > 80) return res.status(400).json({ error: "Invalid name" });
-  const key = `${locale}:${raw.toLowerCase()}`;
+  const key = `${locale}:${family}:${raw.toLowerCase()}`;
 
+  // Degradado (sin Wikipedia): el browser tampoco debe guardarlo 12 h.
+  const send = (data) => {
+    if (data.degraded) res.set("Cache-Control", `public, max-age=${ARTIST_DEGRADED_TTL / 2000}`);
+    res.json(data);
+  };
   const hit = artistCache.get(key);
-  if (hit && Date.now() - hit.ts < ARTIST_TTL) return res.json(hit.data);
+  if (hit && Date.now() - hit.ts < (hit.data.degraded ? ARTIST_DEGRADED_TTL : ARTIST_TTL)) return send(hit.data);
 
   try {
     // Dos aperturas del mismo evento (o dos usuarios) no deben disparar dos
-    // cadenas Wikipedia→Deezer→iTunes→MusicBrainz en paralelo: una sola en vuelo.
+    // cadenas Wikipedia→Deezer→iTunes en paralelo: una sola en vuelo.
     let p = artistInflight.get(key);
     if (!p) {
-      p = fetchArtistInfo(raw, locale).finally(() => artistInflight.delete(key));
+      p = fetchArtistInfo(raw, locale, family).finally(() => artistInflight.delete(key));
       artistInflight.set(key, p);
     }
     const data = await p;
@@ -3224,7 +3235,7 @@ app.get("/api/artist", async (req, res) => {
       artistCache.delete(oldest);
     }
     artistCache.set(key, { data, ts: Date.now() });
-    res.json(data);
+    send(data);
   } catch (e) {
     console.error("[artist]", e.message);
     res.json({ name: raw, found: false });
@@ -3280,6 +3291,9 @@ const ARTIST_IMAGE_BYTES_MAX = 200;   // ~100KB c/u → tope ~20MB
 const ARTIST_CDN_PAUSE_MS = 30 * 60 * 1000;
 let artistCdnPausedUntil = 0;
 
+const artistImageHashes = new Map();   // md5 de bytes → primera cdn url vista
+const genericArtistHashes = new Set();  // md5 vistos bajo 2+ artistas = avatar genérico
+
 async function fetchArtistImageBytes(cdnUrl) {
   const hit = artistImageBytes.get(cdnUrl);
   if (hit && Date.now() - hit.ts < ARTIST_IMAGE_TTL) {
@@ -3301,7 +3315,21 @@ async function fetchArtistImageBytes(cdnUrl) {
   } else {
     const buf = Buffer.from(await r.arrayBuffer());
     if (buf.length > 2 * 1024 * 1024) throw new Error("Too large");
-    entry = { buf, type: r.headers.get("content-type") || "image/jpeg", ts: Date.now() };
+    // Avatar genérico con URL "real": los mismos bytes bajo URLs de dos
+    // artistas distintos no son la foto de ninguno de los dos.
+    const hash = crypto.createHash("md5").update(buf).digest("hex");
+    const firstUrl = artistImageHashes.get(hash);
+    if (firstUrl && firstUrl !== cdnUrl) {
+      genericArtistHashes.add(hash);
+      const first = artistImageBytes.get(firstUrl);
+      if (first) artistImageBytes.set(firstUrl, { placeholder: true, ts: first.ts });
+    } else if (!firstUrl) {
+      if (artistImageHashes.size >= ARTIST_IMAGE_BYTES_MAX * 2) artistImageHashes.delete(artistImageHashes.keys().next().value);
+      artistImageHashes.set(hash, cdnUrl);
+    }
+    entry = genericArtistHashes.has(hash)
+      ? { placeholder: true, ts: Date.now() }
+      : { buf, type: r.headers.get("content-type") || "image/jpeg", ts: Date.now() };
   }
   if (artistImageBytes.size >= ARTIST_IMAGE_BYTES_MAX) {
     const oldest = artistImageBytes.keys().next().value;
