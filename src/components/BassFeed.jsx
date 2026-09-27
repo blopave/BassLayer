@@ -194,7 +194,7 @@ function WeekendHero({ events, onSelect }) {
             onClick={() => onSelect(ev)}
             aria-label={`${ev.name} — ${ev.venue}`}
           >
-            <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+            <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} fit="contain" width={200} />
             <div className="bl-hero-tile-name">{ev.name}</div>
             <div className="bl-hero-tile-meta bl-bass-t-label">
               {(dayNames[date.getDay()] || "").slice(0, 3)} · {ev.venue}

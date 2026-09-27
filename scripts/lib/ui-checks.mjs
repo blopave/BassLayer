@@ -51,7 +51,7 @@ export function homeCollisions() {
   };
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
   const wm = [...document.querySelectorAll(".blf-wd")].map(box).filter(Boolean);
-  const others = [...document.querySelectorAll(".blf-fcard, .blf-chartwrap, .blf-lstats, .blf-halv, .blf-kick, .blf-big, .blf-genres, .bl-info")]
+  const others = [...document.querySelectorAll(".blf-fcard, .blf-chartwrap, .blf-lstats, .blf-halv, .blf-kick, .blf-big, .blf-genres, .blf-marq, .bl-info")]
     .map((e) => [e.className.split(" ")[0], box(e)]).filter((x) => x[1]);
   const out = [];
   for (const a of wm) for (const [c, b] of others) if (hit(a, b)) out.push(`el wordmark pisa ${c}`);

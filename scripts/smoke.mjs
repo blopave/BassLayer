@@ -22,6 +22,8 @@ mkdirSync(SHOTS, { recursive: true });
 const VIEWPORTS = [
   { name: "mobile", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: "desktop", viewport: { width: 1440, height: 900 } },
+  // Tablet vertical: usa el home de celular escalado (sept 2026: vacíos o choques).
+  { name: "tablet", viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   // Laptop chica con dock: el alto es lo que rompe los modales.
   { name: "laptop-bajo", viewport: { width: 1000, height: 647 } },
   // Deezer banea el proxy cada tanto: el modal tiene que seguir viéndose bien
@@ -85,7 +87,7 @@ async function run(vp) {
     await page.locator(".bl-onboarding").waitFor({ state: "detached", timeout: 5_000 });
     if ((await page.evaluate(() => document.body.style.overflow)) === "hidden") fail(vp.name, "onboarding", "al cerrarlo el scroll sigue bloqueado");
     await page.waitForTimeout(1200); // entrada del home (fade de los mundos)
-    if (!vp.isMobile) await expectNone("home", homeCollisions);
+    await expectNone("home", homeCollisions);
     await expectNone("home", lowContrast);
     await page.getByRole("button", { name: /^Bass —/ }).first().click();
 

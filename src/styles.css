@@ -1369,6 +1369,11 @@
 }
 .bl-hero-tile .bl-poster { font-size:15px; }
 .bl-hero-tile .bl-thumb-img { transition:transform .35s var(--ease-out-expo); }
+/* Flyer entero (fit="contain") sobre su copia desenfocada: la banda 21:9
+   cortaba títulos, line-ups y caras. Mismo recurso que la ficha del evento. */
+.bl-thumb-contain { position:relative; overflow:hidden; }
+.bl-thumb-contain .bl-thumb-blur { position:absolute; inset:-20px; background-size:cover; background-position:center; filter:blur(22px) brightness(.55) saturate(1.1); }
+.bl-thumb-contain .bl-thumb-img { position:relative; z-index:1; object-fit:contain; }
 .bl-hero-tile:hover .bl-thumb-img { transform:scale(1.04); }
 .bl-hero-tile:hover .bl-poster-word { color:var(--bl-text); }
 .bl-hero-tile:focus-visible .bl-thumb { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
@@ -2160,6 +2165,13 @@
   background:var(--bl-white); border:1px solid var(--bl-white); color:var(--bl-black); font-weight:600;
 }
 .bl-modal-btn-primary:hover { background:var(--bl-100); border-color:var(--bl-100); }
+/* Mismo botón principal que la ficha de evento: el acento del mundo (cobre en
+   Bass, turquesa en Layer). Antes noticias, festivales y precios lo tenían
+   blanco y el evento cobre. */
+.bl-root[data-section="bass"] .bl-modal-btn-primary { background:var(--bl-accent-bass); border-color:var(--bl-accent-bass); color:#1A120C; }
+.bl-root[data-section="layer"] .bl-modal-btn-primary { background:var(--bl-accent-layer); border-color:var(--bl-accent-layer); color:#0B1518; }
+.bl-root.day-mode[data-section="layer"] .bl-modal-btn-primary { color:#fff; }
+.bl-root[data-section] .bl-modal-btn-primary:hover { filter:brightness(1.08); }
 .bl-modal-btn-calendar {
   background:var(--bl-surface); border:1px solid var(--bl-border); color:var(--bl-200);
 }
@@ -2489,6 +2501,9 @@
 .bl-em-loc-links { display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; }
 .bl-em-loc-links a { font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--bl-accent-bass); text-decoration:none; }
 .bl-em-loc-links a:hover { opacity:.75; }
+/* Área táctil ≥ 36px sin mover el diseño: padding vertical compensado con
+   margen negativo (antes medían ~13px de alto, difíciles de acertar). */
+.bl-em-loc-links a, .bl-em-bio-links a { display:inline-flex; align-items:center; padding:12px 0; margin:-12px 0; }
 
 /* acciones */
 .bl-em-act { padding:16px 40px 24px; border-top:1px solid var(--bl-border-sub); background:var(--bl-surface-alt); display:flex; flex-direction:column; gap:8px; }
@@ -2944,6 +2959,9 @@
 
 .bl-layer-grid { display:grid; grid-template-columns:minmax(0, 1fr) 380px; align-items:start; padding-bottom:24px; }
 .bl-layer-main { min-width:0; }
+/* Los tags scrollean en horizontal: sin fundido, la última pastilla cortada
+   contra el aside parecía meterse debajo del panel Mercados. */
+.bl-layer-main .bl-filters { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
 .bl-layer-aside { position:sticky; top:12px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
 .bl-aside-card { border:1px solid var(--bl-border); border-radius:6px; background:var(--bl-surface); padding:14px 16px; }
 .bl-aside-lab {
@@ -2997,14 +3015,17 @@
   /* Terminal comprimido: cuatro cifras en una fila; lectura y trending quedan en desktop. */
   .bl-terminal-reading, .bl-term-trending { display:none; }
   .bl-terminal-grid { grid-template-columns:repeat(4, 1fr); }
+  /* Ciclos BTC: sus cifras llevan texto (fase, "faltan ~28 d"), no solo un
+     número — en 4 columnas de 80px partían palabra por palabra. */
+  .bl-terminal-grid.bl-cyc-grid-stats { grid-template-columns:repeat(2, 1fr); }
   .bl-term-cell { padding:9px 8px 8px; min-height:0; }
   .bl-term-cell-label { font-size:8px; letter-spacing:1px; margin-bottom:5px; }
   .bl-term-cell-value { font-size:15px; gap:4px; }
   .bl-term-cell-change { display:none; }
   .bl-terminal-skel { min-height:112px; }
-  /* Dólar: una línea, scroll horizontal en vez de apilar. */
-  .bl-dolar-summary { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:12px; }
-  .bl-dolar-summary::-webkit-scrollbar { display:none; }
+  /* Dólar: 2×2 con las cuatro cotizaciones a la vista. La línea con scroll
+     horizontal oculto cortaba "CRIPTO $1.61…" y la brecha no se veía nunca. */
+  .bl-dolar-summary { display:grid; grid-template-columns:repeat(2, max-content); gap:6px 22px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -3514,6 +3535,11 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   text-transform:uppercase;
   color:var(--bl-text-ter);
 }
+/* Mobile: el título no se parte ("Crypto BA / Timeline"); la bajada cede
+   espacio y se recorta con puntos suspensivos si no entra. */
+.bl-timeline-toggle-label { white-space:nowrap; }
+.bl-timeline-toggle-sub { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:12px; }
+.bl-timeline-toggle-left { flex-shrink:0; }
 
 /* Expanded panel */
 .bl-timeline {
@@ -4488,7 +4514,7 @@ select.bl-venue-input { cursor:pointer; }
 /* ═══════════════════════════════════════════
    Mercado — tarjetas de cotización (ETFs · acciones)
    ═══════════════════════════════════════════ */
-.bl-mkt-head { padding:14px 20px 4px; }
+.bl-mkt-head { padding:14px 32px 4px; }   /* mismo margen de 32px que el resto de Layer */
 .bl-mkt-title {
   font-family:var(--font-layer);
   font-size:18px; font-weight:600; letter-spacing:0.3px;
@@ -4504,13 +4530,13 @@ select.bl-venue-input { cursor:pointer; }
   font-family:var(--font-mono), monospace;
   font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; font-weight:600;
   color:var(--bl-400);
-  margin:12px 20px 8px;
+  margin:12px 32px 8px;
 }
 .bl-mkt-grid {
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
   gap:10px;
-  padding:6px 20px 8px;
+  padding:6px 32px 8px;
 }
 .bl-mkt-card {
   display:flex; flex-direction:column; gap:6px;
@@ -5171,7 +5197,7 @@ select.bl-venue-input { cursor:pointer; }
   /* El chevron se ancla al vértice: suelto al final del wrap quedaba
      huérfano en su propia línea. */
   .bl-dolar-head { flex-wrap:wrap; gap:8px 14px; position:relative; padding-right:36px; }
-  .bl-dolar-summary { margin-left:0; gap:12px; }
+  .bl-dolar-summary { margin-left:0; }
   .bl-dolar-chevron { position:absolute; right:14px; top:16px; }
   /* TRENDING scrollea horizontal — fade en el borde derecho como pista. */
   .bl-term-trending-list {
@@ -5593,6 +5619,21 @@ select.bl-venue-input { cursor:pointer; }
   /* color por mundo: glow cálido arriba (Bass) / frío abajo (Layer) — marca el split dual */
   .blf-home.is-mobile.pre .blf-tint-bass{ opacity:1; background:radial-gradient(92% 40% at 50% 18%, rgba(196,144,112,.13), transparent 72%); }
   .blf-home.is-mobile.pre .blf-tint-layer{ opacity:1; background:radial-gradient(92% 40% at 50% 84%, rgba(108,184,200,.13), transparent 72%); }
+  /* Tablet vertical (600–768): el layout de celular estirado dejaba ~250px
+     vacíos entre cada bloque. Misma composición, escalada al ancho. */
+  @media (min-width:600px){
+    .blf-home.is-mobile.pre .blf-side{ padding:0 44px; gap:14px; }
+    .blf-home.is-mobile.pre .blf-bass{ padding-top:72px; }
+    .blf-home.is-mobile.pre .blf-layer{ padding-bottom:80px; }
+    .blf-home.is-mobile.pre .blf-big{ font-size:62px; }
+    .blf-home.is-mobile.pre .blf-fcard{ width:100px; height:136px; }
+    .blf-home.is-mobile.pre .blf-flyrow{ gap:12px; }
+    .blf-home.is-mobile.pre .blf-kick{ font-size:11px; letter-spacing:3px; }
+    .blf-home.is-mobile.pre .blf-halv{ display:block; }
+    .blf-home.is-mobile.pre .blf-chart{ height:140px; }
+    .blf-home.is-mobile.pre .blf-half.b .blf-wd{ font-size:80px; }
+    .blf-home.is-mobile.pre .blf-half.l .blf-wd{ font-size:66px; }
+  }
 }
 @media (prefers-reduced-motion:reduce){
   .blf-side, .blf-wm, .blf-tint, .blf-track, .blf-wd, .blf-cursor{ transition:none!important; }

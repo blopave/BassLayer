@@ -5,13 +5,8 @@ import { lazyNamed } from "../utils/lazy";
 // Solo baja al tocar un indicador: es el componente más pesado de Layer.
 const IndicatorModal = lazyNamed(() => import("./IndicatorModal"), "IndicatorModal");
 import { useLocale } from "../hooks/useLocale";
+import { formatMarketCap } from "../utils/format";
 
-function formatMarketCap(n) {
-  if (!n) return "—";
-  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  return `$${(n / 1e6).toFixed(0)}M`;
-}
 
 // Cambio porcentual con signo: 5 → "+5%", -2 → "-2%". Compartido por StatCell
 // (grid) y TrendingRow.

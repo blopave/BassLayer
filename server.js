@@ -258,6 +258,19 @@ function registerImages(list, field = "image") {
   }
 }
 
+// Limpieza final de cada evento. Corre en cada build y también sobre el
+// snapshot en disco: después de un deploy se sirve el snapshot hasta que la
+// build nueva termina, y tiene que salir igual de limpio.
+function tidyEvents(events) {
+  for (const ev of events) {
+    ev.artists = cleanLineup(ev.artists);
+    // "A · B": el separador se pega a lo anterior (espacio no separable) para
+    // que un título que parte en dos líneas no arranque la segunda con "·".
+    if (ev.name) ev.name = ev.name.replace(/ · /g, "\u00A0· ");
+  }
+  return events;
+}
+
 function loadSnapshots() {
   for (const key of SNAPSHOT_KEYS) {
     try {
@@ -265,6 +278,7 @@ function loadSnapshots() {
       if (!existsSync(file)) continue;
       const { ts, data } = JSON.parse(readFileSync(file, "utf-8"));
       if (Array.isArray(data) && data.length) {
+        if (key === "events") tidyEvents(data);
         registerImages(data);
         cache[key] = { ...cache[key], data, ts: ts || 0 };
         const age = Math.round((Date.now() - (ts || 0)) / 60000);
@@ -2882,7 +2896,7 @@ async function buildEvents() {
   // Line-ups: las fuentes (sobre todo RA) mezclan nombres de escenario y
   // placeholders con los artistas ("Main Stage", "Terraza", "TBA"). Se limpian
   // acá, una vez, para que ticker, cards, pósters, modal y share los vean igual.
-  for (const ev of events) ev.artists = cleanLineup(ev.artists);
+  tidyEvents(events);
 
   // Clasificación multi-género: cada evento recibe `family` (taxonomía Bass:
   // club/live/festival/urbano/raiz/exp). Los de QuéHacemos toman su label de

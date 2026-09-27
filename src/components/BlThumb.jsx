@@ -62,18 +62,21 @@ export function ArtistPhoto({ src, name, family, onFail }) {
   );
 }
 
-export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail }) {
+// fit="contain": el flyer entero sobre su propia copia desenfocada (bandas
+// apaisadas como "El finde", donde el recorte cortaba nombres y caras).
+export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail, fit, width = 120 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const [artistImgFailed, setArtistImgFailed] = useState(false);
   const hasImage = image && !imgFailed;
 
   if (hasImage) {
     return (
-      <div className="bl-thumb" aria-hidden="true">
+      <div className={`bl-thumb${fit === "contain" ? " bl-thumb-contain" : ""}`} aria-hidden="true">
+        {fit === "contain" && <div className="bl-thumb-blur" style={{ backgroundImage: `url("${imgUrl(image, 80)}")` }} />}
         <ProxiedImg
           className="bl-thumb-img"
           src={image}
-          width={120}
+          width={width}
           onFail={() => { setImgFailed(true); onImgFail?.(); }}
         />
       </div>

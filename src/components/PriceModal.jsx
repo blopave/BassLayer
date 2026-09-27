@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "../utils/api";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
+import { formatMarketCap } from "../utils/format";
 
 export function PriceModal({ price, onClose }) {
   const { t } = useLocale();
@@ -117,25 +118,25 @@ export function PriceModal({ price, onClose }) {
 
         <div className="bl-price-modal-chart">
           {loading ? (
-            <div className="bl-price-modal-loading">Cargando chart...</div>
+            <div className="bl-price-modal-loading">{t("price.loadingChart")}</div>
           ) : chartError ? (
-            <div className="bl-price-modal-loading" style={{ color: "var(--bl-text-ter)" }}>Chart no disponible</div>
+            <div className="bl-price-modal-loading" style={{ color: "var(--bl-text-ter)" }}>{t("price.chartError")}</div>
           ) : (
             <canvas ref={canvasRef} className="bl-price-canvas" />
           )}
-          <div className="bl-price-modal-period">7 dias</div>
+          <div className="bl-price-modal-period">{t("price.period7d")}</div>
         </div>
 
         {price.marketCap && (
           <div className="bl-price-modal-meta">
-            <span className="bl-price-modal-label">Market Cap</span>
-            <span className="bl-price-modal-value">${(price.marketCap / 1e9).toFixed(1)}B</span>
+            <span className="bl-price-modal-label">{t("price.marketCap")}</span>
+            <span className="bl-price-modal-value">{formatMarketCap(price.marketCap)}</span>
           </div>
         )}
 
         <div className="bl-price-modal-footer">
           <a className="bl-modal-btn bl-modal-btn-primary" href={`https://www.coingecko.com/en/coins/${price.id}`} target="_blank" rel="noopener noreferrer">
-            Ver en CoinGecko &#x2192;
+            {t("price.viewOn")} CoinGecko &#x2192;
           </a>
         </div>
       </div>
