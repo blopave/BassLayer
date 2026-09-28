@@ -5660,9 +5660,6 @@ select.bl-venue-input { cursor:pointer; }
    recorrido con precio y hecho de cada mes, vista previa con dato vivo.
    ══════════════════════════════════════════════════════════════ */
 .blc { position:relative; display:flex; flex-direction:column; height:calc(100dvh - 178px); min-height:560px; }
-.blc-intro { position:absolute; left:32px; top:18px; z-index:3; max-width:360px; pointer-events:none; }
-.blc-intro h1 { margin:0; font-size:15px; font-weight:650; letter-spacing:-.01em; color:var(--bl-text); }
-.blc-intro p { margin:6px 0 0; font-size:12.5px; line-height:1.5; color:var(--bl-text-sec); }
 .blc-stage { position:relative; flex:1; min-height:0; touch-action:pan-y; }
 .blc-stage svg { position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; }
 .blc-skel { position:absolute; inset:120px 64px 46px; border-radius:10px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
@@ -5716,21 +5713,6 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv .r.t span { white-space:normal; font-family:var(--font-sans); }
 .blc-pv .go { display:block; width:100%; margin-top:14px; padding:12px 14px; border:0; border-radius:9px; cursor:pointer; background:var(--bl-accent-layer); color:var(--bl-on-accent, #071114); font:600 12px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; }
 .blc-pv .go:focus-visible { outline:2px solid var(--bl-text); outline-offset:2px; }
-.blc-strip { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); height:104px; border-top:1px solid var(--bl-border-sub); flex-shrink:0; }
-.blc-it {
-  position:relative; display:flex; flex-direction:column; justify-content:center; gap:4px; min-width:0; padding:0 20px;
-  border:0; border-right:1px solid var(--bl-border-sub); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; transition:background .2s;
-}
-.blc-it:last-child { border-right:0; }
-.blc-it::before { content:""; position:absolute; left:0; right:0; top:-1px; height:2px; background:var(--bl-accent-layer); transform:scaleX(0); transition:transform .25s; }
-.blc-it:hover, .blc-it.is-on { background:color-mix(in srgb, var(--bl-accent-layer) 6%, transparent); }
-.blc-it:hover::before, .blc-it.is-on::before { transform:scaleX(1); }
-.blc-it .w { font:500 9.5px var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--bl-text-ter); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.blc-it .n { font-size:15px; font-weight:650; color:var(--bl-text); }
-.blc-it:hover .n, .blc-it.is-on .n { color:var(--bl-accent-layer); }
-.blc-it .v { font:500 12px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.blc-it .v .up { color:var(--bl-up); } .blc-it .v .down { color:var(--bl-down); }
-.blc-it:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
 .bl-layer-back {
   scroll-margin-top:8px;
   display:inline-flex; align-items:center; gap:6px; margin:14px 32px 0; padding:8px 0; border:0; background:none; cursor:pointer;
@@ -5741,19 +5723,27 @@ select.bl-venue-input { cursor:pointer; }
   .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo { animation:none; }
 }
 @media (max-width:768px) {
+  /* Mobile = curva vertical (dirección A, sept 2026): el tiempo baja con el
+     scroll y cada sección es una franja tocable con su título. El alto del
+     gráfico sale de VT + 7·VGAP + VB en LayerCurve.jsx. */
   .blc { height:auto; min-height:0; }
-  .blc-intro { position:relative; left:auto; top:auto; max-width:none; padding:16px 16px 0; }
-  .blc-intro h1 { font-size:18px; } .blc-intro p { font-size:13px; }
-  .blc-stage { flex:none; height:400px; }
-  .blc-nm { font-size:13px; }
-  .blc-strip { display:block; height:auto; padding:6px 0 28px; }
-  .blc-it { display:grid; grid-template-columns:minmax(0,1fr) auto 16px; grid-template-rows:auto auto; align-items:center; column-gap:12px; row-gap:3px; width:100%; padding:15px 16px; border-right:0; border-bottom:1px solid var(--bl-border-sub); }
-  .blc-it .w { grid-column:1; grid-row:1; } .blc-it .n { grid-column:1; grid-row:2; font-size:17px; } .blc-it .v { grid-column:2; grid-row:1 / 3; font-size:13px; }
-  .blc-it::after { content:"›"; grid-column:3; grid-row:1 / 3; color:var(--bl-text-ter); font-size:20px; }
-  .blc-it::before { top:0; bottom:0; right:auto; width:2px; height:auto; transform:scaleY(0); }
-  .blc-it:hover::before, .blc-it.is-on::before { transform:scaleY(1); }
+  .blc-stage { flex:none; height:776px; margin:8px 0 24px; touch-action:auto; }
+  .blc-skel { inset:24px 16px 60px; }
   .bl-layer-back { margin:12px 16px 0; }
 }
+.blc-v .blc-curve { stroke:url(#blc-cgv); }
+.blc-v .blc-area { fill:url(#blc-agv); }
+.blc-v .blc-future { fill:url(#blc-fzv); }
+.blc-v .blc-node { -webkit-tap-highlight-color:transparent; }
+.blc-hit { fill:transparent; transition:fill .2s; }
+.blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
+.blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
+.blc-ttl { fill:var(--bl-text); font:620 25px var(--font-sans); letter-spacing:-.022em; transition:fill .2s; }
+.blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
+/* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
+.blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }
+.blc-v .blc-node:active .blc-dot { fill:var(--bl-accent-layer); }
+.blc-lead { stroke:var(--bl-accent-layer); stroke-width:1; stroke-dasharray:1 5; opacity:.55; }
 
 /* ── Layer · Historia de Bitcoin (sept 2026) ──
    La curva con los hechos que la movieron (color por tipo), bandas de ciclo,

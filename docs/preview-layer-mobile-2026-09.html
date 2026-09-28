@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Layer mobile — La curva, 3 direcciones</title>
+<style>
+  @font-face { font-family: "Geist"; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root {
+    --bg: #0e1317; --surface: #151c21; --border: #26313a; --border-sub: #1b242b;
+    --text: #e8ecee; --sec: #8a969d; --ter: #56626a; --acc: #6CB8C8; --down: #e0716b;
+    --sans: "Geist", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #07090b; color: var(--text); font-family: var(--sans); }
+  .top { display: flex; align-items: baseline; gap: 14px; padding: 14px 24px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); }
+  .top b { color: var(--acc); }
+  .row { display: flex; justify-content: center; gap: 28px; padding: 14px 16px 24px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lbl { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); text-align: center; }
+  .lbl b { color: var(--text); letter-spacing: .1em; }
+  .lbl small { display: block; margin-top: 4px; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 12px; color: var(--ter); max-width: 360px; }
+  .fit { width: calc(390px * var(--k)); height: calc(844px * var(--k)); }
+  .phone { width: 390px; height: 844px; transform: scale(var(--k)); transform-origin: 0 0; border-radius: 34px; border: 1px solid #2a343c; background: var(--bg); overflow: hidden; position: relative; }
+  .scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  /* chrome del sitio (aproximado) */
+  .hd { height: 72px; display: flex; align-items: center; justify-content: center; gap: 70px; border-bottom: 1px solid var(--border-sub); }
+  .hd span { font-weight: 650; color: #5d6a72; font-size: 15px; letter-spacing: -.02em; }
+  .hd em { font-style: normal; font: 400 20px var(--mono); letter-spacing: .38em; color: var(--acc); }
+  .tk { height: 43px; display: flex; align-items: center; gap: 22px; padding: 0 14px; border-bottom: 1px solid var(--border-sub); font: 500 11.5px var(--mono); white-space: nowrap; overflow: hidden; color: var(--sec); }
+  .tk b { color: var(--text); font-weight: 600; margin: 0 4px; } .tk i { font-style: normal; color: var(--down); }
+  .intro { padding: 18px 20px 0; }
+  .intro h1 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.015em; }
+  .intro p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .fab { position: absolute; right: 16px; bottom: 18px; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--sec); font-size: 16px; letter-spacing: 1px; z-index: 5; }
+  svg text { font-family: var(--sans); }
+  .axis { fill: var(--ter); font: 500 10px var(--mono); letter-spacing: .08em; }
+  .grid { stroke: var(--border-sub); }
+  .curve { fill: none; stroke: url(#g-cg); stroke-width: 1.8; stroke-linejoin: round; }
+  .proj { stroke: var(--acc); stroke-width: 1.2; stroke-dasharray: 3 6; opacity: .55; fill: none; }
+  .dot { fill: var(--bg); stroke: var(--acc); stroke-width: 2.4; }
+  .core { fill: var(--acc); }
+  .halo { fill: var(--acc); opacity: .13; }
+  .today .dot { stroke: var(--text); } .today .core { fill: var(--text); }
+  .lead { stroke: var(--acc); stroke-width: 1; opacity: .5; }
+  .ttl { fill: var(--text); font-weight: 620; letter-spacing: -.02em; }
+  .arr { fill: var(--acc); font: 500 14px var(--mono); }
+  .sec { cursor: pointer; }
+  .sec:hover .ttl, .sec.on .ttl { fill: var(--acc); }
+  .sec:hover .dot, .sec.on .dot { fill: var(--acc); }
+  .band { fill: transparent; }
+  .sec.on .band { fill: color-mix(in srgb, var(--acc) 6%, transparent); }
+  /* B: panorámica */
+  .pan { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x proximity; position: relative; }
+  .pan::-webkit-scrollbar { display: none; }
+  .pill { fill: var(--surface); stroke: color-mix(in srgb, var(--acc) 32%, var(--border)); }
+  .sec:hover .pill { stroke: var(--acc); fill: color-mix(in srgb, var(--acc) 12%, var(--surface)); }
+  .scrub { display: flex; align-items: center; gap: 10px; margin: 6px 20px 0; font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ter); }
+  .scrub .bar { position: relative; flex: 1; height: 2px; background: var(--border); border-radius: 2px; }
+  .scrub .th { position: absolute; top: -2px; height: 6px; border-radius: 3px; background: var(--acc); }
+  .fade { position: absolute; top: 0; bottom: 0; width: 26px; pointer-events: none; z-index: 2; }
+  .fade.l { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+  .fade.r { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+</style>
+</head>
+<body>
+<div class="top"><b>Layer · mobile</b> La curva como navegación — 3 direcciones, solo títulos, datos reales</div>
+<div class="row" id="row"></div>
+
+<script type="module">
+const res = await fetch("/api/btc-cycles").then((r) => r.json());
+const H = res.priceHistory;
+const T = (s) => { const [y, m = "1"] = String(s).split("-"); return +y + (+m - 1) / 12; };
+const TODAY = T(H[H.length - 1].t);
+const PEAK = T(res.keyDates.peak.slice(0, 7));
+const HALV = T(res.keyDates.nextHalving.slice(0, 7));
+const END = HALV + 0.35;
+const S = [
+  ["historia", "Historia", T("2013-11")], ["finanzas", "Finanzas", T("2020-03")], ["acciones", "Acciones", T("2021-02")],
+  ["etfs", "ETFs", T("2024-01")], ["ciclos", "Ciclos BTC", PEAK], ["noticias", "Noticias", TODAY],
+  ["eventos", "Eventos", TODAY + 0.45], ["predicciones", "Predicciones", HALV],
+];
+const last = H[H.length - 1].p;
+const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
+// Eje de tiempo por tramos (igual que el sitio): cada sección a la misma distancia.
+const piece = (f0, f1) => { const bx = [[2012, 0], ...S.map((s, i) => [s[2], f0 + ((f1 - f0) * i) / (S.length - 1)]), [END, 1]];
+  return (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return fa + ((tt - a) / (b - a)) * (fb - fa); } return 1; }; };
+const logf = (p, lo = 2, hi = Math.log10(250000)) => (Math.log10(Math.max(p, 1)) - lo) / (hi - lo);
+const fmt = (p) => "$" + p.toLocaleString("es-AR");
+const defs = `<defs><linearGradient id="g-cg" x1="0" x2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient>
+<linearGradient id="g-cv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient>
+<linearGradient id="g-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".16"/><stop offset="1" stop-color="#6CB8C8" stop-opacity="0"/></linearGradient>
+<linearGradient id="g-ah" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".13"/><stop offset="1" stop-color="#6CB8C8" stop-opacity="0"/></linearGradient></defs>`;
+const node = (x, y, i, r = 7) => `<circle class="halo" cx="${x}" cy="${y}" r="${r + 8}"/><circle class="dot" cx="${x}" cy="${y}" r="${r}"/><circle class="core" cx="${x}" cy="${y}" r="2.8"/>`;
+const shell = (inner, after = "") => `<div class="hd"><span>Bass</span><em>LAYER</em></div>
+<div class="tk">BTC<b>$${Math.round(last).toLocaleString("en")}</b><i>-1.5%</i> ETH<b>$2,673</b><i>-0.8%</i> SOL<b>$118.38</b><i>-3.9%</i></div>${inner}${after}`;
+
+// ── A · Vertical: el tiempo baja con el scroll, el precio va a la derecha.
+function vertical() {
+  const W = 390, top = 58, gap = 92, H0 = top + gap * 7 + 120;
+  const f = piece(0.06, 0.82);
+  const yy = (tt) => top + ((f(tt) - 0.06) / (0.82 - 0.06)) * gap * 7;
+  const x0 = 196, x1 = 372, X = (p) => x0 + logf(p) * (x1 - x0);
+  const pts = H.map((h) => [X(h.p), yy(T(h.t))]).filter(([, y]) => y >= 0);
+  const path = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L");
+  const area = `${path}L${x0},${pts[pts.length - 1][1]}L${x0},${pts[0][1]}Z`;
+  const yt = yy(TODAY), xt = X(last);
+  let s = `<svg width="${W}" height="${H0}" viewBox="0 0 ${W} ${H0}">${defs}`;
+  for (const p of [1000, 100000]) s += `<line class="grid" x1="${X(p)}" x2="${X(p)}" y1="0" y2="${H0 - 30}"/><text class="axis" x="${X(p) + 4}" y="${H0 - 16}">${p === 1000 ? "$1K" : "$100K"}</text>`;
+  s += `<rect x="${x0 - 10}" y="${yt}" width="${W - x0 + 10}" height="${H0 - yt - 30}" fill="url(#g-ah)" opacity=".5"/>`;
+  s += `<text class="axis" x="${x0 - 6}" y="${yt + 16}" text-anchor="end">HOY ↓ FUTURO</text>`;
+  s += `<path d="${area}" fill="url(#g-ah)"/><path class="curve" style="stroke:url(#g-cv)" d="${path}"/>`;
+  s += `<line class="proj" x1="${xt}" x2="${xt}" y1="${yt}" y2="${yy(HALV) + 30}"/>`;
+  S.forEach(([k, name, tt], i) => {
+    const y = yy(tt), x = tt >= TODAY ? xt : X(priceAt(tt));
+    s += `<g class="sec${i === 5 ? " today" : ""}"><rect class="band" x="0" y="${y - gap / 2}" width="${W}" height="${gap}"/>
+      <line class="lead" x1="20" x2="${x - 14}" y1="${y + 10}" y2="${y + 10}" stroke-dasharray="1 4"/>
+      <text class="ttl" x="20" y="${y + 1}" font-size="25">${name}</text>${node(x, y, i)}</g>`;
+  });
+  return shell(`<div class="intro"><h1>Bitcoin, 2012 → hoy</h1><p>Bajá por la curva: cada sección vive en un momento de su historia.</p></div>${s}</svg>`, "");
+}
+
+// ── B · Panorámica: la curva 2,6× más ancha que la pantalla, se desliza.
+function panoramic() {
+  const W = 1020, Hh = 520, L = 24, R = 40, TOP = 120, BOT = 40;
+  const f = piece(0.05, 0.95), X = (tt) => L + f(tt) * (W - L - R);
+  const Y = (p) => TOP + (1 - logf(p, 1)) * (Hh - TOP - BOT);
+  const pts = H.map((h) => [X(T(h.t)), Y(h.p)]);
+  const path = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L");
+  const xt = X(TODAY), yt = Y(last);
+  let s = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">${defs}`;
+  for (const p of [100, 1000, 100000]) s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(p)}" y2="${Y(p)}"/>`;
+  for (const y of [2012, 2016, 2020, 2022, 2024, 2026, 2028]) s += `<text class="axis" x="${X(y)}" y="${Hh - 14}" text-anchor="middle">${y}</text>`;
+  s += `<rect x="${xt}" y="${TOP - 60}" width="${W - R - xt}" height="${Hh - TOP - BOT + 60}" fill="url(#g-ah)" opacity=".4"/>`;
+  s += `<path d="${path}L${pts[pts.length - 1][0]},${Hh - BOT}L${pts[0][0]},${Hh - BOT}Z" fill="url(#g-ag)"/><path class="curve" d="${path}"/><line class="proj" x1="${xt}" x2="${W - R}" y1="${yt}" y2="${yt}"/>`;
+  S.forEach(([k, name, tt], i) => {
+    const x = X(tt), y = tt >= TODAY ? yt : Y(priceAt(tt)), up = i % 2 === 0;
+    const w = name.length * 10.5 + 44, h = 44, py = up ? y - 34 - h : y + 34, px = Math.max(8, Math.min(x - w / 2, W - w - 8));
+    s += `<g class="sec${i === 5 ? " today" : ""}"><line class="lead" x1="${x}" x2="${x}" y1="${y + (up ? -10 : 10)}" y2="${up ? py + h : py}" opacity=".5"/>${node(x, y, i)}
+      <rect class="pill" x="${px}" y="${py}" width="${w}" height="${h}" rx="22"/><text class="ttl" x="${px + 20}" y="${py + 28}" font-size="18">${name}</text><text class="arr" x="${px + w - 26}" y="${py + 27}">→</text></g>`;
+  });
+  return shell(`<div class="intro"><h1>Bitcoin, 2012 → hoy</h1><p>Deslizá la curva: cada sección vive en un momento de su historia.</p></div>
+  <div style="position:relative;margin-top:18px"><div class="fade l"></div><div class="fade r"></div><div class="pan" id="pan">${s}</svg></div></div>
+  <div class="scrub"><span>2012</span><div class="bar"><div class="th" id="th"></div></div><span>2028</span></div>`);
+}
+
+// ── C · Cartel: la curva arriba a todo el ancho; de cada punto cae su título
+// vertical, como el line-up de un afiche. Cada columna es la zona de toque.
+function cartel() {
+  const W = 390, Hh = 690, L = 22, R = 22, TOP = 44, CB = 320;
+  const f = piece(0.055, 0.945), X = (tt) => L + f(tt) * (W - L - R);
+  const Y = (p) => TOP + (1 - logf(p, 1)) * (CB - TOP);
+  const pts = H.map((h) => [X(T(h.t)), Y(h.p)]);
+  const path = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L");
+  const xt = X(TODAY), yt = Y(last), colW = (W - L - R) / 7.6;
+  let s = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">${defs}`;
+  s += `<rect x="${xt}" y="0" width="${W - R - xt + 12}" height="${Hh - 30}" fill="url(#g-ah)" opacity=".35"/>`;
+  s += `<path d="${path}L${pts[pts.length - 1][0]},${CB}L${pts[0][0]},${CB}Z" fill="url(#g-ag)"/><path class="curve" d="${path}"/><line class="proj" x1="${xt}" x2="${W - R}" y1="${yt}" y2="${yt}"/>`;
+  s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${CB + 8}" y2="${CB + 8}"/>`;
+  for (const [y, lab] of [[2012, "2012"], [TODAY, "HOY"], [2028, "2028"]]) s += `<text class="axis" x="${X(y)}" y="${Hh - 12}" text-anchor="middle">${lab}</text>`;
+  S.forEach(([k, name, tt], i) => {
+    const x = X(tt), y = tt >= TODAY ? yt : Y(priceAt(tt));
+    s += `<g class="sec${i === 5 ? " today" : ""}"><rect class="band" x="${x - colW / 2}" y="0" width="${colW}" height="${Hh - 30}" rx="8"/>
+      <line class="lead" x1="${x}" x2="${x}" y1="${y + 12}" y2="${CB + 22}" opacity=".3"/>${node(x, y, i, 6)}
+      <text class="ttl" font-size="26" transform="translate(${x + 9},${CB + 30}) rotate(90)">${name}</text></g>`;
+  });
+  return shell(`<div class="intro"><h1>Bitcoin, 2012 → hoy</h1><p>Cada sección vive en un momento de la curva. Tocá su columna.</p></div>${s}</svg>`);
+}
+
+const V = [
+  ["A", "Vertical", "El tiempo baja con el scroll y el precio va a la derecha. Títulos grandes a la izquierda; toda la franja es tocable (92px de alto).", vertical],
+  ["B", "Panorámica", "La curva mide 2,6 pantallas y se desliza de costado. Cada cápsula tiene lugar de sobra; abajo un riel muestra dónde estás.", panoramic],
+  ["C", "Cartel", "La curva a todo el ancho arriba; de cada punto cae su título en vertical, como un line-up. Cada columna es la zona de toque.", cartel],
+];
+const k = Math.min(1, (innerHeight - 120) / 844);
+document.getElementById("row").innerHTML = V.map(([id, n, d]) => `<div class="col"><div class="lbl"><b>${id} · ${n}</b><small>${d}</small></div>
+  <div class="fit" style="--k:${k}"><div class="phone" style="--k:${k}"><div class="scroll" id="v${id}"></div><div class="fab">•••</div></div></div></div>`).join("");
+V.forEach(([id, , , fn]) => { document.getElementById("v" + id).innerHTML = fn(); });
+document.querySelectorAll(".sec").forEach((g) => g.addEventListener("pointerenter", () => { g.parentNode.querySelectorAll(".sec").forEach((o) => o.classList.remove("on")); g.classList.add("on"); }));
+const pan = document.getElementById("pan"), th = document.getElementById("th");
+const sync = () => { const r = pan.clientWidth / pan.scrollWidth; th.style.width = r * 100 + "%"; th.style.left = (pan.scrollLeft / pan.scrollWidth) * 100 + "%"; };
+pan.addEventListener("scroll", sync); sync();
+</script>
+</body>
+</html>

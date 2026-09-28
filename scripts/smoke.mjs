@@ -210,17 +210,28 @@ async function run(vp) {
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
 
-    // 6b. Portada de Layer = la curva (sept 2026): 8 secciones en la curva y
-    // 8 en el índice (franja/lista), dentro de la pantalla. Entrar a Ciclos
-    // (click o toque entra directo) y volver a la curva.
+    // 6b. Portada de Layer = la curva (sept 2026): 8 secciones en la curva, que
+    // es el único índice (sin franja ni lista debajo). Desktop: cápsulas que no
+    // se pisan. Mobile: curva vertical con solo títulos y franjas tocables.
+    // Entrar a Ciclos (click o toque entra directo) y volver a la curva.
+    const pill = (re) => page.locator(".blc-node").filter({ hasText: re }).first().locator(".blc-pill, .blc-hit");
     const nodes = await page.locator(".blc-node").count();
-    const its = await page.locator(".blc-it").count();
-    if (nodes !== 8 || its !== 8) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${its} accesos (esperaba 8 y 8)`);
+    const dup = await page.locator(".blc-strip, .blc-it").count();
+    if (nodes !== 8 || dup) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${dup} accesos repetidos debajo (esperaba 8 y 0)`);
     else {
       const box = await page.locator(".blc-stage").boundingBox();
       if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
-      const ciclos = page.locator(".blc-it").filter({ hasText: /Ciclos|Cycles/ }).first();
-      await ciclos.click();   // entra directo (desktop y mobile)
+      const pills = await page.locator(".blc-pill").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map(({ x, y, width: w, height: h }) => ({ x, y, w, h })));
+      const clash = pills.some((a, i) => pills.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
+      if (clash) fail(vp.name, "layer", "hay cápsulas de la curva pisadas entre sí");
+      if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "una cápsula se sale de la pantalla");
+      if (vp.viewport.width <= 768) {
+        const hits = await page.locator(".blc-hit").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+        const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
+        if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
+        if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
+      }
+      await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
@@ -228,7 +239,7 @@ async function run(vp) {
       await page.waitForTimeout(500);
       if ((await page.locator(".blc-node").count()) !== 8) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
       // Historia: los hechos verificados en la curva y en la lista, sincronizados.
-      await page.locator(".blc-it").filter({ hasText: /Historia|History/ }).first().click();
+      await pill(/Historia|History/).click();
       await page.locator(".blh-ev").first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
       const evs = await page.locator(".blh-ev").count(), rows = await page.locator(".blh-list li").count();
       if (evs < 20 || evs !== rows) fail(vp.name, "historia", `${evs} hechos en la curva y ${rows} en la lista`);
