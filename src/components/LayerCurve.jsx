@@ -17,13 +17,13 @@ const list = (d) => (Array.isArray(d) ? d : d?.items || d?.data || []);
 // signo = arriba/abajo, magnitud = altura). `at` es un mes de la curva; las
 // del futuro se calculan desde hoy.
 const NODES = [
-  { key: "finanzas", at: "2020-03", dy: -1, dm: 1 },
-  { key: "acciones", at: "2021-02", dy: -2, dm: -2 },
-  { key: "etfs", at: "2024-01", dy: 1, dm: -1 },
-  { key: "ciclos", at: "peak", dy: -1, dm: -2 },
-  { key: "noticias", at: "today", dy: 1, dm: 1 },
-  { key: "eventos", at: "soon", dy: -2, dm: -1 },
-  { key: "predicciones", at: "halving", dy: 1, dm: 2 },
+  { key: "finanzas", at: "2020-03", dy: -1, dm: -1 },
+  { key: "acciones", at: "2021-02", dy: 1, dm: 1 },
+  { key: "etfs", at: "2024-01", dy: -1, dm: -2 },
+  { key: "ciclos", at: "peak", dy: 1, dm: 2 },
+  { key: "noticias", at: "today", dy: -1, dm: -1 },
+  { key: "eventos", at: "soon", dy: 1, dm: 1 },
+  { key: "predicciones", at: "halving", dy: -1, dm: -2 },
 ];
 
 function fmtUsd(p, locale) {
@@ -122,8 +122,15 @@ export function LayerCurve({ news = [], onEnter }) {
     const TODAY = T(H[H.length - 1].t);
     const nextHalving = cyc?.keyDates?.nextHalving ? T(cyc.keyDates.nextHalving.slice(0, 7)) : TODAY + 1.6;
     const END = nextHalving + 0.35;
-    const L = M ? 16 : 64, R = M ? 16 : 60, TOP = M ? 120 : 150, BOT = M ? 34 : 46;
-    const bx = M ? [[2012, 0], [2019.5, 0.1], [TODAY, 0.66], [END, 1]] : [[2012, 0], [2020, 0.38], [TODAY, 0.74], [END, 1]];
+    const L = M ? 16 : 64, R = M ? 16 : 60, TOP = M ? 150 : 150, BOT = M ? 34 : 46;
+    const peakT0 = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
+    const atT = { today: TODAY, soon: TODAY + 0.45, peak: peakT0, halving: nextHalving };
+    // Eje de tiempo por tramos: cada sección cae a la misma distancia en
+    // pantalla (la historia 2012→2020 comprimida al inicio). La curva sigue
+    // siendo el precio real; solo cambia cuánto ancho ocupa cada tramo.
+    const times = NODES.map((n) => atT[n.at] ?? T(n.at));
+    const f0 = M ? 0.14 : 0.2, f1 = M ? 0.95 : 0.96;
+    const bx = [[2012, 0], ...times.map((tt, i) => [tt, f0 + ((f1 - f0) * i) / (times.length - 1)]), [END, 1]];
     const X = (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return L + (fa + ((tt - a) / (b - a)) * (fb - fa)) * (W - L - R); } return W - R; };
     const lo = M ? 2 : 0;
     const Y = (p) => TOP + (1 - (Math.log10(Math.max(p, 1)) - lo) / (Math.log10(250000) - lo)) * (Hh - TOP - BOT);
@@ -214,7 +221,7 @@ export function LayerCurve({ news = [], onEnter }) {
               {(geo.M ? [1000, 100000] : [10, 1000, 100000]).map((p) => (
                 <g key={p}><line x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.L} y={geo.Y(p) - 6}>{fmtUsd(p, locale)}</text></g>
               ))}
-              {(geo.M ? [2020, 2022, 2024, 2026, 2028] : [2012, 2016, 2020, 2022, 2024, 2026, 2028]).map((y) => (
+              {(geo.M ? [2016, 2020, 2024, 2028] : [2012, 2016, 2020, 2022, 2024, 2026, 2028]).map((y) => (
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
