@@ -9,7 +9,7 @@ import { PredictionMarkets } from "./PredictionMarkets";
 import { FinanceNews } from "./FinanceNews";
 import { MarketList } from "./MarketList";
 import { LayerAside } from "./LayerAside";
-import { LayerDoors } from "./LayerDoors";
+import { LayerCurve } from "./LayerCurve";
 import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
@@ -82,7 +82,7 @@ function LayerEmptySignal({ filter, hasAnyNews, onFilter, onRetry }) {
 export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onSelectNews }) {
   const { t } = useLocale();
   const tags = ["All", "BTC", "ETH", "SOL", "DeFi", "L2", "Reg", "AI", "NFT", "Stable", "Crypto"];
-  const [section, setSection] = useState("noticias"); // crypto: noticias|eventos|predicciones|ciclos · mercados: finanzas|etfs|acciones
+  const [section, setSection] = useState("portada"); // portada = la curva // crypto: noticias|eventos|predicciones|ciclos · mercados: finanzas|etfs|acciones
 
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
@@ -100,12 +100,16 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
     });
   };
 
+  // Portada: la curva de Bitcoin como mapa de secciones. Al entrar a una
+  // sección se ve Layer como siempre, con "← Volver a la curva" arriba.
+  if (section === "portada") {
+    return <LayerCurve news={news} onEnter={(key) => { setSection(key); requestAnimationFrame(() => document.querySelector(".bl-layer-back")?.scrollIntoView({ block: "start" })); }} />;
+  }
+
   return (
     <>
+      <button type="button" className="bl-layer-back" onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
       <CryptoDashboard />
-      {/* Portada mobile: las secciones apenas debajo del terminal, antes de las
-          herramientas (dólar, timeline). En desktop las muestra el índice. */}
-      {section === "noticias" && <LayerDoors onGo={goSection} />}
       <DolarCripto />
       <div className="bl-layer-tools">
         <CryptoBATimeline />

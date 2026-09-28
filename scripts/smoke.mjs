@@ -210,28 +210,29 @@ async function run(vp) {
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
 
-    // 6b. Secciones de Layer: en mobile/tablet, grilla de 6 tarjetas en la
-    // portada; en desktop, índice lateral de 7 filas que marca la sección
-    // abierta. Tocar Ciclos abre Ciclos (sept 2026, elegidas por Pablo).
-    const narrow = vp.viewport.width <= 768;
-    const nav = page.locator(narrow ? ".bl-door" : ".bl-idx-row");
-    const want = narrow ? 6 : 7;
-    const got = await nav.count();
-    if (got !== want) fail(vp.name, "layer", `hay ${got} accesos a secciones (esperaba ${want})`);
+    // 6b. Portada de Layer = la curva (sept 2026): 7 secciones en la curva y
+    // 7 en el índice (franja/lista), dentro de la pantalla. Entrar a Ciclos
+    // (desktop: click; mobile: toque → hoja → "Entrar") y volver a la curva.
+    const narrow = vp.viewport.width <= 700;
+    const nodes = await page.locator(".blc-node").count();
+    const its = await page.locator(".blc-it").count();
+    if (nodes !== 7 || its !== 7) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${its} accesos (esperaba 7 y 7)`);
     else {
-      const box = await page.locator(narrow ? ".bl-doors-grid" : ".bl-idx").boundingBox();
-      if (!box) fail(vp.name, "layer", "los accesos a secciones no se ven");
-      else if (box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "los accesos a secciones se salen de la pantalla");
-      const ciclos = nav.filter({ hasText: /Ciclos|Cycles/ }).first();
+      const box = await page.locator(".blc-stage").boundingBox();
+      if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
+      const ciclos = page.locator(".blc-it").filter({ hasText: /Ciclos|Cycles/ }).first();
       await ciclos.click();
+      if (narrow) {
+        const go = page.locator(".blc-pv .go");
+        if (!(await go.isVisible().catch(() => false))) fail(vp.name, "layer", "tocar una sección no abre su vista previa");
+        else await go.click();
+      }
       await page.waitForTimeout(700);
-      const active = await page.locator(".bl-layer-tab.active").textContent();
-      if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `el acceso a Ciclos abre "${active}"`);
-      if (!narrow && !(await page.locator(".bl-idx-row.is-on").filter({ hasText: /Ciclos|Cycles/ }).count()))
-        fail(vp.name, "layer", "el índice no marca la sección abierta");
-      await (narrow ? page.locator(".bl-layer-tab").first() : nav.first()).click();
+      const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
+      if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
+      await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);
-      if (narrow && (await page.locator(".bl-door").count()) !== 6) fail(vp.name, "layer", "volver a Noticias no muestra la grilla");
+      if ((await page.locator(".blc-node").count()) !== 7) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
     }
 
     // 7. Modo día: el mismo contraste con la paleta clara (Layer y agenda)
