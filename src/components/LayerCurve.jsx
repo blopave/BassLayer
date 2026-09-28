@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 
@@ -154,7 +153,8 @@ export function LayerCurve({ news = [], onEnter }) {
   const plain = (v) => (typeof v === "string" ? v : v == null ? "" : null);
 
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
-  const activate = (i) => (mobile ? show(i) : onEnter(NODES[i].key));
+  // Tocar o hacer click entra directo; la vista previa es solo el hover de desktop.
+  const activate = (i) => onEnter(NODES[i].key);
 
   const onMove = (clientX) => {
     if (!geo) return;
@@ -165,9 +165,8 @@ export function LayerCurve({ news = [], onEnter }) {
     setHover(best);
   };
 
-  // Vista previa: qué hay en la sección, su dato vivo y por qué vive en ese
-  // punto de la curva. En mobile es una hoja inferior y va por portal a
-  // .bl-root: el carrusel de mundos usa transform y rompe position:fixed.
+  // Vista previa (hover de desktop): qué hay en la sección, su dato vivo y
+  // por qué vive en ese punto de la curva.
   const selNodeP = sel != null && geo ? geo.nodes[sel] : null;
   const preview = selNodeP && (
     <div
@@ -309,7 +308,6 @@ export function LayerCurve({ news = [], onEnter }) {
           </button>
         ))}
       </nav>
-      {mobile && preview && createPortal(preview, document.querySelector(".bl-root") || document.body)}
     </section>
   );
 }

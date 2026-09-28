@@ -212,8 +212,7 @@ async function run(vp) {
 
     // 6b. Portada de Layer = la curva (sept 2026): 7 secciones en la curva y
     // 7 en el índice (franja/lista), dentro de la pantalla. Entrar a Ciclos
-    // (desktop: click; mobile: toque → hoja → "Entrar") y volver a la curva.
-    const narrow = vp.viewport.width <= 700;
+    // (click o toque entra directo) y volver a la curva.
     const nodes = await page.locator(".blc-node").count();
     const its = await page.locator(".blc-it").count();
     if (nodes !== 7 || its !== 7) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${its} accesos (esperaba 7 y 7)`);
@@ -221,12 +220,7 @@ async function run(vp) {
       const box = await page.locator(".blc-stage").boundingBox();
       if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
       const ciclos = page.locator(".blc-it").filter({ hasText: /Ciclos|Cycles/ }).first();
-      await ciclos.click();
-      if (narrow) {
-        const go = page.locator(".blc-pv .go");
-        if (!(await go.isVisible().catch(() => false))) fail(vp.name, "layer", "tocar una sección no abre su vista previa");
-        else await go.click();
-      }
+      await ciclos.click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
