@@ -108,13 +108,15 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
 
   return (
     <>
-      <button type="button" className="bl-layer-back" onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
       <CryptoDashboard />
       <DolarCripto />
       <div className="bl-layer-tools">
         <CryptoBATimeline />
       </div>
 
+      {/* "Volver" justo antes del contenido: al entrar desde la curva la vista
+          arranca acá (en mobile el terminal y las herramientas quedan arriba). */}
+      <button type="button" className="bl-layer-back" onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
       {/* Secciones como tabs: una línea, Noticias abierta por defecto. */}
       <nav className="bl-layer-tabs" aria-label={t("aside.sections")} ref={tabsRef}>
         {SECTIONS.map(([key, labelKey]) => (

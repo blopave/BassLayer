@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 
@@ -157,9 +158,35 @@ export function LayerCurve({ news = [], onEnter }) {
     setHover(best);
   };
 
+  // Vista previa: qué hay en la sección, su dato vivo y por qué vive en ese
+  // punto de la curva. En mobile es una hoja inferior y va por portal a
+  // .bl-root: el carrusel de mundos usa transform y rompe position:fixed.
+  const selNodeP = sel != null && geo ? geo.nodes[sel] : null;
+  const preview = selNodeP && (
+    <div
+      className="blc-pv"
+      role="dialog"
+      aria-label={name(selNodeP.key)}
+      style={mobile ? undefined : { left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
+      onMouseEnter={() => clearTimeout(hideT.current)}
+      onMouseLeave={() => !mobile && hideSoon()}
+    >
+      <div className="k">{t(`curve.${selNodeP.key}.when`)}</div>
+      <h3>{name(selNodeP.key)}</h3>
+      <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
+      <div className="big">{content[selNodeP.key].v ?? "—"}</div>
+      <div className="rows">
+        {content[selNodeP.key].rows.map(([a, b], j) => (
+          <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
+        ))}
+      </div>
+      <p className="why">{t(`curve.${selNodeP.key}.why`)}</p>
+      <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
+    </div>
+  );
+
   const hv = hover != null && geo ? H[hover] : null;
   const hvEvent = hv && (cyc?.newsEvents || []).find((e) => Math.abs(T(e.t) - T(hv.t)) <= 1 / 12);
-  const selNode = sel != null && geo ? geo.nodes[sel] : null;
 
   return (
     <section className="blc" aria-label={t("curve.aria")}>
@@ -227,7 +254,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   style={{ animationDelay: `${2.1 + i * 0.16}s` }}
                   tabIndex={0}
                   role="button"
-                  aria-label={`${label}. ${t(`curve.${n.key}.hist`)}`}
+                  aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
                   onMouseEnter={() => !mobile && show(i)}
                   onMouseLeave={() => !mobile && hideSoon()}
                   onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(i)}
@@ -256,27 +283,7 @@ export function LayerCurve({ news = [], onEnter }) {
             {hvEvent && <span className="ev">{locale === "en" ? hvEvent.en || hvEvent.es : hvEvent.es}</span>}
           </div>
         )}
-        {selNode && (
-          <div
-            className="blc-pv"
-            role="dialog"
-            aria-label={name(selNode.key)}
-            style={mobile ? undefined : { left: selNode.cx + 360 > geo.W ? selNode.cx - 360 : selNode.cx + 30, top: Math.max(10, Math.min(selNode.cy - 60, geo.Hh - 330)) }}
-            onMouseEnter={() => clearTimeout(hideT.current)}
-            onMouseLeave={() => !mobile && hideSoon()}
-          >
-            <div className="k">{t(`curve.${selNode.key}.when`)}</div>
-            <h3>{name(selNode.key)}</h3>
-            <p className="hist">{t(`curve.${selNode.key}.hist`)}</p>
-            <div className="big">{content[selNode.key].v ?? "—"}</div>
-            <div className="rows">
-              {content[selNode.key].rows.map(([a, b], j) => (
-                <div key={j} className={`r${content[selNode.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
-              ))}
-            </div>
-            <button type="button" className="go" onClick={() => onEnter(selNode.key)}>{t("curve.enter")} {name(selNode.key)} →</button>
-          </div>
-        )}
+        {!mobile && preview}
       </div>
       <nav className="blc-strip" aria-label={t("aside.sections")}>
         {NODES.map((n, i) => (
@@ -295,6 +302,7 @@ export function LayerCurve({ news = [], onEnter }) {
           </button>
         ))}
       </nav>
+      {mobile && preview && createPortal(preview, document.querySelector(".bl-root") || document.body)}
     </section>
   );
 }
