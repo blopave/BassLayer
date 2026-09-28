@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
+import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLabel, useLayerData } from "../utils/layer";
 
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
 // navegación. Cada sección vive en un momento real de la curva; se entra
 // tocando su cápsula o desde el índice sincronizado (franja en desktop, lista
-// en mobile). Recorrer la curva muestra el precio y el hecho de cada mes.
+// en mobile). Recorrer la curva muestra el precio de cada mes.
 // Dirección elegida por Pablo (sept 2026) entre varias maquetas.
-
-const T = (s) => { const [y, m] = s.split("-").map(Number); return y + (m - 1) / 12; };
-const MONTHS = { es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] };
-const list = (d) => (Array.isArray(d) ? d : d?.items || d?.data || []);
 
 // Dónde vive cada sección y cómo se ubica su cápsula (dy desktop, dm mobile:
 // signo = arriba/abajo, magnitud = altura). `at` es un mes de la curva; las
@@ -25,30 +21,6 @@ const NODES = [
   { key: "eventos", at: "soon", dy: -1, dm: -2 },
   { key: "predicciones", at: "halving", dy: 1, dm: 2 },
 ];
-
-function fmtUsd(p, locale) {
-  const l = locale === "en" ? "en-US" : "es-AR";
-  return p >= 1000 ? `$${Math.round(p).toLocaleString(l)}` : `$${p < 10 ? p.toFixed(1) : Math.round(p)}`;
-}
-function Pct({ v, locale }) {
-  const s = `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}`;
-  return <span className={v >= 0 ? "up" : "down"}>{locale === "en" ? s : s.replace(".", ",")}%</span>;
-}
-
-function useLayerData() {
-  const [d, setD] = useState({});
-  useEffect(() => {
-    let alive = true;
-    const set = (k) => (v) => alive && setD((p) => ({ ...p, [k]: v }));
-    shared("btcCycles", api.btcCycles).then(set("cycles")).catch(() => {});
-    shared("markets", api.markets).then(set("markets")).catch(() => {});
-    shared("financeNews", api.financeNews).then(set("finance")).catch(() => {});
-    shared("cryptoEvents", api.cryptoEvents).then(set("events")).catch(() => {});
-    shared("predictions", api.predictionMarkets).then(set("predictions")).catch(() => {});
-    return () => { alive = false; };
-  }, []);
-  return d;
-}
 
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
@@ -67,7 +39,10 @@ export function LayerCurve({ news = [], onEnter }) {
   useEffect(() => {
     const el = stageRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    const ro = new ResizeObserver(([e]) => {
+      const { width: w, height: h } = e.contentRect;
+      setSize((p) => (p.w === w && p.h === h ? p : { w, h }));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -86,33 +61,23 @@ export function LayerCurve({ news = [], onEnter }) {
 
   const cyc = d.cycles;
   const H = cyc?.priceHistory || [];
-  const mobile = size.w > 0 && size.w <= 700;
+  const mobile = size.w > 0 && size.w <= 768;
 
   // Contenido de cada sección: nombre, momento, historia y dato vivo.
   const content = useMemo(() => {
-    const all = (d.markets?.groups || []).flatMap((g) => g.items || []);
-    const sym = (s) => all.find((i) => i.symbol === s);
-    const stocks = (d.markets?.groups || []).find((g) => g.kind === "stock")?.items || [];
-    const mover = stocks.reduce((a, b) => (!a || Math.abs(b.changePct) > Math.abs(a.changePct) ? b : a), null);
-    const today = new Date().toISOString().slice(0, 10);
-    const upcoming = list(d.events).filter((e) => (e.date || "") >= today).sort((a, b) => a.date.localeCompare(b.date));
-    const cur = cyc?.current;
-    const phaseKey = cur?.phase ? `cycles.phase.${cur.phase}` : null;
-    const phase = phaseKey && t(phaseKey) !== phaseKey ? t(phaseKey) : cur?.phaseLabel;
+    const { sym, mover, upcoming, cur, phase, preds } = layerStats(d, t);
     const peak = cyc?.keyDates?.peak;
     const daysSincePeak = peak ? Math.round((Date.now() - new Date(`${peak}T12:00:00`)) / 86400000) : null;
-    const preds = list(d.predictions);
-    const fmtDay = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(locale === "en" ? "en-US" : "es-AR", { day: "numeric", month: "short" });
     const P = (s) => (s ? <Pct v={s.changePct} locale={locale} /> : null);
     return {
       finanzas: { v: d.finance ? <>{list(d.finance).length} {t("doors.notes")}</> : null, rows: [[t("doors.financeSub"), ""]] },
       acciones: { v: mover ? <>{mover.symbol} {P(mover)}</> : null, rows: ["NVDA", "META", "AAPL"].filter((s) => s !== mover?.symbol && sym(s)).slice(0, 3).map((s) => [sym(s).name, P(sym(s))]) },
       etfs: { v: sym("IBIT") ? <>IBIT {P(sym("IBIT"))}</> : null, rows: [["QQQ", "Nasdaq 100"], ["SPY", "S&P 500"], ["GLD", t("curve.gold")]].filter(([s]) => sym(s)).map(([s, n]) => [`${n} · ${s}`, P(sym(s))]) },
-      ciclos: { v: cur ? <span className={cur.phase === "markdown" ? "down" : cur.phase === "markup" ? "up" : ""}>{cur.phase === "markdown" ? "▼ " : cur.phase === "markup" ? "▲ " : ""}{phase}</span> : null,
+      ciclos: { v: cur ? <Phase cur={cur} label={phase} /> : null,
         rows: cur ? [[t("curve.daysSincePeak"), daysSincePeak ?? "—"], [t("aside.confluence"), `${cur.confluence}/100`], [t("curve.support200w"), cur.support200w ? fmtUsd(cur.support200w, locale) : "—"]] : [] },
       historia: { v: cyc ? <>{(cyc.newsEvents || []).length} {t("history.events")}</> : null, rows: (cyc?.newsEvents || []).slice(-3).reverse().map((e) => [locale === "en" ? e.en || e.es : e.es, e.t.slice(0, 4)]), titles: true },
       noticias: { v: <>{news.length} {t("curve.today")}</>, rows: news.slice(0, 3).map((n) => [n.title, ""]), titles: true },
-      eventos: { v: d.events ? <>{upcoming.length} {t("doors.upcoming")}</> : null, rows: upcoming.slice(0, 2).map((e) => [e.title, fmtDay(e.date)]) },
+      eventos: { v: d.events ? <>{upcoming.length} {t("doors.upcoming")}</> : null, rows: upcoming.slice(0, 2).map((e) => [e.title, fmtDay(e.date, locale)]) },
       predicciones: { v: d.predictions ? (preds.length ? <>{preds.length} {t("doors.markets")}</> : "—") : null, rows: [[t("curve.openMarkets"), preds.length ? preds.length : t("doors.noMarkets")]] },
     };
   }, [d, cyc, news, t, locale]);
@@ -123,13 +88,13 @@ export function LayerCurve({ news = [], onEnter }) {
     const TODAY = T(H[H.length - 1].t);
     const nextHalving = cyc?.keyDates?.nextHalving ? T(cyc.keyDates.nextHalving.slice(0, 7)) : TODAY + 1.6;
     const END = nextHalving + 0.35;
-    const L = M ? 16 : 64, R = M ? 16 : 60, TOP = M ? 150 : 150, BOT = M ? 34 : 46;
-    const peakT0 = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
-    const atT = { today: TODAY, soon: TODAY + 0.45, peak: peakT0, halving: nextHalving };
+    const L = M ? 16 : 64, R = M ? 16 : 60, TOP = 150, BOT = M ? 34 : 46;
+    const peakT = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
+    const at = { today: TODAY, soon: TODAY + 0.45, peak: peakT, halving: nextHalving };
     // Eje de tiempo por tramos: cada sección cae a la misma distancia en
     // pantalla (la historia 2012→2020 comprimida al inicio). La curva sigue
     // siendo el precio real; solo cambia cuánto ancho ocupa cada tramo.
-    const times = NODES.map((n) => atT[n.at] ?? T(n.at));
+    const times = NODES.map((n) => at[n.at] ?? T(n.at));
     const f0 = M ? 0.06 : 0.09, f1 = M ? 0.95 : 0.96;
     const bx = [[2012, 0], ...times.map((tt, i) => [tt, f0 + ((f1 - f0) * i) / (times.length - 1)]), [END, 1]];
     const X = (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return L + (fa + ((tt - a) / (b - a)) * (fb - fa)) * (W - L - R); } return W - R; };
@@ -139,11 +104,9 @@ export function LayerCurve({ news = [], onEnter }) {
     const path = "M" + pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("L");
     const len = pts.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0);
     const last = H[H.length - 1].p;
-    const peakT = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
-    const at = { today: TODAY, soon: TODAY + 0.45, peak: peakT, halving: nextHalving };
     const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
-    const nodes = NODES.map((n) => {
-      const tt = at[n.at] ?? T(n.at);
+    const nodes = NODES.map((n, i) => {
+      const tt = times[i];
       const cx = X(tt), cy = Y(priceAt(tt));
       const lv = M ? n.dm : n.dy, dir = Math.sign(lv), gap = M ? 40 : 58, ph = M ? 30 : 48;
       return { ...n, tt, cx, cy, lv, dir, gap, ph, future: tt > TODAY };
@@ -151,19 +114,20 @@ export function LayerCurve({ news = [], onEnter }) {
     return { W, Hh, L, R, TOP, BOT, X, Y, path, pts, len, TODAY, xt: X(TODAY), yt: Y(last), nodes, M };
   }, [H, size, mobile, cyc]);
 
-  const name = (k) => t(`section.${k === "etfs" ? "etfs" : k === "acciones" ? "stocks" : k === "finanzas" ? "finance" : k === "noticias" ? "news" : k === "eventos" ? "events" : k === "predicciones" ? "predictions" : k === "historia" ? "history" : "cycles"}`);
-  const plain = (v) => (typeof v === "string" ? v : v == null ? "" : null);
+  const name = (k) => t(SECTION_LABEL[k]);
+  // Fechas de las secciones ancladas a hitos: salen de los datos, no de strings.
+  const dateOf = { ciclos: cyc?.keyDates?.peak, predicciones: cyc?.keyDates?.nextHalving };
+  const tk = (k, f) => t(`curve.${k}.${f}`, { date: dateOf[k] ? monthLabel(dateOf[k], locale) : "—" });
 
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
   // Tocar o hacer click entra directo; la vista previa es solo el hover de desktop.
-  const activate = (i) => onEnter(NODES[i].key);
 
   const onMove = (clientX) => {
     if (!geo) return;
     const r = stageRef.current.getBoundingClientRect(), x = clientX - r.left;
     if (x < geo.X(2012) || x > geo.xt) return setHover(null);
     let best = 0, bd = 1e9;
-    H.forEach((h, i) => { const dd = Math.abs(geo.X(T(h.t)) - x); if (dd < bd) { bd = dd; best = i; } });
+    geo.pts.forEach(([px], i) => { const dd = Math.abs(px - x); if (dd < bd) { bd = dd; best = i; } });
     setHover(best);
   };
 
@@ -175,11 +139,11 @@ export function LayerCurve({ news = [], onEnter }) {
       className="blc-pv"
       role="dialog"
       aria-label={name(selNodeP.key)}
-      style={mobile ? undefined : { left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
+      style={{ left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
       onMouseEnter={() => clearTimeout(hideT.current)}
-      onMouseLeave={() => !mobile && hideSoon()}
+      onMouseLeave={hideSoon}
     >
-      <div className="k">{t(`curve.${selNodeP.key}.when`)}</div>
+      <div className="k">{tk(selNodeP.key, "when")}</div>
       <h3>{name(selNodeP.key)}</h3>
       <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
       <div className="big">{content[selNodeP.key].v ?? "—"}</div>
@@ -188,12 +152,13 @@ export function LayerCurve({ news = [], onEnter }) {
           <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
         ))}
       </div>
-      <p className="why">{t(`curve.${selNodeP.key}.why`)}</p>
+      <p className="why">{tk(selNodeP.key, "why")}</p>
       <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
     </div>
   );
 
   const hv = hover != null && geo ? H[hover] : null;
+  const [hx, hy] = hv ? geo.pts[hover] : [];
 
   return (
     <section className="blc" aria-label={t("curve.aria")}>
@@ -245,13 +210,12 @@ export function LayerCurve({ news = [], onEnter }) {
               })}
             </g>
             {hv && (
-              <g className="blc-xh"><line x1={geo.X(T(hv.t))} x2={geo.X(T(hv.t))} y1={geo.TOP - 40} y2={geo.Hh - geo.BOT} /><circle cx={geo.X(T(hv.t))} cy={geo.Y(hv.p)} r="3.5" /></g>
+              <g className="blc-xh"><line x1={hx} x2={hx} y1={geo.TOP - 40} y2={geo.Hh - geo.BOT} /><circle cx={hx} cy={hy} r="3.5" /></g>
             )}
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
               const label = name(n.key);
-              const vtext = plain(c.v);
-              const pw = geo.M ? label.length * 7.6 + 22 : Math.max(label.length * 9.2, (vtext ?? "000000000000").length * 7.2) + 34;
+              const pw = geo.M ? label.length * 7.6 + 22 : Math.max(label.length * 9.2, 12 * 7.2) + 34;
               const py = n.dir < 0 ? n.cy - n.gap * Math.abs(n.lv) - n.ph : n.cy + n.gap * Math.abs(n.lv) - (geo.M ? 6 : 10);
               const px = Math.max(geo.L - 4, Math.min(n.cx - pw / 2, geo.W - geo.R - pw + 4));
               return (
@@ -265,7 +229,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   onMouseEnter={() => !mobile && show(i)}
                   onMouseLeave={() => !mobile && hideSoon()}
                   onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(i)}
-                  onClick={(e) => { e.stopPropagation(); activate(i); }}
+                  onClick={(e) => { e.stopPropagation(); onEnter(NODES[i].key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
                   <line className="blc-stem" x1={n.cx} x2={n.cx} y1={n.cy + (n.dir > 0 ? 10 : -10)} y2={n.dir > 0 ? py : py + n.ph} />
@@ -284,8 +248,8 @@ export function LayerCurve({ news = [], onEnter }) {
         )}
         {!geo && <div className="blc-skel" aria-hidden="true" />}
         {hv && sel == null && (
-          <div className="blc-tip" style={{ left: Math.min(geo.X(T(hv.t)) + 14, geo.W - 260), top: Math.max(8, geo.Y(hv.p) - 64) }}>
-            <span className="d">{MONTHS[locale === "en" ? "en" : "es"][Number(hv.t.slice(5)) - 1]} {hv.t.slice(0, 4)}</span>
+          <div className="blc-tip" style={{ left: Math.min(hx + 14, geo.W - 260), top: Math.max(8, hy - 64) }}>
+            <span className="d">{monthLabel(hv.t, locale)}</span>
             <b>{fmtUsd(hv.p, locale)}</b>
           </div>
         )}
@@ -300,9 +264,9 @@ export function LayerCurve({ news = [], onEnter }) {
             onMouseEnter={() => !mobile && show(i)}
             onMouseLeave={() => !mobile && hideSoon()}
             onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(i)}
-            onClick={(e) => { e.stopPropagation(); activate(i); }}
+            onClick={(e) => { e.stopPropagation(); onEnter(NODES[i].key); }}
           >
-            <span className="w">{t(`curve.${n.key}.when`)}</span>
+            <span className="w">{tk(n.key, "when")}</span>
             <span className="n">{name(n.key)}</span>
             <span className="v">{content[n.key].v ?? " "}</span>
           </button>

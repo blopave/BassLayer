@@ -2,14 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 import { NEWS_CAT } from "../utils/btcHistory";
+import { T, fmtUsd, monthLabel } from "../utils/layer";
 
 // Sección Historia: la curva de Bitcoin (2012 → hoy) con los momentos que la
 // movieron. Hechos verificados en data/btc-cycles.json (newsEvents), bandas de
 // cada ciclo (halving → pico → fondo), filtros por tipo y la lista cronológica
 // sincronizada con la curva (tocar un hecho lo marca en las dos).
-
-const T = (s) => { const [y, m] = s.split("-").map(Number); return y + (m - 1) / 12; };
-const MONTHS = { es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"], en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] };
 
 export function BtcHistory() {
   const { t, locale } = useLocale();
@@ -36,10 +34,9 @@ export function BtcHistory() {
   const H = data?.priceHistory || [];
   const events = useMemo(() => (data?.newsEvents || []).map((e, i) => ({ ...e, i })).sort((a, b) => a.t.localeCompare(b.t)), [data]);
   const shown = events.filter((e) => cat === "all" || e.cat === cat);
-  const mobile = w > 0 && w <= 700;
+  const mobile = w > 0 && w <= 768;
   const L = (e) => (locale === "en" ? e.en || e.es : e.es);
-  const month = (tt) => `${MONTHS[locale === "en" ? "en" : "es"][Number(tt.slice(5)) - 1]} ${tt.slice(0, 4)}`;
-  const fmtUsd = (p) => (p >= 1000 ? `$${Math.round(p).toLocaleString(locale === "en" ? "en-US" : "es-AR")}` : `$${p < 10 ? p.toFixed(1) : Math.round(p)}`);
+  const month = (tt) => monthLabel(tt, locale);
 
   const geo = useMemo(() => {
     if (!H.length || !w) return null;
@@ -48,7 +45,9 @@ export function BtcHistory() {
     const X = (tt) => padL + ((tt - t0) / (t1 - t0)) * (w - padL - padR);
     const lo = Math.log10(3), hi = Math.log10(200000);
     const Y = (p) => padT + (1 - (Math.log10(Math.max(p, 3)) - lo) / (hi - lo)) * (Hh - padT - padB);
-    const price = (tt) => { let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - T(tt)) < Math.abs(T(b.t) - T(tt))) b = h; return b.p; };
+    // Precio del mes (la serie es mensual); si falta ese mes, el más cercano.
+    const byMonth = new Map(H.map((h) => [h.t, h.p]));
+    const price = (tt) => { const m = tt.slice(0, 7); if (byMonth.has(m)) return byMonth.get(m); let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - T(m)) < Math.abs(T(b.t) - T(m))) b = h; return b.p; };
     const path = "M" + H.map((h) => `${X(T(h.t)).toFixed(1)},${Y(h.p).toFixed(1)}`).join("L");
     // Bandas de ciclo: halving → pico (alcista) y pico → fondo (bajista).
     const ms = (data.milestones || []).slice().sort((a, b) => a.t.localeCompare(b.t));
@@ -97,7 +96,7 @@ export function BtcHistory() {
               <rect key={i} className={`blh-band ${b.k}`} x={geo.X(b.a)} y={geo.padT} width={Math.max(0, geo.X(b.b) - geo.X(b.a))} height={geo.Hh - geo.padT - geo.padB} />
             ))}
             {!mobile && [10, 1000, 100000].map((p) => (
-              <g key={p} className="blh-grid"><line x1={geo.padL} x2={w - geo.padR} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.padL - 8} y={geo.Y(p) + 3} textAnchor="end">{fmtUsd(p)}</text></g>
+              <g key={p} className="blh-grid"><line x1={geo.padL} x2={w - geo.padR} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.padL - 8} y={geo.Y(p) + 3} textAnchor="end">{fmtUsd(p, locale)}</text></g>
             ))}
             {(mobile ? [2014, 2018, 2022, 2026] : [2012, 2014, 2016, 2018, 2020, 2022, 2024, 2026]).map((y) => (
               <text key={y} className="blh-yr" x={geo.X(y)} y={geo.Hh - 8} textAnchor="middle">{y}</text>
@@ -139,7 +138,7 @@ export function BtcHistory() {
             <div className="blh-card" style={{ "--c": NEWS_CAT[selEv.cat]?.color, ...(mobile ? {} : { left: Math.max(8, Math.min(cx - 150, w - 308)), top: cy > geo.Hh / 2 ? Math.max(8, cy - 150) : cy + 22 }) }}>
               <div className="k"><i aria-hidden="true" />{NEWS_CAT[selEv.cat]?.[locale === "en" ? "en" : "es"]} · {month(selEv.t)}</div>
               <p>{L(selEv)}</p>
-              <div className="p">{t("history.monthPrice")} ~{fmtUsd(geo.price(selEv.t))}</div>
+              <div className="p">{t("history.monthPrice")} ~{fmtUsd(geo.price(selEv.t), locale)}</div>
             </div>
           );
         })()}

@@ -5,7 +5,7 @@ import { LayerDoors } from "./LayerDoors";
 export function LayerAside({ onGo, active, newsCount }) {
   return (
     <aside className="bl-layer-aside">
-      <LayerDoors variant="index" onGo={onGo} active={active} newsCount={newsCount} />
+      <LayerDoors onGo={onGo} active={active} newsCount={newsCount} />
     </aside>
   );
 }

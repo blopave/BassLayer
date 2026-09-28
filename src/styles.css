@@ -2995,31 +2995,10 @@
 .bl-layer-tab-cnt { color:var(--bl-text-ter); letter-spacing:1px; }
 .bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
 
-/* ── Portada de Layer: grilla de secciones con dato vivo (sept 2026) ── */
-.bl-doors { margin:18px 32px 6px; }
+/* ── Índice de secciones de Layer (columna lateral de desktop) ── */
 .bl-doors-lab { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:10px; }
-.bl-doors-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
-.bl-door {
-  display:flex; flex-direction:column; gap:6px; min-height:104px; min-width:0; padding:13px 14px 12px; text-align:left; cursor:pointer;
-  font:inherit; color:var(--bl-text); border:1px solid var(--bl-border); border-radius:12px;
-  background:linear-gradient(160deg, color-mix(in srgb, var(--bl-accent-layer) 9%, transparent), transparent 60%), var(--bl-surface);
-  transition:border-color var(--duration-fast), transform var(--duration-fast);
-}
-.bl-door:hover { border-color:color-mix(in srgb, var(--bl-accent-layer) 45%, var(--bl-border)); transform:translateY(-2px); }
-.bl-door:active { transform:scale(.98); }
-.bl-door:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
-.bl-door-t { display:flex; align-items:center; gap:7px; font-weight:600; font-size:13.5px; }
-.bl-door-t svg { width:16px; height:16px; fill:none; stroke:var(--bl-accent-layer); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
-.bl-door-v { margin-top:auto; font-family:var(--font-mono); font-weight:600; font-size:16px; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bl-door-v small { font-size:11px; font-weight:500; color:var(--bl-text-sec); letter-spacing:.04em; }
-.bl-door-v .up { color:var(--bl-up); } .bl-door-v .down { color:var(--bl-down); }
-.bl-door-v.is-loading { width:60%; border-radius:4px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.bl-door-s { font-size:11.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bl-door-s .up { color:var(--bl-up); } .bl-door-s .down { color:var(--bl-down); }
-/* Desktop: índice de secciones en la columna lateral (fijo al scrollear). La
-   grilla de tarjetas queda solo para mobile: en desktop repetía el índice. */
-/* Desktop: el índice lateral navega; la grilla y las pestañas chicas sobran. */
-@media (min-width:769px) { .bl-doors, .bl-layer-tabs { display:none; } .bl-layer-grid { scroll-margin-top:12px; } }
+/* Desktop: el índice lateral navega; las pestañas chicas sobran. */
+@media (min-width:769px) { .bl-layer-tabs { display:none; } }
 .bl-idx { border:1px solid var(--bl-border); border-radius:12px; background:var(--bl-surface); padding:14px 8px 8px; }
 .bl-idx .bl-doors-lab { padding:0 8px; }
 .bl-idx-row {
@@ -3044,9 +3023,6 @@
 .bl-idx-row.is-on .bl-idx-ch { color:var(--bl-accent-layer); }
 .bl-layer-h { margin:22px 32px 4px; font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--bl-text); }
 @media (max-width:768px) {
-  .bl-doors { margin:14px 16px 4px; }
-  .bl-doors-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
-  .bl-door { min-height:96px; padding:12px; }
   .bl-layer-h { margin:20px 16px 2px; font-size:21px; }
 }
 .bl-layer-grid { display:grid; grid-template-columns:minmax(0, 1fr) 380px; align-items:start; padding-bottom:24px; }
@@ -5720,7 +5696,7 @@ select.bl-venue-input { cursor:pointer; }
 .blc-node:focus-visible .blc-pill { stroke-width:2.5; stroke:var(--bl-accent-layer); }
 .blc-tip { position:absolute; z-index:4; pointer-events:none; min-width:150px; padding:8px 10px; border-radius:6px; background:color-mix(in srgb, var(--bl-bg) 92%, transparent); border:1px solid var(--bl-border); font:500 11px var(--font-mono); color:var(--bl-text); }
 .blc-tip .d { display:block; margin-bottom:3px; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-ter); }
-.blc-tip b { font-size:13px; } .blc-tip .ev { display:block; margin-top:6px; max-width:240px; font:400 12px var(--font-sans); line-height:1.4; color:var(--bl-text-sec); }
+.blc-tip b { font-size:13px; }
 .blc-pv {
   position:absolute; z-index:6; width:330px; padding:18px; border-radius:14px;
   background:color-mix(in srgb, var(--bl-surface) 96%, transparent); border:1px solid var(--bl-border);
@@ -5764,7 +5740,7 @@ select.bl-venue-input { cursor:pointer; }
 @media (prefers-reduced-motion:reduce) {
   .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo { animation:none; }
 }
-@media (max-width:700px) {
+@media (max-width:768px) {
   .blc { height:auto; min-height:0; }
   .blc-intro { position:relative; left:auto; top:auto; max-width:none; padding:16px 16px 0; }
   .blc-intro h1 { font-size:18px; } .blc-intro p { font-size:13px; }

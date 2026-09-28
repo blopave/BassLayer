@@ -88,23 +88,18 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
   const listRef = useScrollReveal(loading, section);
-  // Desde la grilla o el índice: cambia de sección y lleva la vista al
-  // comienzo del contenido (las pestañas en mobile; en desktop no hay).
-  const tabsRef = useRef(null);
-  const contentRef = useRef(null);
-  const goSection = (key) => {
+  // Desde la curva o el índice: cambia de sección y lleva la vista al
+  // comienzo del contenido ("← Volver a la curva", justo antes de las pestañas).
+  const backRef = useRef(null);
+  const goSection = (key, behavior = "smooth") => {
     setSection(key);
-    requestAnimationFrame(() => {
-      const tabs = tabsRef.current;
-      const target = tabs && tabs.offsetParent !== null ? tabs : contentRef.current;
-      target?.scrollIntoView({ block: "start", behavior: "smooth" });
-    });
+    requestAnimationFrame(() => backRef.current?.scrollIntoView({ block: "start", behavior }));
   };
 
   // Portada: la curva de Bitcoin como mapa de secciones. Al entrar a una
   // sección se ve Layer como siempre, con "← Volver a la curva" arriba.
   if (section === "portada") {
-    return <LayerCurve news={news} onEnter={(key) => { setSection(key); requestAnimationFrame(() => document.querySelector(".bl-layer-back")?.scrollIntoView({ block: "start" })); }} />;
+    return <LayerCurve news={news} onEnter={(key) => goSection(key, "auto")} />;
   }
 
   return (
@@ -117,9 +112,9 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
 
       {/* "Volver" justo antes del contenido: al entrar desde la curva la vista
           arranca acá (en mobile el terminal y las herramientas quedan arriba). */}
-      <button type="button" className="bl-layer-back" onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
+      <button type="button" className="bl-layer-back" ref={backRef} onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
       {/* Secciones como tabs: una línea, Noticias abierta por defecto. */}
-      <nav className="bl-layer-tabs" aria-label={t("aside.sections")} ref={tabsRef}>
+      <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
         {SECTIONS.map(([key, labelKey]) => (
           <button
             key={key}
@@ -135,7 +130,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       </nav>
 
       {/* Desktop: contenido a la izquierda, mercado y ciclo a la derecha. */}
-      <div className="bl-layer-grid" ref={contentRef}>
+      <div className="bl-layer-grid">
       <div className="bl-layer-main">
       {/* Noticias section */}
       {section === "noticias" && (

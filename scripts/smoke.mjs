@@ -210,8 +210,8 @@ async function run(vp) {
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
 
-    // 6b. Portada de Layer = la curva (sept 2026): 7 secciones en la curva y
-    // 7 en el índice (franja/lista), dentro de la pantalla. Entrar a Ciclos
+    // 6b. Portada de Layer = la curva (sept 2026): 8 secciones en la curva y
+    // 8 en el índice (franja/lista), dentro de la pantalla. Entrar a Ciclos
     // (click o toque entra directo) y volver a la curva.
     const nodes = await page.locator(".blc-node").count();
     const its = await page.locator(".blc-it").count();
