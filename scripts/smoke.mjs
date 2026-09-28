@@ -215,7 +215,7 @@ async function run(vp) {
     // (click o toque entra directo) y volver a la curva.
     const nodes = await page.locator(".blc-node").count();
     const its = await page.locator(".blc-it").count();
-    if (nodes !== 7 || its !== 7) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${its} accesos (esperaba 7 y 7)`);
+    if (nodes !== 8 || its !== 8) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${its} accesos (esperaba 8 y 8)`);
     else {
       const box = await page.locator(".blc-stage").boundingBox();
       if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
@@ -226,7 +226,18 @@ async function run(vp) {
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);
-      if ((await page.locator(".blc-node").count()) !== 7) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
+      if ((await page.locator(".blc-node").count()) !== 8) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
+      // Historia: los hechos verificados en la curva y en la lista, sincronizados.
+      await page.locator(".blc-it").filter({ hasText: /Historia|History/ }).first().click();
+      await page.locator(".blh-ev").first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
+      const evs = await page.locator(".blh-ev").count(), rows = await page.locator(".blh-list li").count();
+      if (evs < 20 || evs !== rows) fail(vp.name, "historia", `${evs} hechos en la curva y ${rows} en la lista`);
+      else {
+        await page.locator(".blh-list button").nth(3).click();
+        if (!(await page.locator(".blh-card").isVisible().catch(() => false))) fail(vp.name, "historia", "tocar un hecho no muestra su tarjeta");
+      }
+      await page.locator(".bl-layer-back").click();
+      await page.waitForTimeout(400);
     }
 
     // 7. Modo día: el mismo contraste con la paleta clara (Layer y agenda)

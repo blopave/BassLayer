@@ -16,13 +16,14 @@ const list = (d) => (Array.isArray(d) ? d : d?.items || d?.data || []);
 // signo = arriba/abajo, magnitud = altura). `at` es un mes de la curva; las
 // del futuro se calculan desde hoy.
 const NODES = [
-  { key: "finanzas", at: "2020-03", dy: -1, dm: -1 },
-  { key: "acciones", at: "2021-02", dy: 1, dm: 1 },
-  { key: "etfs", at: "2024-01", dy: -1, dm: -2 },
-  { key: "ciclos", at: "peak", dy: 1, dm: 2 },
-  { key: "noticias", at: "today", dy: -1, dm: -1 },
-  { key: "eventos", at: "soon", dy: 1, dm: 1 },
-  { key: "predicciones", at: "halving", dy: -1, dm: -2 },
+  { key: "historia", at: "2013-11", dy: -1, dm: -1 },
+  { key: "finanzas", at: "2020-03", dy: 1, dm: 1 },
+  { key: "acciones", at: "2021-02", dy: -1, dm: -2 },
+  { key: "etfs", at: "2024-01", dy: 1, dm: 2 },
+  { key: "ciclos", at: "peak", dy: -1, dm: -1 },
+  { key: "noticias", at: "today", dy: 1, dm: 1 },
+  { key: "eventos", at: "soon", dy: -1, dm: -2 },
+  { key: "predicciones", at: "halving", dy: 1, dm: 2 },
 ];
 
 function fmtUsd(p, locale) {
@@ -109,6 +110,7 @@ export function LayerCurve({ news = [], onEnter }) {
       etfs: { v: sym("IBIT") ? <>IBIT {P(sym("IBIT"))}</> : null, rows: [["QQQ", "Nasdaq 100"], ["SPY", "S&P 500"], ["GLD", t("curve.gold")]].filter(([s]) => sym(s)).map(([s, n]) => [`${n} · ${s}`, P(sym(s))]) },
       ciclos: { v: cur ? <span className={cur.phase === "markdown" ? "down" : cur.phase === "markup" ? "up" : ""}>{cur.phase === "markdown" ? "▼ " : cur.phase === "markup" ? "▲ " : ""}{phase}</span> : null,
         rows: cur ? [[t("curve.daysSincePeak"), daysSincePeak ?? "—"], [t("aside.confluence"), `${cur.confluence}/100`], [t("curve.support200w"), cur.support200w ? fmtUsd(cur.support200w, locale) : "—"]] : [] },
+      historia: { v: cyc ? <>{(cyc.newsEvents || []).length} {t("history.events")}</> : null, rows: (cyc?.newsEvents || []).slice(-3).reverse().map((e) => [locale === "en" ? e.en || e.es : e.es, e.t.slice(0, 4)]), titles: true },
       noticias: { v: <>{news.length} {t("curve.today")}</>, rows: news.slice(0, 3).map((n) => [n.title, ""]), titles: true },
       eventos: { v: d.events ? <>{upcoming.length} {t("doors.upcoming")}</> : null, rows: upcoming.slice(0, 2).map((e) => [e.title, fmtDay(e.date)]) },
       predicciones: { v: d.predictions ? (preds.length ? <>{preds.length} {t("doors.markets")}</> : "—") : null, rows: [[t("curve.openMarkets"), preds.length ? preds.length : t("doors.noMarkets")]] },
@@ -128,7 +130,7 @@ export function LayerCurve({ news = [], onEnter }) {
     // pantalla (la historia 2012→2020 comprimida al inicio). La curva sigue
     // siendo el precio real; solo cambia cuánto ancho ocupa cada tramo.
     const times = NODES.map((n) => atT[n.at] ?? T(n.at));
-    const f0 = M ? 0.14 : 0.2, f1 = M ? 0.95 : 0.96;
+    const f0 = M ? 0.06 : 0.09, f1 = M ? 0.95 : 0.96;
     const bx = [[2012, 0], ...times.map((tt, i) => [tt, f0 + ((f1 - f0) * i) / (times.length - 1)]), [END, 1]];
     const X = (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return L + (fa + ((tt - a) / (b - a)) * (fb - fa)) * (W - L - R); } return W - R; };
     const lo = M ? 2 : 0;
@@ -149,7 +151,7 @@ export function LayerCurve({ news = [], onEnter }) {
     return { W, Hh, L, R, TOP, BOT, X, Y, path, pts, len, TODAY, xt: X(TODAY), yt: Y(last), nodes, M };
   }, [H, size, mobile, cyc]);
 
-  const name = (k) => t(`section.${k === "etfs" ? "etfs" : k === "acciones" ? "stocks" : k === "finanzas" ? "finance" : k === "noticias" ? "news" : k === "eventos" ? "events" : k === "predicciones" ? "predictions" : "cycles"}`);
+  const name = (k) => t(`section.${k === "etfs" ? "etfs" : k === "acciones" ? "stocks" : k === "finanzas" ? "finance" : k === "noticias" ? "news" : k === "eventos" ? "events" : k === "predicciones" ? "predictions" : k === "historia" ? "history" : "cycles"}`);
   const plain = (v) => (typeof v === "string" ? v : v == null ? "" : null);
 
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
@@ -192,7 +194,6 @@ export function LayerCurve({ news = [], onEnter }) {
   );
 
   const hv = hover != null && geo ? H[hover] : null;
-  const hvEvent = hv && (cyc?.newsEvents || []).find((e) => Math.abs(T(e.t) - T(hv.t)) <= 1 / 12);
 
   return (
     <section className="blc" aria-label={t("curve.aria")}>
@@ -286,7 +287,6 @@ export function LayerCurve({ news = [], onEnter }) {
           <div className="blc-tip" style={{ left: Math.min(geo.X(T(hv.t)) + 14, geo.W - 260), top: Math.max(8, geo.Y(hv.p) - 64) }}>
             <span className="d">{MONTHS[locale === "en" ? "en" : "es"][Number(hv.t.slice(5)) - 1]} {hv.t.slice(0, 4)}</span>
             <b>{fmtUsd(hv.p, locale)}</b>
-            {hvEvent && <span className="ev">{locale === "en" ? hvEvent.en || hvEvent.es : hvEvent.es}</span>}
           </div>
         )}
         {!mobile && preview}

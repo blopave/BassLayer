@@ -10,6 +10,7 @@ import { FinanceNews } from "./FinanceNews";
 import { MarketList } from "./MarketList";
 import { LayerAside } from "./LayerAside";
 import { LayerCurve } from "./LayerCurve";
+import { BtcHistory } from "./BtcHistory";
 import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
@@ -22,7 +23,7 @@ const BtcCycles = lazyNamed(() => import("./BtcCycles"), "BtcCycles");
 // Orden del toggle: crypto primero, mercados tradicionales después (identidad Layer).
 const SECTIONS = [
   ["noticias", "section.news"], ["eventos", "section.events"], ["predicciones", "section.predictions"],
-  ["ciclos", "section.cycles"], ["finanzas", "section.finance"], ["etfs", "section.etfs"], ["acciones", "section.stocks"],
+  ["ciclos", "section.cycles"], ["historia", "section.history"], ["finanzas", "section.finance"], ["etfs", "section.etfs"], ["acciones", "section.stocks"],
 ];
 
 function LayerNewsItem({ item, idx, onSelect }) {
@@ -201,6 +202,12 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       )}
 
       {/* Ciclos section — POC dashboard de ciclos de halving BTC */}
+      {section === "historia" && (
+        <div className="bl-layer-content">
+          <BtcHistory />
+        </div>
+      )}
+
       {section === "ciclos" && (
         <div className="bl-layer-content">
           <h2 className="bl-sr-only">{t("section.cycles")}</h2>

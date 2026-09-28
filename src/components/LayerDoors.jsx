@@ -13,9 +13,10 @@ const ICONS = {
   etfs: <><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>,
   acciones: <><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></>,
   finanzas: <><path d="M4 20h16" /><path d="M6 20V9M11 20V5M16 20v-8" /></>,
+  historia: <><path d="M4 18l4-5 3 2 5-7 4 3" /><path d="M4 21h16" /><circle cx="16" cy="8" r="1.3" /></>,
   predicciones: <><path d="M4 19V5" /><path d="M4 15l5-5 4 3 7-7" /><circle cx="20" cy="6" r="1.2" /></>,
 };
-const ORDER = [["eventos", "section.events"], ["ciclos", "section.cycles"], ["etfs", "section.etfs"], ["acciones", "section.stocks"], ["finanzas", "section.finance"], ["predicciones", "section.predictions"]];
+const ORDER = [["eventos", "section.events"], ["ciclos", "section.cycles"], ["historia", "section.history"], ["etfs", "section.etfs"], ["acciones", "section.stocks"], ["finanzas", "section.finance"], ["predicciones", "section.predictions"]];
 
 const Pct = ({ v }) => <span className={v >= 0 ? "up" : "down"}>{v >= 0 ? "+" : ""}{v.toFixed(2)}%</span>;
 const list = (d) => (Array.isArray(d) ? d : d?.items || d?.data || []);
@@ -57,6 +58,7 @@ export function LayerDoors({ onGo, variant = "grid", active, newsCount }) {
     ciclos: cur && { v: <span className={cur.phase === "markdown" ? "down" : cur.phase === "markup" ? "up" : ""}>{cur.phase === "markdown" ? "▼ " : cur.phase === "markup" ? "▲ " : ""}{phase}</span>, sub: `${t("aside.confluence")} ${cur.confluence}/100` },
     etfs: sym("IBIT") && { v: <>IBIT <Pct v={sym("IBIT").changePct} /></>, sub: sym("QQQ") && <>QQQ <Pct v={sym("QQQ").changePct} /></> },
     acciones: mover && { v: <>{mover.symbol} <Pct v={mover.changePct} /></>, sub: sym("NVDA") && mover.symbol !== "NVDA" ? <>NVDA <Pct v={sym("NVDA").changePct} /></> : null },
+    historia: s.cycles && { v: <>{(s.cycles.newsEvents || []).length} <small>{t("history.events")}</small></>, sub: t("history.doorSub") },
     finanzas: s.finance && { v: <>{list(s.finance).length} <small>{t("doors.notes")}</small></>, sub: t("doors.financeSub") },
     predicciones: s.predictions && (list(s.predictions).length
       ? { v: <>{list(s.predictions).length} <small>{t("doors.markets")}</small></>, sub: null }
