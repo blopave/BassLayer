@@ -6,7 +6,8 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
 // navegación. Cada sección vive en un momento real de la curva y se entra
 // tocando su cápsula (la curva es el único índice: sin franja ni lista, sept
-// 2026). Recorrer la curva muestra el precio de cada mes.
+// 2026). Un solo hover: el de las secciones (sin cruz ni precio por mes:
+// competía con la navegación; el precio mes a mes vive en Historia).
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
 // izquierda (28 px), con toda su franja tocable. Solo títulos: sin datos ni
@@ -49,7 +50,6 @@ export function LayerCurve({ news = [], onEnter }) {
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [sel, setSel] = useState(null);       // sección con vista previa
-  const [hover, setHover] = useState(null);   // índice de mes bajo el cursor
   const shownAt = useRef(0);
   const hideT = useRef(null);
   // En desktop la vista previa se cierra con un respiro: da tiempo a llevar el
@@ -179,15 +179,6 @@ export function LayerCurve({ news = [], onEnter }) {
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
   // Tocar o hacer click entra directo; la vista previa es solo el hover de desktop.
 
-  const onMove = (clientX) => {
-    if (!geo || geo.V) return;
-    const r = stageRef.current.getBoundingClientRect(), x = clientX - r.left;
-    if (x < geo.X(2012) || x > geo.xt) return setHover(null);
-    let best = 0, bd = 1e9;
-    geo.pts.forEach(([px], i) => { const dd = Math.abs(px - x); if (dd < bd) { bd = dd; best = i; } });
-    setHover(best);
-  };
-
   // Vista previa (hover de desktop): qué hay en la sección, su dato vivo y
   // por qué vive en ese punto de la curva.
   const selNodeP = sel != null && geo ? geo.nodes[sel] : null;
@@ -261,8 +252,6 @@ export function LayerCurve({ news = [], onEnter }) {
     </svg>
   );
 
-  const hv = hover != null && geo ? H[hover] : null;
-  const [hx, hy] = hv ? geo.pts[hover] : [];
 
   return (
     <section className="blc" aria-label={t("curve.aria")}>
@@ -272,10 +261,6 @@ export function LayerCurve({ news = [], onEnter }) {
       <div
         className={`blc-stage${geo ? " is-ready" : ""}`}
         ref={stageRef}
-        onMouseMove={(e) => !e.target.closest(".blc-node") && onMove(e.clientX)}
-        onMouseLeave={() => setHover(null)}
-        onTouchMove={(e) => onMove(e.touches[0].clientX)}
-        onTouchEnd={() => setTimeout(() => setHover(null), 900)}
       >
         {geo?.V && vertical}
         {geo && !geo.V && (
@@ -319,9 +304,6 @@ export function LayerCurve({ news = [], onEnter }) {
                 );
               })}
             </g>
-            {hv && (
-              <g className="blc-xh"><line x1={hx} x2={hx} y1={geo.TOP - 40} y2={geo.Hh - geo.BOT} /><circle cx={hx} cy={hy} r="3.5" /></g>
-            )}
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
               const label = name(n.key);
@@ -356,12 +338,6 @@ export function LayerCurve({ news = [], onEnter }) {
           </svg>
         )}
         {!geo && <div className="blc-skel" aria-hidden="true" />}
-        {hv && sel == null && (
-          <div className="blc-tip" style={{ left: Math.min(hx + 14, geo.W - 260), top: Math.max(8, hy - 64) }}>
-            <span className="d">{monthLabel(hv.t, locale)}</span>
-            <b>{fmtUsd(hv.p, locale)}</b>
-          </div>
-        )}
         {!mobile && preview}
       </div>
       {/* Mobile: la pregunta del abanico va debajo del gráfico, no bajo un título. */}

@@ -258,6 +258,16 @@ async function run(vp) {
     else {
       const box = await page.locator(".blc-stage").boundingBox();
       if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
+      // Un solo hover en la curva: el de las secciones. Pasar por la curva no
+      // muestra cruz ni precio del mes (sept 2026).
+      if (vp.viewport.width > 768) {
+        const sb = await page.locator(".blc-stage").boundingBox();
+        await page.mouse.move(sb.x + sb.width * 0.3, sb.y + sb.height * 0.6);
+        await page.mouse.move(sb.x + sb.width * 0.32, sb.y + sb.height * 0.62);
+        await page.waitForTimeout(250);
+        if (await page.locator(".blc-tip, .blc-xh").count()) fail(vp.name, "layer", "pasar por la curva vuelve a mostrar el precio del mes");
+        await page.mouse.move(2, 2);
+      }
       // ¿Para dónde va? (sept 2026): el futuro son caminos simulados, no una línea.
       const walks = await page.locator(".blc-fan .blc-walk").count();
       if (walks < 20) fail(vp.name, "layer", `el futuro tiene ${walks} caminos simulados (esperaba ≥20)`);
