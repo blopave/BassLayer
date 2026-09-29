@@ -5688,13 +5688,13 @@ select.bl-venue-input { cursor:pointer; }
 .blc-walk { fill:none; stroke-width:1; stroke-linecap:round; stroke-linejoin:round; }
 .blc-walk.is-new { animation:blc-walk 1.2s ease-out forwards; }
 @keyframes blc-walk { from { stroke-dashoffset:var(--l); } to { stroke-dashoffset:0; } }
-.blc-ask-q { fill:var(--bl-text); font:600 17px var(--font-sans); letter-spacing:-.015em; }
-.blc-ask-s { fill:var(--bl-text-ter); font:500 10px var(--font-mono); letter-spacing:.08em; }
-.blc-ask-l { fill:var(--bl-accent-layer); font:500 11px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; cursor:pointer; outline:none; }
+.blc-ask-q { fill:var(--bl-text); font:620 20px var(--font-sans); letter-spacing:-.02em; }
+.blc-ask-s { fill:var(--bl-text-sec); font:400 13px var(--font-sans); }
+.blc-ask-l { fill:var(--bl-accent-layer); font:560 13.5px var(--font-sans); cursor:pointer; outline:none; }
 .blc-ask-l:hover, .blc-ask-l:focus-visible { fill:var(--bl-text); text-decoration:underline; }
-.blc-ask-m { margin:0 16px 8px; font-size:13px; line-height:1.5; color:var(--bl-text-ter); }
-.blc-ask-m b { color:var(--bl-text); font-weight:600; }
-.blc-ask-m button { padding:6px 0; border:0; background:none; cursor:pointer; font:500 11px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--bl-accent-layer); }
+.blc-ask-m { margin:0 16px 8px; font-size:14px; line-height:1.5; color:var(--bl-text-sec); }
+.blc-ask-m b { display:block; margin-bottom:2px; font-size:20px; font-weight:620; letter-spacing:-.02em; color:var(--bl-text); }
+.blc-ask-m button { display:block; padding:8px 0 0; border:0; background:none; cursor:pointer; font:560 14px var(--font-sans); color:var(--bl-accent-layer); }
 /* "Hoy" late: un anillo que se abre y se apaga sobre el punto del presente. */
 .blc-live { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.5; opacity:0; transform-box:fill-box; transform-origin:center; animation:blc-live 2.4s ease-out 2.6s infinite; pointer-events:none; }
 @keyframes blc-live { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }

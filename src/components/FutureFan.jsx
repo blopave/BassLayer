@@ -64,8 +64,10 @@ export function FutureFan({ H, until, toPoint, clip, fade, id }) {
       <defs>
         <clipPath id={`${id}-clip`}><rect x={clip.x} y={clip.y} width={clip.w} height={clip.h} /></clipPath>
         <linearGradient id={`${id}-fade`} gradientUnits="userSpaceOnUse" x1={fade.x1} y1={fade.y1} x2={fade.x2} y2={fade.y2}>
+          {/* Se apaga del todo al llegar al final: sin pared donde terminan los caminos. */}
           <stop offset="0" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.6 }} />
-          <stop offset="1" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.08 }} />
+          <stop offset=".65" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.22 }} />
+          <stop offset="1" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0 }} />
         </linearGradient>
       </defs>
       <g clipPath={`url(#${id}-clip)`} stroke={`url(#${id}-fade)`}>

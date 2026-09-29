@@ -228,9 +228,14 @@ export function LayerCurve({ news = [], onEnter }) {
           <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={0} y2={geo.Hh - 40} /><text x={geo.Xp(p)} y={geo.Hh - 22} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
-      <path className="blc-area" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
+      <defs>
+        {/* El área del pasado se disuelve en los últimos 140 px antes de hoy: sin corte de color. */}
+        <linearGradient id="blc-amgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.yt - 140} x2="0" y2={geo.yt}><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
+        <mask id="blc-amv" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amgv)" /></mask>
+      </defs>
+      <path className="blc-area" mask="url(#blc-amv)" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
       <FutureFan id="blc-fanv" H={H} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 16} y={geo.Hh - 50} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM, date: halvingLabel })}</text>
+      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 22} textAnchor="end">{t("curve.fanEnd", { date: halvingLabel })} · {t("curve.fanZoom", { n: FAN_ZOOM })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       <g className="blc-ms">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) < geo.nodes[5].tt).map((x) => (
@@ -279,6 +284,9 @@ export function LayerCurve({ news = [], onEnter }) {
               <linearGradient id="blc-cg" x1="0" x2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
               <linearGradient id="blc-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".16" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
               <clipPath id="blc-cp"><rect x="0" y="0" width={geo.W} height={geo.Hh - geo.BOT} /></clipPath>
+              {/* El área del pasado se disuelve en los últimos 160 px antes de hoy: sin corte de color. */}
+              <linearGradient id="blc-amg" gradientUnits="userSpaceOnUse" x1={geo.xt - 160} y1="0" x2={geo.xt} y2="0"><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
+              <mask id="blc-am" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amg)" /></mask>
             </defs>
             <g className="blc-grid">
               {[10, 1000, 100000].map((p) => (
@@ -290,15 +298,18 @@ export function LayerCurve({ news = [], onEnter }) {
             </g>
             <FutureFan id="blc-fan" H={H} {...fan} />
             <g clipPath="url(#blc-cp)">
-              <path className="blc-area" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
+              <path className="blc-area" mask="url(#blc-am)" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
             {/* La pregunta del abanico y su respuesta de mercado (Predicciones). */}
+            {/* El abanico en lenguaje de gráfico: dónde termina y a qué escala. */}
+            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.Hh - geo.BOT - 10} textAnchor="end">{t("curve.fanEnd", { date: halvingLabel })}</text>
+            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.TOP - 96} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+            {/* La pregunta: una línea, una aclaración humana y la acción. */}
             <g className="blc-ask">
-              <text className="blc-ask-q" x={geo.xt + 24} y={geo.Hh - geo.BOT - 72}>{t("curve.fanAsk")}</text>
-              <text className="blc-ask-s" x={geo.xt + 24} y={geo.Hh - geo.BOT - 52}>{t("curve.fanNote")}</text>
-              <text className="blc-ask-s" x={geo.xt + 24} y={geo.Hh - geo.BOT - 38}>{t("curve.fanNote2", { n: FAN_ZOOM, date: halvingLabel })}</text>
-              <text className="blc-ask-l" x={geo.xt + 24} y={geo.Hh - geo.BOT - 14} role="link" tabIndex={0}
+              <text className="blc-ask-q" x={geo.xt + 28} y={geo.Hh - geo.BOT - 62}>{t("curve.fanAsk")}</text>
+              <text className="blc-ask-s" x={geo.xt + 28} y={geo.Hh - geo.BOT - 40}>{t("curve.fanNote")}</text>
+              <text className="blc-ask-l" x={geo.xt + 28} y={geo.Hh - geo.BOT - 14} role="link" tabIndex={0}
                 onClick={(e) => { e.stopPropagation(); onEnter("predicciones"); }}
                 onKeyDown={(e) => e.key === "Enter" && onEnter("predicciones")}>{t("curve.fanLink")}</text>
             </g>
@@ -353,7 +364,7 @@ export function LayerCurve({ news = [], onEnter }) {
       {/* Mobile: la pregunta del abanico va debajo del gráfico, no bajo un título. */}
       {geo?.V && (
         <p className="blc-ask-m">
-          <b>{t("curve.fanAsk")}</b> {t("curve.fanNote")} · {t("curve.fanNote2", { n: FAN_ZOOM, date: halvingLabel })}.{" "}
+          <b>{t("curve.fanAsk")}</b> {t("curve.fanNote")}{" "}
           <button type="button" onClick={() => onEnter("predicciones")}>{t("curve.fanLink")}</button>
         </p>
       )}
