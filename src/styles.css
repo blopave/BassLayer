@@ -5683,7 +5683,18 @@ select.bl-venue-input { cursor:pointer; }
 @keyframes blc-draw { to { stroke-dashoffset:0; } }
 .blc-area { fill:url(#blc-ag); opacity:0; animation:blc-fade 1.2s 1.6s forwards; }
 @keyframes blc-fade { to { opacity:1; } }
-.blc-fut { fill:none; stroke-width:1.2; stroke-linecap:round; }
+/* ¿Para dónde va? (sept 2026): caminos simulados desde hoy, en fundido. */
+.blc-fan { opacity:0; animation:blc-fade .8s 2.1s forwards; pointer-events:none; }
+.blc-walk { fill:none; stroke-width:1; stroke-linecap:round; stroke-linejoin:round; }
+.blc-walk.is-new { animation:blc-walk 1.2s ease-out forwards; }
+@keyframes blc-walk { from { stroke-dashoffset:var(--l); } to { stroke-dashoffset:0; } }
+.blc-ask-q { fill:var(--bl-text); font:600 17px var(--font-sans); letter-spacing:-.015em; }
+.blc-ask-s { fill:var(--bl-text-ter); font:500 10px var(--font-mono); letter-spacing:.08em; }
+.blc-ask-l { fill:var(--bl-accent-layer); font:500 11px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; cursor:pointer; outline:none; }
+.blc-ask-l:hover, .blc-ask-l:focus-visible { fill:var(--bl-text); text-decoration:underline; }
+.blc-ask-m { margin:0 16px 8px; font-size:13px; line-height:1.5; color:var(--bl-text-ter); }
+.blc-ask-m b { color:var(--bl-text); font-weight:600; }
+.blc-ask-m button { padding:6px 0; border:0; background:none; cursor:pointer; font:500 11px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--bl-accent-layer); }
 /* "Hoy" late: un anillo que se abre y se apaga sobre el punto del presente. */
 .blc-live { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.5; opacity:0; transform-box:fill-box; transform-origin:center; animation:blc-live 2.4s ease-out 2.6s infinite; pointer-events:none; }
 @keyframes blc-live { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
@@ -5743,7 +5754,7 @@ select.bl-venue-input { cursor:pointer; }
 .bl-layer-back svg { transition:transform var(--duration-fast); }
 .bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
-  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo, .blc-live { animation:none; }
+  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-fan { animation:none; opacity:1; } .blc-halo, .blc-live, .blc-walk.is-new { animation:none; }
 }
 @media (max-width:768px) {
   /* Mobile = curva vertical (dirección A, sept 2026): el tiempo baja con el

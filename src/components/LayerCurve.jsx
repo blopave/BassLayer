@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
+import { FutureFan } from "./FutureFan";
 import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLabel, useLayerData } from "../utils/layer";
 
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
@@ -36,25 +37,11 @@ const seg = (bx) => (tt) => {
   return bx[bx.length - 1][1];
 };
 
-// El tramo del futuro (opción 4, sept 2026): no es un pronóstico sino el
-// camino hasta las secciones que vienen. Continuo, más fino que el precio y
-// en fundido del acento al 10% (gradiente en userSpaceOnUse: en una recta la
-// caja del trazo tiene alto 0 y objectBoundingBox no pinta). Mismo color o
-// grosor que la curva diría "el precio se queda plano hasta 2028".
-function FutureRail({ id, x1, y1, x2, y2 }) {
-  return (
-    <>
-      <defs>
-        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x1} y1={y1} x2={x2} y2={y2}>
-          <stop offset="0" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.75 }} />
-          <stop offset=".45" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.32 }} />
-          <stop offset="1" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.1 }} />
-        </linearGradient>
-      </defs>
-      <line className="blc-fut" x1={x1} y1={y1} x2={x2} y2={y2} stroke={`url(#${id})`} />
-    </>
-  );
-}
+// Lupa del futuro: de hoy en adelante la escala del precio se amplía ×4
+// (rotulado en pantalla) para que los caminos posibles se abran de verdad; a
+// la escala de 12 años (×10.000) su rango real, ±3× en dos años, se vería
+// como una sola línea.
+const FAN_ZOOM = 4;
 
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
@@ -144,7 +131,8 @@ export function LayerCurve({ news = [], onEnter }) {
       const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [END, VT + 7 * VGAP + 46]]);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
       const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]) }));
-      return { V: true, W, Hh, x0, Xp, Yt, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
+      const pxDec = (x1 - x0) / (Math.log10(250000) - 2);
+      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
     }
 
     const Hh = size.h, L = 64, R = 60, TOP = 120, BOT = 46;
@@ -159,8 +147,29 @@ export function LayerCurve({ news = [], onEnter }) {
       const px = Math.max(L - 4, Math.min(cx - pw / 2, W - R - pw + 4));
       return { ...n, tt, cx, cy, pill: { x: px, y: py, w: pw, h: ph, dir } };
     });
-    return { W, Hh, L, R, TOP, BOT, X, Y, TODAY, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
+    const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
+    return { W, Hh, L, R, TOP, BOT, X, Y, TODAY, pxDec, last, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
   }, [H, size, mobile, cyc, t]);
+
+  // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada en hoy.
+  const fan = useMemo(() => {
+    if (!geo) return null;
+    const end = geo.nodes[geo.nodes.length - 1];
+    if (geo.V) {
+      return {
+        until: end.tt,
+        toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
+        clip: { x: geo.x0 + 12, y: geo.yt, w: geo.W - geo.x0 - 12, h: end.cy - geo.yt + 40 },
+        fade: { x1: 0, y1: geo.yt, x2: 0, y2: end.cy + 40 },
+      };
+    }
+    return {
+      until: end.tt,
+      toPoint: (tt, p) => [geo.X(tt), geo.yt - Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM],
+      clip: { x: geo.xt, y: 8, w: end.cx - geo.xt + 30, h: geo.Hh - geo.BOT - 8 },
+      fade: { x1: geo.xt, y1: 0, x2: end.cx + 30, y2: 0 },
+    };
+  }, [geo]);
 
   const name = (k) => t(SECTION_LABEL[k]);
   // Fechas de las secciones ancladas a hitos: salen de los datos, no de strings.
@@ -218,11 +227,10 @@ export function LayerCurve({ news = [], onEnter }) {
           <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={0} y2={geo.Hh - 40} /><text x={geo.Xp(p)} y={geo.Hh - 22} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
-      {/* El futuro: solo la línea punteada de hoy a la última sección, con su rótulo al arrancar. */}
-      <text className="blc-fut-l" x={geo.xt - 16} y={geo.yt + 30} textAnchor="end">{t("curve.future")} ↓</text>
       <path className="blc-area" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
+      <FutureFan id="blc-fanv" H={H} {...fan} />
+      <text className="blc-fut-l" x={geo.W - 16} y={geo.Hh - 50} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
-      <FutureRail id="blc-futv" x1={geo.xt} y1={geo.yt} x2={geo.xt} y2={geo.nodes[geo.nodes.length - 1].cy} />
       <g className="blc-ms">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) < geo.nodes[5].tt).map((x) => (
           <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
@@ -285,13 +293,20 @@ export function LayerCurve({ news = [], onEnter }) {
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
-            {/* El futuro: solo la línea punteada de hoy a la última sección, con su rótulo al arrancar. */}
-            <text className="blc-fut-l" x={geo.xt + 22} y={geo.yt - 12}>{t("curve.future")} →</text>
+            <FutureFan id="blc-fan" H={H} {...fan} />
             <g clipPath="url(#blc-cp)">
               <path className="blc-area" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
-            <FutureRail id="blc-fut" x1={geo.xt} y1={geo.yt} x2={geo.nodes[geo.nodes.length - 1].cx} y2={geo.yt} />
+            {/* La pregunta del abanico y su respuesta de mercado (Predicciones). */}
+            <g className="blc-ask">
+              <text className="blc-ask-q" x={geo.xt + 24} y={geo.Hh - geo.BOT - 72}>{t("curve.fanAsk")}</text>
+              <text className="blc-ask-s" x={geo.xt + 24} y={geo.Hh - geo.BOT - 52}>{t("curve.fanNote")}</text>
+              <text className="blc-ask-s" x={geo.xt + 24} y={geo.Hh - geo.BOT - 38}>{t("curve.fanNote2", { n: FAN_ZOOM })}</text>
+              <text className="blc-ask-l" x={geo.xt + 24} y={geo.Hh - geo.BOT - 14} role="link" tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); onEnter("predicciones"); }}
+                onKeyDown={(e) => e.key === "Enter" && onEnter("predicciones")}>{t("curve.fanLink")}</text>
+            </g>
             <g className="blc-ms">
               {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
                 const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
@@ -349,6 +364,13 @@ export function LayerCurve({ news = [], onEnter }) {
         )}
         {!mobile && preview}
       </div>
+      {/* Mobile: la pregunta del abanico va debajo del gráfico, no bajo un título. */}
+      {geo?.V && (
+        <p className="blc-ask-m">
+          <b>{t("curve.fanAsk")}</b> {t("curve.fanNote")} · {t("curve.fanNote2", { n: FAN_ZOOM })}.{" "}
+          <button type="button" onClick={() => onEnter("predicciones")}>{t("curve.fanLink")}</button>
+        </p>
+      )}
     </section>
   );
 }

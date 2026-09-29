@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Layer — ¿para dónde va?</title>
+<style>
+  @font-face { font-family: "Geist"; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root {
+    --bg: #0e1317; --surface: #151c21; --border: #26313a; --border-sub: #1b242b;
+    --text: #e8ecee; --sec: #8a969d; --ter: #56626a; --acc: #6CB8C8; --down: #e0716b;
+    --sans: "Geist", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #07090b; color: var(--text); font-family: var(--sans); }
+  .top { display: flex; align-items: baseline; gap: 14px; padding: 14px 24px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); }
+  .top b { color: var(--acc); }
+  .row { display: flex; justify-content: center; gap: 22px; padding: 14px 16px 24px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lbl { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); text-align: center; }
+  .lbl b { color: var(--text); letter-spacing: .1em; }
+  .lbl small { display: block; margin-top: 4px; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 12px; color: var(--ter); max-width: 360px; }
+  .fit { width: calc(390px * var(--k)); height: calc(844px * var(--k)); }
+  .phone { width: 390px; height: 844px; transform: scale(var(--k)); transform-origin: 0 0; border-radius: 34px; border: 1px solid #2a343c; background: var(--bg); overflow: hidden; position: relative; }
+  .scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  /* chrome del sitio (aproximado) */
+  .hd { height: 72px; display: flex; align-items: center; justify-content: center; gap: 70px; border-bottom: 1px solid var(--border-sub); }
+  .hd span { font-weight: 650; color: #5d6a72; font-size: 15px; letter-spacing: -.02em; }
+  .hd em { font-style: normal; font: 400 20px var(--mono); letter-spacing: .38em; color: var(--acc); }
+  .tk { height: 43px; display: flex; align-items: center; gap: 22px; padding: 0 14px; border-bottom: 1px solid var(--border-sub); font: 500 11.5px var(--mono); white-space: nowrap; overflow: hidden; color: var(--sec); }
+  .tk b { color: var(--text); font-weight: 600; margin: 0 4px; } .tk i { font-style: normal; color: var(--down); }
+  .intro { padding: 18px 20px 0; }
+  .intro h1 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.015em; }
+  .intro p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .fab { position: absolute; right: 16px; bottom: 18px; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--sec); font-size: 16px; letter-spacing: 1px; z-index: 5; }
+  svg text { font-family: var(--sans); }
+  .axis { fill: var(--ter); font: 500 10px var(--mono); letter-spacing: .08em; }
+  .grid { stroke: var(--border-sub); }
+  .curve { fill: none; stroke: url(#g-cg); stroke-width: 1.8; stroke-linejoin: round; }
+  .proj { stroke: var(--acc); stroke-width: 1.2; stroke-dasharray: 3 6; opacity: .55; fill: none; }
+  .dot { fill: var(--bg); stroke: var(--acc); stroke-width: 2.4; }
+  .core { fill: var(--acc); }
+  .halo { fill: var(--acc); opacity: .13; }
+  .today .dot { stroke: var(--text); } .today .core { fill: var(--text); }
+  .lead { stroke: var(--acc); stroke-width: 1; opacity: .5; }
+  .ttl { fill: var(--text); font-weight: 620; letter-spacing: -.02em; }
+  .arr { fill: var(--acc); font: 500 14px var(--mono); }
+  .sec { cursor: pointer; }
+  .sec:hover .ttl, .sec.on .ttl { fill: var(--acc); }
+  .sec:hover .dot, .sec.on .dot { fill: var(--acc); }
+  .band { fill: transparent; }
+  .sec.on .band { fill: color-mix(in srgb, var(--acc) 6%, transparent); }
+  /* B: panorámica */
+  .pan { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x proximity; position: relative; }
+  .pan::-webkit-scrollbar { display: none; }
+  .pill { fill: var(--surface); stroke: color-mix(in srgb, var(--acc) 32%, var(--border)); }
+  .sec:hover .pill { stroke: var(--acc); fill: color-mix(in srgb, var(--acc) 12%, var(--surface)); }
+  .scrub { display: flex; align-items: center; gap: 10px; margin: 6px 20px 0; font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ter); }
+  .scrub .bar { position: relative; flex: 1; height: 2px; background: var(--border); border-radius: 2px; }
+  .scrub .th { position: absolute; top: -2px; height: 6px; border-radius: 3px; background: var(--acc); }
+  .fade { position: absolute; top: 0; bottom: 0; width: 26px; pointer-events: none; z-index: 2; }
+  .fade.l { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+  .fade.r { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+  .when { fill: var(--ter); font: 500 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+  .sec.today .when { fill: var(--sec); }
+  .ttl.halo-t { paint-order: stroke; stroke: var(--bg); stroke-width: 7px; stroke-linejoin: round; }
+  .yr { fill: var(--ter); font: 500 10px var(--mono); letter-spacing: .1em; }
+  .spine { stroke: var(--border); }
+  .opts { display: grid; gap: 26px; padding: 18px 24px 40px; }
+  .opt { display: grid; grid-template-columns: 230px auto auto; gap: 22px; align-items: start; justify-content: center; }
+  .opt h3 { margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
+  .opt h3 span { color: var(--acc); }
+  .opt p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .box { background: var(--bg); border: 1px solid #2a343c; border-radius: 12px; overflow: hidden; }
+  .rail { stroke: var(--border); stroke-width: 1.4; }
+  .tick { stroke: var(--border); }
+  .live { fill: var(--acc); opacity: .35; transform-box: fill-box; transform-origin: center; animation: live 2.2s ease-out infinite; }
+  @keyframes live { from { transform: scale(.6); opacity: .5; } to { transform: scale(2.4); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .live { animation: none; } }
+  .path { fill: none; stroke: #6CB8C8; stroke-width: 1; stroke-linecap: round; }
+  .path.new { animation: pin 1.2s ease-out forwards; }
+  @keyframes pin { from { stroke-dashoffset: var(--l); } to { stroke-dashoffset: 0; } }
+  .ask { fill: var(--text); font: 600 15px var(--sans); letter-spacing: -.01em; }
+  .ask-s { fill: var(--ter); font: 500 9.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+  .ask-l { fill: var(--acc); font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  @media (prefers-reduced-motion: reduce) { .path.new { animation: none; } }
+</style>
+</head>
+<body>
+<div class="top"><b>Layer · ¿para dónde va?</b> Desde hoy, caminos simulados con la volatilidad real de BTC (13,5% mensual, últimos 4 años), sin deriva</div>
+<div class="opts" id="opts"></div>
+<script type="module">
+const res = await fetch("/api/btc-cycles").then((r) => r.json());
+const H = res.priceHistory;
+const T = (s) => { const [y, m = "1"] = String(s).split("-"); return +y + (+m - 1) / 12; };
+const TODAY = T(H[H.length - 1].t), PEAK = T(res.keyDates.peak.slice(0, 7)), HALV = T(res.keyDates.nextHalving.slice(0, 7)), END = HALV + 0.35;
+const S = [["Historia", T("2013-11")], ["Finanzas", T("2020-03")], ["Acciones", T("2021-02")], ["ETFs", T("2024-01")], ["Ciclos BTC", PEAK], ["Noticias", TODAY], ["Eventos", TODAY + 0.45], ["Predicciones", HALV]];
+const last = H[H.length - 1].p;
+// Volatilidad real: desvío de los retornos log mensuales de los últimos 48 meses.
+const r = H.slice(-49).map((h, i, a) => (i ? Math.log(h.p / a[i - 1].p) : null)).filter((x) => x !== null);
+const mu = r.reduce((a, b) => a + b, 0) / r.length, SD = Math.sqrt(r.reduce((a, b) => a + (b - mu) ** 2, 0) / r.length);
+const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
+const seg = (bx) => (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return fa + ((tt - a) / (b - a)) * (fb - fa); } return bx[bx.length - 1][1]; };
+let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+// Un camino: pasos mensuales de hoy a la última sección, deriva cero (sin opinión de dirección).
+const walk = () => { const months = Math.round((HALV - TODAY) * 12); let lp = Math.log(last); const out = [[TODAY, last]]; for (let m = 1; m <= months; m++) { lp += SD * gauss() - SD * SD / 2; out.push([TODAY + m / 12, Math.exp(lp)]); } return out; };
+const node = (x, y, r, today) => `${today ? `<circle class="live" cx="${x}" cy="${y}" r="${r}"/>` : ""}<circle class="halo" cx="${x}" cy="${y}" r="${r + 8}"/><circle class="dot" cx="${x}" cy="${y}" r="${r}"/><circle class="core" cx="${x}" cy="${y}" r="2.8"/>`;
+const N = 32;
+
+function desk(id, zoom = 1) {
+  const W = 1000, Hh = 400, L = 40, R = 40, TOP = 40, BOT = 34;
+  const f = seg([[2012, 0], ...S.map((s, i) => [s[1], 0.09 + (0.87 * i) / 7]), [END, 1]]);
+  const X = (tt) => L + f(tt) * (W - L - R), Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(1e6)) * (Hh - TOP - BOT);
+  const pts = H.map((h) => [X(T(h.t)), Y(h.p)]), path = "M" + pts.map((p) => p.map((n) => n.toFixed(1)).join(",")).join("L");
+  const xt = X(TODAY), yt = Y(last);
+  let s = `<svg id="${id}" width="${W * 0.62}" height="${Hh * 0.62}" viewBox="0 0 ${W} ${Hh}"><defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient><linearGradient id="da" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".16"/><stop offset="1" stop-color="#6CB8C8" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fanfade-${id}" gradientUnits="userSpaceOnUse" x1="${xt}" x2="${W - R}"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".55"/><stop offset="1" stop-color="#6CB8C8" stop-opacity=".08"/></linearGradient>
+    <clipPath id="cp-${id}"><rect x="0" y="0" width="${W}" height="${Hh - BOT}"/></clipPath></defs>`;
+  for (const p of [1000, 100000]) s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(p)}" y2="${Y(p)}"/><text class="axis" x="${L}" y="${Y(p) - 6}">${p === 1000 ? "$1.000" : "$100.000"}</text>`;
+  s += `<path d="${path}L${xt},${Hh - BOT}L${pts[0][0]},${Hh - BOT}Z" fill="url(#da)"/><g class="fan" clip-path="url(#cp-${id})" stroke="url(#fanfade-${id})"></g><path d="${path}" fill="none" stroke="url(#dg)" stroke-width="1.8"/>`;
+  s += `<text class="ask" x="${xt + 22}" y="${TOP + 12}">¿Para dónde va?</text><text class="ask-s" x="${xt + 22}" y="${TOP + 28}">${N} caminos simulados · no son predicciones</text><text class="ask-l" x="${xt + 22}" y="${TOP + 46}">Qué dice el mercado → Predicciones</text>`;
+  S.forEach(([n, tt], i) => { const x = X(tt), y = tt >= TODAY ? yt : Y(priceAt(tt)); s += node(x, y, 8, i === 5); });
+  const Yf = (p) => yt - Math.log10(p / last) * ((Hh - TOP - BOT) / 6) * zoom;
+  if (zoom > 1) s = s.replace("</svg", `<rect x="${xt}" y="${TOP - 20}" width="${W - R - xt}" height="${Hh - TOP - BOT + 20}" fill="none" stroke="#26313a" stroke-dasharray="2 4"/><text class="ask-s" x="${W - R - 4}" y="${Hh - BOT - 8}" text-anchor="end">zoom ×${zoom} · escala propia</text></svg`);
+  return { html: `<div class="box" style="width:${W * 0.62}px">${s}</svg></div>`, toD: (w) => "M" + w.map(([t, p]) => `${X(t).toFixed(1)},${Yf(p).toFixed(1)}`).join("L") };
+}
+function mob(id, zoom = 1) {
+  const W = 390, VT = 30, VG = 70, Hh = VT + 7 * VG + 40, x0 = 150, x1 = 372;
+  const Yt = seg([[2012, VT - 30], ...S.map((s, i) => [s[1], VT + i * VG]), [END, VT + 7 * VG + 30]]);
+  const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (6 - 2)) * (x1 - x0);
+  const H100 = H.slice(H.findIndex((h) => h.p >= 100));
+  const pts = H100.map((h) => [Xp(h.p), Yt(T(h.t))]), path = "M" + pts.map((p) => p.map((n) => n.toFixed(1)).join(",")).join("L");
+  const xt = Xp(last), yt = Yt(TODAY);
+  let s = `<svg id="${id}" width="${W * 0.62}" height="${Hh * 0.62}" viewBox="0 0 ${W} ${Hh}"><defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient>
+    <linearGradient id="fanfade-${id}" gradientUnits="userSpaceOnUse" x1="0" y1="${yt}" x2="0" y2="${Hh}"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".55"/><stop offset="1" stop-color="#6CB8C8" stop-opacity=".08"/></linearGradient></defs>`;
+  s += `<g class="fan" stroke="url(#fanfade-${id})"></g><path d="${path}" fill="none" stroke="url(#mg)" stroke-width="1.8"/>`;
+  S.forEach(([n, tt], i) => { const y = Yt(tt), x = tt >= TODAY ? xt : Xp(priceAt(tt)); s += `<g class="sec${i === 5 ? " today" : ""}">${node(x, y, 7, i === 5)}<text class="ttl" x="16" y="${y + 8}" font-size="22">${n}</text></g>`; });
+  s += `<text class="ask-s" x="16" y="${yt + 28}">¿Para dónde va? · caminos simulados</text>`;
+  const Xf = (p) => xt + Math.log10(p / last) * ((x1 - x0) / 4) * zoom;
+  return { html: `<div class="box" style="width:${W * 0.62}px">${s}</svg></div>`, toD: (w) => "M" + w.map(([t, p]) => `${Math.min(W - 4, Math.max(x0 - 60, Xf(p))).toFixed(1)},${Yt(t).toFixed(1)}`).join("L") };
+}
+const V = [
+  ["A", "Abanico quieto", "32 caminos finos salen de hoy y se abren, en fundido. Se ve la incertidumbre de un vistazo, sin movimiento."],
+  ["C", "Lupa del futuro (se redibuja)", "La zona de hoy en adelante tiene su propia escala, ampliada ×4 y rotulada: los mismos caminos reales se abren hacia todos lados. Honesto porque la lupa está a la vista."],
+  ["B", "Caminos que se redibujan", "Cada medio segundo nace un camino nuevo y se apaga el más viejo: posibilidades que se recalculan en vivo. Quieto con reduced-motion."],
+];
+const views = [];
+document.getElementById("opts").innerHTML = V.map(([k, t, d]) => { const z = k === "C" ? 4 : 1, dd = desk("d" + k, z), mm = mob("m" + k, z); views.push([k, dd, mm]); return `<div class="opt"><div><h3><span>${k}</span> · ${t}</h3><p>${d}</p></div>${dd.html}${mm.html}</div>`; }).join("");
+const add = (svgId, toD, cls = "") => { const g = document.querySelector(`#${svgId} .fan`); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", toD(walk())); p.setAttribute("class", "path " + cls); g.appendChild(p); if (cls) { const l = p.getTotalLength(); p.style.setProperty("--l", l); p.style.strokeDasharray = l; } return p; };
+for (const [k, dd, mm] of views) for (let i = 0; i < N; i++) { add("d" + k, dd.toD); add("m" + k, mm.toD); }
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!reduce) setInterval(() => { for (const [k, dd, mm] of views.filter((v) => v[0] !== "A")) for (const [id, toD] of [["d" + k, dd.toD], ["m" + k, mm.toD]]) { const g = document.querySelector(`#${id} .fan`); g.firstChild && g.removeChild(g.firstChild); add(id, toD, "new"); } }, 520);
+</script>
+</body>
+</html>
