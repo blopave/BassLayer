@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Layer — el tramo del futuro</title>
+<style>
+  @font-face { font-family: "Geist"; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root {
+    --bg: #0e1317; --surface: #151c21; --border: #26313a; --border-sub: #1b242b;
+    --text: #e8ecee; --sec: #8a969d; --ter: #56626a; --acc: #6CB8C8; --down: #e0716b;
+    --sans: "Geist", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #07090b; color: var(--text); font-family: var(--sans); }
+  .top { display: flex; align-items: baseline; gap: 14px; padding: 14px 24px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); }
+  .top b { color: var(--acc); }
+  .row { display: flex; justify-content: center; gap: 22px; padding: 14px 16px 24px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lbl { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); text-align: center; }
+  .lbl b { color: var(--text); letter-spacing: .1em; }
+  .lbl small { display: block; margin-top: 4px; letter-spacing: .04em; text-transform: none; font-family: var(--sans); font-size: 12px; color: var(--ter); max-width: 360px; }
+  .fit { width: calc(390px * var(--k)); height: calc(844px * var(--k)); }
+  .phone { width: 390px; height: 844px; transform: scale(var(--k)); transform-origin: 0 0; border-radius: 34px; border: 1px solid #2a343c; background: var(--bg); overflow: hidden; position: relative; }
+  .scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  /* chrome del sitio (aproximado) */
+  .hd { height: 72px; display: flex; align-items: center; justify-content: center; gap: 70px; border-bottom: 1px solid var(--border-sub); }
+  .hd span { font-weight: 650; color: #5d6a72; font-size: 15px; letter-spacing: -.02em; }
+  .hd em { font-style: normal; font: 400 20px var(--mono); letter-spacing: .38em; color: var(--acc); }
+  .tk { height: 43px; display: flex; align-items: center; gap: 22px; padding: 0 14px; border-bottom: 1px solid var(--border-sub); font: 500 11.5px var(--mono); white-space: nowrap; overflow: hidden; color: var(--sec); }
+  .tk b { color: var(--text); font-weight: 600; margin: 0 4px; } .tk i { font-style: normal; color: var(--down); }
+  .intro { padding: 18px 20px 0; }
+  .intro h1 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.015em; }
+  .intro p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .fab { position: absolute; right: 16px; bottom: 18px; width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--sec); font-size: 16px; letter-spacing: 1px; z-index: 5; }
+  svg text { font-family: var(--sans); }
+  .axis { fill: var(--ter); font: 500 10px var(--mono); letter-spacing: .08em; }
+  .grid { stroke: var(--border-sub); }
+  .curve { fill: none; stroke: url(#g-cg); stroke-width: 1.8; stroke-linejoin: round; }
+  .proj { stroke: var(--acc); stroke-width: 1.2; stroke-dasharray: 3 6; opacity: .55; fill: none; }
+  .dot { fill: var(--bg); stroke: var(--acc); stroke-width: 2.4; }
+  .core { fill: var(--acc); }
+  .halo { fill: var(--acc); opacity: .13; }
+  .today .dot { stroke: var(--text); } .today .core { fill: var(--text); }
+  .lead { stroke: var(--acc); stroke-width: 1; opacity: .5; }
+  .ttl { fill: var(--text); font-weight: 620; letter-spacing: -.02em; }
+  .arr { fill: var(--acc); font: 500 14px var(--mono); }
+  .sec { cursor: pointer; }
+  .sec:hover .ttl, .sec.on .ttl { fill: var(--acc); }
+  .sec:hover .dot, .sec.on .dot { fill: var(--acc); }
+  .band { fill: transparent; }
+  .sec.on .band { fill: color-mix(in srgb, var(--acc) 6%, transparent); }
+  /* B: panorámica */
+  .pan { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x proximity; position: relative; }
+  .pan::-webkit-scrollbar { display: none; }
+  .pill { fill: var(--surface); stroke: color-mix(in srgb, var(--acc) 32%, var(--border)); }
+  .sec:hover .pill { stroke: var(--acc); fill: color-mix(in srgb, var(--acc) 12%, var(--surface)); }
+  .scrub { display: flex; align-items: center; gap: 10px; margin: 6px 20px 0; font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ter); }
+  .scrub .bar { position: relative; flex: 1; height: 2px; background: var(--border); border-radius: 2px; }
+  .scrub .th { position: absolute; top: -2px; height: 6px; border-radius: 3px; background: var(--acc); }
+  .fade { position: absolute; top: 0; bottom: 0; width: 26px; pointer-events: none; z-index: 2; }
+  .fade.l { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+  .fade.r { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+  .when { fill: var(--ter); font: 500 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+  .sec.today .when { fill: var(--sec); }
+  .ttl.halo-t { paint-order: stroke; stroke: var(--bg); stroke-width: 7px; stroke-linejoin: round; }
+  .yr { fill: var(--ter); font: 500 10px var(--mono); letter-spacing: .1em; }
+  .spine { stroke: var(--border); }
+  .opts { display: grid; gap: 26px; padding: 18px 24px 40px; }
+  .opt { display: grid; grid-template-columns: 230px auto auto; gap: 22px; align-items: start; justify-content: center; }
+  .opt h3 { margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
+  .opt h3 span { color: var(--acc); }
+  .opt p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .box { background: var(--bg); border: 1px solid #2a343c; border-radius: 12px; overflow: hidden; }
+  .rail { stroke: var(--border); stroke-width: 1.4; }
+  .tick { stroke: var(--border); }
+  .live { fill: var(--acc); opacity: .35; transform-box: fill-box; transform-origin: center; animation: live 2.2s ease-out infinite; }
+  @keyframes live { from { transform: scale(.6); opacity: .5; } to { transform: scale(2.4); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .live { animation: none; } }
+</style>
+</head>
+<body>
+<div class="top"><b>Layer · el tramo del futuro</b> Hoy es punteado. ¿Continuo? 4 variantes con la curva real, desktop y mobile</div>
+<div class="opts" id="opts"></div>
+<script type="module">
+const res = await fetch("/api/btc-cycles").then((r) => r.json());
+const H = res.priceHistory;
+const T = (s) => { const [y, m = "1"] = String(s).split("-"); return +y + (+m - 1) / 12; };
+const TODAY = T(H[H.length - 1].t), PEAK = T(res.keyDates.peak.slice(0, 7)), HALV = T(res.keyDates.nextHalving.slice(0, 7)), END = HALV + 0.35;
+const S = [["Historia", T("2013-11")], ["Finanzas", T("2020-03")], ["Acciones", T("2021-02")], ["ETFs", T("2024-01")], ["Ciclos BTC", PEAK], ["Noticias", TODAY], ["Eventos", TODAY + 0.45], ["Predicciones", HALV]];
+const last = H[H.length - 1].p;
+const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
+const seg = (bx) => (tt) => { for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return fa + ((tt - a) / (b - a)) * (fb - fa); } return bx[bx.length - 1][1]; };
+const node = (x, y, r, today) => `${today ? `<circle class="live" cx="${x}" cy="${y}" r="${r}"/>` : ""}<circle class="halo" cx="${x}" cy="${y}" r="${r + 8}"/><circle class="dot" cx="${x}" cy="${y}" r="${r}"/><circle class="core" cx="${x}" cy="${y}" r="2.8"/>`;
+
+// El tramo del futuro según la variante: de (x0,y0)=hoy a (x1,y1)=Predicciones.
+function future(v, x0, y0, x1, y1, id, vertical) {
+  if (v === "dash") return `<line class="proj" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}"/>`;
+  if (v === "solid") return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="#bfe8f0" stroke-width="1.8"/>`;
+  if (v === "rail") {
+    let s = `<line class="rail" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}"/>`;
+    for (let q = Math.ceil(TODAY * 4) / 4; q < HALV; q += 0.25) { const f = (q - TODAY) / (HALV - TODAY), x = x0 + (x1 - x0) * f, y = y0 + (y1 - y0) * f; s += vertical ? `<line class="tick" x1="${x - 4}" x2="${x + 4}" y1="${y}" y2="${y}"/>` : `<line class="tick" x1="${x}" x2="${x}" y1="${y - 4}" y2="${y + 4}"/>`; }
+    return s;
+  }
+  // fade: continua, del color de la curva a casi nada
+  return `<defs><linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".75"/><stop offset=".45" stop-color="#6CB8C8" stop-opacity=".32"/><stop offset="1" stop-color="#6CB8C8" stop-opacity=".1"/></linearGradient></defs>
+    <line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="url(#${id})" stroke-width="1.2" stroke-linecap="round"/>`;
+}
+
+function desk(v) {
+  const W = 1000, Hh = 400, L = 40, R = 40, TOP = 70, BOT = 34;
+  const f = seg([[2012, 0], ...S.map((s, i) => [s[1], 0.09 + (0.87 * i) / 7]), [END, 1]]);
+  const X = (tt) => L + f(tt) * (W - L - R), Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
+  const pts = H.map((h) => [X(T(h.t)), Y(h.p)]), path = "M" + pts.map((p) => p.map((n) => n.toFixed(1)).join(",")).join("L");
+  const xt = X(TODAY), yt = Y(last), xe = X(HALV);
+  let s = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}"><defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient><linearGradient id="da" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CB8C8" stop-opacity=".16"/><stop offset="1" stop-color="#6CB8C8" stop-opacity="0"/></linearGradient></defs>`;
+  s += `<path d="${path}L${xt},${Hh - BOT}L${pts[0][0]},${Hh - BOT}Z" fill="url(#da)"/><path d="${path}" fill="none" stroke="url(#dg)" stroke-width="1.8"/>`;
+  s += future(v, xt, yt, xe, yt, "fd-" + v, false);
+  s += `<text class="axis" x="${xt + 18}" y="${yt - 12}">FUTURO →</text>`;
+  S.forEach(([n, tt], i) => { const x = X(tt), y = tt >= TODAY ? yt : Y(priceAt(tt)); s += `<g class="${i === 5 ? "today" : ""}">${node(x, y, 8, i === 5)}</g>`; });
+  return `<div class="box" style="width:${W * 0.62}px">${s.replace(`width="${W}" height="${Hh}"`, `width="${W * 0.62}" height="${Hh * 0.62}"`)}</svg></div>`;
+}
+function mob(v) {
+  const W = 390, VT = 30, VG = 70, Hh = VT + 7 * VG + 40, x0 = 176, x1 = 368;
+  const Yt = seg([[2012, VT - 30], ...S.map((s, i) => [s[1], VT + i * VG]), [END, VT + 7 * VG + 30]]);
+  const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
+  const H100 = H.slice(H.findIndex((h) => h.p >= 100));
+  const pts = H100.map((h) => [Xp(h.p), Yt(T(h.t))]), path = "M" + pts.map((p) => p.map((n) => n.toFixed(1)).join(",")).join("L");
+  const xt = Xp(last), yt = Yt(TODAY), ye = Yt(HALV);
+  let s = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}"><defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5a63"/><stop offset=".6" stop-color="#6CB8C8"/><stop offset="1" stop-color="#bfe8f0"/></linearGradient></defs>`;
+  s += `<path d="${path}" fill="none" stroke="url(#mg)" stroke-width="1.8"/>`;
+  s += future(v, xt, yt, xt, ye, "fm-" + v, true);
+  S.forEach(([n, tt], i) => { const y = Yt(tt), x = tt >= TODAY ? xt : Xp(priceAt(tt)); s += `<g class="sec${i === 5 ? " today" : ""}">${node(x, y, 7, i === 5)}<text class="ttl" x="16" y="${y + 8}" font-size="22">${n}</text></g>`; });
+  return `<div class="box" style="width:${W * 0.62}px">${s.replace(`width="${W}" height="${Hh}"`, `width="${W * 0.62}" height="${Hh * 0.62}"`)}</svg></div>`;
+}
+const V = [
+  ["dash", "Hoy · punteada", "Convención universal de \"todavía no pasó\". Correcta, pero en color de acento compite con la curva real."],
+  ["solid", "Continua, igual a la curva", "Lo que pediste probar. Se lee como si el precio fuera a quedarse plano hasta 2028: la curva parece seguir sabiendo algo que no sabe."],
+  ["rail", "Riel neutro continuo", "Continua, pero en gris y con marcas por trimestre: deja de ser precio y pasa a ser regla de tiempo. El \"hoy\" late."],
+  ["fade", "Riel fantasma que se desvanece (recomendada)", "Continua pero más fina que el precio (1,2 px vs 1,8) y en fundido del acento al 10%: se lee como camino, no como precio. El \"hoy\" late."],
+];
+document.getElementById("opts").innerHTML = V.map(([k, t, d]) => `<div class="opt"><div><h3>${t}</h3><p>${d}</p></div>${desk(k)}${mob(k)}</div>`).join("");
+</script>
+</body>
+</html>

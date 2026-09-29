@@ -36,6 +36,26 @@ const seg = (bx) => (tt) => {
   return bx[bx.length - 1][1];
 };
 
+// El tramo del futuro (opción 4, sept 2026): no es un pronóstico sino el
+// camino hasta las secciones que vienen. Continuo, más fino que el precio y
+// en fundido del acento al 10% (gradiente en userSpaceOnUse: en una recta la
+// caja del trazo tiene alto 0 y objectBoundingBox no pinta). Mismo color o
+// grosor que la curva diría "el precio se queda plano hasta 2028".
+function FutureRail({ id, x1, y1, x2, y2 }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x1} y1={y1} x2={x2} y2={y2}>
+          <stop offset="0" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.75 }} />
+          <stop offset=".45" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.32 }} />
+          <stop offset="1" style={{ stopColor: "var(--bl-accent-layer)", stopOpacity: 0.1 }} />
+        </linearGradient>
+      </defs>
+      <line className="blc-fut" x1={x1} y1={y1} x2={x2} y2={y2} stroke={`url(#${id})`} />
+    </>
+  );
+}
+
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
   const d = useLayerData();
@@ -202,7 +222,7 @@ export function LayerCurve({ news = [], onEnter }) {
       <text className="blc-fut-l" x={geo.xt - 16} y={geo.yt + 30} textAnchor="end">{t("curve.future")} ↓</text>
       <path className="blc-area" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
-      <line className="blc-proj" x1={geo.xt} x2={geo.xt} y1={geo.yt} y2={geo.nodes[geo.nodes.length - 1].cy} />
+      <FutureRail id="blc-futv" x1={geo.xt} y1={geo.yt} x2={geo.xt} y2={geo.nodes[geo.nodes.length - 1].cy} />
       <g className="blc-ms">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) < geo.nodes[5].tt).map((x) => (
           <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
@@ -222,6 +242,7 @@ export function LayerCurve({ news = [], onEnter }) {
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
             <rect className="blc-hit" x="0" y={n.cy - VGAP / 2} width={geo.W} height={VGAP} />
+            {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="7" />}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="15" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
@@ -270,7 +291,7 @@ export function LayerCurve({ news = [], onEnter }) {
               <path className="blc-area" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
-            <line className="blc-proj" x1={geo.xt} x2={geo.nodes[geo.nodes.length - 1].cx} y1={geo.yt} y2={geo.yt} />
+            <FutureRail id="blc-fut" x1={geo.xt} y1={geo.yt} x2={geo.nodes[geo.nodes.length - 1].cx} y2={geo.yt} />
             <g className="blc-ms">
               {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
                 const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
@@ -305,6 +326,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
                   <line className="blc-stem" x1={n.cx} x2={n.cx} y1={n.cy + (dir > 0 ? 10 : -10)} y2={dir > 0 ? py : py + ph} />
+                  {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="9" />}
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="19" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="9" />
                   <circle className="blc-core" cx={n.cx} cy={n.cy} r="3" />

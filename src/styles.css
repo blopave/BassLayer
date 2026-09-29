@@ -5683,7 +5683,10 @@ select.bl-venue-input { cursor:pointer; }
 @keyframes blc-draw { to { stroke-dashoffset:0; } }
 .blc-area { fill:url(#blc-ag); opacity:0; animation:blc-fade 1.2s 1.6s forwards; }
 @keyframes blc-fade { to { opacity:1; } }
-.blc-proj { stroke:var(--bl-accent-layer); stroke-width:1.2; stroke-dasharray:3 6; opacity:.55; }
+.blc-fut { fill:none; stroke-width:1.2; stroke-linecap:round; }
+/* "Hoy" late: un anillo que se abre y se apaga sobre el punto del presente. */
+.blc-live { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.5; opacity:0; transform-box:fill-box; transform-origin:center; animation:blc-live 2.4s ease-out 2.6s infinite; pointer-events:none; }
+@keyframes blc-live { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
 .blc-ms circle { fill:var(--bl-bg); stroke:var(--bl-border); }
 .blc-ms text { fill:var(--bl-text-ter); opacity:.7; font:500 9px var(--font-mono); letter-spacing:.06em; }
 .blc-xh line { stroke:var(--bl-border); stroke-dasharray:2 4; } .blc-xh circle { fill:var(--bl-text); }
@@ -5740,7 +5743,7 @@ select.bl-venue-input { cursor:pointer; }
 .bl-layer-back svg { transition:transform var(--duration-fast); }
 .bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
-  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo { animation:none; }
+  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo, .blc-live { animation:none; }
 }
 @media (max-width:768px) {
   /* Mobile = curva vertical (dirección A, sept 2026): el tiempo baja con el

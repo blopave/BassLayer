@@ -258,6 +258,9 @@ async function run(vp) {
     else {
       const box = await page.locator(".blc-stage").boundingBox();
       if (!box || box.x < 0 || box.x + box.width > vp.viewport.width + 1) fail(vp.name, "layer", "la curva se sale de la pantalla");
+      // El tramo del futuro es un riel continuo en fundido, no punteado (sept 2026).
+      const fut = await page.locator(".blc-fut").first().evaluate((el) => { const cs = getComputedStyle(el); return { dash: cs.strokeDasharray, stroke: el.getAttribute("stroke") || "" }; }).catch(() => null);
+      if (!fut || (fut.dash && fut.dash !== "none") || !fut.stroke.startsWith("url(")) fail(vp.name, "layer", `el tramo del futuro no es el riel en fundido (${JSON.stringify(fut)})`);
       const pills = await page.locator(".blc-pill").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map(({ x, y, width: w, height: h }) => ({ x, y, w, h })));
       const clash = pills.some((a, i) => pills.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
       if (clash) fail(vp.name, "layer", "hay cápsulas de la curva pisadas entre sí");
