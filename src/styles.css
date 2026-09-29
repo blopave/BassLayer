@@ -5759,8 +5759,6 @@ select.bl-venue-input { cursor:pointer; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
 .blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
 .blc-ttl { fill:var(--bl-text); font:620 28px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
-.blc-when { fill:var(--bl-text-ter); font:500 10.5px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; }
-.blc-node.is-today .blc-when { fill:var(--bl-text-sec); }
 .blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
 /* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
 .blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }

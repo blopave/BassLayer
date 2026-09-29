@@ -264,12 +264,9 @@ async function run(vp) {
       if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "una cápsula se sale de la pantalla");
       if (vp.viewport.width <= 768) {
         const hits = await page.locator(".blc-hit").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-        const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
+        const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill, .blc-node .blc-when").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
-        // Opción D: debajo de cada título, el momento de la curva ("mar 2020", "hoy").
-        const whens = (await page.locator(".blc-when").allTextContents()).filter((x) => x.trim() && !x.includes("—"));
-        if (whens.length !== 8) fail(vp.name, "layer", `mobile: ${whens.length} secciones con su fecha en la curva (esperaba 8)`);
       }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);

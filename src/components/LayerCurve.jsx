@@ -8,9 +8,8 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // 2026). Recorrer la curva muestra el precio de cada mes.
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
-// izquierda, con toda su franja tocable. Solo títulos, sin datos; debajo, el
-// momento de la curva donde vive ("mar 2020", "hoy"): llena el espacio entre
-// título y curva con la línea de tiempo (opción D, sept 2026).
+// izquierda (28 px), con toda su franja tocable. Solo títulos: sin datos ni
+// fechas (Pablo, sept 2026); la curva arranca donde terminan los títulos.
 // Dirección elegida por Pablo (sept 2026) entre varias maquetas.
 
 // Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
@@ -226,8 +225,7 @@ export function LayerCurve({ news = [], onEnter }) {
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="15" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
-            <text className="blc-ttl" x="16" y={n.cy + 3}>{label}</text>
-            <text className="blc-when" x="17" y={n.cy + 22}>{tk(n.key, "when")}</text>
+            <text className="blc-ttl" x="16" y={n.cy + 10}>{label}</text>
           </g>
         );
       })}
