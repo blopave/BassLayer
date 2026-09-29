@@ -89,11 +89,20 @@ async function run(vp) {
     await page.waitForTimeout(1200); // entrada del home (fade de los mundos)
     await expectNone("home", homeCollisions);
     await expectNone("home", lowContrast);
+    // Superficie porteña (sept 2026): la home cuenta solo CABA + GBA y el
+    // ticker no muestra ciudades del exterior; la agenda arranca en Buenos Aires.
+    const amba = await page.evaluate(() => fetch("/api/events").then((r) => r.json()).then((d) => d.filter((e) => e.area === "amba").length).catch(() => -1));
+    const homeN = Number((await page.locator(".blf-big em").first().textContent().catch(() => "")).replace(/\D/g, "")) || 0;
+    if (amba > 0 && homeN !== amba) fail(vp.name, "home", `la home cuenta ${homeN} eventos y en Buenos Aires hay ${amba}`);
+    const foreign = await page.locator(".blf-tk, [class*=blf-tick]").allTextContents().then((xs) => xs.join(" ").match(/\b(BERL[IÍ]N|IBIZA|LONDRES|BARCELONA|NUEVA YORK|SANTIAGO|CIUDAD DE M[EÉ]XICO|S[AÃ]O PAULO)\b/i)).catch(() => null);
+    if (foreign) fail(vp.name, "home", `el ticker de la home muestra eventos de ${foreign[0]}`);
     await page.getByRole("button", { name: /^Bass —/ }).first().click();
 
     // 2. Feed con eventos
     const firstEvent = page.locator(".bl-ev-open").first();
     await firstEvent.waitFor({ state: "attached", timeout: 30_000 });
+    const where = await page.locator(".bl-ctrl-where .bl-ctrl-select").first().inputValue({ timeout: 3000 }).catch(() => null);
+    if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);
     await page.waitForTimeout(800);

@@ -524,23 +524,74 @@ const GENRE_BLURBS = {
 };
 
 // ─── City detection ──────────────────────────
-const CITY_PATTERNS = [
-  { city: "CABA",     rx: /\b(palermo|recoleta|san telmo|microcentro|belgrano|almagro|caballito|flores|villa crespo|villa urquiza|nuñez|colegiales|barracas|la boca|congreso|abasto|chacarita|constitución|monserrat|retiro|tribunales|costanera|puerto madero)\b/i },
-  { city: "CABA",     rx: /\bbuen(?:os\s)?aires\b(?!.*\bprovincia\b)/i },
-  { city: "Córdoba",  rx: /\bc[oó]rdoba\b/i },
-  { city: "Rosario",  rx: /\brosario\b/i },
-  { city: "Mendoza",  rx: /\bmendoza\b/i },
-  { city: "La Plata", rx: /\bla plata\b/i },
+// Otras ciudades primero: "Belgrano esquina Peredo, Córdoba Capital" es
+// Córdoba aunque nombre un barrio porteño. Pero Córdoba, Mendoza, Rosario y
+// La Plata también son calles de CABA ("Av. Córdoba 5000", "Mendoza 2100"):
+// cuentan como ciudad solo si no vienen tras "av./avenida/calle" ni antes de
+// una altura (sept 2026: RA cargaba La Fabrica Córdoba como CABA).
+const asCity = (name) => new RegExp(`(?<!\\b(?:av|avda|avenida|calle)\\.?\\s)\\b${name}\\b(?!\\s*\\d)`, "i");
+const OTHER_CITIES = [
   { city: "Mar del Plata", rx: /\bmar del plata\b/i },
+  { city: "Córdoba",  rx: asCity("c[oó]rdoba") },
+  { city: "Rosario",  rx: asCity("rosario") },
+  { city: "Mendoza",  rx: asCity("mendoza") },
+  { city: "La Plata", rx: asCity("la plata") },
   { city: "Bariloche", rx: /\bbariloche\b/i },
 ];
+const CABA_PATTERNS = [
+  /\b(palermo|recoleta|san telmo|microcentro|belgrano|almagro|caballito|flores|villa crespo|villa urquiza|nuñez|colegiales|barracas|la boca|congreso|abasto|chacarita|constitución|monserrat|retiro|tribunales|costanera|puerto madero)\b/i,
+  /\bbuen(?:os\s)?aires\b(?!.*\bprovincia\b)/i,
+];
 
-function detectCity(venue, address) {
+// venue/dirección mandan; el título solo desempata cuando no dicen nada
+// ("Boris Brejcha La Fabrica Córdoba" con venue "La Fabrica"). Si nada lo
+// dice, CABA por defecto y marcado como supuesto para cruzarlo con otras
+// fuentes (reconcileGuessedCities).
+function detectCity(venue, address, title = "") {
   const text = `${venue || ""} ${address || ""}`;
-  for (const { city, rx } of CITY_PATTERNS) {
-    if (rx.test(text)) return city;
+  for (const { city, rx } of OTHER_CITIES) if (rx.test(text)) return city;
+  if (CABA_PATTERNS.some((rx) => rx.test(text))) return "CABA";
+  for (const { city, rx } of OTHER_CITIES) if (rx.test(title)) return city;
+  return GUESSED_CABA;
+}
+// Mismo texto que "CABA" pero distinguible por identidad hasta reconciliar.
+const GUESSED_CABA = new String("CABA");
+
+// AMBA = CABA + los 40 municipios del Gran Buenos Aires (y sus localidades
+// más frecuentes en las fuentes). Es la "superficie" de Bass: home, finde y
+// agenda por defecto; el resto del país queda por filtro (Pablo, sept 2026).
+const AMBA = new Set([
+  "caba", "ciudad de buenos aires", "capital federal",
+  "almirante brown", "avellaneda", "berazategui", "berisso", "brandsen", "campana", "canuelas", "ensenada", "escobar",
+  "esteban echeverria", "exaltacion de la cruz", "ezeiza", "florencio varela", "general las heras", "general rodriguez",
+  "general san martin", "hurlingham", "ituzaingo", "jose c. paz", "la matanza", "lanus", "la plata", "lomas de zamora",
+  "lujan", "marcos paz", "malvinas argentinas", "moreno", "merlo", "moron", "pilar", "presidente peron", "quilmes",
+  "san fernando", "san isidro", "san miguel", "san vicente", "tigre", "tres de febrero", "vicente lopez", "zarate",
+  "adrogue", "banfield", "bernal", "bernal oeste", "belen de escobar", "boulogne", "caseros", "castelar", "city bell",
+  "del viso", "don torcuato", "florida", "haedo", "hurlingham", "los cardales", "cardales", "martinez", "munro", "nordelta",
+  "olivos", "ramos mejia", "san justo", "sarandi", "temperley", "tortuguitas", "villa ballester", "wilde", "acassuso",
+  "beccar", "la lucila", "ingeniero maschwitz", "benavidez", "gonzalez catan", "villa adelina", "lomas del mirador",
+]);
+const normPlace = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+const isAmba = (ev) => ev.region === "AR" && (AMBA.has(normPlace(ev.city)) || /\bcardales\b/i.test(ev.address || ""));
+
+// Un show que una fuente ubica sin decir la ciudad (CABA supuesto) y otra
+// fuente ubica explícitamente en otra ciudad el mismo día, con algún artista
+// en común o el mismo venue, es ese show: gana la ciudad explícita.
+function reconcileGuessedCities(events) {
+  const norm = (a) => normPlace(a).replace(/[^a-z0-9]/g, "");
+  const firstWord = (v) => norm(String(v || "").replace(/^(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split(/[ ,@]/)[0]);
+  const explicit = events.filter((e) => e.region === "AR" && e.city !== GUESSED_CABA && e.city && e.city !== "CABA");
+  let fixed = 0;
+  for (const ev of events) {
+    if (ev.city !== GUESSED_CABA) continue;
+    const arts = new Set((ev.artists || []).map(norm).filter((a) => a.length > 2));
+    const hit = explicit.find((o) => o.day === ev.day && o.month === ev.month
+      && ((o.artists || []).some((a) => arts.has(norm(a))) || (firstWord(o.venue) && firstWord(o.venue) === firstWord(ev.venue))));
+    ev.city = hit ? hit.city : "CABA";
+    if (hit) fixed++;
   }
-  return "CABA"; // default for Buenos Aliens / RA Buenos Aires data
+  if (fixed) console.log(`[events] ${fixed} eventos reubicados por cruce de fuentes (no eran de CABA)`);
 }
 
 // ─────────────────────────────────────────────
@@ -1978,7 +2029,7 @@ function mapQHEvent(e) {
   const hh = md[4], mm = md[5];
   const time = (hh === "00" && mm === "00") ? "" : `${hh}:${mm}`;   // T00:00 = hora desconocida, no inventamos
   const venue = (e.venue || "TBA").slice(0, 60);
-  const city = e.city || detectCity(venue, e.address || "") || "";
+  const city = e.city || detectCity(venue, e.address || "", e.title) || "";
   const priceNum = Number(e.min_price);
   return {
     day: md[3],
@@ -2206,7 +2257,7 @@ async function fetchBuenosAliens() {
         name: eventName,
         venue,
         address: fullAddress,
-        city: detectCity(venue, fullAddress),
+        city: detectCity(venue, fullAddress, eventName),
         artists,
         time,
         genre,
@@ -2295,7 +2346,7 @@ function formatRAEvent(ev, areaMeta = { region: "AR" }) {
   // ("todo el país", sin city) la infiere detectCity del area.name
   // (CABA/Córdoba/etc.). Clavamos en la presencia de city, no en la etiqueta
   // de región, para no acoplar la resolución al taxonomía de región.
-  const city = areaMeta.city || detectCity(venueName, fullAddress);
+  const city = areaMeta.city || detectCity(venueName, fullAddress, ev.title || "");
   return {
     day: String(date.getDate()).padStart(2, "0"),
     month: MONTHS_ES[date.getMonth()],
@@ -2892,11 +2943,17 @@ async function buildEvents() {
     if (/^(buenos aires|ciudad de buenos aires|capital federal)$/i.test((ev.city || "").trim())) ev.city = "CABA";
   });
 
+  // Antes del dedup: sin la ciudad correcta, el mismo show de dos fuentes
+  // (RA "La Fabrica" + BA "La Fabrica Arena, Córdoba") no colapsa.
+  reconcileGuessedCities(allEvents);
+
   // Deduplicate (same day+city+venue = same event)
   const deduped = deduplicateEvents(allEvents);
 
   // Limpiar nombres ruidosos de scrapers
   deduped.forEach(ev => { ev.name = cleanEventName(ev.name, ev.source); });
+  // Superficie de Bass: CABA + GBA (AMBA). El front filtra por este campo.
+  deduped.forEach((ev) => { if (isAmba(ev)) ev.area = "amba"; });
 
   // Filter out past events and sort by actual date (handles year boundaries)
   const now = new Date();

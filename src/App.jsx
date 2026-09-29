@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { flushSync } from "react-dom";
 import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
@@ -109,6 +109,8 @@ export default function App() {
   const [newsFilter, setNewsFilter] = useState("All");
   const [newsUpdated, setNewsUpdated] = useState(0);
   const [events, setEvents] = useState([]);
+  // Superficie porteña: la home y el ticker cuentan solo el AMBA (CABA + GBA).
+  const localEvents = useMemo(() => events.filter((e) => e.area === "amba"), [events]);
   // Arrancan en true: el primer paint ya muestra skeletons a altura real. Si
   // empezaran en false, se pintaba el estado vacío y recién después el
   // skeleton, y ese cambio de altura era el mayor CLS de Layer mobile.
@@ -952,10 +954,10 @@ export default function App() {
           {/* En el detalle de evento, el modal aporta su propio h1 — evitamos que coexistan */}
           {selectedEvent ? <p className="bl-sr-only">BassLayer</p> : (
             <h1 className="bl-sr-only">
-              {`BassLayer — Bass: ${events.length} ${events.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
+              {`BassLayer — Bass: ${localEvents.length} ${localEvents.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
             </h1>
           )}
-          <HomeFusion events={events} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
+          <HomeFusion events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
 
         </main>
       </div>
@@ -1009,7 +1011,7 @@ export default function App() {
           {/* Panel 0: BASS */}
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" {...panelInert(0)} ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
-            <LineupTicker events={events} loading={eventsLoading} onSelect={openEvent} />
+            <LineupTicker events={localEvents} loading={eventsLoading} onSelect={openEvent} />
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
             <footer className="bl-terminal-footer">
               <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>

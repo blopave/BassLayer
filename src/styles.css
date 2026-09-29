@@ -5418,7 +5418,9 @@ select.bl-venue-input { cursor:pointer; }
 .blf-dot{ width:7px; height:7px; border-radius:50%; }
 .blf-bass .blf-dot{ background:var(--bl-accent-bass); box-shadow:0 0 10px var(--bl-accent-bass); }
 .blf-layer .blf-dot{ background:var(--bl-accent-layer); box-shadow:0 0 10px var(--bl-accent-layer); }
-.blf-big{ font-weight:800; font-size:clamp(40px,5.4vw,84px); line-height:.86; letter-spacing:-.04em; color:var(--bl-text); }
+.blf-big{ font-weight:800; font-size:clamp(38px,4.6vw,72px); line-height:.86; letter-spacing:-.04em; color:var(--bl-text); }
+/* "en Buenos Aires" es una sola idea: no se parte en dos renglones. */
+.blf-big-l2{ white-space:nowrap; }
 .blf-big em{ font-style:normal; color:var(--bl-accent-bass); }
 .blf-flyrow{ display:flex; gap:10px; margin-top:2px; }
 .blf-layer .blf-flyrow{ justify-content:flex-end; }

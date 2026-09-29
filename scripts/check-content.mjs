@@ -95,6 +95,15 @@ async function checkEndpoint({ path, minItems, required }) {
   if (path === "/api/events") {
     const noShows = items.filter((it) => NOT_A_SHOW_TITLE.test(it?.name || ""));
     if (noShows.length) fail(path, "no-musical", noShows.slice(0, 3).map((it) => it.name).join(" | "));
+
+    // Superficie porteña (sept 2026): lo marcado AMBA no puede decir que es de
+    // otra ciudad del país ("La Fabrica, Córdoba"). "Av. Córdoba 5000" es una
+    // calle de CABA, no la ciudad: por eso el lookbehind y la altura.
+    const otra = /(?<!\b(?:av|avda|avenida|calle)\.?\s)\b(c[oó]rdoba|mendoza|rosario|mar del plata|bariloche)\b(?!\s*\d)/i;
+    const fuera = items.filter((it) => it?.area === "amba" && otra.test(`${it.venue || ""} ${it.address || ""}`));
+    if (fuera.length) fail(path, "amba", `marcados AMBA pero de otra ciudad: ${fuera.slice(0, 3).map((it) => `${it.name} (${it.venue})`).join(" | ")}`);
+    const amba = items.filter((it) => it?.area === "amba").length;
+    if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
   }
 
     // Plantillas sin completar del CMS de origen en títulos ("… [FECHA]").

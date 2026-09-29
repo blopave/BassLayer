@@ -196,7 +196,7 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
             <div className="blf-kick"><span className="blf-dot" /> Bass · {t("home.bass")}</div>
           </div>
           <div className="blf-mid">
-            <div className="blf-big"><em>{eventCount || "—"}</em> {eventCount === 1 ? t("home.evento") : t("home.eventos")}<br />{t("home.enAgenda")}</div>
+            <div className="blf-big"><em>{eventCount || "—"}</em> {eventCount === 1 ? t("home.evento") : t("home.eventos")}<br /><span className="blf-big-l2">{t("home.enAgenda")}</span></div>
             <div className="blf-flyrow">
               {flyers.map((e, i) => (
                 <div className="blf-fcard" key={i} style={{ backgroundImage: `${FCARD_GRADIENT},url('${imgUrl(e.image, 120) || e.artistImage || ""}')` }}>

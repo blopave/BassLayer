@@ -214,10 +214,11 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     club: t("family.club"), live: t("family.live"), festival: t("family.festival"),
     urbano: t("family.urbano"), raiz: t("family.raiz"),
   }), [t]);
-  // Región: filtro primario. Arranca en Argentina para mantener el foco local
-  // — la data global (RA multi-ciudad) queda a un tap sin diluir el default.
-  const REGIONS = [{ label: "Argentina", code: "AR" }, { label: "LatAm", code: "LatAm" }, { label: t("region.world"), code: "World" }];
-  const [regionFilter, setRegionFilter] = useState("AR");
+  // Dónde: BassLayer es de Buenos Aires (Pablo, sept 2026). La agenda arranca
+  // en el AMBA (CABA + GBA, campo `area` del server) y el resto del país queda
+  // a un filtro. Lo del exterior no se lista: alimenta "Los que vienen".
+  const REGIONS = [{ label: t("region.ba"), code: "amba" }, { label: "Argentina", code: "AR" }];
+  const [regionFilter, setRegionFilter] = useState("amba");
   const [cityFilter, setCityFilter] = useState("Todas");
   // "" | "hoy" | "finde" — filtro temporal; el deep link (/eventos/hoy,
   // /eventos/este-finde) lo presetea vía prop. Va por efecto y no por estado
@@ -291,14 +292,14 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Eventos de la región activa. Festivales quedan fuera del filtro de región
   // (son curados aparte y viven en su propia sección).
   const regionEvents = useMemo(
-    () => events.filter(e => (e.region || "AR") === regionFilter),
+    () => events.filter((e) => (regionFilter === "amba" ? e.area === "amba" : (e.region || "AR") === "AR")),
     [events, regionFilter]
   );
 
   // Qué regiones tienen eventos (para no mostrar chips vacíos)
   const availableRegions = useMemo(() => {
-    const set = new Set(events.map(e => e.region || "AR"));
-    return REGIONS.filter(r => set.has(r.code));
+    const has = { amba: events.some((e) => e.area === "amba"), AR: events.some((e) => (e.region || "AR") === "AR") };
+    return REGIONS.filter((r) => has[r.code]);
   }, [events]);
 
   // Ciudades disponibles dentro de la región activa
@@ -444,8 +445,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   // Cuántos filtros hay puestos. Va como contador en el disparador para que el
   // estado siga siendo visible con el sheet cerrado.
-  const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "AR" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
-  const clearFilters = () => { setWhen(""); changeRegion("AR"); };
+  const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "amba" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
+  const clearFilters = () => { setWhen(""); changeRegion("amba"); };
 
   let itemIdx = 0;
 
