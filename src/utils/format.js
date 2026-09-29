@@ -13,3 +13,10 @@ export function formatMarketCap(n) {
 export function noOrphanSep(name) {
   return String(name || "").replace(/ · /g, "\u00A0· ");
 }
+
+// Venue limpio: sin el prefijo "TBA - " de RA y recortado antes de la coma
+// ("Grand Hall, La Plata" → "Grand Hall"). Ticker y "De gira".
+export function cleanVenue(v) {
+  if (!v) return "";
+  return String(v).replace(/^\s*(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split(",")[0].trim();
+}

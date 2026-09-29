@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { T } from "../utils/layer";
 
 // "¿Para dónde va?" (idea de Pablo, sept 2026): desde hoy salen caminos
-// posibles del precio hasta la última sección. No son predicciones: cada
+// posibles del precio hasta el próximo halving. No son predicciones: cada
 // camino es una caminata aleatoria mensual con la volatilidad REAL de BTC
 // (desvío de los retornos log de los últimos 48 meses de la misma serie que
 // dibuja la curva) y deriva cero, para no sugerir suba ni baja. Se redibujan
 // de a uno, como posibilidades que se recalculan; quietos con reduced-motion
-// y en pausa con la pestaña oculta.
+// y en pausa cuando no se ven (fuera de pantalla, otro panel o pestaña oculta). Nada del abanico interactúa: la
+// navegación sigue siendo de las secciones.
 
 const N = 32;
 const EVERY_MS = 520;
@@ -40,27 +41,35 @@ function makePath(from, until, last, sd, toPoint, fresh) {
   return { id: ++seq, fresh, len, d: "M" + pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("L") };
 }
 
-export function FutureFan({ H, until, toPoint, clip, fade, id }) {
+// memo: el padre re-renderiza en cada hover de sección; el abanico no cambia.
+export const FutureFan = memo(function FutureFan({ H, until, toPoint, clip, fade, id, label }) {
   const last = H[H.length - 1].p;
   const from = T(H[H.length - 1].t);
   const sd = useMemo(() => volatility(H), [H]);
-  const build = (fresh) => makePath(from, until, last, sd, toPoint, fresh);
-  const [paths, setPaths] = useState(() => Array.from({ length: N }, () => build(false)));
-
-  // Si cambia la geometría (resize, otra orientación), se recalculan todos.
-  useEffect(() => { setPaths(Array.from({ length: N }, () => build(false))); }, [toPoint]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ref = useRef(null);
+  const [paths, setPaths] = useState([]);
 
   useEffect(() => {
+    const build = (fresh) => makePath(from, until, last, sd, toPoint, fresh);
+    // Si cambia la geometría (resize, otra orientación), se recalculan todos.
+    setPaths(Array.from({ length: N }, () => build(false)));
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    // Solo se anima mientras se ve: fuera de pantalla o con Layer oculto no gasta.
+    let visible = false;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
+    const svg = ref.current?.ownerSVGElement; // el <g> arranca vacío: se observa el gráfico
+    if (svg) io.observe(svg);
     const iv = setInterval(() => {
-      if (document.hidden) return;
+      if (!visible || document.hidden) return;
       setPaths((prev) => [...prev.slice(1), build(true)]);
     }, EVERY_MS);
-    return () => clearInterval(iv);
-  }, [toPoint]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { clearInterval(iv); io.disconnect(); };
+  }, [from, until, last, sd, toPoint]);
 
   return (
-    <g className="blc-fan" aria-hidden="true">
+    // La aclaración (caminos simulados, no predicciones) va como etiqueta
+    // accesible; en pantalla solo queda la anotación de escala.
+    <g className="blc-fan" role="img" aria-label={label} ref={ref}>
       <defs>
         <clipPath id={`${id}-clip`}><rect x={clip.x} y={clip.y} width={clip.w} height={clip.h} /></clipPath>
         <linearGradient id={`${id}-fade`} gradientUnits="userSpaceOnUse" x1={fade.x1} y1={fade.y1} x2={fade.x2} y2={fade.y2}>
@@ -77,4 +86,4 @@ export function FutureFan({ H, until, toPoint, clip, fade, id }) {
       </g>
     </g>
   );
-}
+});

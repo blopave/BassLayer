@@ -2,6 +2,7 @@ import { tickerItemA11y } from "../utils/constants";
 import { memo, useMemo, useState, useEffect } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, getEventDate } from "../i18n/strings";
+import { cleanVenue } from "../utils/format";
 
 // Marquesina de line-ups — hermano del PriceTicker de Layer.
 // Barre los artistas que tocan en los próximos días (venue + badge vivo),
@@ -13,11 +14,6 @@ function realArtists(ev) {
   return (ev.artists || []).filter((a) => a && !/^\s*(artists\s+)?tba\s*$/i.test(a));
 }
 
-// Venue limpio — saca prefijos "TBA - " y recorta a lo esencial (antes de la coma).
-function cleanVenue(v) {
-  if (!v) return "";
-  return v.replace(/^\s*tba\s*[-–]\s*/i, "").split(",")[0].trim();
-}
 
 // Badge de tiempo del evento. Depende de "ahora", por eso se calcula en render
 // (no en el memo): así el tick de cada minuto refresca los countdown "en Xh/Xm".

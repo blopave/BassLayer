@@ -34,8 +34,7 @@ const NODES = [
 ];
 
 // Mobile vertical: margen arriba, alto de cada franja, tramo del abanico
-// (hoy → halving) y pie (eje de precios). El alto total
-// (VT + 7·VGAP + VFAN + VB) es el de .blc-stage en styles.css.
+// (hoy → halving) y pie (eje de precios). El alto del gráfico sale de acá.
 const VT = 48, VGAP = 92, VFAN = 230, VB = 84;
 
 // Interpolación por tramos: [[t, pos], …] → pos(t).
@@ -138,7 +137,7 @@ export function LayerCurve({ news = [], onEnter }) {
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
       const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]) }));
       const pxDec = (x1 - x0) / (Math.log10(250000) - 2);
-      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
+      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
     }
 
     const Hh = size.h, L = 64, R = 60, TOP = 120, BOT = 46;
@@ -183,11 +182,14 @@ export function LayerCurve({ news = [], onEnter }) {
   const name = (k) => t(SECTION_LABEL[k]);
   // Fechas de las secciones ancladas a hitos: salen de los datos, no de strings.
   const dateOf = { ciclos: cyc?.keyDates?.peak };
-  const halvingLabel = cyc?.keyDates?.nextHalving ? monthLabel(cyc.keyDates.nextHalving, locale) : "—";
-  const tk = (k, f) => t(`curve.${k}.${f}`, { date: dateOf[k] ? monthLabel(dateOf[k], locale) : "—" });
+  const tk = (k, f) => {
+    // El "cuándo" de una sección anclada a un mes sale del dato, no de un texto.
+    const at = NODES.find((n) => n.key === k)?.at;
+    if (f === "when" && /^\d{4}-\d{2}$/.test(at || "") && k !== "historia") return monthLabel(at, locale);
+    return t(`curve.${k}.${f}`, { date: dateOf[k] ? monthLabel(dateOf[k], locale) : "—" });
+  };
 
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
-  // Tocar o hacer click entra directo; la vista previa es solo el hover de desktop.
 
   // Vista previa (hover de desktop): qué hay en la sección, su dato vivo y
   // por qué vive en ese punto de la curva.
@@ -216,7 +218,7 @@ export function LayerCurve({ news = [], onEnter }) {
   );
 
   // Mobile: la curva vertical. Cada sección es una franja entera tocable con
-  // su título grande a la izquierda y una guía hasta su punto en la curva.
+  // su título grande a la izquierda, alineado con su punto en la curva.
   const vertical = geo?.V && (
     <svg className="blc-v" viewBox={`0 0 ${geo.W} ${geo.Hh}`} role="img" aria-label={t("curve.chartAria")}>
       <defs>
@@ -234,11 +236,11 @@ export function LayerCurve({ news = [], onEnter }) {
         <mask id="blc-amv" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amgv)" /></mask>
       </defs>
       <path className="blc-area" mask="url(#blc-amv)" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
-      <FutureFan id="blc-fanv" H={H} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 22} textAnchor="end">{t("curve.fanEnd", { date: halvingLabel })} · {t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+      <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
+      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 22} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       <g className="blc-ms">
-        {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) < geo.nodes[5].tt).map((x) => (
+        {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) <= geo.TODAY).map((x) => (
           <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
         ))}
       </g>
@@ -275,6 +277,7 @@ export function LayerCurve({ news = [], onEnter }) {
       <h1 className="bl-sr-only">{t("curve.title")}</h1>
       <div
         className={`blc-stage${geo ? " is-ready" : ""}`}
+        style={geo?.V ? { height: geo.Hh } : undefined}
         ref={stageRef}
       >
         {geo?.V && vertical}
@@ -296,23 +299,13 @@ export function LayerCurve({ news = [], onEnter }) {
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
-            <FutureFan id="blc-fan" H={H} {...fan} />
+            <FutureFan id="blc-fan" H={H} label={t("curve.fanAria")} {...fan} />
             <g clipPath="url(#blc-cp)">
               <path className="blc-area" mask="url(#blc-am)" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
-            {/* La pregunta del abanico y su respuesta de mercado (Predicciones). */}
-            {/* El abanico en lenguaje de gráfico: dónde termina y a qué escala. */}
-            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.Hh - geo.BOT - 10} textAnchor="end">{t("curve.fanEnd", { date: halvingLabel })}</text>
+            {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
             <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.TOP - 96} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
-            {/* La pregunta: una línea, una aclaración humana y la acción. */}
-            <g className="blc-ask">
-              <text className="blc-ask-q" x={geo.xt + 28} y={geo.Hh - geo.BOT - 62}>{t("curve.fanAsk")}</text>
-              <text className="blc-ask-s" x={geo.xt + 28} y={geo.Hh - geo.BOT - 40}>{t("curve.fanNote")}</text>
-              <text className="blc-ask-l" x={geo.xt + 28} y={geo.Hh - geo.BOT - 14} role="link" tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); onEnter("predicciones"); }}
-                onKeyDown={(e) => e.key === "Enter" && onEnter("predicciones")}>{t("curve.fanLink")}</text>
-            </g>
             <g className="blc-ms">
               {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
                 const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
@@ -337,8 +330,8 @@ export function LayerCurve({ news = [], onEnter }) {
                   tabIndex={0}
                   role="button"
                   aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
-                  onMouseEnter={() => !mobile && show(i)}
-                  onMouseLeave={() => !mobile && hideSoon()}
+                  onMouseEnter={() => show(i)}
+                  onMouseLeave={hideSoon}
                   onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(i)}
                   onClick={(e) => { e.stopPropagation(); onEnter(NODES[i].key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
@@ -361,13 +354,6 @@ export function LayerCurve({ news = [], onEnter }) {
         {!geo && <div className="blc-skel" aria-hidden="true" />}
         {!mobile && preview}
       </div>
-      {/* Mobile: la pregunta del abanico va debajo del gráfico, no bajo un título. */}
-      {geo?.V && (
-        <p className="blc-ask-m">
-          <b>{t("curve.fanAsk")}</b> {t("curve.fanNote")}{" "}
-          <button type="button" onClick={() => onEnter("predicciones")}>{t("curve.fanLink")}</button>
-        </p>
-      )}
     </section>
   );
 }

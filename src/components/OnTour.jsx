@@ -2,49 +2,14 @@ import { useMemo, useState } from "react";
 import { BlThumb } from "./BlThumb";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, MONTHS_ABBR, getEventDate } from "../i18n/strings";
+import { cleanArtists } from "../utils/artists";
+import { cleanVenue } from "../utils/format";
+import { computeTours } from "../../lib/tours.js";
 import { noOrphanSep } from "../utils/format";
 
 // "De gira" (sept 2026): BassLayer es de Buenos Aires y lo del exterior no se
 // lista en la agenda; entra acá, como la ruta de artistas que pasan por la
-// ciudad. Un show AMBA aparece si alguien de su line-up toca afuera dentro de
-// ±45 días. Todo sale de fechas publicadas en nuestras fuentes (RA, Buenos
-// Aliens, QuéHacemos): no se infiere nacionalidad ni se inventan paradas.
-
-const WINDOW_DAYS = 45;
-const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
-
-function useTours(events) {
-  return useMemo(() => {
-    const byArtist = new Map();
-    for (const ev of events) {
-      if (ev.region === "AR") continue;
-      const date = getEventDate(ev);
-      if (!date) continue;
-      for (const a of ev.artists || []) {
-        const n = norm(a);
-        if (n.length < 4) continue;
-        if (!byArtist.has(n)) byArtist.set(n, []);
-        byArtist.get(n).push({ city: ev.city, date });
-      }
-    }
-    const now = Date.now() - 6 * 3600000;
-    const tours = [];
-    for (const ev of events) {
-      if (ev.area !== "amba") continue;
-      const date = getEventDate(ev);
-      if (!date || date.getTime() < now) continue;
-      const on = (ev.artists || []).filter((a) => byArtist.has(norm(a)));
-      if (!on.length) continue;
-      const near = on.flatMap((a) => byArtist.get(norm(a)))
-        .filter((s) => Math.abs(s.date - date) <= WINDOW_DAYS * 86400000);
-      if (!near.length) continue;
-      const stops = [...new Map(near.map((s) => [`${s.city}|${s.date.toDateString()}`, s])).values()]
-        .sort((a, b) => a.date - b.date).slice(0, 3);
-      tours.push({ ev, date, on, stops });
-    }
-    return tours.sort((a, b) => a.date - b.date);
-  }, [events]);
-}
+// ciudad. El cálculo vive en lib/tours.js (lo comparte el smoke).
 
 function Route({ tour, t, M }) {
   const short = (d) => `${d.getDate()} ${M[d.getMonth()].toLowerCase()}`;
@@ -65,13 +30,12 @@ function Route({ tour, t, M }) {
 
 export function OnTour({ events, onSelect }) {
   const { t, locale } = useLocale();
-  const tours = useTours(events);
+  const tours = useMemo(() => computeTours(events, { dateOf: getEventDate, clean: cleanArtists }), [events]);
   const [all, setAll] = useState(false);
   if (!tours.length) return null;
   const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
   const M = MONTHS_ABBR[locale] || MONTHS_ABBR.es;
-  const venue = (ev) => String(ev.venue || "").replace(/^(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split(",")[0];
-  const who = (tour) => tour.on.length > 2 ? `${tour.on.slice(0, 2).join(" · ")}` : tour.on.join(" · ");
+  const venue = (ev) => cleanVenue(ev.venue);
 
   return (
     <section className="bl-hero bl-tour" aria-label={t("tour.title")}>
@@ -93,7 +57,7 @@ export function OnTour({ events, onSelect }) {
               <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName}
                 poster={{ text: tour.on[0], family: ev.family }} width={320} />
               <span className="bl-tour-body">
-                <span className="bl-tour-who">{noOrphanSep(who(tour))}{tour.on.length > 2 && <small>{t("tour.more", { n: tour.on.length - 2 })}</small>}</span>
+                <span className="bl-tour-who">{noOrphanSep(tour.on.slice(0, 2).join(" · "))}{tour.on.length > 2 && <small>{t("tour.more", { n: tour.on.length - 2 })}</small>}</span>
                 <span className="bl-tour-meta bl-bass-t-label"><b>{(dayNames[date.getDay()] || "").slice(0, 3)} {date.getDate()} {M[date.getMonth()]}</b> · {venue(ev)}</span>
                 <Route tour={tour} t={t} M={M} />
               </span>

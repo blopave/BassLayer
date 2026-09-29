@@ -217,7 +217,7 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
             {bassTicker.length >= 3 && (
               <div className="blf-marq" aria-hidden="true"><div className="blf-marq-track">
                 {[...bassTicker, ...bassTicker].map((it, i) => (
-                  <span className="blf-tk" key={i}><b>{it.time}</b> {it.act} <i>{it.venue}{it.city ? ` · ${it.city}` : ""}</i></span>
+                  <span className="blf-tk" key={i} data-city={it.city}><b>{it.time}</b> {it.act} <i>{it.venue}{it.city ? ` · ${it.city}` : ""}</i></span>
                 ))}
               </div></div>
             )}

@@ -86,18 +86,18 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
   const filtered = filter === "All" ? news : news.filter((n) => n.tag === filter);
 
   const listRef = useScrollReveal(loading, section);
-  // Desde la curva o el índice: cambia de sección y lleva la vista al
-  // comienzo del contenido ("← Volver a la curva", justo antes de las pestañas).
+  // Desde la curva: cambia de sección y lleva la vista a la barra de sección
+  // (flecha para volver + pestañas).
   const backRef = useRef(null);
-  const goSection = (key, behavior = "smooth") => {
+  const goSection = (key) => {
     setSection(key);
-    requestAnimationFrame(() => backRef.current?.scrollIntoView({ block: "start", behavior }));
+    requestAnimationFrame(() => backRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
   };
 
   // Portada: la curva de Bitcoin como mapa de secciones. Al entrar a una
   // sección se ve Layer como siempre, con "← Volver a la curva" arriba.
   if (section === "portada") {
-    return <LayerCurve news={news} onEnter={(key) => goSection(key, "auto")} />;
+    return <LayerCurve news={news} onEnter={goSection} />;
   }
 
   return (

@@ -217,8 +217,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   }), [t]);
   // Dónde: BassLayer es de Buenos Aires (Pablo, sept 2026). La agenda arranca
   // en el AMBA (CABA + GBA, campo `area` del server) y el resto del país queda
-  // a un filtro. Lo del exterior no se lista: alimenta "Los que vienen".
+  // a un filtro. Lo del exterior no se lista: alimenta "De gira" (OnTour).
   const REGIONS = [{ label: t("region.ba"), code: "amba" }, { label: "Argentina", code: "AR" }];
+  const IN_REGION = { amba: (e) => e.area === "amba", AR: (e) => (e.region || "AR") === "AR" };
   const [regionFilter, setRegionFilter] = useState("amba");
   const [cityFilter, setCityFilter] = useState("Todas");
   // "" | "hoy" | "finde" — filtro temporal; el deep link (/eventos/hoy,
@@ -293,14 +294,13 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Eventos de la región activa. Festivales quedan fuera del filtro de región
   // (son curados aparte y viven en su propia sección).
   const regionEvents = useMemo(
-    () => events.filter((e) => (regionFilter === "amba" ? e.area === "amba" : (e.region || "AR") === "AR")),
+    () => events.filter(IN_REGION[regionFilter]),
     [events, regionFilter]
   );
 
   // Qué regiones tienen eventos (para no mostrar chips vacíos)
   const availableRegions = useMemo(() => {
-    const has = { amba: events.some((e) => e.area === "amba"), AR: events.some((e) => (e.region || "AR") === "AR") };
-    return REGIONS.filter((r) => has[r.code]);
+    return REGIONS.filter((r) => events.some(IN_REGION[r.code]));
   }, [events]);
 
   // Ciudades disponibles dentro de la región activa

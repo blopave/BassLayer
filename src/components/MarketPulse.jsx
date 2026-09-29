@@ -1,5 +1,5 @@
 import { useEffect, useState, Suspense } from "react";
-import { api } from "../utils/api";
+import { api, shared } from "../utils/api";
 import { lazyNamed } from "../utils/lazy";
 import { useLocale } from "../hooks/useLocale";
 import { formatMarketCap } from "../utils/format";
@@ -37,10 +37,14 @@ function reading(d, t) {
   return { text: text.charAt(0).toUpperCase() + text.slice(1), flag, tone: mc <= -0.5 ? "down" : mc >= 0.5 ? "up" : "" };
 }
 
+const fetchDashboard = () => shared("dashboard", api.dashboard, 5 * 60_000);
+const fetchDolar = () => shared("dolar", api.dolar, 5 * 60_000);
+
 export function MarketPulse() {
   const { t, locale } = useLocale();
-  const [dash, dashPending] = useEvery5m(api.dashboard);
-  const [dolar] = useEvery5m(api.dolar);
+  // shared(): volver de la curva a una sección no vuelve a pedir lo mismo.
+  const [dash, dashPending] = useEvery5m(fetchDashboard);
+  const [dolar] = useEvery5m(fetchDolar);
   const [open, setOpen] = useState(false);       // mobile: tira desplegada
   const [usdt, setUsdt] = useState(false);       // tabla USDT/ARS por exchange
   const [selected, setSelected] = useState(null);
