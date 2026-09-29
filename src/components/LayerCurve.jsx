@@ -8,7 +8,9 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // 2026). Recorrer la curva muestra el precio de cada mes.
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
-// izquierda, con toda su franja tocable. Solo títulos, sin datos.
+// izquierda, con toda su franja tocable. Solo títulos, sin datos; debajo, el
+// momento de la curva donde vive ("mar 2020", "hoy"): llena el espacio entre
+// título y curva con la línea de tiempo (opción D, sept 2026).
 // Dirección elegida por Pablo (sept 2026) entre varias maquetas.
 
 // Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
@@ -118,8 +120,8 @@ export function LayerCurve({ news = [], onEnter }) {
     if (mobile) {
       // Vertical: el tiempo baja (una franja de VGAP por sección) y el precio
       // (log, $100 → $250k: la curva arranca en 2013, cuando BTC pasó los $100)
-      // ocupa la mitad derecha; la izquierda es de los títulos.
-      const Hh = VT + 7 * VGAP + VB, x0 = Math.round(W * 0.5), x1 = W - 22;
+      // arranca al 45% del ancho, donde terminan los títulos de 28 px.
+      const Hh = VT + 7 * VGAP + VB, x0 = Math.round(W * 0.45), x1 = W - 22;
       const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [END, VT + 7 * VGAP + 46]]);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
       const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]) }));
@@ -209,7 +211,6 @@ export function LayerCurve({ news = [], onEnter }) {
       </g>
       {geo.nodes.map((n, i) => {
         const label = name(n.key);
-        const lx = 16 + label.length * 13.5 + 12;
         return (
           <g
             key={n.key}
@@ -222,11 +223,11 @@ export function LayerCurve({ news = [], onEnter }) {
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
             <rect className="blc-hit" x="0" y={n.cy - VGAP / 2} width={geo.W} height={VGAP} />
-            {n.cx - 16 > lx + 8 && <line className="blc-lead" x1={lx} x2={n.cx - 16} y1={n.cy} y2={n.cy} />}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="15" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
-            <text className="blc-ttl" x="16" y={n.cy + 9}>{label}</text>
+            <text className="blc-ttl" x="16" y={n.cy + 3}>{label}</text>
+            <text className="blc-when" x="17" y={n.cy + 22}>{tk(n.key, "when")}</text>
           </g>
         );
       })}

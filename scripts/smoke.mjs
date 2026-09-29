@@ -94,7 +94,8 @@ async function run(vp) {
     const amba = await page.evaluate(() => fetch("/api/events").then((r) => r.json()).then((d) => d.filter((e) => e.area === "amba").length).catch(() => -1));
     const homeN = Number((await page.locator(".blf-big em").first().textContent().catch(() => "")).replace(/\D/g, "")) || 0;
     if (amba > 0 && homeN !== amba) fail(vp.name, "home", `la home cuenta ${homeN} eventos y en Buenos Aires hay ${amba}`);
-    const foreign = await page.locator(".blf-tk, [class*=blf-tick]").allTextContents().then((xs) => xs.join(" ").match(/\b(BERL[IÍ]N|IBIZA|LONDRES|BARCELONA|NUEVA YORK|SANTIAGO|CIUDAD DE M[EÉ]XICO|S[AÃ]O PAULO)\b/i)).catch(() => null);
+    // Solo la ciudad (lo que sigue al último " · "): "Café Berlín" es un venue de CABA.
+    const foreign = await page.locator(".blf-tk i").allTextContents().then((xs) => xs.map((x) => x.split(" · ").pop()).join(" | ").match(/\b(BERL[IÍ]N|IBIZA|LONDRES|BARCELONA|NUEVA YORK|SANTIAGO|CIUDAD DE M[EÉ]XICO|S[AÃ]O PAULO)\b/i)).catch(() => null);
     if (foreign) fail(vp.name, "home", `el ticker de la home muestra eventos de ${foreign[0]}`);
     await page.getByRole("button", { name: /^Bass —/ }).first().click();
 
@@ -266,6 +267,9 @@ async function run(vp) {
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
+        // Opción D: debajo de cada título, el momento de la curva ("mar 2020", "hoy").
+        const whens = (await page.locator(".blc-when").allTextContents()).filter((x) => x.trim() && !x.includes("—"));
+        if (whens.length !== 8) fail(vp.name, "layer", `mobile: ${whens.length} secciones con su fecha en la curva (esperaba 8)`);
       }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);
