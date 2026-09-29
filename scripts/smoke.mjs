@@ -269,6 +269,9 @@ async function run(vp) {
         await page.mouse.move(2, 2);
       }
       // ¿Para dónde va? (sept 2026): el futuro son caminos simulados, no una línea.
+      // Todas las secciones viven en el pasado de la curva: hoy (Noticias) es la
+      // última y el abanico se abre sin secciones adentro.
+      if (!(await page.locator(".blc-node").last().evaluate((el) => el.classList.contains("is-today")).catch(() => false))) fail(vp.name, "layer", "hay secciones después de hoy, adentro del abanico");
       const walks = await page.locator(".blc-fan .blc-walk").count();
       if (walks < 20) fail(vp.name, "layer", `el futuro tiene ${walks} caminos simulados (esperaba ≥20)`);
       if (await page.locator(".blc-proj").count()) fail(vp.name, "layer", "volvió la línea punteada del futuro");
