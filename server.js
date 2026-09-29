@@ -1844,7 +1844,9 @@ async function mbClassify(name) {
 //  cursor de fecha porque una ventana ancha satura con el día más cercano.
 // ─────────────────────────────────────────────
 
-const QH_API = "https://api.quehacemos.com.ar/api/v1/events";
+// Con la barra final: sin ella la API redirige https → http → https (sept
+// 2026) y el salto por http a veces falla, dejando la agenda sin QuéHacemos.
+const QH_API = "https://api.quehacemos.com.ar/api/v1/events/";
 // "fiesta" excluido a propósito: mezcla fiestas electrónicas (ya cubiertas por
 // RA/BA/electronica) con eventos privados (cumpleaños, "sweet 16") = ruido.
 const QH_MUSIC_TYPES = new Set(["recital", "electronica", "festival", "cuarteto"]);
@@ -2337,7 +2339,8 @@ function extractRATime(t) {
 
 function formatRAEvent(ev, areaMeta = { region: "AR" }) {
   const date = new Date(ev.date);
-  const artists = (ev.artists || []).map(a => a.name);
+  // RA desambigua homónimos con " (2)": en pantalla es ruido y rompe el cruce entre fuentes.
+  const artists = (ev.artists || []).map(a => String(a.name || "").replace(/\s*\(\d+\)$/, ""));
   const venueName = (ev.venue?.name || "TBA").slice(0, 50);
   const areaName = ev.venue?.area?.name || "";
   const genre = detectGenre((ev.title || "") + " " + artists.join(" "));

@@ -102,6 +102,24 @@ async function run(vp) {
     const firstEvent = page.locator(".bl-ev-open").first();
     await firstEvent.waitFor({ state: "attached", timeout: 30_000 });
     const where = await page.locator(".bl-ctrl-where .bl-ctrl-select").first().inputValue({ timeout: 3000 }).catch(() => null);
+    // De gira (sept 2026): si hay giras, cada tarjeta marca la parada en BA y
+    // tocarla abre la ficha del show porteño.
+    const tourCards = await page.locator(".bl-tour-card").count();
+    // ¿Los datos traen giras? (artista de un show AMBA futuro con fecha afuera)
+    const toursInData = await page.evaluate(() => fetch("/api/events").then((r) => r.json()).then((d) => {
+      const n = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const out = new Set(d.filter((e) => e.region !== "AR").flatMap((e) => (e.artists || []).map(n)).filter((a) => a.length > 3));
+      return d.some((e) => e.area === "amba" && (e.artists || []).some((a) => out.has(n(a))));
+    }).catch(() => false));
+    if (toursInData && !tourCards) fail(vp.name, "de gira", "hay artistas de gira en los datos y el bloque no aparece");
+    if (tourCards) {
+      if (!(await page.locator(".bl-tour-card").first().locator(".bl-tour-stop.is-here").count())) fail(vp.name, "de gira", "la tarjeta no marca la parada en Buenos Aires");
+      await page.locator(".bl-tour-card").first().click();
+      const tourModal = await page.locator('.bl-modal-overlay[role="dialog"]').waitFor({ state: "visible", timeout: 8_000 }).then(() => true).catch(() => false);
+      if (!tourModal) fail(vp.name, "de gira", "tocar una gira no abre la ficha del show");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+    }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);
@@ -212,6 +230,15 @@ async function run(vp) {
     if (!toastOk) fail(vp.name, "deep-link", "un evento inexistente no muestra aviso");
     if (new URL(page.url()).pathname !== "/") fail(vp.name, "deep-link", `la URL rota queda en la barra (${new URL(page.url()).pathname})`);
 
+    // 5d. Festivales: Buenos Aires arriba, el mundo abajo (sept 2026).
+    await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: /^Bass —/ }).first().click().catch(() => {});
+    await page.locator(".bl-bass-section-btn").filter({ hasText: /Festival/ }).first().click().catch(() => {});
+    await page.locator(".bl-fest-k").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+    const festHeads = await page.locator(".bl-fest-k").allTextContents();
+    if (!festHeads.length) fail(vp.name, "festivales", "sin bloques Buenos Aires / mundo");
+    else if (festHeads.length > 1 && !/buenos aires/i.test(festHeads[0])) fail(vp.name, "festivales", `el primer bloque es "${festHeads[0]}", no Buenos Aires`);
+
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
@@ -268,6 +295,14 @@ async function run(vp) {
         await page.locator(".blh-list button").nth(3).click();
         if (!(await page.locator(".blh-card").isVisible().catch(() => false))) fail(vp.name, "historia", "tocar un hecho no muestra su tarjeta");
       }
+      // Eventos cripto: primero lo de Buenos Aires, después las conferencias del mundo.
+      await page.locator(".bl-layer-back").click();
+      await page.waitForTimeout(500);
+      await page.locator(".blc-node").filter({ hasText: /Eventos|Events/ }).first().locator(".blc-pill, .blc-hit").click();
+      await page.locator(".bl-cirl-k").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      const cirlHeads = await page.locator(".bl-cirl-k").allTextContents();
+      if (!cirlHeads.length && (await page.locator(".bl-cirl-item").count())) fail(vp.name, "eventos cripto", "sin bloques Buenos Aires / mundo");
+      if (cirlHeads.length > 1 && !/buenos aires/i.test(cirlHeads[0])) fail(vp.name, "eventos cripto", `el primer bloque es "${cirlHeads[0]}", no Buenos Aires`);
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
     }
@@ -283,7 +318,7 @@ async function run(vp) {
     await expectNone("agenda día", lowContrast);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-dia.png` });
   } catch (e) {
-    fail(vp.name, "flujo", e.message.split("\n")[0]);
+    fail(vp.name, "flujo", e.message.split("\n").slice(0, 3).join(" ").replace(/\s+/g, " ").slice(0, 220));
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-error.png` }).catch(() => {});
   } finally {
     await browser.close();

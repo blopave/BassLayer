@@ -4,6 +4,11 @@ import { CryptoEventModal } from "./CryptoEventModal";
 import { useLocale } from "../hooks/useLocale";
 import { formatShortDateLocale, sourceLabel } from "../i18n/strings";
 
+// Buenos Aires = CABA + GBA: la ubicación es texto libre de cada fuente.
+const BA_PLACE = /\b(buenos aires|caba|capital federal|palermo|belgrano|recoleta|san telmo|puerto madero|costa salguero|olivos|vicente l[oó]pez|san isidro|tigre|nordelta|la plata|quilmes|avellaneda|lan[uú]s|mor[oó]n|pilar)\b/i;
+const NOT_AMBA = /\b(mar del plata|bah[ií]a blanca|tandil|necochea|pinamar)\b/i;
+const isBA = (i) => BA_PLACE.test(i.location || "") && !NOT_AMBA.test(i.location || "");
+
 export function CryptoIRL() {
   const { t, locale } = useLocale();
   const [tab, setTab] = useState("events");
@@ -169,7 +174,13 @@ export function CryptoIRL() {
             {tab === "events" ? t("cirl.empty.events") : t("cirl.empty.courses")}
           </div>
         ) : (
-          items.map((item, idx) => {
+          // Eventos: Buenos Aires arriba y las conferencias del mundo abajo,
+          // rotulados (sept 2026). Los cursos son todos locales.
+          (tab === "events" ? [[t("cirl.inBA"), items.filter(isBA)], [t("cirl.inWorld"), items.filter((i) => !isBA(i))]] : [[null, items]])
+          .filter(([, group]) => group.length).map(([label, group]) => (
+          <div className="bl-cirl-group" key={label || "all"}>
+          {label && <div className={`bl-cirl-k${group[0] && isBA(group[0]) ? " is-here" : ""}`}>{label}</div>}
+          {group.map((item, idx) => {
             const src = sourceLabel(item.source, t);
             return (
             <div
@@ -195,7 +206,9 @@ export function CryptoIRL() {
               </div>
             </div>
             );
-          })
+          })}
+          </div>
+          ))
         )}
       </div>
 

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bass — De gira + Buenos Aires primero</title>
+<style>
+  @font-face { font-family: "Geist"; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root {
+    --bg: #151210; --surface: #1d1916; --raise: #241f1b; --border: #332b25; --border-sub: #262019;
+    --text: #EDE6DF; --sec: #A3968A; --ter: #6E6258; --acc: #C4906E; --layer: #6CB8C8;
+    --sans: "Geist", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0b0908; color: var(--text); font-family: var(--sans); }
+  .top { padding: 14px 24px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); }
+  .top b { color: var(--acc); }
+  .opt { display: flex; gap: 26px; align-items: flex-start; justify-content: center; padding: 22px 16px 10px; }
+  .cap { width: 240px; padding-top: 4px; }
+  .cap h2 { margin: 0 0 8px; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  .cap h2 span { color: var(--acc); }
+  .cap p, .cap li { font-size: 13px; line-height: 1.5; color: var(--sec); margin: 0 0 8px; }
+  .cap ul { padding-left: 16px; margin: 0; }
+  hr.sep { border: 0; border-top: 1px dashed #2a231e; margin: 16px 40px; }
+  .wrap { position: relative; margin-top: 18px; }
+  .tag { position: absolute; top: -18px; left: 0; font: 500 10px var(--mono); letter-spacing: .14em; color: var(--ter); }
+  .fr { position: relative; overflow: hidden; border: 1px solid #332b25; background: var(--bg); flex: none; }
+  .fr > .in { position: absolute; top: 0; left: 0; transform-origin: 0 0; overflow-y: auto; scrollbar-width: none; }
+  .fr.d { width: calc(1440px * var(--k)); height: calc(900px * var(--k)); border-radius: 10px; }
+  .fr.d > .in { width: 1440px; height: 900px; transform: scale(var(--k)); }
+  .fr.m { width: calc(390px * var(--k)); height: calc(844px * var(--k)); border-radius: 22px; }
+  .fr.m > .in { width: 390px; height: 844px; transform: scale(var(--k)); }
+
+  /* chrome Bass (aprox.) */
+  .hd { height: 84px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid var(--border-sub); }
+  .m .hd { height: 64px; }
+  .hd b { font: 800 44px var(--sans); letter-spacing: -.04em; color: var(--acc); } .m .hd b { font-size: 30px; }
+  .hd span { position: absolute; right: 180px; font: 400 13px var(--mono); letter-spacing: .4em; color: var(--ter); } .m .hd span { right: 28px; font-size: 10px; }
+  .tabs { display: flex; gap: 34px; padding: 18px 32px 0; border-bottom: 1px solid var(--border-sub); }
+  .m .tabs { gap: 20px; padding: 12px 16px 0; overflow: hidden; }
+  .tabs span { padding-bottom: 12px; font-size: 24px; font-weight: 650; letter-spacing: -.02em; color: var(--ter); white-space: nowrap; }
+  .m .tabs span { font-size: 20px; }
+  .tabs .on { color: var(--text); border-bottom: 2px solid var(--acc); }
+  .tabs .new { color: var(--acc); }
+  .tabs .new::after { content: "nuevo"; margin-left: 6px; vertical-align: 8px; font: 500 9px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+  .pad { padding: 20px 32px; } .m .pad { padding: 16px; }
+  .finde { border: 1px solid var(--border-sub); border-radius: 12px; padding: 18px; display: grid; gap: 12px; background: var(--surface); }
+  .finde .k { font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); }
+  .finde .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } .m .finde .row { grid-template-columns: 1fr 1fr; }
+  .finde .ph { aspect-ratio: 21/10; border-radius: 8px; background: linear-gradient(135deg, #2a2019, #3a2b20); }
+  .finde i { font-style: normal; font-size: 13px; color: var(--sec); }
+
+  /* ── De gira ── */
+  .gira { display: grid; gap: 14px; }
+  .g-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .g-title { display: grid; gap: 4px; }
+  .g-title b { font-size: 22px; font-weight: 650; letter-spacing: -.02em; }
+  .m .g-title b { font-size: 20px; }
+  .g-title span { font-size: 13px; color: var(--sec); }
+  .g-more { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+  .g-row { display: grid; grid-auto-flow: column; grid-auto-columns: 300px; gap: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+  .m .g-row { grid-auto-columns: 78%; }
+  .g-card { border: 1px solid var(--border-sub); border-radius: 12px; background: var(--surface); overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+  .g-img { aspect-ratio: 16/10; background: #2a2019 center/cover no-repeat; position: relative; }
+  .g-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(21,18,16,.92)); }
+  .g-img .who { position: absolute; left: 14px; right: 14px; bottom: 10px; z-index: 1; font-size: 24px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+  .g-img .who small { display: block; margin-top: 4px; font: 500 11px var(--sans); letter-spacing: 0; color: var(--sec); }
+  .g-body { padding: 12px 14px 14px; display: grid; gap: 10px; align-content: start; }
+  .g-here { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .g-here b { font: 600 13px var(--mono); color: var(--acc); letter-spacing: .02em; }
+  .g-here span { font-size: 13px; color: var(--text); text-align: right; }
+  .route { display: flex; align-items: center; gap: 0; font: 500 10.5px var(--mono); color: var(--ter); letter-spacing: .04em; }
+  .route i { font-style: normal; white-space: nowrap; }
+  .route .ln { flex: 1; min-width: 10px; height: 1px; background: var(--border); margin: 0 6px; }
+  .route .ba { color: var(--acc); font-weight: 600; }
+  .route .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ter); margin-right: 5px; display: inline-block; vertical-align: 1px; }
+  .route .ba .dot { background: var(--acc); }
+
+  /* lista tipo agenda (variante B) */
+  .g-list { display: grid; gap: 10px; }
+  .g-li { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px; border: 1px solid var(--border-sub); border-radius: 12px; background: var(--surface); }
+  .m .g-li { grid-template-columns: 58px minmax(0, 1fr); }
+  .g-li .d { text-align: center; } .g-li .d b { display: block; font: 700 26px var(--sans); letter-spacing: -.03em; } .g-li .d span { font: 500 10px var(--mono); letter-spacing: .14em; color: var(--acc); text-transform: uppercase; }
+  .g-li h4 { margin: 0 0 4px; font-size: 18px; letter-spacing: -.02em; } .m .g-li h4 { font-size: 16px; }
+  .g-li p { margin: 0 0 6px; font-size: 13px; color: var(--sec); }
+  .g-li .x { font: 500 11px var(--mono); color: var(--ter); }
+  .m .g-li .x { grid-column: 1 / -1; }
+
+  /* secciones con Buenos Aires primero */
+  .split { display: grid; gap: 10px; }
+  .split .k { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--acc); }
+  .split .k.w { color: var(--sec); }
+  .split .k::after { content: ""; flex: 1; height: 1px; background: var(--border-sub); }
+  .it { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--border-sub); border-radius: 10px; background: var(--surface); }
+  .it .d { font: 600 12px var(--mono); color: var(--sec); line-height: 1.3; }
+  .it b { font-size: 15px; font-weight: 600; } .it span { display: block; font-size: 12.5px; color: var(--sec); margin-top: 2px; }
+  .it em { font-style: normal; font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ter); }
+  .layerw { --acc: #6CB8C8; --bg: #0f1418; --surface: #151c21; --border-sub: #1f2830; --sec: #8a969d; --ter: #5b676f; --text: #e8ecee; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+</style>
+</head>
+<body>
+<div class="top"><b>Bass · Buenos Aires primero</b> &nbsp;"De gira" en dos ubicaciones · Festivales y Eventos cripto con Buenos Aires arriba · datos reales</div>
+<div id="root"></div>
+<script type="module">
+const [ev, fest, ce] = await Promise.all(["/api/events", "/api/festivals", "/api/crypto-events"].map((u) => fetch(u).then((r) => r.json()).catch(() => [])));
+const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+const M = { Ene: 0, Feb: 1, Mar: 2, Abr: 3, May: 4, Jun: 5, Jul: 6, Ago: 7, Sep: 8, Oct: 9, Nov: 10, Dic: 11 };
+const dt = (e) => new Date(2026 + (M[e.month] < 8 ? 1 : 0), M[e.month] ?? 0, +e.day);
+const DOW = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"], MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const fd = (d) => `${DOW[d.getDay()]} ${d.getDate()} ${MES[d.getMonth()]}`, fs = (d) => `${d.getDate()} ${MES[d.getMonth()]}`;
+const local = ev.filter((e) => e.area === "amba"), abroad = ev.filter((e) => e.region !== "AR");
+// Giras: artistas del line-up de un show AMBA que tocan afuera; agrupado por show.
+const byArtist = new Map();
+for (const e of abroad) for (const a of e.artists || []) { const n = norm(a); if (n.length > 3) (byArtist.get(n) || byArtist.set(n, []).get(n)).push(e); }
+const tours = [];
+for (const e of local) {
+  const on = (e.artists || []).filter((a) => byArtist.has(norm(a)));
+  if (!on.length) continue;
+  const stops = on.flatMap((a) => byArtist.get(norm(a))).map((x) => ({ city: x.city, d: dt(x) }));
+  const uniq = [...new Map(stops.map((s) => [s.city + s.d, s])).values()].sort((a, b) => a.d - b.d).slice(0, 3);
+  tours.push({ e, on, d: dt(e), stops: uniq });
+}
+tours.sort((a, b) => a.d - b.d);
+const img = (t) => t.e.artistImage || t.e.image || "";
+const who = (t) => t.on.length > 2 ? `${t.on.slice(0, 2).join(" · ")} <small>y ${t.on.length - 2} más de gira</small>` : t.on.join(" · ");
+const venue = (t) => (t.e.venue || "").replace(/^TBA\s*-\s*/i, "").split(",")[0];
+const route = (t) => {
+  const pts = [...t.stops.map((s) => ({ ...s, ba: false })), { city: "Buenos Aires", d: t.d, ba: true }].sort((a, b) => a.d - b.d);
+  return `<div class="route">${pts.map((p, i) => `${i ? '<span class="ln"></span>' : ""}<i class="${p.ba ? "ba" : ""}"><span class="dot"></span>${p.ba ? "BA" : p.city} ${fs(p.d)}</i>`).join("")}</div>`;
+};
+const card = (t) => `<div class="g-card"><div class="g-img" style="background-image:url('${img(t)}')"><div class="who">${who(t)}</div></div>
+  <div class="g-body"><div class="g-here"><b>${fd(t.d)}</b><span>${venue(t)}</span></div>${route(t)}</div></div>`;
+const gHead = (m) => `<div class="g-head"><div class="g-title"><b>De gira</b><span>${m ? "Pasan por Buenos Aires" : "Artistas de gira que pasan por Buenos Aires: dónde tocan antes y después"}</span></div><span class="g-more">Ver las ${tours.length} →</span></div>`;
+const finde = (m) => `<div class="finde"><span class="k">— El finde</span><div class="row">${Array.from({ length: m ? 2 : 3 }, () => '<div class="ph"></div>').join("")}</div><i>(sin cambios)</i></div>`;
+const hd = (m) => `<div class="hd"><b>Bass</b><span>LAYER</span></div>`;
+const tabs = (on, gtab) => `<div class="tabs">${["Eventos", ...(gtab ? ["De gira"] : []), "Noticias", "Festivales"].map((s) => `<span class="${s === on ? "on" : ""} ${s === "De gira" && s !== on ? "new" : ""}">${s}</span>`).join("")}</div>`;
+
+// A · fila en Eventos, después del finde
+const aDesk = `${hd()}${tabs("Eventos")}<div class="pad" style="display:grid;gap:22px">${finde()}<div class="gira">${gHead()}<div class="g-row">${tours.slice(0, 6).map(card).join("")}</div></div></div>`;
+const aMob = `${hd(1)}${tabs("Eventos")}<div class="pad" style="display:grid;gap:18px">${finde(1)}<div class="gira">${gHead(1)}<div class="g-row">${tours.slice(0, 5).map(card).join("")}</div></div></div>`;
+// B · pestaña propia
+const li = (t) => `<div class="g-li"><div class="d"><b>${t.d.getDate()}</b><span>${MES[t.d.getMonth()]}</span></div><div><h4>${t.on.slice(0, 3).join(" · ")}${t.on.length > 3 ? ` +${t.on.length - 3}` : ""}</h4><p>${venue(t)} · ${DOW[t.d.getDay()]}</p>${route(t)}</div><span class="x">${t.stops.length} parada${t.stops.length > 1 ? "s" : ""} afuera</span></div>`;
+const bDesk = `${hd()}${tabs("De gira", 1)}<div class="pad"><div class="gira">${gHead()}<div class="g-list">${tours.slice(0, 7).map(li).join("")}</div></div></div>`;
+const bMob = `${hd(1)}${tabs("De gira", 1)}<div class="pad"><div class="gira">${gHead(1)}<div class="g-list">${tours.slice(0, 6).map(li).join("")}</div></div></div>`;
+
+// Festivales y Eventos cripto: Buenos Aires arriba, el mundo abajo
+const F = Array.isArray(fest) ? fest : fest.festivals || [];
+const fIt = (f) => `<div class="it"><div class="d">${(f.dates || f.date || "").toString().slice(0, 14)}</div><div><b>${f.name}</b><span>${f.city || f.location || ""}</span></div><em>${f.region || ""}</em></div>`;
+const festHtml = `${hd()}${tabs("Festivales")}<div class="pad split"><div class="k">En Buenos Aires</div>${F.filter((f) => f.region === "BA").map(fIt).join("")}<div class="k w">En el mundo</div>${F.filter((f) => f.region !== "BA").map(fIt).join("")}</div>`;
+const C = Array.isArray(ce) ? ce : ce.events || [];
+const isBA = (c) => /buenos aires|olivos|caba|palermo|costa salguero|vicente l[oó]pez/i.test(c.location || "");
+const cIt = (c) => { const d = new Date(c.date); return `<div class="it"><div class="d">${fd(d)}</div><div><b>${c.title}</b><span>${c.location}</span></div><em>${c.free ? "gratis" : ""}</em></div>`; };
+const cryptoHtml = `<div class="hd" style="border-color:var(--border-sub)"><b style="color:var(--acc);font-family:var(--mono);font-weight:400;letter-spacing:.3em;font-size:30px">LAYER</b></div><div class="pad split"><div class="k">En Buenos Aires</div>${C.filter(isBA).slice(0, 5).map(cIt).join("")}<div class="k w">Conferencias del mundo</div>${C.filter((c) => !isBA(c)).slice(0, 5).map(cIt).join("")}</div>`;
+
+const frame = (cls, k, html, label, extra = "") => `<div class="wrap"><div class="tag">${label}</div><div class="fr ${cls} ${extra}" style="--k:${k}"><div class="in">${html}</div></div></div>`;
+document.getElementById("root").innerHTML = `
+<div class="opt"><div class="cap"><h2><span>A</span> · Fila en Eventos</h2><p>"De gira" como segundo bloque de Eventos, después del finde: tarjetas con foto, el día y el venue acá, y la ruta de la gira (antes y después de BA).</p><ul><li>Lo ve todo el que entra a la agenda.</li><li>Se desliza de costado; "Ver las ${tours.length}" abre la lista completa.</li></ul></div>
+  ${frame("d", 0.54, aDesk, "DESKTOP 1440 · EVENTOS")}${frame("m", 0.54, aMob, "MOBILE 390")}</div>
+<hr class="sep" />
+<div class="opt"><div class="cap"><h2><span>B</span> · Pestaña propia</h2><p>"De gira" como cuarta pestaña de Bass, al lado de Eventos, Noticias y Festivales: lista completa ordenada por fecha, con la ruta en cada fila.</p><ul><li>Más espacio y más completa.</li><li>Menos visible: hay que ir a buscarla.</li></ul></div>
+  ${frame("d", 0.54, bDesk, "DESKTOP 1440 · DE GIRA")}${frame("m", 0.54, bMob, "MOBILE 390")}</div>
+<hr class="sep" />
+<div class="opt"><div class="cap"><h2>Además · Buenos Aires arriba</h2><p>Festivales y Eventos cripto no cambian de lugar: se ordenan en dos bloques rotulados. Lo de acá primero; el mundo abajo, como calendario de referencia.</p></div>
+  <div class="twocol">${frame("d", 0.4, festHtml, "BASS · FESTIVALES")}${frame("d", 0.4, cryptoHtml, "LAYER · EVENTOS CRIPTO", "layerw")}</div></div>`;
+</script>
+</body>
+</html>

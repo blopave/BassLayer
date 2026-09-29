@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
+import { OnTour } from "./OnTour";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -498,6 +499,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           usuario ya está buscando algo puntual, el hero es ruido. */}
       {/* El hero del finde aparece con los eventos: reservamos su alto mientras cargan (CLS). */}
       {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <WeekendHero events={regionEvents} onSelect={onSelect} />)}
+      {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan por acá. */}
+      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
 
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
@@ -782,9 +785,17 @@ function FestivalsList({ festivals, loading, error, onRetry, region, onRegionCha
        )
        : (
          <div className="bl-ev-list" role="region" aria-label={t("section.festivals")} ref={listRef}>
-           {festivals.map((f, idx) => (
-             <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />
-           ))}
+           {/* Buenos Aires arriba y el mundo abajo, rotulados (sept 2026). */}
+           {[["BA", t("fest.inBA")], ["world", t("fest.inWorld")]].map(([key, label]) => {
+             const group = festivals.filter((f) => (f.region === "BA") === (key === "BA"));
+             if (!group.length) return null;
+             return (
+               <div className="bl-fest-group" key={key}>
+                 <h3 className={`bl-fest-k bl-bass-t-stamp${key === "BA" ? " is-here" : ""}`}>{label}</h3>
+                 {group.map((f, idx) => <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />)}
+               </div>
+             );
+           })}
            <EndOfSet />
          </div>
        )}

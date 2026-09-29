@@ -1356,6 +1356,45 @@
    el toggle de visibilidad (en desktop no existe). */
 .bl-hero-count { display:none; }
 .bl-hero-skel { min-height:301px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+/* Festivales y eventos cripto: Buenos Aires arriba, el mundo abajo (sept 2026). */
+.bl-fest-group + .bl-fest-group { margin-top:18px; }
+.bl-fest-k, .bl-cirl-k { display:flex; align-items:center; gap:10px; margin:6px 0 10px; color:var(--bl-text-sec); }
+.bl-fest-k::after, .bl-cirl-k::after { content:""; flex:1; height:1px; background:var(--bl-border-sub); }
+.bl-fest-k.is-here { color:var(--bl-accent-bass); }
+.bl-cirl-k { font:500 10.5px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; }
+.bl-cirl-k.is-here { color:var(--bl-accent-layer); }
+.bl-cirl-group + .bl-cirl-group { margin-top:14px; }
+/* ── De gira (sept 2026): segundo bloque de Eventos, misma familia que el finde ── */
+.bl-tour .bl-hero-head { align-items:baseline; }
+.bl-tour-sub { font-size:13px; color:var(--bl-text-sec); }
+.bl-tour-more { margin-left:auto; padding:6px 0; border:0; background:none; cursor:pointer; font:500 11px var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--bl-accent-bass); white-space:nowrap; }
+.bl-tour-more:hover { color:var(--bl-text); }
+.bl-tour-more:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; border-radius:4px; }
+.bl-tour-row { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(260px, calc((100% - 36px) / 4)); gap:12px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+.bl-tour-row::-webkit-scrollbar { display:none; }
+.bl-tour-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.bl-tour-card { display:grid; grid-template-rows:auto 1fr; min-width:0; padding:0; border:1px solid var(--bl-border-sub); border-radius:10px; overflow:hidden; background:var(--bl-bg); color:inherit; font:inherit; text-align:left; cursor:pointer; transition:border-color var(--duration-fast); }
+.bl-tour-card:hover { border-color:color-mix(in srgb, var(--bl-accent-bass) 50%, var(--bl-border-sub)); }
+.bl-tour-card:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
+.bl-tour-card .bl-thumb { width:100%; height:auto; aspect-ratio:16/9; border-radius:0; }
+.bl-tour-body { display:grid; gap:6px; padding:10px 12px 12px; align-content:start; min-width:0; }
+.bl-tour-who { font-size:16px; font-weight:650; letter-spacing:-.015em; color:var(--bl-text); line-height:1.25; }
+.bl-tour-who small { display:block; margin-top:2px; font-size:12px; font-weight:400; letter-spacing:0; color:var(--bl-text-sec); }
+.bl-tour-meta { color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-tour-meta b { color:var(--bl-accent-bass); font-weight:600; }
+.bl-tour-route { display:flex; align-items:center; flex-wrap:wrap; row-gap:4px; margin-top:2px; font:500 11px var(--font-mono); letter-spacing:.02em; color:var(--bl-text-ter); }
+.bl-tour-stop { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.bl-tour-stop.is-here { color:var(--bl-accent-bass); font-weight:600; }
+.bl-tour-ln { width:14px; height:1px; margin:0 6px; background:var(--bl-border); }
+.bl-tour-dot { width:6px; height:6px; border-radius:50%; background:var(--bl-text-ter); }
+.bl-tour-stop.is-here .bl-tour-dot { background:var(--bl-accent-bass); }
+@media (max-width:768px) {
+  .bl-tour .bl-hero-head { flex-wrap:wrap; row-gap:2px; }
+  .bl-tour-sub { order:3; width:100%; }
+  .bl-tour-row { display:flex; padding:0 16px; }
+  .bl-tour-row > .bl-tour-card { flex:0 0 78%; }
+  .bl-tour-list { grid-template-columns:1fr; padding:0 16px; }
+}
 @media (max-width:768px) { .bl-hero-skel { min-height:185px; } }
 .bl-hero-tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .bl-hero-tile {
