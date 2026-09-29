@@ -306,7 +306,7 @@ async function run(vp) {
       await page.waitForTimeout(500);
       if ((await page.locator(".blc-node").count()) !== 8) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
       // Historia: los hechos verificados en la curva y en la lista, sincronizados.
-      await pill(/Historia|History/).click();
+      await pill(/Hitos|Milestones/).click();
       await page.locator(".blh-ev").first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
       const evs = await page.locator(".blh-ev").count(), rows = await page.locator(".blh-list li").count();
       if (!(await page.locator(".bl-timeline-toggle, .bl-timeline").count())) fail(vp.name, "historia", "Crypto BA Timeline no está en Historia");
@@ -323,6 +323,18 @@ async function run(vp) {
       const cirlHeads = await page.locator(".bl-cirl-k").allTextContents();
       if (!cirlHeads.length && (await page.locator(".bl-cirl-item").count())) fail(vp.name, "eventos cripto", "sin bloques Buenos Aires / mundo");
       if (cirlHeads.length > 1 && !/buenos aires/i.test(cirlHeads[0])) fail(vp.name, "eventos cripto", `el primer bloque es "${cirlHeads[0]}", no Buenos Aires`);
+      // ETFs y Acciones agrupados por lo que son (sept 2026): varios grupos con
+      // título y qué los junta; en Acciones está "Cripto en Wall Street".
+      for (const [sec, re, must] of [["etfs", /ETFs/, null], ["acciones", /Acciones|Stocks/, /Cripto en Wall Street|Crypto on Wall Street/]]) {
+        await page.locator(".bl-layer-back").click();
+        await page.waitForTimeout(400);
+        await pill(re).click();
+        await page.locator(".bl-mkt-group-label").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        const heads = await page.locator(".bl-mkt-group-label").allTextContents();
+        const subs = await page.locator(".bl-mkt-group-sub").count();
+        if (heads.length < 3 || subs !== heads.length) fail(vp.name, sec, `${heads.length} grupos con ${subs} descripciones (esperaba ≥3, todos descriptos)`);
+        if (must && !heads.some((h) => must.test(h))) fail(vp.name, sec, `falta el grupo ${must}`);
+      }
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
     }

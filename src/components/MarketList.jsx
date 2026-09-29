@@ -31,9 +31,9 @@ function MarketCard({ item, idx }) {
   );
 }
 
-// kinds: orden de tipos a mostrar (["etf"] o ["stock","adr"]).
-// labels: mapa kind → clave i18n del sub-encabezado (se muestra si hay >1 grupo).
-export function MarketList({ kinds, titleKey, subtitleKey, labels }) {
+// kind: "etf" o "stock". Los grupos (y su orden) los define el server; cada
+// uno lleva título y una línea que dice qué los junta (sept 2026).
+export function MarketList({ kind, titleKey }) {
   const { t } = useLocale();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,22 +49,18 @@ export function MarketList({ kinds, titleKey, subtitleKey, labels }) {
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const groups = (data?.groups || []).filter((g) => kinds.includes(g.kind));
-  // Ordenar los grupos según el orden pedido en `kinds`.
-  groups.sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind));
-  const showGroupLabels = groups.length > 1 && labels;
-  const listRef = useScrollReveal(loading, kinds.join());
+  const groups = (data?.groups || []).filter((g) => g.kind === kind);
+  const listRef = useScrollReveal(loading, kind);
 
   return (
     <div className="bl-layer-content">
       <div className="bl-mkt-head">
         <h2 className="bl-mkt-title">{t(titleKey)}</h2>
-        {subtitleKey && <p className="bl-mkt-subtitle">{t(subtitleKey)}</p>}
       </div>
 
       {loading ? (
         <div className="bl-mkt-grid" aria-hidden="true">
-          {Array.from({ length: kinds.includes("stock") ? 12 : 6 }).map((_, i) => (
+          {Array.from({ length: kind === "stock" ? 12 : 6 }).map((_, i) => (
             <div key={i} className="bl-mkt-card bl-mkt-card-skel" />
           ))}
         </div>
@@ -75,10 +71,9 @@ export function MarketList({ kinds, titleKey, subtitleKey, labels }) {
       ) : (
         <div ref={listRef}>
           {groups.map((g) => (
-            <div key={g.kind} className="bl-mkt-group">
-              {showGroupLabels && labels[g.kind] && (
-                <h3 className="bl-mkt-group-label">{t(labels[g.kind])}</h3>
-              )}
+            <div key={g.key} className="bl-mkt-group">
+              <h3 className="bl-mkt-group-label">{t(`markets.group.${g.key}`)}</h3>
+              <p className="bl-mkt-group-sub">{t(`markets.group.${g.key}.sub`)}</p>
               <div className="bl-mkt-grid">
                 {g.items.map((item, idx) => <MarketCard key={item.symbol} item={item} idx={idx} />)}
               </div>

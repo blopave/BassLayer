@@ -7,7 +7,7 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // navegación. Cada sección vive en un momento real de la curva y se entra
 // tocando su cápsula (la curva es el único índice: sin franja ni lista, sept
 // 2026). Un solo hover: el de las secciones (sin cruz ni precio por mes:
-// competía con la navegación; el precio mes a mes vive en Historia).
+// competía con la navegación; el precio mes a mes vive en Hitos).
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
 // izquierda (28 px), con toda su franja tocable. Solo títulos: sin datos ni

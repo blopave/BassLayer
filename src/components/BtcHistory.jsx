@@ -4,7 +4,7 @@ import { useLocale } from "../hooks/useLocale";
 import { NEWS_CAT } from "../utils/btcHistory";
 import { T, fmtUsd, monthLabel } from "../utils/layer";
 
-// Sección Historia: la curva de Bitcoin (2012 → hoy) con los momentos que la
+// Sección Hitos (antes "Historia"): la curva de Bitcoin (2012 → hoy) con los momentos que la
 // movieron. Hechos verificados en data/btc-cycles.json (newsEvents), bandas de
 // cada ciclo (halving → pico → fondo), filtros por tipo y la lista cronológica
 // sincronizada con la curva (tocar un hecho lo marca en las dos).

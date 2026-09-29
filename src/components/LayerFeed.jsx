@@ -158,23 +158,9 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       {/* Finanzas section — noticias financieras generales (macro/mercados/empresas) */}
       {section === "finanzas" && <FinanceNews />}
 
-      {/* ETFs section — cotizaciones de ETFs (índices + Bitcoin) */}
-      {section === "etfs" && (
-        <MarketList
-          kinds={["etf"]}
-          titleKey="markets.etfs.title"
-          subtitleKey="markets.etfs.subtitle"
-        />
-      )}
-
-      {/* Acciones section — tech mega-caps + ADRs LATAM */}
-      {section === "acciones" && (
-        <MarketList
-          kinds={["stock", "adr"]}
-          titleKey="markets.stocks.title"
-          labels={{ stock: "markets.group.tech", adr: "markets.group.latam" }}
-        />
-      )}
+      {/* ETFs y Acciones — cotizaciones agrupadas por lo que son */}
+      {section === "etfs" && <MarketList kind="etf" titleKey="markets.etfs.title" />}
+      {section === "acciones" && <MarketList kind="stock" titleKey="markets.stocks.title" />}
 
       {/* Eventos section */}
       {section === "eventos" && (

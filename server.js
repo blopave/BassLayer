@@ -270,7 +270,12 @@ function tidyEvents(events) {
   // Actividades que no son shows, de cualquier fuente (QuéHacemos las filtra
   // antes; RA listó "Techno Yoga", una clase con DJ — Pablo decidió afuera).
   for (let i = events.length - 1; i >= 0; i--) if (NOT_A_SHOW_TITLE.test(events[i].name || "")) events.splice(i, 1);
-  for (const ev of events) ev.artists = cleanLineup(ev.artists);
+  for (const ev of events) {
+    ev.artists = cleanLineup(ev.artists);
+    // Superficie de Bass: CABA + GBA (AMBA). Acá y no solo en la build: el
+    // snapshot en disco también tiene que salir con la marca (sept 2026).
+    if (isAmba(ev)) ev.area = "amba"; else delete ev.area;
+  }
   return events;
 }
 
@@ -532,7 +537,7 @@ function withCity(venue, address, title) {
   const city = detectCity(venue, address, title);
   return city ? { city } : { city: "CABA", cityGuessed: true };
 }
-const isAmba = (ev) => ev.region === "AR" && isAmbaCity(ev.city);
+function isAmba(ev) { return ev.region === "AR" && isAmbaCity(ev.city); }
 
 // Un show que una fuente ubica sin decir la ciudad (CABA supuesto) y otra
 // fuente ubica explícitamente en otra ciudad el mismo día, con algún artista
@@ -1164,29 +1169,46 @@ app.get("/api/finance-news", async (req, res) => {
 //  ETFs de índices + BTC ETFs, tech mega-caps y ADRs LATAM (todos US-listed).
 // ─────────────────────────────────────────────
 
+// Grupos por lo que son (Pablo, sept 2026). `kind` define la sección (ETFs o
+// Acciones); `group`, el bloque dentro de ella, en este orden.
 const MARKET_SYMBOLS = [
-  // ETFs — índices core + exposición Bitcoin (ancla crypto)
-  { symbol: "QQQ",  name: "Nasdaq 100",         kind: "etf" },
-  { symbol: "SPY",  name: "S&P 500",            kind: "etf" },
-  { symbol: "VOO",  name: "Vanguard S&P 500",   kind: "etf" },
-  { symbol: "GLD",  name: "Oro",                kind: "etf" },
-  { symbol: "IBIT", name: "iShares Bitcoin",    kind: "etf" },
-  { symbol: "FBTC", name: "Fidelity Bitcoin",   kind: "etf" },
-  // Acciones — tech mega-caps
-  { symbol: "NVDA", name: "NVIDIA",             kind: "stock" },
-  { symbol: "AAPL", name: "Apple",              kind: "stock" },
-  { symbol: "MSFT", name: "Microsoft",          kind: "stock" },
-  { symbol: "GOOGL",name: "Alphabet",           kind: "stock" },
-  { symbol: "AMZN", name: "Amazon",             kind: "stock" },
-  { symbol: "META", name: "Meta",               kind: "stock" },
-  { symbol: "TSLA", name: "Tesla",              kind: "stock" },
-  // ADRs LATAM (cotizan en NYSE/NASDAQ)
-  { symbol: "MELI", name: "MercadoLibre",       kind: "adr" },
-  { symbol: "NU",   name: "Nubank",             kind: "adr" },
-  { symbol: "VIST", name: "Vista Energy",       kind: "adr" },
-  { symbol: "GGAL", name: "Grupo Galicia",      kind: "adr" },
-  { symbol: "YPF",  name: "YPF",                kind: "adr" },
+  // ETFs — índices de EE.UU.
+  { symbol: "SPY",  name: "S&P 500",            kind: "etf",   group: "index" },
+  { symbol: "QQQ",  name: "Nasdaq 100",         kind: "etf",   group: "index" },
+  { symbol: "DIA",  name: "Dow Jones",          kind: "etf",   group: "index" },
+  // ETFs — spot de cripto (ancla de Layer)
+  { symbol: "IBIT", name: "iShares Bitcoin",    kind: "etf",   group: "cryptoetf" },
+  { symbol: "FBTC", name: "Fidelity Bitcoin",   kind: "etf",   group: "cryptoetf" },
+  { symbol: "ETHA", name: "iShares Ethereum",   kind: "etf",   group: "cryptoetf" },
+  // ETFs — refugio
+  { symbol: "GLD",  name: "Oro",                kind: "etf",   group: "refuge" },
+  { symbol: "SLV",  name: "Plata",              kind: "etf",   group: "refuge" },
+  // ETFs — Argentina
+  { symbol: "ARGT", name: "MSCI Argentina",     kind: "etf",   group: "aretf" },
+  // Acciones — Big Tech e IA
+  { symbol: "NVDA", name: "NVIDIA",             kind: "stock", group: "bigtech" },
+  { symbol: "MSFT", name: "Microsoft",          kind: "stock", group: "bigtech" },
+  { symbol: "GOOGL",name: "Alphabet",           kind: "stock", group: "bigtech" },
+  { symbol: "META", name: "Meta",               kind: "stock", group: "bigtech" },
+  { symbol: "AAPL", name: "Apple",              kind: "stock", group: "bigtech" },
+  { symbol: "AMZN", name: "Amazon",             kind: "stock", group: "bigtech" },
+  { symbol: "TSLA", name: "Tesla",              kind: "stock", group: "bigtech" },
+  // Acciones — cripto en Wall Street
+  { symbol: "COIN", name: "Coinbase",           kind: "stock", group: "crypto" },
+  { symbol: "MSTR", name: "Strategy",           kind: "stock", group: "crypto" },
+  { symbol: "HOOD", name: "Robinhood",          kind: "stock", group: "crypto" },
+  // Acciones — Argentina (ADRs en NYSE/NASDAQ)
+  { symbol: "GGAL", name: "Grupo Galicia",      kind: "stock", group: "ar" },
+  { symbol: "YPF",  name: "YPF",                kind: "stock", group: "ar" },
+  { symbol: "VIST", name: "Vista Energy",       kind: "stock", group: "ar" },
+  { symbol: "BMA",  name: "Banco Macro",        kind: "stock", group: "ar" },
+  { symbol: "PAM",  name: "Pampa Energía",      kind: "stock", group: "ar" },
+  // Acciones — Latinoamérica sin Argentina
+  { symbol: "MELI", name: "MercadoLibre",       kind: "stock", group: "latam" },
+  { symbol: "NU",   name: "Nubank",             kind: "stock", group: "latam" },
 ];
+const MARKET_GROUPS = [...new Set(MARKET_SYMBOLS.map((s) => s.group))];
+const GROUP_OF = Object.fromEntries(MARKET_SYMBOLS.map((s) => [s.symbol, s]));
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 // CNBC devuelve strings con separador de miles ("1,787.39") y % con signo
 // ("+6.28%"): hay que sacar comas/símbolos antes de parsear.
@@ -1293,11 +1315,11 @@ app.get("/api/markets", async (req, res) => {
 
   const payload = {
     asof: Date.now(),
-    groups: [
-      { kind: "etf",   items: rows.filter((r) => r.kind === "etf") },
-      { kind: "stock", items: rows.filter((r) => r.kind === "stock") },
-      { kind: "adr",   items: rows.filter((r) => r.kind === "adr") },
-    ].filter((g) => g.items.length > 0),
+    groups: MARKET_GROUPS.map((key) => ({
+      key,
+      kind: MARKET_SYMBOLS.find((s) => s.group === key).kind,
+      items: rows.filter((r) => GROUP_OF[r.symbol]?.group === key),
+    })).filter((g) => g.items.length > 0),
   };
   setCache("markets", payload);
   res.json(payload);
@@ -2922,8 +2944,6 @@ async function buildEvents() {
 
   // Limpiar nombres ruidosos de scrapers
   deduped.forEach(ev => { ev.name = cleanEventName(ev.name, ev.source); });
-  // Superficie de Bass: CABA + GBA (AMBA). El front filtra por este campo.
-  deduped.forEach((ev) => { if (isAmba(ev)) ev.area = "amba"; });
 
   // Filter out past events and sort by actual date (handles year boundaries)
   const now = new Date();
@@ -6189,7 +6209,7 @@ if (IS_PROD) {
     const fin = (cached("financeNews") || []).slice(0, 6);
     const prices = cached("prices") || [];
     const markets = cached("markets");
-    const etfs = ((markets && markets.groups) || []).find((g) => g.kind === "etf")?.items || [];
+    const etfs = ((markets && markets.groups) || []).filter((g) => g.kind === "etf").flatMap((g) => g.items);
     const h1 = "Bitcoin, ETFs y noticias crypto en español";
     const intro = "Precios en vivo, noticias crypto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin. El mundo Layer de BassLayer, actualizado a cada hora.";
     const fmtUsd = (n) => n >= 1000 ? `$${Math.round(n).toLocaleString("en-US")}` : `$${Number(n).toFixed(2)}`;

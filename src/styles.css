@@ -4495,18 +4495,11 @@ select.bl-venue-input { cursor:pointer; }
   font-size:18px; font-weight:600; letter-spacing:0.3px;
   color:var(--bl-100); margin:0;
 }
-.bl-mkt-subtitle {
-  font-family:var(--font-mono), monospace;
-  font-size:11.5px; letter-spacing:0.4px;
-  color:var(--bl-500); margin:4px 0 0;
-}
 .bl-mkt-group { padding:8px 0 4px; }
-.bl-mkt-group-label {
-  font-family:var(--font-mono), monospace;
-  font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; font-weight:600;
-  color:var(--bl-400);
-  margin:12px 32px 8px;
-}
+.bl-mkt-group-sub { margin:0 32px 10px; font-size:13px; color:var(--bl-text-sec); }
+@media (max-width:768px){ .bl-mkt-group-sub { margin:0 16px 10px; } }
+/* Grupos con nombre propio (sept 2026): título legible + qué los junta. */
+.bl-mkt-group-label { margin:18px 32px 2px; font:620 16px var(--font-sans); letter-spacing:-.01em; color:var(--bl-text); }
 .bl-mkt-grid {
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
@@ -4557,7 +4550,7 @@ select.bl-venue-input { cursor:pointer; }
 @media (max-width:768px) {
   .bl-mkt-grid { grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); gap:8px; padding:6px 16px 8px; }
   .bl-mkt-head { padding:12px 16px 4px; }
-  .bl-mkt-group-label { margin:10px 16px 6px; }
+  .bl-mkt-group-label { margin:16px 16px 2px; }
   .bl-mkt-price { font-size:17px; }
 }
 

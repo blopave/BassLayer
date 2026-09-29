@@ -53,7 +53,7 @@ export function useLayerData() {
 export function layerStats(d, t) {
   const groups = d.markets?.groups || [];
   const all = groups.flatMap((g) => g.items || []);
-  const stocks = groups.find((g) => g.kind === "stock")?.items || [];
+  const stocks = groups.filter((g) => g.kind === "stock").flatMap((g) => g.items || []);
   const today = new Date().toISOString().slice(0, 10);
   const cur = d.cycles?.current;
   const phaseKey = cur?.phase ? `cycles.phase.${cur.phase}` : null;
