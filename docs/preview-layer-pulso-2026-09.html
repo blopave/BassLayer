@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Layer — Pulso del mercado, A vs B</title>
+<style>
+  @font-face { font-family: "Geist"; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root {
+    --bg: #0e1317; --surface: #141b20; --raise: #182127; --border: #26313a; --border-sub: #1b242b;
+    --text: #e8ecee; --sec: #8a969d; --ter: #5b676f; --acc: #6CB8C8; --up: #5fbf7f; --down: #e0716b; --greed: #9ccc5a;
+    --sans: "Geist", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #07090b; color: var(--text); font-family: var(--sans); }
+  .top { padding: 14px 24px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); }
+  .top b { color: var(--acc); }
+  .opt { display: flex; gap: 28px; align-items: flex-start; justify-content: center; padding: 16px 16px 8px; }
+  .cap { width: 250px; padding-top: 6px; }
+  .cap h2 { margin: 0 0 8px; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
+  .cap h2 span { color: var(--acc); }
+  .cap p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .cap li { font-size: 12.5px; line-height: 1.5; color: var(--ter); margin-bottom: 4px; }
+  .cap ul { padding-left: 16px; margin: 0; }
+  .fr { position: relative; overflow: hidden; border: 1px solid #2a343c; background: var(--bg); flex: none; }
+  .fr > .in { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .fr.d { width: calc(1440px * var(--k)); height: calc(900px * var(--k)); border-radius: 10px; }
+  .fr.d > .in { width: 1440px; height: 900px; transform: scale(var(--k)); }
+  .fr.m { width: calc(390px * var(--k)); height: calc(844px * var(--k)); border-radius: 22px; }
+  .fr.m > .in { width: 390px; height: 844px; transform: scale(var(--k)); overflow-y: auto; scrollbar-width: none; }
+  .tag { position: absolute; top: -18px; left: 0; font: 500 10px var(--mono); letter-spacing: .14em; color: var(--ter); }
+  .wrap { position: relative; margin-top: 18px; }
+  hr.sep { border: 0; border-top: 1px dashed #1f282f; margin: 18px 40px; }
+
+  /* chrome del sitio (aproximado) */
+  .hd { height: 84px; display: flex; align-items: center; justify-content: center; gap: 110px; border-bottom: 1px solid var(--border-sub); }
+  .m .hd { height: 72px; gap: 70px; }
+  .hd span { font-weight: 650; color: #5d6a72; font-size: 17px; letter-spacing: -.02em; }
+  .hd em { font-style: normal; font: 400 24px var(--mono); letter-spacing: .38em; color: var(--acc); }
+  .m .hd em { font-size: 20px; }
+  .tk { height: 42px; display: flex; align-items: center; gap: 26px; padding: 0 16px; border-bottom: 1px solid var(--border-sub); font: 500 11.5px var(--mono); white-space: nowrap; overflow: hidden; color: var(--sec); }
+  .tk b { color: var(--text); font-weight: 600; margin: 0 4px; } .tk i { font-style: normal; color: var(--down); } .tk i.u { color: var(--up); }
+  .back { margin: 18px 32px 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+  .m .back { margin: 14px 16px 0; }
+  .tabs { display: flex; gap: 26px; margin: 14px 32px 0; border-bottom: 1px solid var(--border-sub); font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--sec); white-space: nowrap; overflow: hidden; }
+  .m .tabs { margin: 12px 16px 0; gap: 20px; font-size: 11px; }
+  .tabs span { padding: 0 0 12px; } .tabs .on { color: var(--acc); border-bottom: 2px solid var(--acc); }
+  .h { margin: 22px 32px 12px; font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
+  .m .h { margin: 18px 16px 12px; font-size: 24px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; padding: 0 32px; }
+  .grid.solo { grid-template-columns: minmax(0, 820px); justify-content: center; }
+  .news { display: flex; flex-direction: column; gap: 12px; }
+  .m .news { padding: 0 16px; }
+  .ni { display: flex; gap: 16px; align-items: center; padding: 16px; border: 1px solid var(--border-sub); border-radius: 12px; background: var(--surface); }
+  .ni .th { width: 88px; height: 88px; border-radius: 8px; flex: none; background: linear-gradient(135deg, #1c2a31, #2c4550); background-size: cover; background-position: center; }
+  .m .ni .th { width: 64px; height: 64px; }
+  .ni b { display: block; font-weight: 500; font-size: 17px; line-height: 1.35; }
+  .m .ni b { font-size: 15px; }
+  .ni i { display: inline-block; margin-top: 8px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 5px; font: 500 10px var(--mono); letter-spacing: .12em; font-style: normal; text-transform: uppercase; color: var(--acc); }
+
+  /* ── Pulso (B) ── un solo lenguaje: etiqueta sans chica, número mono */
+  .pulse { border: 1px solid var(--border-sub); border-radius: 14px; background: var(--surface); padding: 18px 20px 8px; }
+  .p-head { display: flex; justify-content: space-between; align-items: center; font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ter); }
+  .p-head .live { display: inline-flex; align-items: center; gap: 6px; }
+  .p-head .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--up); box-shadow: 0 0 6px var(--up); }
+  .p-read { margin: 12px 0 2px; font-size: 22px; font-weight: 650; letter-spacing: -.02em; }
+  .p-read.red { color: var(--down); } .p-read.green { color: var(--up); }
+  .p-sub { font-size: 13px; color: var(--sec); }
+  .p-grid { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; border-top: 1px solid var(--border-sub); }
+  .p-c { padding: 12px 0 12px; border-bottom: 1px solid var(--border-sub); }
+  .p-c:nth-child(odd) { padding-right: 14px; border-right: 1px solid var(--border-sub); }
+  .p-c:nth-child(even) { padding-left: 16px; }
+  .p-k { font-size: 11.5px; color: var(--sec); }
+  .p-v { margin-top: 4px; font: 600 20px var(--mono); letter-spacing: -.03em; }
+  .p-v small { margin-left: 6px; font-size: 11.5px; font-weight: 500; letter-spacing: 0; }
+  .p-bar { height: 3px; margin-top: 8px; border-radius: 2px; background: var(--border); overflow: hidden; }
+  .p-bar span { display: block; height: 100%; background: var(--greed); }
+  .p-sec { margin: 14px 0 6px; font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ter); }
+  .p-rows div { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border-sub); font-size: 13px; color: var(--sec); }
+  .p-rows div:last-child { border-bottom: 0; }
+  .p-rows b { font: 600 13px var(--mono); color: var(--text); }
+  .p-rows .acc { color: var(--acc); }
+  .p-trend { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 12px; }
+  .p-trend span { padding: 5px 9px; border-radius: 6px; background: var(--raise); font: 600 11.5px var(--mono); }
+  .p-trend em { font-style: normal; font-weight: 500; margin-left: 5px; }
+  .up { color: var(--up); } .down { color: var(--down); }
+
+  /* mobile: tira resumen que se despliega */
+  .p-strip { margin: 14px 16px 0; border: 1px solid var(--border-sub); border-radius: 12px; background: var(--surface); cursor: pointer; }
+  .p-strip .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .p-strip .rd { font-weight: 650; font-size: 15px; }
+  .p-strip .q { display: flex; gap: 12px; flex: 1; justify-content: flex-end; font: 500 11.5px var(--mono); color: var(--sec); white-space: nowrap; }
+  .p-strip .q b { color: var(--text); font-weight: 600; }
+  .p-strip .chev { color: var(--ter); transition: transform .2s; }
+  .p-strip.open .chev { transform: rotate(180deg); }
+  .p-strip .body { display: none; padding: 0 14px 6px; }
+  .p-strip.open .body { display: block; }
+  .p-strip .p-grid { margin-top: 0; }
+
+  /* A: pulso inline en Ciclos (fila de 4) */
+  .row4 { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border-sub); border-radius: 14px; background: var(--surface); margin: 0 32px; }
+  .row4 > div { padding: 16px 20px; border-right: 1px solid var(--border-sub); }
+  .row4 > div:last-child { border-right: 0; }
+  .note { margin: 14px 32px 0; padding: 12px 16px; border: 1px dashed var(--border); border-radius: 10px; font-size: 13px; color: var(--ter); }
+  .m .note { margin: 14px 16px 0; }
+</style>
+</head>
+<body>
+<div class="top"><b>Layer · pulso del mercado</b> &nbsp;B (recomendada) arriba · A abajo · datos reales · en mobile B tocá la tira para desplegarla</div>
+<div id="root"></div>
+
+<script type="module">
+const [dash, dolar, news] = await Promise.all(["/api/dashboard", "/api/dolar", "/api/news"].map((u) => fetch(u).then((r) => r.json()).catch(() => null)));
+const nf = (n, d = 0) => Number(n).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (n) => `<span class="${n >= 0 ? "up" : "down"}">${n >= 0 ? "+" : "−"}${nf(Math.abs(n), 1)}%</span>`;
+const mc = dash.marketCapChange24h, fg = dash.fearGreed?.value ?? 0;
+const reading = mc <= -1.5 ? ["Día rojo", "red"] : mc >= 1.5 ? ["Día verde", "green"] : ["Día plano", ""];
+const fgLabel = fg >= 75 ? "Codicia extrema" : fg >= 55 ? "Codicia" : fg >= 45 ? "Neutral" : fg >= 25 ? "Miedo" : "Miedo extremo";
+const D = dolar?.dolares || {};
+const items = (news || []).slice(0, 5);
+
+const chrome = (m) => `<div class="hd"><span>Bass</span><em>LAYER</em></div>
+<div class="tk">BTC<b>$83,473</b><i>-1.5%</i> ETH<b>$2,679</b><i>-0.5%</i> SOL<b>$118.57</b><i>-3.7%</i> LINK<b>$15.27</b><i class="u">+8.4%</i>${m ? "" : " UNI<b>$8.75</b><i>-10.1%</i> AAVE<b>$147.43</b><i>-4.8%</i>"}</div>`;
+const tabs = (on = 0) => `<div class="tabs">${["Noticias 23", "Eventos", "Predicciones", "Ciclos", "Historia", "Finanzas", "ETFs", "Acciones"].map((s, i) => `<span class="${i === on ? "on" : ""}">${s}</span>`).join("")}</div>`;
+const newsList = (n = 5) => `<div class="news">${items.slice(0, n).map((it) => `<div class="ni"><div class="th" style="background-image:url('${it.image || ""}')"></div><div><b>${it.title}</b><i>${it.tag}</i></div></div>`).join("")}</div>`;
+
+const metrics = `
+  <div class="p-c"><div class="p-k">Dominancia BTC</div><div class="p-v">${nf(dash.btcDominance, 1)}%</div></div>
+  <div class="p-c"><div class="p-k">Dominancia ETH</div><div class="p-v">${nf(dash.ethDominance, 1)}%</div></div>
+  <div class="p-c"><div class="p-k">Capitalización</div><div class="p-v">$${nf(dash.totalMarketCap / 1e12, 2)} T<small>${pct(mc)}</small></div></div>
+  <div class="p-c"><div class="p-k">Miedo y codicia</div><div class="p-v" style="color:var(--greed)">${fg}<small style="color:var(--greed)">${fgLabel}</small></div><div class="p-bar"><span style="width:${fg}%"></span></div></div>`;
+const dolarRows = `<div class="p-rows">
+  <div>Blue<b>$${nf(D.blue?.venta)}</b></div><div>Oficial<b>$${nf(D.oficial?.venta)}</b></div>
+  <div>Cripto<b>$${nf(D.cripto?.venta)}</b></div><div>Brecha<b class="acc">+${nf(dolar?.brecha, 1)}%</b></div></div>`;
+const trend = `<div class="p-trend">${(dash.trending || []).slice(0, 6).map((c) => `<span>${c.symbol}<em class="${c.change24h >= 0 ? "up" : "down"}">${c.change24h >= 0 ? "+" : "−"}${nf(Math.abs(c.change24h), 1)}%</em></span>`).join("")}</div>`;
+const pulse = `<div class="pulse">
+  <div class="p-head"><span>Pulso del mercado</span><span class="live">en vivo</span></div>
+  <div class="p-read ${reading[1]}">${reading[0]}</div><div class="p-sub">La capitalización ${mc < 0 ? "cae" : "sube"} ${nf(Math.abs(mc), 1)}% en 24 h</div>
+  <div class="p-grid">${metrics}</div>
+  <div class="p-sec">Dólar en Argentina</div>${dolarRows}
+  <div class="p-sec">Tendencia</div>${trend}</div>`;
+
+// ── B · Pulso unificado
+const bDesk = `${chrome()}<div class="back">← Volver a la curva</div><div class="h">Noticias</div>
+  <div class="grid"><div>${newsList()}</div><aside>${pulse}</aside></div>`;
+const bMob = `${chrome(1)}<div class="back">← Volver a la curva</div>${tabs()}
+  <div class="p-strip" onclick="this.classList.toggle('open')"><div class="row"><span class="rd ${reading[1]}" style="color:var(--${reading[1] === "red" ? "down" : reading[1] === "green" ? "up" : "text"})">${reading[0]}</span>
+    <span class="q"><span>F&amp;G <b style="color:var(--greed)">${fg}</b></span><span>Blue <b>$${nf(D.blue?.venta)}</b></span></span><span class="chev">⌄</span></div>
+    <div class="body"><div class="p-grid">${metrics}</div><div class="p-sec">Dólar en Argentina</div>${dolarRows}<div class="p-sec">Tendencia</div>${trend}</div></div>
+  <div class="h">Noticias</div>${newsList(4)}`;
+
+// ── A · Cada cosa en su sección
+const aDesk = `${chrome()}<div class="back">← Volver a la curva</div><div class="h">Ciclos BTC</div>
+  <div class="row4">${metrics.replaceAll('class="p-c"', "")}</div>
+  <div class="note">↓ acá sigue Ciclos BTC como hoy (reloj de 4 años, confluencia, curva de ciclos). El pulso vive solo acá; el dólar solo en Finanzas; Crypto BA Timeline dentro de Historia.</div>`;
+const aMob = `${chrome(1)}<div class="back">← Volver a la curva</div>${tabs()}<div class="h">Noticias</div>${newsList(5)}`;
+
+const k = { d: 0.56, m: 0.56 };
+const frame = (cls, html, label) => `<div class="wrap"><div class="tag">${label}</div><div class="fr ${cls}" style="--k:${k[cls]}"><div class="in">${html}</div></div></div>`;
+document.getElementById("root").innerHTML = `
+<div class="opt"><div class="cap"><h2><span>B</span> · Un solo pulso</h2>
+  <p>Las tres piezas se funden en un módulo con un solo lenguaje: etiqueta legible, número mono. Sin prompts de terminal falsos.</p>
+  <ul><li>Desktop: vive en la columna derecha, en el lugar del índice repetido.</li><li>Mobile: tira de una línea (lectura + miedo/codicia + blue) que se despliega.</li><li>Crypto BA Timeline pasa a Historia.</li><li>Igual en todas las secciones, siempre a mano.</li></ul></div>
+  ${frame("d", bDesk, "DESKTOP 1440 · NOTICIAS")}${frame("m", bMob, "MOBILE 390 · NOTICIAS")}</div>
+<hr class="sep" />
+<div class="opt"><div class="cap"><h2><span>A</span> · Cada cosa en su sección</h2>
+  <p>Nada fijo arriba: cada dato vive donde tiene sentido. Lo más minimalista.</p>
+  <ul><li>Pulso (dominancia, cap, miedo/codicia, tendencia) → Ciclos BTC.</li><li>Dólar → Finanzas.</li><li>Crypto BA Timeline → Historia.</li><li>Noticias queda limpia; sin columna derecha en desktop.</li></ul></div>
+  ${frame("d", aDesk, "DESKTOP 1440 · CICLOS BTC")}${frame("m", aMob, "MOBILE 390 · NOTICIAS")}</div>`;
+</script>
+</body>
+</html>

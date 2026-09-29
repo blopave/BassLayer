@@ -123,7 +123,7 @@ export function LayerCurve({ news = [], onEnter }) {
       const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [END, VT + 7 * VGAP + 46]]);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
       const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]) }));
-      return { V: true, W, Hh, x0, Xp, Yt, END, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
+      return { V: true, W, Hh, x0, Xp, Yt, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
     }
 
     const Hh = size.h, L = 64, R = 60, TOP = 120, BOT = 46;
@@ -138,7 +138,7 @@ export function LayerCurve({ news = [], onEnter }) {
       const px = Math.max(L - 4, Math.min(cx - pw / 2, W - R - pw + 4));
       return { ...n, tt, cx, cy, pill: { x: px, y: py, w: pw, h: ph, dir } };
     });
-    return { W, Hh, L, R, TOP, BOT, X, Y, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
+    return { W, Hh, L, R, TOP, BOT, X, Y, TODAY, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
   }, [H, size, mobile, cyc, t]);
 
   const name = (k) => t(SECTION_LABEL[k]);
@@ -191,18 +191,17 @@ export function LayerCurve({ news = [], onEnter }) {
       <defs>
         <linearGradient id="blc-cgv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
         <linearGradient id="blc-agv" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".14" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
-        <linearGradient id="blc-fzv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".07" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
       </defs>
       <g className="blc-grid">
         {[1000, 100000].map((p) => (
           <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={0} y2={geo.Hh - 40} /><text x={geo.Xp(p)} y={geo.Hh - 22} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
-      <rect className="blc-future" x={geo.x0 - 8} y={geo.yt} width={geo.W - geo.x0 + 8} height={geo.Hh - 40 - geo.yt} />
-      <text className="blc-fut-l" x={geo.x0} y={geo.yt + 44}>{t("curve.future")} ↓</text>
+      {/* El futuro: solo la línea punteada de hoy a la última sección, con su rótulo al arrancar. */}
+      <text className="blc-fut-l" x={geo.xt - 16} y={geo.yt + 30} textAnchor="end">{t("curve.future")} ↓</text>
       <path className="blc-area" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
-      <line className="blc-proj" x1={geo.xt} x2={geo.xt} y1={geo.yt} y2={geo.Yt(geo.END)} />
+      <line className="blc-proj" x1={geo.xt} x2={geo.xt} y1={geo.yt} y2={geo.nodes[geo.nodes.length - 1].cy} />
       <g className="blc-ms">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) < geo.nodes[5].tt).map((x) => (
           <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
@@ -256,7 +255,6 @@ export function LayerCurve({ news = [], onEnter }) {
             <defs>
               <linearGradient id="blc-cg" x1="0" x2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
               <linearGradient id="blc-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".16" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
-              <linearGradient id="blc-fz" x1="0" x2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".06" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
               <clipPath id="blc-cp"><rect x="0" y="0" width={geo.W} height={geo.Hh - geo.BOT} /></clipPath>
             </defs>
             <g className="blc-grid">
@@ -267,15 +265,15 @@ export function LayerCurve({ news = [], onEnter }) {
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
-            <rect className="blc-future" x={geo.xt} y={geo.TOP - 40} width={Math.max(0, geo.W - geo.R - geo.xt)} height={geo.Hh - geo.TOP - geo.BOT + 40} />
-            <text className="blc-fut-l" x={geo.xt + 10} y={geo.Hh - geo.BOT - 10}>{t("curve.future")} →</text>
+            {/* El futuro: solo la línea punteada de hoy a la última sección, con su rótulo al arrancar. */}
+            <text className="blc-fut-l" x={geo.xt + 22} y={geo.yt - 12}>{t("curve.future")} →</text>
             <g clipPath="url(#blc-cp)">
               <path className="blc-area" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
-            <line className="blc-proj" x1={geo.xt} x2={geo.W - geo.R} y1={geo.yt} y2={geo.yt} />
+            <line className="blc-proj" x1={geo.xt} x2={geo.nodes[geo.nodes.length - 1].cx} y1={geo.yt} y2={geo.yt} />
             <g className="blc-ms">
-              {(cyc.milestones || []).filter((x) => x.type !== "halving" || T(x.t) < 2024).map((x) => {
+              {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
                 const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
                 const near = geo.nodes.some((n) => Math.abs(n.tt - T(x.t)) < 0.7);
                 if (cy >= geo.Hh - geo.BOT) return null;

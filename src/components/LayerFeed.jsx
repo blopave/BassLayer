@@ -1,14 +1,12 @@
 import { useRef, useState, Suspense } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
-import { CryptoDashboard } from "./CryptoDashboard";
 import { CryptoBATimeline } from "./CryptoBATimeline";
-import { DolarCripto } from "./DolarCripto";
 import { CryptoIRL } from "./CryptoIRL";
 import { PredictionMarkets } from "./PredictionMarkets";
 import { FinanceNews } from "./FinanceNews";
 import { MarketList } from "./MarketList";
-import { LayerAside } from "./LayerAside";
+import { MarketPulse } from "./MarketPulse";
 import { LayerCurve } from "./LayerCurve";
 import { BtcHistory } from "./BtcHistory";
 import { lazyNamed } from "../utils/lazy";
@@ -104,32 +102,30 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
 
   return (
     <>
-      <CryptoDashboard />
-      <DolarCripto />
-      <div className="bl-layer-tools">
-        <CryptoBATimeline />
+      {/* Barra de sección: flecha para volver a la curva + pestañas en una fila.
+          Al entrar desde la curva la vista arranca acá. */}
+      <div className="bl-layer-bar" ref={backRef}>
+        <button type="button" className="bl-layer-back" onClick={() => setSection("portada")} aria-label={t("curve.back")} title={t("curve.back")}>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13 8H3m4-4L3 8l4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
+          {SECTIONS.map(([key, labelKey]) => (
+            <button
+              key={key}
+              type="button"
+              className={`bl-layer-tab${section === key ? " active" : ""}`}
+              aria-current={section === key ? "page" : undefined}
+              onClick={() => setSection(key)}
+            >
+              {t(labelKey)}
+              {key === "noticias" && news.length > 0 && <span className="bl-layer-tab-cnt">{news.length}</span>}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* "Volver" justo antes del contenido: al entrar desde la curva la vista
-          arranca acá (en mobile el terminal y las herramientas quedan arriba). */}
-      <button type="button" className="bl-layer-back" ref={backRef} onClick={() => setSection("portada")}>&larr; {t("curve.back")}</button>
-      {/* Secciones como tabs: una línea, Noticias abierta por defecto. */}
-      <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
-        {SECTIONS.map(([key, labelKey]) => (
-          <button
-            key={key}
-            type="button"
-            className={`bl-layer-tab${section === key ? " active" : ""}`}
-            aria-current={section === key ? "page" : undefined}
-            onClick={() => setSection(key)}
-          >
-            {t(labelKey)}
-            {key === "noticias" && news.length > 0 && <span className="bl-layer-tab-cnt">{news.length}</span>}
-          </button>
-        ))}
-      </nav>
-
-      {/* Desktop: contenido a la izquierda, mercado y ciclo a la derecha. */}
+      {/* Desktop: contenido a la izquierda, pulso del mercado a la derecha.
+          Mobile: el pulso va primero, como tira desplegable bajo las pestañas. */}
       <div className="bl-layer-grid">
       <div className="bl-layer-main">
       {/* Noticias section */}
@@ -200,6 +196,10 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
       {section === "historia" && (
         <div className="bl-layer-content">
           <BtcHistory />
+          {/* La memoria del ecosistema local vive con la historia. */}
+          <div className="bl-layer-tools">
+            <CryptoBATimeline />
+          </div>
         </div>
       )}
 
@@ -212,7 +212,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         </div>
       )}
       </div>
-      <LayerAside onGo={goSection} active={section} newsCount={news.length} />
+      <aside className="bl-layer-aside"><MarketPulse /></aside>
       </div>
     </>
   );

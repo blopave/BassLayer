@@ -1689,11 +1689,9 @@
 .bl-day-line { flex:1; height:1px; background:linear-gradient(to right, var(--bl-border), transparent); }
 
 /* ═══════════════════════════════════════════
-   Layer · Terminal Dashboard (CryptoDashboard)
+   Layer · Terminal (celdas y lectura que usa Ciclos BTC)
    Bloomberg-porteño feel: panel mono, ticks, scan
    ═══════════════════════════════════════════ */
-.bl-terminal-skel { min-height:186px; margin:8px 32px 14px; border:1px solid var(--bl-border); border-radius:6px; background:var(--bl-surface); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-@media (max-width:768px) { .bl-terminal-skel { min-height:242px; margin:8px 12px 14px; } }
 .bl-terminal {
   margin:8px 32px 14px;
   background:linear-gradient(180deg, var(--bl-surface) 0%, var(--bl-surface-alt) 100%);
@@ -1768,58 +1766,15 @@
 .bl-term-trending-chg.up   { color:var(--bl-up); }
 .bl-term-trending-chg.down { color:var(--bl-down); }
 
-/* ── Dólar cripto (Layer) — resumen + tabla USDT/ARS por exchange ── */
-.bl-dolar {
-  margin:14px 32px 0;
-  border:1px solid var(--bl-border-sub);
-  border-radius:8px;
-  background:var(--bl-subtle-bg);
-  overflow:hidden;
-}
-.bl-dolar-head {
-  display:flex; align-items:center; gap:18px; width:100%;
-  padding:12px 16px;
-  background:transparent; border:none; cursor:pointer;
-  font-family:var(--font-mono);
-  color:var(--bl-text-sec);
-  text-align:left;
-}
-.bl-dolar-head:hover { background:var(--bl-subtle-hover); }
-.bl-dolar-prompt { font-size:11px; letter-spacing:1px; white-space:nowrap; }
-.bl-dolar-summary {
-  display:flex; gap:18px; flex-wrap:wrap; margin-left:auto;
-  font-size:10px; letter-spacing:0.8px; color:var(--bl-text-ter);
-}
-.bl-dolar-q { white-space:nowrap; }
-.bl-dolar-skel { min-height:40px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
 /* Skeleton de noticias con la silueta real de las cards (126 px desktop /
    122 mobile + gap) y alto de viewport: el reemplazo skeleton→lista no mueve
    nada y el footer arranca debajo del pliegue. */
 .bl-skeleton-newsfeed { display:flex; flex-direction:column; gap:14px; min-height:100vh; }
 .bl-skeleton-newsfeed .bl-skeleton-news { min-height:126px; padding:0 14px; border:1px solid var(--bl-border-sub); border-bottom:1px solid var(--bl-border-sub); border-radius:6px; background:var(--bl-surface); }
 @media (max-width:768px) {
-  .bl-dolar-skel { min-height:61px; }
   .bl-skeleton-newsfeed { gap:12px; }
   .bl-skeleton-newsfeed .bl-skeleton-news { min-height:122px; }
 }
-.bl-dolar-q b { color:var(--bl-text); font-weight:600; margin-left:4px; font-variant-numeric:tabular-nums; }
-.bl-dolar-brecha b { color:var(--bl-accent-layer); }
-.bl-dolar-chevron { transition:transform .25s var(--ease-out-expo); color:var(--bl-text-ter); flex-shrink:0; }
-.bl-dolar-chevron.open { transform:rotate(180deg); }
-.bl-dolar-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:11px; }
-.bl-dolar-table th {
-  text-align:right; padding:8px 16px 6px;
-  color:var(--bl-text-ter); font-weight:500; letter-spacing:1px; font-size:9px;
-  border-top:1px solid var(--bl-border-sub);
-}
-.bl-dolar-table th:first-child, .bl-dolar-table td:first-child { text-align:left; }
-.bl-dolar-table td {
-  text-align:right; padding:7px 16px;
-  color:var(--bl-text-sec);
-  border-top:1px solid var(--bl-border-sub);
-  font-variant-numeric:tabular-nums;
-}
-.bl-dolar-table td:first-child { color:var(--bl-text); letter-spacing:0.5px; }
 
 /* ── Empty state de Layer — misma voz terminal, con salida ── */
 .bl-layer-empty {
@@ -2995,32 +2950,6 @@
 .bl-layer-tab-cnt { color:var(--bl-text-ter); letter-spacing:1px; }
 .bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
 
-/* ── Índice de secciones de Layer (columna lateral de desktop) ── */
-.bl-doors-lab { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:10px; }
-/* Desktop: el índice lateral navega; las pestañas chicas sobran. */
-@media (min-width:769px) { .bl-layer-tabs { display:none; } }
-.bl-idx { border:1px solid var(--bl-border); border-radius:12px; background:var(--bl-surface); padding:14px 8px 8px; }
-.bl-idx .bl-doors-lab { padding:0 8px; }
-.bl-idx-row {
-  display:grid; grid-template-columns:34px minmax(0,1fr) auto 12px; align-items:center; gap:10px; width:100%;
-  padding:10px 8px; border:0; border-radius:8px; background:none; color:var(--bl-text); font:inherit; text-align:left; cursor:pointer;
-  transition:background var(--duration-fast);
-}
-.bl-idx-row + .bl-idx-row { box-shadow:0 -1px 0 var(--bl-border-sub); }
-.bl-idx-row:hover { background:var(--bl-subtle); }
-.bl-idx-row.is-on { background:color-mix(in srgb, var(--bl-accent-layer) 10%, transparent); box-shadow:none; }
-.bl-idx-row.is-on + .bl-idx-row { box-shadow:none; }
-.bl-idx-row:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
-.bl-idx-ic { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bl-accent-layer) 10%, transparent); }
-.bl-idx-ic svg { width:17px; height:17px; fill:none; stroke:var(--bl-accent-layer); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-.bl-idx-n { min-width:0; font-weight:600; font-size:14px; }
-.bl-idx-n small { display:block; margin-top:2px; font-weight:400; font-size:11.5px; color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bl-idx-v { font-family:var(--font-mono); font-weight:600; font-size:12.5px; white-space:nowrap; }
-.bl-idx-v small { font-size:10.5px; font-weight:500; color:var(--bl-text-sec); }
-.bl-idx-v .up { color:var(--bl-up); } .bl-idx-v .down { color:var(--bl-down); }
-.bl-idx-v.is-loading { width:48px; height:12px; border-radius:4px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.bl-idx-ch { color:var(--bl-text-ter); font-size:16px; }
-.bl-idx-row.is-on .bl-idx-ch { color:var(--bl-accent-layer); }
 .bl-layer-h { margin:22px 32px 4px; font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--bl-text); }
 @media (max-width:768px) {
   .bl-layer-h { margin:20px 16px 2px; font-size:21px; }
@@ -3031,6 +2960,61 @@
    contra el aside parecía meterse debajo del panel Mercados. */
 .bl-layer-main .bl-filters { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
 .bl-layer-aside { position:sticky; top:12px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
+
+/* ── Pulso del mercado (sept 2026, dirección B) ──
+   Terminal + dólar + tendencia en un solo módulo: etiqueta legible, número
+   mono. Desktop: panel en la columna derecha. Mobile: tira que se despliega. */
+.bl-mpulse { border:1px solid var(--bl-border-sub); border-radius:14px; background:var(--bl-surface); padding:18px 20px 14px; }
+.bl-mpulse.is-loading { min-height:520px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+.bl-mpulse-head { display:flex; justify-content:space-between; align-items:center; font:500 10px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-mpulse-live { display:inline-flex; align-items:center; gap:6px; }
+.bl-mpulse-live::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--bl-up); box-shadow:0 0 6px var(--bl-up); }
+.bl-mpulse-sum { display:none; }
+.bl-mpulse .up { color:var(--bl-up); } .bl-mpulse .down { color:var(--bl-down); }
+.bl-mpulse-read { margin:12px 0 0; }
+.bl-mpulse-read b { display:block; font-size:22px; font-weight:650; letter-spacing:-.02em; color:var(--bl-text); }
+.bl-mpulse-read b.up { color:var(--bl-up); } .bl-mpulse-read b.down { color:var(--bl-down); }
+.bl-mpulse-read span { display:block; margin-top:2px; font-size:13px; color:var(--bl-text-sec); }
+.bl-mpulse-grid { display:grid; grid-template-columns:1fr 1fr; margin-top:14px; border-top:1px solid var(--bl-border-sub); }
+.bl-mpulse-c { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:12px 0; border:0; border-bottom:1px solid var(--bl-border-sub); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.bl-mpulse-c:nth-child(odd) { padding-right:14px; border-right:1px solid var(--bl-border-sub); }
+.bl-mpulse-c:nth-child(even) { padding-left:16px; }
+.bl-mpulse-c .k { font-size:11.5px; color:var(--bl-text-sec); transition:color .2s; }
+.bl-mpulse-c:hover .k { color:var(--bl-accent-layer); }
+.bl-mpulse-c:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
+.bl-mpulse-c .v { font:600 20px var(--font-mono); letter-spacing:-.03em; color:var(--bl-text); font-variant-numeric:tabular-nums; }
+.bl-mpulse-c .v small { margin-left:6px; font-size:11.5px; font-weight:500; letter-spacing:0; }
+.bl-mpulse-c .bar { display:block; width:100%; height:3px; margin-top:4px; border-radius:2px; background:var(--bl-border); overflow:hidden; }
+.bl-mpulse-c .bar span { display:block; height:100%; }
+.bl-mpulse-sec { margin:16px 0 4px; font:500 10px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-mpulse-rows div { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--bl-border-sub); font-size:13px; color:var(--bl-text-sec); }
+.bl-mpulse-rows b { font:600 13px var(--font-mono); color:var(--bl-text); font-variant-numeric:tabular-nums; }
+.bl-mpulse-rows b.acc { color:var(--bl-accent-layer); }
+.bl-mpulse-more { display:flex; justify-content:space-between; width:100%; padding:9px 0 2px; border:0; background:none; cursor:pointer; font:500 11px var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--bl-accent-layer); }
+.bl-mpulse-usdt { width:100%; margin-top:6px; border-collapse:collapse; font:500 11.5px var(--font-mono); font-variant-numeric:tabular-nums; }
+.bl-mpulse-usdt th { padding:6px 0; font-weight:500; font-size:10px; letter-spacing:.1em; text-align:right; color:var(--bl-text-ter); }
+.bl-mpulse-usdt td { padding:5px 0; text-align:right; color:var(--bl-text-sec); border-top:1px solid var(--bl-border-sub); }
+.bl-mpulse-usdt th:first-child, .bl-mpulse-usdt td:first-child { text-align:left; color:var(--bl-text); }
+.bl-mpulse-trend { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.bl-mpulse-trend span { padding:5px 9px; border-radius:6px; background:var(--bl-subtle); font:600 11.5px var(--font-mono); color:var(--bl-text); }
+.bl-mpulse-trend em { margin-left:5px; font-style:normal; font-weight:500; }
+@media (max-width:768px) {
+  /* Mobile: el pulso va antes del contenido, como una línea que se abre. */
+  .bl-layer-aside { position:static; order:-1; margin:14px 16px 4px; }
+  .bl-mpulse { padding:0; border-radius:12px; }
+  .bl-mpulse.is-loading { min-height:48px; }
+  .bl-mpulse-head, .bl-mpulse-read { display:none; }
+  .bl-mpulse-sum { display:flex; align-items:center; gap:12px; width:100%; padding:13px 14px; border:0; background:none; color:inherit; font:inherit; cursor:pointer; text-align:left; }
+  .bl-mpulse-sum:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; border-radius:12px; }
+  .bl-mpulse-rd { font-weight:650; font-size:15px; color:var(--bl-text); }
+  .bl-mpulse-q { display:flex; gap:12px; flex:1; justify-content:flex-end; font:500 11.5px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; }
+  .bl-mpulse-q b { color:var(--bl-text); font-weight:600; }
+  .bl-mpulse-chev { color:var(--bl-text-ter); transition:transform .25s var(--ease-out-expo); flex-shrink:0; }
+  .bl-mpulse.is-open .bl-mpulse-chev { transform:rotate(180deg); }
+  .bl-mpulse-body { display:none; padding:0 14px 14px; }
+  .bl-mpulse.is-open .bl-mpulse-body { display:block; }
+  .bl-pulse-grid { margin-top:0; }
+}
 
 .bl-layer-content {
   animation:bl-wp-fadein .25s var(--ease-out-expo);
@@ -3043,9 +3027,6 @@
   .bl-layer-tabs { margin:2px 16px 0; gap:18px; }
   .bl-layer-tab { font-size:10px; padding:10px 2px 9px; }
   .bl-layer-grid { grid-template-columns:1fr; }
-  /* En mobile la columna lateral quedaría después de todo el feed: los tabs
-     ya llevan a ETFs/Acciones/Ciclos y el ticker muestra precios. */
-  .bl-layer-aside { display:none; }
   /* Terminal comprimido: cuatro cifras en una fila; lectura y trending quedan en desktop. */
   .bl-terminal-reading, .bl-term-trending { display:none; }
   .bl-terminal-grid { grid-template-columns:repeat(4, 1fr); }
@@ -3056,10 +3037,6 @@
   .bl-term-cell-label { font-size:8px; letter-spacing:1px; margin-bottom:5px; }
   .bl-term-cell-value { font-size:15px; gap:4px; }
   .bl-term-cell-change { display:none; }
-  .bl-terminal-skel { min-height:112px; }
-  /* Dólar: 2×2 con las cuatro cotizaciones a la vista. La línea con scroll
-     horizontal oculto cortaba "CRIPTO $1.61…" y la brecha no se veía nunca. */
-  .bl-dolar-summary { display:grid; grid-template-columns:repeat(2, max-content); gap:6px 22px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -5223,12 +5200,8 @@ select.bl-venue-input { cursor:pointer; }
   /* Mensajes de error / vacío del feed — el usuario los lee para saber qué hacer. */
   .bl-error, .bl-empty { font-size:11px; }
   .bl-layer-empty { margin:14px 16px; padding:14px 16px 16px; }
-  .bl-dolar { margin:12px 16px 0; }
   /* El chevron se ancla al vértice: suelto al final del wrap quedaba
      huérfano en su propia línea. */
-  .bl-dolar-head { flex-wrap:wrap; gap:8px 14px; position:relative; padding-right:36px; }
-  .bl-dolar-summary { margin-left:0; }
-  .bl-dolar-chevron { position:absolute; right:14px; top:16px; }
   /* TRENDING scrollea horizontal — fade en el borde derecho como pista. */
   .bl-term-trending-list {
     mask-image:linear-gradient(90deg, #000 calc(100% - 28px), transparent);
@@ -5670,7 +5643,6 @@ select.bl-venue-input { cursor:pointer; }
 .blc-area { fill:url(#blc-ag); opacity:0; animation:blc-fade 1.2s 1.6s forwards; }
 @keyframes blc-fade { to { opacity:1; } }
 .blc-proj { stroke:var(--bl-accent-layer); stroke-width:1.2; stroke-dasharray:3 6; opacity:.55; }
-.blc-future { fill:url(#blc-fz); }
 .blc-ms circle { fill:var(--bl-bg); stroke:var(--bl-border); }
 .blc-ms text { fill:var(--bl-text-ter); opacity:.7; font:500 9px var(--font-mono); letter-spacing:.06em; }
 .blc-xh line { stroke:var(--bl-border); stroke-dasharray:2 4; } .blc-xh circle { fill:var(--bl-text); }
@@ -5713,12 +5685,19 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv .r.t span { white-space:normal; font-family:var(--font-sans); }
 .blc-pv .go { display:block; width:100%; margin-top:14px; padding:12px 14px; border:0; border-radius:9px; cursor:pointer; background:var(--bl-accent-layer); color:var(--bl-on-accent, #071114); font:600 12px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; }
 .blc-pv .go:focus-visible { outline:2px solid var(--bl-text); outline-offset:2px; }
+/* Barra de sección: ← (volver a la curva) + pestañas en una sola fila. La
+   flecha queda fija y las pestañas scrollean detrás en mobile. */
+.bl-layer-bar { scroll-margin-top:60px; /* ticker sticky del panel (42 px) + aire */ display:flex; align-items:stretch; gap:14px; margin:14px 32px 0; border-bottom:1px solid var(--bl-border); }
+.bl-layer-bar .bl-layer-tabs { flex:1; min-width:0; margin:0; border-bottom:0; }
 .bl-layer-back {
-  scroll-margin-top:8px;
-  display:inline-flex; align-items:center; gap:6px; margin:14px 32px 0; padding:8px 0; border:0; background:none; cursor:pointer;
-  font:500 11px var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--bl-accent-layer);
+  flex:none; align-self:center; display:grid; place-items:center; width:40px; height:40px; margin:4px 0 4px -4px; padding:0;
+  border:1px solid var(--bl-border-sub); border-radius:10px; background:none; cursor:pointer; color:var(--bl-accent-layer);
+  transition:background var(--duration-fast), border-color var(--duration-fast);
 }
-.bl-layer-back:hover { color:var(--bl-text); }
+.bl-layer-back:hover { background:color-mix(in srgb, var(--bl-accent-layer) 10%, transparent); border-color:var(--bl-accent-layer); }
+.bl-layer-back:hover svg { transform:translateX(-2px); }
+.bl-layer-back svg { transition:transform var(--duration-fast); }
+.bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
   .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node { animation:none; opacity:1; } .blc-halo { animation:none; }
 }
@@ -5729,11 +5708,11 @@ select.bl-venue-input { cursor:pointer; }
   .blc { height:auto; min-height:0; }
   .blc-stage { flex:none; height:776px; margin:8px 0 24px; touch-action:auto; }
   .blc-skel { inset:24px 16px 60px; }
-  .bl-layer-back { margin:12px 16px 0; }
+  .bl-layer-bar { margin:10px 16px 0; gap:10px; }
+  .bl-layer-back { margin-left:0; }
 }
 .blc-v .blc-curve { stroke:url(#blc-cgv); }
 .blc-v .blc-area { fill:url(#blc-agv); }
-.blc-v .blc-future { fill:url(#blc-fzv); }
 .blc-v .blc-node { -webkit-tap-highlight-color:transparent; }
 .blc-hit { fill:transparent; transition:fill .2s; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }

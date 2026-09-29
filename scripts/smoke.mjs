@@ -235,6 +235,17 @@ async function run(vp) {
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
+      // Dentro de una sección (sept 2026): "Volver" a la vista y sin taparse
+      // con el ticker; pestañas en todas las pantallas; Pulso del mercado
+      // (en mobile, tira que se despliega) en lugar de terminal + dólar.
+      const backFree = await page.locator(".bl-layer-back").evaluate((el) => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.left + 8, r.top + r.height / 2)); }).catch(() => false);
+      if (!backFree) fail(vp.name, "layer", "\"Volver a la curva\" queda tapado al entrar a una sección");
+      if (!(await page.locator(".bl-layer-tabs").isVisible())) fail(vp.name, "layer", "no se ven las pestañas de sección");
+      const strayTop = await page.evaluate(() => { const back = document.querySelector(".bl-layer-back"); return [...document.querySelectorAll(".bl-terminal-header, .bl-dolar")].some((e) => e.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING); });
+      if (strayTop) fail(vp.name, "layer", "volvió el terminal/dólar suelto arriba de la sección");
+      await page.locator(".bl-mpulse-body").waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+      if (vp.viewport.width <= 768) await page.locator(".bl-mpulse-sum").click().catch(() => {});
+      if (!(await page.locator(".bl-mpulse-body .bl-mpulse-c").first().isVisible().catch(() => false))) fail(vp.name, "pulso", "el pulso del mercado no muestra sus indicadores");
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);
       if ((await page.locator(".blc-node").count()) !== 8) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
@@ -242,6 +253,7 @@ async function run(vp) {
       await pill(/Historia|History/).click();
       await page.locator(".blh-ev").first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
       const evs = await page.locator(".blh-ev").count(), rows = await page.locator(".blh-list li").count();
+      if (!(await page.locator(".bl-timeline-toggle, .bl-timeline").count())) fail(vp.name, "historia", "Crypto BA Timeline no está en Historia");
       if (evs < 20 || evs !== rows) fail(vp.name, "historia", `${evs} hechos en la curva y ${rows} en la lista`);
       else {
         await page.locator(".blh-list button").nth(3).click();
