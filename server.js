@@ -238,7 +238,7 @@ function setCache(key, data) {
 // sirve ya y se refresca en background, con una sola build en vuelo. El
 // último dato bueno se persiste en data/cache/<key>.json para que un
 // reinicio arranque servido y no en frío.
-const SNAPSHOT_KEYS = new Set(["events", "bassNews"]);
+const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices"]);
 const SNAPSHOT_DIR = join(__dirname, "data", "cache");
 const swrInflight = new Map();
 
@@ -576,26 +576,88 @@ const SYM_MAP = {
   chainlink:"LINK", aave:"AAVE", uniswap:"UNI", optimism:"OP",
 };
 
+// Precios del ticker con respaldo (sept 2026: CoinGecko devolvió 429/403 justo
+// después de un deploy y la barra desapareció en producción):
+//   1. CoinGecko (precio, 24 h, capitalización, serie 7 d)
+//   2. Kraken, sin cuenta: ticker + velas de 1 h (serie 7 d y 24 h reales)
+//   3. CoinPaprika, sin cuenta: precio y 24 h (sin serie)
+// Si CoinGecko falla, se lo deja descansar 10 min en vez de pegarle en cada
+// visita (eso agrava el límite). El último dato bueno queda en disco.
+const KRAKEN_PAIR = { bitcoin: "XBTUSD", ethereum: "ETHUSD", solana: "SOLUSD", arbitrum: "ARBUSD", chainlink: "LINKUSD", aave: "AAVEUSD", uniswap: "UNIUSD", optimism: "OPUSD" };
+const PAPRIKA_ID = { bitcoin: "btc-bitcoin", ethereum: "eth-ethereum", solana: "sol-solana", arbitrum: "arb-arbitrum", chainlink: "link-chainlink", aave: "aave-new", uniswap: "uni-uniswap", optimism: "op-optimism" };
+const COIN_ORDER = COIN_IDS_STR.split(",");
+const pct1 = (x) => Math.round(x * 10) / 10;
+let coingeckoRestUntil = 0;
+
+async function pricesCoinGecko() {
+  if (Date.now() < coingeckoRestUntil) throw new Error("CoinGecko en pausa");
+  const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COIN_IDS_STR}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
+  if (!r.ok) {
+    coingeckoRestUntil = Date.now() + 10 * 60_000;
+    throw new Error(`CoinGecko ${r.status}`);
+  }
+  const raw = JSON.parse(await safeText(r));
+  return raw.map((d) => ({
+    id: d.id, sym: SYM_MAP[d.id] || d.id.toUpperCase(), name: d.id, usd: d.current_price,
+    change: pct1(d.price_change_percentage_24h || 0),
+    marketCap: d.market_cap || null,
+    sparkline: d.sparkline_in_7d?.price || [],
+  }));
+}
+
+async function pricesKraken() {
+  const out = [];
+  // De a uno: el límite público de Kraken castiga ráfagas; es solo el respaldo.
+  for (const id of COIN_ORDER) {
+    const r = await fetchSafe(`https://api.kraken.com/0/public/OHLC?pair=${KRAKEN_PAIR[id]}&interval=60`);
+    const j = JSON.parse(await safeText(r));
+    const candles = j.error?.length ? null : Object.entries(j.result || {}).find(([k]) => k !== "last")?.[1];
+    if (!candles?.length) throw new Error(`Kraken ${id}: ${j.error?.join(", ") || "sin velas"}`);
+    const closes = candles.map((c) => Number(c[4]));
+    const last = closes[closes.length - 1], dayAgo = closes[Math.max(0, closes.length - 25)];
+    out.push({ id, sym: SYM_MAP[id], name: id, usd: last, change: pct1((last / dayAgo - 1) * 100), marketCap: null, sparkline: closes.slice(-168) });
+  }
+  return out;
+}
+
+async function pricesPaprika() {
+  return Promise.all(COIN_ORDER.map(async (id) => {
+    const r = await fetchSafe(`https://api.coinpaprika.com/v1/tickers/${PAPRIKA_ID[id]}`);
+    if (!r.ok) throw new Error(`CoinPaprika ${id} ${r.status}`);
+    const q = JSON.parse(await safeText(r)).quotes?.USD;
+    if (!q?.price) throw new Error(`CoinPaprika ${id}: sin precio`);
+    return { id, sym: SYM_MAP[id], name: id, usd: q.price, change: pct1(q.percent_change_24h || 0), marketCap: q.market_cap || null, sparkline: [] };
+  }));
+}
+
+// Una sola cadena en vuelo aunque lleguen varias visitas juntas.
+// PRICES_OFF=coingecko,kraken apaga fuentes sin deploy (y sirve para probar).
+const PRICES_OFF = new Set((process.env.PRICES_OFF || "").split(",").map((x) => x.trim()).filter(Boolean));
+let pricesInflight = null;
+async function freshPrices() {
+  for (const [name, fn] of [["coingecko", pricesCoinGecko], ["kraken", pricesKraken], ["coinpaprika", pricesPaprika]]) {
+    if (PRICES_OFF.has(name)) continue;
+    try {
+      const prices = await fn();
+      if (!prices.length) continue;
+      if (name !== "coingecko") console.warn(`[prices] servidos desde ${name}`);
+      setCache("prices", prices);
+      // El respaldo se cachea 2 min (cuota de las fuentes gratis); CoinGecko, 30 s.
+      cache.prices.ttl = name === "coingecko" ? 30_000 : 120_000;
+      return prices;
+    } catch (e) { console.error(`[prices] ${name}:`, e.message); }
+  }
+  return null;
+}
+
 app.get("/api/prices", async (req, res) => {
   const hit = cached("prices");
   if (hit) return res.json(hit);
-  try {
-    const r = await fetchSafe(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COIN_IDS_STR}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
-    if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
-    const raw = JSON.parse(await safeText(r));
-    const prices = raw.map((d) => ({
-      id: d.id, sym: SYM_MAP[d.id] || d.id.toUpperCase(), name: d.id, usd: d.current_price,
-      change: Math.round((d.price_change_percentage_24h || 0) * 10) / 10,
-      marketCap: d.market_cap || null,
-      sparkline: d.sparkline_in_7d?.price || [],
-    }));
-    setCache("prices", prices);
-    res.json(prices);
-  } catch (e) {
-    console.error("[prices]", e.message);
-    if (cache.prices.data) return res.json(cache.prices.data);
-    res.status(502).json({ error: "Price data unavailable" });
-  }
+  pricesInflight ??= freshPrices().finally(() => { pricesInflight = null; });
+  const prices = await pricesInflight;
+  if (prices) return res.json(prices);
+  if (cache.prices.data) return res.json(cache.prices.data); // último bueno (memoria o disco)
+  res.status(502).json({ error: "Price data unavailable" });
 });
 
 // ─────────────────────────────────────────────

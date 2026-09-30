@@ -34,6 +34,9 @@ const ENDPOINTS = [
   { path: "/api/bass-news",     minItems: 10, required: ["title"] },
   { path: "/api/festivals",     minItems: 3,  required: ["name"] },
   { path: "/api/crypto-events", minItems: 3,  required: ["title", "date"] },
+  // La barra de precios: con respaldo (CoinGecko → Kraken → CoinPaprika →
+  // último guardado) nunca debería quedar vacía (sept 2026).
+  { path: "/api/prices",        minItems: 6,  required: ["sym", "usd"] },
 ];
 
 const problems = [];
