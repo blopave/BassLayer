@@ -65,7 +65,8 @@ export const adminApi = {
 export const api = {
   prices:    () => fetch("/api/prices").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   news:      () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  financeNews: () => fetch("/api/finance-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  // ?v=2: temas nuevos (argentina/wallstreet/…); que no se reuse la respuesta vieja
+  financeNews: () => fetch("/api/finance-news?v=2").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   markets:   () => fetch("/api/markets").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   bassNews:  () => fetch("/api/bass-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),

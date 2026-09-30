@@ -37,6 +37,9 @@ const ENDPOINTS = [
   // La barra de precios: con respaldo (CoinGecko → Kraken → CoinPaprika →
   // último guardado) nunca debería quedar vacía (sept 2026).
   { path: "/api/prices",        minItems: 6,  required: ["sym", "usd"] },
+  // Predicciones y Finanzas por tema (sept 2026).
+  { path: "/api/prediction-markets", minItems: 5, required: ["title", "group", "url"] },
+  { path: "/api/finance-news",  minItems: 10, required: ["title", "tag", "url"] },
 ];
 
 const problems = [];
@@ -107,6 +110,35 @@ async function checkEndpoint({ path, minItems, required }) {
     if (fuera.length) fail(path, "amba", `marcados AMBA pero de otra ciudad: ${fuera.slice(0, 3).map((it) => `${it.name} (${it.venue})`).join(" | ")}`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
+  }
+
+  // Predicciones: un evento por tarjeta, en los temas de Layer, hasta 4 por
+  // tema, nada que venza en horas, y las etiquetas en castellano del glosario
+  // (el traductor automático las rompía: "Antrópica", "bps" solo).
+  if (path === "/api/prediction-markets") {
+    const GROUPS = new Set(["crypto", "fed", "macro", "tech", "argentina"]);
+    const per = {};
+    for (const it of items) per[it.group] = (per[it.group] || 0) + 1;
+    const raros = Object.keys(per).filter((g) => !GROUPS.has(g));
+    if (raros.length) fail(path, "tema", `temas fuera de Layer: ${raros.join(", ")}`);
+    if (Object.keys(per).length < 3) fail(path, "tema", `solo ${Object.keys(per).length} temas`);
+    const llenos = Object.entries(per).filter(([, n]) => n > 4);
+    if (llenos.length) fail(path, "tema", `más de 4 por tema: ${llenos.map(([g, n]) => `${g}=${n}`).join(", ")}`);
+    const sinResultados = items.filter((it) => !it.outcomes?.length);
+    if (sinResultados.length) fail(path, "resultados", `${sinResultados.length} sin resultados`);
+    const pronto = items.filter((it) => it.endDate && new Date(it.endDate).getTime() < Date.now() + 24 * 3600_000);
+    if (pronto.length) fail(path, "vence", pronto.slice(0, 3).map((it) => it.title).join(" | "));
+    const malas = items.flatMap((it) => it.outcomes || []).filter((o) => /Antrópic|^bps$|\bbps\b/.test(o.labelEs || ""));
+    if (malas.length) fail(path, "etiqueta", malas.slice(0, 3).map((o) => o.labelEs).join(" | "));
+  }
+
+  // Finanzas: temas por contenido y sin finanzas personales ni consumo.
+  if (path === "/api/finance-news") {
+    const TAGS = new Set(["argentina", "wallstreet", "companies", "world"]);
+    const raros = [...new Set(items.map((it) => it.tag).filter((t) => !TAGS.has(t)))];
+    if (raros.length) fail(path, "tema", `temas viejos o desconocidos: ${raros.join(", ")}`);
+    const fuera = items.filter((it) => /\b(I'?m|I’m|my husband|my wife|should I|am I|prepagas?|aumentos?)\b/i.test(it.title || ""));
+    if (fuera.length) fail(path, "curaduria", fuera.slice(0, 3).map((it) => it.title.slice(0, 70)).join(" | "));
   }
 
     // Plantillas sin completar del CMS de origen en títulos ("… [FECHA]").

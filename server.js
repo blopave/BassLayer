@@ -308,9 +308,16 @@ function swr(key, build) {
   if (!p) {
     p = build()
       .then((data) => {
-        const ok = Array.isArray(data) ? data.length > 0 : data != null;
+        // Colapso = las fuentes cayeron juntas (sept 2026: todas abortaron y
+        // la agenda quedó en 4 festivales, pisando el snapshot de ~580). Con
+        // menos de un tercio del último bueno se conserva el bueno y se
+        // reintenta en 5 min en vez de esperar el TTL entero.
+        const prev = Array.isArray(c.data) ? c.data.length : 0;
+        const collapsed = Array.isArray(data) && prev >= 30 && data.length < prev / 3;
+        if (collapsed) console.warn(`[${key}] build colapsada (${data.length} vs ${prev}): se conserva la anterior`);
+        const ok = !collapsed && (Array.isArray(data) ? data.length > 0 : data != null);
         if (ok) setCache(key, data);
-        else if (c.data) cache[key].ts = Date.now(); // vacío: estirá el último bueno
+        else if (c.data) cache[key].ts = Date.now() - Math.max(0, c.ttl - 5 * 60_000); // estirá el último bueno, reintento en 5 min
         return ok ? data : (c.data || data);
       })
       .catch((e) => {
@@ -1125,21 +1132,32 @@ const FINANCE_NEWS_FEEDS = [
 const FINANCE_NEWS_MAX_AGE_DAYS = 4;
 const FINANCE_MAX_ITEMS_PER_SOURCE = 6;
 
-// Tagger liviano bilingüe → clave neutra (se traduce en el cliente vía labels).
-// Orden: lo específico primero, "Global" como fallback.
+// Temas por contenido (Pablo, sept 2026), en este orden: lo argentino
+// primero (dólar, BCRA, bonos, Merval…), después empresas y tech, después
+// Wall Street y la Fed. Lo que no encaja: Argentina si es un medio argentino,
+// Mundo si no. El cliente traduce la clave.
 const FINANCE_TAG_RULES = [
-  { tag: "Crypto",    pats: [/\bbitcoin\b/i, /\bbtc\b/i, /\bether(eum)?\b/i, /\bcrypto\b/i, /\bcripto\b/i, /\bblockchain\b/i, /\bstablecoin\b/i] },
-  { tag: "Companies", pats: [/\bearnings\b/i, /\bipo\b/i, /\bmerger\b/i, /\badquisici[óo]n\b/i, /\bbalance\b/i, /\bganancias\b/i, /\bresults?\b/i, /\bceo\b/i, /\bcompany\b/i, /\bempresa\b/i] },
-  { tag: "Economy",   pats: [/\binflaci[óo]n\b/i, /\binflation\b/i, /\bgdp\b/i, /\bpbi\b/i, /\bfed\b/i, /\brates?\b/i, /\btasas?\b/i, /\beconom(y|[íi]a)\b/i, /\bunemployment\b/i, /\bempleo\b/i, /\bbanco central\b/i, /\briesgo pa[íi]s\b/i] },
-  { tag: "Markets",   pats: [/\bacciones\b/i, /\bbolsa\b/i, /\bmerval\b/i, /\bwall street\b/i, /\bs&p\b/i, /\bnasdaq\b/i, /\bdow\b/i, /\bd[óo]lar\b/i, /\bbonos?\b/i, /\bbonds?\b/i, /\bstocks?\b/i, /\bshares?\b/i, /\b[íi]ndice\b/i, /\bmercados?\b/i, /\brally\b/i, /\betf\b/i] },
+  { tag: "argentina",  rx: /\b(d[óo]lar(es)? (blue|oficial|mep|cripto|mayorista)|bcra|banco central|merval|riesgo pa[íi]s|inflaci[óo]n|indec|milei|caputo|arca|argentin\w*|reservas|cepo|licitaci[óo]n|bonos en d[óo]lares|adrs?)\b/i },
+  { tag: "companies",  rx: /\b(earnings|ipo|ceo|netflix|apple|alphabet|google|microsoft|nvidia|meta|amazon|tesla|anthropic|openai|ai|ia|inteligencia artificial|tech|tecnol[óo]gic\w*|startups?|chips?|semiconductor\w*|fusi[óo]n|adquisici[óo]n|mergers?|acquisitions?|balances?|acci[óo]n de)\b/i },
+  { tag: "wallstreet", rx: /\b(wall street|s&p|nasdaq|dow|fed|reserva federal|powell|bessent|treasur\w*|tesoro de ee|rendimientos?|yields?|tasas|rates?|stocks?|bonds?|bitcoin|cripto\w*|crypto|etfs?|americans|u\.s\.|us economy|estados unidos|ee\.? ?uu\.?)\b/i },
 ];
-function detectFinanceTag(title, categories = []) {
-  const haystack = `${title} ${categories.join(" ")}`;
-  for (const rule of FINANCE_TAG_RULES) {
-    if (rule.pats.some((p) => p.test(haystack))) return rule.tag;
-  }
-  return "Global";
+const FINANCE_AR_SOURCES = new Set(["ambito-eco", "ambito-fin", "infobae-eco"]);
+function detectFinanceTag(title, slug) {
+  return FINANCE_TAG_RULES.find((r) => r.rx.test(title))?.tag || (FINANCE_AR_SOURCES.has(slug) ? "argentina" : "world");
 }
+// Curaduría: Layer es inversiones, no finanzas personales ni consumo.
+// Afuera: columnas en primera persona ("I'm 47 and buy bitcoin…", "My husband
+// resents…"), consejos de consumo (tarjetas de viaje, cuotas del auto),
+// aumentos de servicios/prepagas, autos, y la cotización diaria del dólar
+// (ya está en el Pulso, con número y no titular).
+const FINANCE_OUT = [
+  /^[‘'"“].*[’'"”]:/,                                                        // cita en primera persona como título
+  /\b(I'?m|I’m|I’d|I'd|my (husband|wife|kids?|parents?)|should I|am I)\b/,
+  /\b(travel cards?|credit cards?|points guy|retirement|social security|mortgage|car payments?|car loans?)\b/i,
+  /\b(aumentos?|prepagas?|colectivos|peajes|alquileres|sueldos?|0 ?km|autos?|cars?|pickups?|nafteras?|combustibles|surtidores|jubilaci\w*|aguinaldo|anses|tarifas?)\b/i,
+  /^d[óo]lar( blue)?( hoy)?( y d[óo]lar blue hoy)?( minuto a minuto)?:/i,
+];
+const financeKeep = (title) => !FINANCE_OUT.some((rx) => rx.test(title));
 
 async function fetchFinanceNewsRSSFeed(feed) {
   const r = await fetchSafe(feed.url, { headers: { "User-Agent": "BassLayer/1.0" } });
@@ -1163,13 +1181,12 @@ async function fetchFinanceNewsRSSFeed(feed) {
     }
     const image = pickItemImage(item, descStr);
     const description = htmlToText(descStr).slice(0, 320);
-    const categories = extractCategories(item);
     const rel = relativeTime(date);
     return {
       time: rel,
       _mins: timeToMins(rel),
       _pubDate: date,
-      tag: detectFinanceTag(title, categories),
+      tag: detectFinanceTag(title, feed.slug),
       title,
       description,
       image: image ? sanitizeUrl(image) : null,
@@ -1202,7 +1219,7 @@ app.get("/api/finance-news", async (req, res) => {
     ));
     const maxAgeMins = FINANCE_NEWS_MAX_AGE_DAYS * 24 * 60;
     const all = refreshItemAges(results.flat())
-      .filter((item) => item.title && item.url && item._mins < maxAgeMins)
+      .filter((item) => item.title && item.url && item._mins < maxAgeMins && financeKeep(item.title))
       .sort((a, b) => a._mins - b._mins);
 
     // Quota por fuente para diversidad (ver FINANCE_MAX_ITEMS_PER_SOURCE).
@@ -1215,6 +1232,13 @@ app.get("/api/finance-news", async (req, res) => {
       quotaApplied.push(item);
     }
     const news = quotaApplied.slice(0, 40).map(({ _mins, _pubDate, ...rest }) => rest);
+    // Titulares en inglés: traducidos (marcados en el cliente, con el original
+    // a un toque). Cacheado por texto; sin cupo, queda el original.
+    for (const n of news) {
+      if (n.lang !== "en") continue;
+      const es = await translateText(n.title, "en", "es");
+      if (es) n.titleEs = es;
+    }
     if (news.length) { registerImages(news); setCache("financeNews", news); }
     const serve = news.length ? news : (cache.financeNews.data || news);
     res.json(applyFilter(serve));
@@ -4178,68 +4202,129 @@ function parseMaybeJSONArray(v) {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
 }
 
-// Layer es inversión anclada en crypto + tech: de Polymarket entran solo los
-// mercados de ese universo (crypto, tech, macro, política con impacto
-// económico). Deportes y entretenimiento quedan afuera aunque muevan volumen.
-const PREDICTION_TOPIC = /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|crypto|token|stablecoin|usdc|usdt|coinbase|binance|etf|fed|fomc|rate cut|interest rate|inflation|cpi|gdp|recession|tariff|treasury|stock|s&p|nasdaq|dow|nvidia|apple|tesla|microsoft|google|alphabet|amazon|meta|openai|chatgpt|anthropic|ai model|gpt|elon|spacex|starship|ipo|earnings|oil|gold|dollar|euro|argentina|milei|china|trump|election|congress|senate|supreme court|shutdown|debt ceiling)\b/i;
-const PREDICTION_OFFTOPIC = /\b(vs\.?|nfl|nba|mlb|nhl|mls|wta|atp|ufc|f1|premier league|la liga|serie a|champions|world cup|super bowl|playoffs?|open:|grand slam|match|game \d|touchdown|home run|oscar|grammy|emmy|box office|bachelor|survivor)\b/i;
-const isLayerTopic = (m) => !PREDICTION_OFFTOPIC.test(m.question) && PREDICTION_TOPIC.test(m.question);
+// Predicciones (sept 2026): un EVENTO de Polymarket = una tarjeta (la Fed de
+// octubre con sus resultados, no tres tarjetas sueltas), agrupado por tema.
+// Se pide a Polymarket por etiqueta (el listado general pesa 7+ MB por las
+// elecciones con 128 mercados). Layer = inversiones ancladas en cripto y tech:
+// cripto, la Fed, Argentina, tech/IA y macro/mercados; deportes, cultura,
+// geopolítica y elecciones de otros países afuera (Pablo). Títulos traducidos
+// (marcados) con el mismo traductor que las bios; sin cupo, van en el original.
+const PRED_GROUPS = [
+  ["crypto", "crypto"], ["fed", "fed"], ["argentina", "argentina"], ["tech", "ai"], ["macro", "economy"], ["macro", "finance"],
+];
+// El título manda sobre la etiqueta pedida: "Fed rate cut by…?" llega por
+// economy pero es de la Fed; "Anthropic IPO" llega por finance pero es tech.
+const PRED_BY_TITLE = [
+  ["fed", /\b(fed|fomc)\b/i],
+  ["tech", /\b(ipos?|ai|openai|anthropic|nvidia|apple|google|gemini|chatgpt|largest company)\b/i],
+];
+const PRED_OUT = /^(sports|esports|games|soccer|tennis|nba|nfl|mlb|nhl|ufc|f1|cricket|culture|awards|tweet markets|pop culture|movies|music|celebrities|weather|military)$/i;
+const predTags = (e) => (e.tags || []).map((t) => String(t.label || "").trim());
+const predAllowed = (e) => {
+  const tags = predTags(e);
+  if (tags.some((t) => PRED_OUT.test(t))) return false;
+  // Elecciones: solo las de Argentina y EE.UU.
+  return !tags.some((t) => /election/i.test(t)) || tags.some((t) => /^(argentina|united states|us election)$/i.test(t));
+};
+
+// Etiquetas de resultado: glosario fijo, no traductor (el traductor convierte
+// "Anthropic" en "Antrópica" y "0 (0 bps)" en "bps"). Lo que no está en el
+// glosario son nombres propios y quedan como vienen.
+const MONTHS_EN = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+const monthIdx = (m) => MONTHS_EN.indexOf(m.toLowerCase());
+const monthEs = (m) => (monthIdx(m) >= 0 ? MONTHS_ES[monthIdx(m)].toLowerCase() : m);
+function predLabelEs(label) {
+  let t = String(label).trim();
+  if (/^no change$/i.test(t)) return "Sin cambios";
+  t = t.replace(/^(\d+)\+? ?bps? (increase|hike)$/i, "Suba de $1 pb")
+    .replace(/^(\d+)\+? ?bps? (decrease|cut)$/i, "Baja de $1 pb")
+    .replace(/\((\d+) bps\)/i, "($1 pb)")
+    .replace(/^no release by (\w+) (\d+)$/i, (_, m, d) => `Sin lanzamiento al ${d} ${monthEs(m)}`)
+    .replace(/^(\w+) (\d{4}) meeting$/i, (_, m, y) => `Reunión de ${monthEs(m)} ${y}`)
+    .replace(/^(\w+) (\d{1,2}),? (\d{4})$/i, (_, m, d, y) => `${d} ${monthEs(m)} ${y}`)
+    .replace(/^(\w+) (\d{1,2})$/i, (_, m, d) => (monthIdx(m) >= 0 ? `${d} ${monthEs(m)}` : _))
+    .replace(/(\d)\.(\d+)%/g, "$1,$2 %")
+    .replace(/(\d),(\d{3})/g, "$1.$2");
+  // "AXEL KICILLOF" → "Axel Kicillof" (siglas cortas como "xAI" o "BCE" no se tocan)
+  if (/^[A-ZÁÉÍÓÚÑ ]{8,}$/.test(t)) t = t.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  return t;
+}
+// El traductor habla castellano de España y no conoce las marcas.
+const PRED_TITLE_FIX = [
+  [/Antrópic[ao]/g, "Anthropic"], [/Géminis/g, "Gemini"], [/\bsubidas?\b/g, (w) => w.replace("subida", "suba")],
+  [/\b([Tt])ipos\b/g, (_, t) => (t === "T" ? "Tasas" : "tasas")], [/_{2,}|\.{3}/g, "…"],
+];
+// "Gemini 4.0 released by...?" sale "¿Gemini 4.0 lanzado por…?": la pregunta
+// es la fecha, así que se dice así ("Gemini 4.0 lanzado: ¿cuándo?").
+const predTitleEs = (t) => PRED_TITLE_FIX.reduce((s, [rx, to]) => s.replace(rx, to), t)
+  .replace(/^¿(.+?)(?:\s(?:por|para|en|antes del?))?\s?…\?$/, "$1: ¿cuándo?");
+
+// Los resultados que vale la pena mostrar: los inciertos (3–97 %), los de más
+// volumen del día, ordenados por probabilidad.
+function predOutcomes(e) {
+  const ms = (e.markets || []).filter((m) => m.active !== false && !m.closed);
+  if (ms.length === 1) {
+    const prices = parseMaybeJSONArray(ms[0].outcomePrices).map(Number);
+    const outs = parseMaybeJSONArray(ms[0].outcomes);
+    const yes = Math.round((prices[outs.findIndex((o) => /^yes$/i.test(o))] ?? prices[0]) * 100);
+    return Number.isFinite(yes) && yes > 2 && yes < 98 ? [{ label: "Sí", pct: yes, binary: true }] : [];
+  }
+  return ms
+    .map((m) => ({ label: m.groupItemTitle || m.question, pct: Math.round(Number(parseMaybeJSONArray(m.outcomePrices)[0]) * 100), vol: Number(m.volume24hr) || 0 }))
+    .filter((o) => o.label && o.pct > 2 && o.pct < 98)
+    .sort((a, b) => b.vol - a.vol).slice(0, 3)
+    .sort((a, b) => b.pct - a.pct)
+    .map(({ vol: _v, ...o }) => o);
+}
 
 app.get("/api/prediction-markets", async (req, res) => {
   const hit = cached("predictions");
   if (hit) return res.json(hit);
   try {
-    // Pull a wider window because we filter out resolved/expired markets after
-    const url = "https://gamma-api.polymarket.com/markets?closed=false&active=true&limit=80&order=volume24hr&ascending=false";
-    const r = await fetchSafe(url, { headers: { "Accept": "application/json" } }, 10000);
-    if (!r.ok) throw new Error(`Polymarket ${r.status}`);
-    const raw = JSON.parse(await safeText(r));
-    const list = Array.isArray(raw) ? raw : (raw.data || []);
-    const now = Date.now();
-
-    const markets = list.map((m) => {
-      const outcomes = parseMaybeJSONArray(m.outcomes);
-      const prices = parseMaybeJSONArray(m.outcomePrices).map(Number);
-      // Pick the leading outcome (highest price)
-      let topIdx = 0;
-      for (let i = 1; i < prices.length; i++) if (prices[i] > prices[topIdx]) topIdx = i;
-      const topOutcome = outcomes[topIdx] || null;
-      const topPct = prices[topIdx] != null ? Math.round(prices[topIdx] * 100) : null;
-      const vol24 = Number(m.volume24hr) || 0;
-      const endDate = m.endDate || m.end_date_iso || null;
-      const endTs = endDate ? new Date(endDate).getTime() : null;
-      // Prefer the event slug — Polymarket URLs are /event/{eventSlug}, not market slug
-      const eventSlug = (Array.isArray(m.events) && m.events[0]?.slug) || m.slug || "";
-      return {
-        id: String(m.id || m.conditionId || m.slug),
-        slug: m.slug || "",
-        question: m.question || m.title || "",
-        icon: sanitizeUrl(m.icon || m.image || ""),
-        topOutcome,
-        topPct,
-        outcomes,
-        prices,
-        volume24h: Math.round(vol24),
-        endDate,
-        endTs,
-        url: eventSlug ? `https://polymarket.com/event/${eventSlug}` : "https://polymarket.com",
-      };
-    })
-      // Quality gates: alive market, real uncertainty, real volume, future deadline
-      .filter((m) =>
-        m.question &&
-        m.topPct != null &&
-        m.topPct < 97 &&
-        m.volume24h >= 1000 &&
-        (!m.endTs || m.endTs > now)
-      )
-      .filter(isLayerTopic)
-      .slice(0, 12)
-      // Drop the temp endTs field before responding
-      .map(({ endTs: _t, ...rest }) => rest);
-
-    setCache("predictions", markets);
-    res.json(markets);
+    // Un tema caído no tira los demás; si caen todos, queda el cache.
+    const settled = await Promise.allSettled(PRED_GROUPS.map(async ([group, slug]) => {
+      const r = await fetchSafe(`https://gamma-api.polymarket.com/events?closed=false&active=true&limit=12&order=volume24hr&ascending=false&tag_slug=${slug}`, { headers: { "Accept": "application/json" } }, 10000);
+      if (!r.ok) throw new Error(`Polymarket ${slug} ${r.status}`);
+      const list = JSON.parse(await safeText(r));
+      return (Array.isArray(list) ? list : []).map((e) => ({ e, group }));
+    }));
+    const byTag = settled.filter((r) => r.status === "fulfilled").map((r) => r.value);
+    if (!byTag.length) throw new Error(settled[0].reason?.message || "Polymarket unavailable");
+    const now = Date.now(), soon = now + 48 * 3600_000;
+    const seen = new Set();
+    // "Ohio/Indiana/Texas enacts data center moratorium" = una sola pregunta
+    const seenTitle = new Set();
+    const perGroup = new Map();
+    const events = [];
+    for (const { e, group: asked } of byTag.flat()) {
+      const titleKey = String(e.title || "").toLowerCase().replace(/^\S+\s/, "");
+      if (seen.has(e.id) || seenTitle.has(titleKey) || !predAllowed(e)) continue;
+      const group = PRED_BY_TITLE.find(([, rx]) => rx.test(e.title))?.[0] || asked;
+      const endTs = e.endDate ? new Date(e.endDate).getTime() : null;
+      if (endTs && endTs < soon) continue;                  // vence en menos de 48 h
+      if ((Number(e.volume24hr) || 0) < 2000) continue;
+      const outcomes = predOutcomes(e);
+      if (!outcomes.length) continue;
+      if ((perGroup.get(group) || 0) >= 4) continue;       // hasta 4 por tema
+      seen.add(e.id);
+      seenTitle.add(titleKey);
+      perGroup.set(group, (perGroup.get(group) || 0) + 1);
+      events.push({
+        id: String(e.id), group, title: e.title, endDate: e.endDate || null,
+        volume24h: Math.round(Number(e.volume24hr) || 0), outcomes,
+        url: e.slug ? `https://polymarket.com/event/${e.slug}` : "https://polymarket.com",
+      });
+    }
+    // Títulos: traductor (una vez por texto, cacheado en disco) + arreglos
+    // locales; etiquetas: glosario. Sin cupo de traducción, va el original.
+    for (const ev of events) {
+      const es = await translateText(ev.title, "en", "es");
+      if (es) ev.titleEs = predTitleEs(es);
+      ev.title = ev.title.replace(/_{2,}|\.{3}/g, "…");
+      for (const o of ev.outcomes) if (!o.binary) o.labelEs = predLabelEs(o.label);
+    }
+    setCache("predictions", events);
+    res.json(events);
   } catch (e) {
     console.error("[prediction-markets]", e.message);
     if (cache.predictions.data) return res.json(cache.predictions.data);

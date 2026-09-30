@@ -6,11 +6,17 @@ import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
 
-// Tags neutros del server (detectFinanceTag) → labels bilingües vía i18n.
-const FINANCE_TAGS = ["All", "Markets", "Economy", "Companies", "Crypto", "Global"];
+// Temas por contenido del server (detectFinanceTag) → labels vía i18n.
+const FINANCE_TAGS = ["All", "argentina", "wallstreet", "companies", "world"];
 
-function FinanceNewsItem({ item, idx }) {
+// Titulares en inglés: en castellano se muestran traducidos por máquina,
+// marcados y con el original a un toque (mismo criterio que las bios).
+function FinanceNewsItem({ item, idx, tagLabel, es }) {
+  const { t } = useLocale();
   const [imgFailed, setImgFailed] = useState(false);
+  const [original, setOriginal] = useState(false);
+  const translated = es && item.titleEs;
+  const title = translated && !original ? item.titleEs : item.title;
   const showPill = !!(item.tag && item.image && !imgFailed);
   // Link directo a la fuente (atribución + fair use): el titular lleva al medio.
   const open = () => item.url && window.open(item.url, "_blank", "noopener,noreferrer");
@@ -21,25 +27,36 @@ function FinanceNewsItem({ item, idx }) {
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), open())}
       tabIndex={0}
       role="button"
-      aria-label={`${item.title} — ${item.source}`}
+      aria-label={`${title} — ${item.source}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
       <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
       <div className="bl-layer-news-body">
-        <h3 className="bl-layer-news-title">{item.title}</h3>
+        <h3 className="bl-layer-news-title" lang={translated && !original ? "es" : item.lang}>{title}</h3>
         <div className="bl-finance-news-meta">
           <span className="bl-finance-news-source">{item.source}</span>
-          {item.lang && <span className="bl-finance-news-lang">{item.lang.toUpperCase()}</span>}
+          {item.lang && item.lang !== (es ? "es" : "en") && !translated && <span className="bl-finance-news-lang">{item.lang.toUpperCase()}</span>}
           {item.time && <span className="bl-finance-news-time">{item.time}</span>}
         </div>
-        {showPill && <span className="bl-layer-news-tag-pill">{item.tag}</span>}
+        {translated && (
+          <button
+            type="button"
+            className="bl-predict-tr bl-finance-tr"
+            aria-pressed={original}
+            onClick={(e) => { e.stopPropagation(); setOriginal((v) => !v); }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {original ? t("predict.showTranslation") : <>{t("artist.autoTranslated")} · <u>{t("predict.showOriginal")}</u></>}
+          </button>
+        )}
+        {showPill && <span className="bl-layer-news-tag-pill">{tagLabel}</span>}
       </div>
     </article>
   );
 }
 
 export function FinanceNews() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,13 +75,9 @@ export function FinanceNews() {
   const filtered = filter === "All" ? items : items.filter((n) => n.tag === filter);
   const listRef = useScrollReveal(loading, filter);
 
-  const tagLabels = useMemo(() => ({
-    Markets: t("finance.tag.markets"),
-    Economy: t("finance.tag.economy"),
-    Companies: t("finance.tag.companies"),
-    Crypto: t("finance.tag.crypto"),
-    Global: t("finance.tag.global"),
-  }), [t]);
+  const tagLabels = useMemo(() => Object.fromEntries(
+    FINANCE_TAGS.slice(1).map((tg) => [tg, t(`finance.tag.${tg}`)])
+  ), [t]);
   // Solo ofrecer tags que hoy tienen items (evita filtros que devuelven vacío).
   const tags = useMemo(() => {
     const present = new Set(items.map((n) => n.tag));
@@ -80,7 +93,7 @@ export function FinanceNews() {
         : filtered.length === 0 ? <div className="bl-empty">{t("finance.empty")}</div>
         : <div className="bl-layer-news-list" role="region" aria-label={t("finance.title")} ref={listRef}>
             {filtered.map((item, idx) => (
-              <FinanceNewsItem key={`${item.source_slug || item.source}-${(item.title || "").slice(0, 40)}-${idx}`} item={item} idx={idx} />
+              <FinanceNewsItem key={`${item.source_slug || item.source}-${(item.title || "").slice(0, 40)}-${idx}`} item={item} idx={idx} tagLabel={tagLabels[item.tag] || item.tag} es={locale === "es"} />
             ))}
           </div>}
     </div>

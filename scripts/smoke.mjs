@@ -335,6 +335,32 @@ async function run(vp) {
         if (heads.length < 3 || subs !== heads.length) fail(vp.name, sec, `${heads.length} grupos con ${subs} descripciones (esperaba ≥3, todos descriptos)`);
         if (must && !heads.some((h) => must.test(h))) fail(vp.name, sec, `falta el grupo ${must}`);
       }
+      // Predicciones por tema (sept 2026): grupos con título, cada tarjeta con
+      // resultados; si el título está traducido, "Original" lo alterna.
+      await page.locator(".bl-layer-back").click();
+      await page.waitForTimeout(400);
+      await pill(/Predicciones|Predictions/).click();
+      await page.locator(".bl-predict-card").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+      const pHeads = await page.locator(".bl-predict-group .bl-mkt-group-label").count();
+      const pCards = await page.locator(".bl-predict-card").count();
+      const pRows = await page.locator(".bl-predict-card .bl-predict-row").count();
+      if (pHeads < 2 || pCards < 4 || pRows < pCards) fail(vp.name, "predicciones", `${pHeads} temas, ${pCards} tarjetas, ${pRows} resultados (esperaba ≥2 temas y resultados en cada tarjeta)`);
+      const tr = page.locator(".bl-predict-card .bl-predict-tr").first();
+      if (await tr.count()) {
+        const q = page.locator(".bl-predict-card").first().locator(".bl-predict-question");
+        const before = await q.textContent();
+        await tr.click();
+        if ((await q.textContent()) === before) fail(vp.name, "predicciones", "\"Original\" no muestra el título original");
+      }
+      // Finanzas: temas por contenido, con etiquetas traducidas (no "ECONOMY").
+      await page.locator(".bl-layer-back").click();
+      await page.waitForTimeout(400);
+      await pill(/Finanzas|Finance/).click();
+      await page.locator(".bl-layer-news-item").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+      const fTags = await page.locator(".bl-layer-news-tag-pill").allTextContents();
+      const crudas = fTags.filter((x) => /^(markets|economy|companies|crypto|global|wallstreet|world)$/i.test(x.trim()));
+      if (crudas.length) fail(vp.name, "finanzas", `etiquetas sin traducir: ${[...new Set(crudas)].join(", ")}`);
+      if (!(await page.locator(".layer-filters", { hasText: /Wall Street y la Fed|Wall Street & the Fed/ }).count())) fail(vp.name, "finanzas", "falta el filtro Wall Street y la Fed");
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
     }
