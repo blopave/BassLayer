@@ -1,0 +1,408 @@
+{
+ "maldini alto avellaneda": {
+  "venue": "Maldini Alto Avellaneda",
+  "lat": -34.67616,
+  "lng": -58.36543,
+  "verified": false,
+  "by": "georef"
+ },
+ "uniclub": {
+  "venue": "Uniclub",
+  "lat": -34.60266,
+  "lng": -58.41226,
+  "verified": true,
+  "by": "georef"
+ },
+ "teatro gran rex": {
+  "venue": "Teatro Gran Rex",
+  "lat": -34.60354,
+  "lng": -58.37887,
+  "verified": true,
+  "by": "georef"
+ },
+ "la trastienda": {
+  "venue": "La Trastienda",
+  "lat": -34.6131,
+  "lng": -58.37067,
+  "verified": false,
+  "by": "georef"
+ },
+ "biri biri": {
+  "venue": "Biri Biri",
+  "lat": -34.59368,
+  "lng": -58.43143,
+  "verified": false,
+  "by": "georef"
+ },
+ "imaginario cultural bar": {
+  "venue": "IMAGINARIO CULTURAL BAR",
+  "lat": -34.60096,
+  "lng": -58.41779,
+  "verified": true,
+  "by": "georef"
+ },
+ "c art media": {
+  "venue": "C Art Media",
+  "lat": -34.59093,
+  "lng": -58.44842,
+  "verified": true,
+  "by": "georef"
+ },
+ "auditorio espacio cendas": {
+  "venue": "Auditorio Espacio Cendas",
+  "lat": -34.59609,
+  "lng": -58.41687,
+  "verified": true,
+  "by": "georef"
+ },
+ "comite 357": {
+  "venue": "Comité 357",
+  "lat": -34.59781,
+  "lng": -58.37242,
+  "verified": true,
+  "by": "georef"
+ },
+ "premier": {
+  "venue": "Premier",
+  "lat": -34.60418,
+  "lng": -58.38887,
+  "verified": true,
+  "by": "georef"
+ },
+ "the lift godoy cruz 1967": {
+  "venue": "The Lift - Godoy Cruz 1967",
+  "lat": -34.58566,
+  "lng": -58.43139,
+  "verified": true,
+  "by": "georef"
+ },
+ "the roxy live": {
+  "venue": "The Roxy Live",
+  "lat": -34.58712,
+  "lng": -58.43877,
+  "verified": true,
+  "by": "georef"
+ },
+ "lucille": {
+  "venue": "lucille",
+  "lat": -34.58549,
+  "lng": -58.43644,
+  "verified": true,
+  "by": "georef"
+ },
+ "cafe vinilo": {
+  "venue": "CAFÉ VINILO",
+  "lat": -34.61973,
+  "lng": -58.40073,
+  "verified": true,
+  "by": "georef"
+ },
+ "el alambique": {
+  "venue": "EL ALAMBIQUE",
+  "lat": -34.58071,
+  "lng": -58.49752,
+  "verified": true,
+  "by": "georef"
+ },
+ "la quadra rock club": {
+  "venue": "La Quadra Rock Club",
+  "lat": -34.61339,
+  "lng": -58.45821,
+  "verified": false,
+  "by": "georef"
+ },
+ "la tangente": {
+  "venue": "La Tangente",
+  "lat": -34.58671,
+  "lng": -58.43307,
+  "verified": true,
+  "by": "georef"
+ },
+ "sullivan s irish pub": {
+  "venue": "Sullivan's Irish Pub",
+  "lat": -34.58804,
+  "lng": -58.42914,
+  "verified": true,
+  "by": "georef"
+ },
+ "blackcream": {
+  "venue": "BlackCream",
+  "lat": -34.5865,
+  "lng": -58.41617,
+  "verified": true,
+  "by": "georef"
+ },
+ "la biblioteca san telmo": {
+  "venue": "La Biblioteca, San Telmo",
+  "lat": -34.61487,
+  "lng": -58.37351,
+  "verified": true,
+  "by": "georef"
+ },
+ "one more club villa devoto": {
+  "venue": "One More Club, Villa Devoto",
+  "lat": -34.59856,
+  "lng": -58.49999,
+  "verified": true,
+  "by": "georef"
+ },
+ "liverpool club": {
+  "venue": "Liverpool Club",
+  "lat": -34.59516,
+  "lng": -58.42508,
+  "verified": false,
+  "by": "georef"
+ },
+ "club temple espacio studio": {
+  "venue": "CLUB TEMPLE - Espacio Studio",
+  "lat": -34.60429,
+  "lng": -58.39025,
+  "verified": false,
+  "by": "georef"
+ },
+ "club conjura": {
+  "venue": "Club Conjura",
+  "lat": -34.59825,
+  "lng": -58.45974,
+  "verified": true,
+  "by": "georef"
+ },
+ "la casa de lolita": {
+  "venue": "La Casa de Lolita",
+  "lat": -34.58422,
+  "lng": -58.43464,
+  "verified": true,
+  "by": "georef"
+ },
+ "rpc night groove": {
+  "venue": "RPC Night @ Groove",
+  "lat": -34.57961,
+  "lng": -58.42346,
+  "verified": true,
+  "by": "georef"
+ },
+ "under club blow palermo": {
+  "venue": "Under Club @ Blow, Palermo",
+  "lat": -34.58599,
+  "lng": -58.44038,
+  "verified": true,
+  "by": "georef"
+ },
+ "artlab": {
+  "venue": "Artlab",
+  "lat": -34.58623,
+  "lng": -58.44636,
+  "verified": true,
+  "by": "georef"
+ },
+ "lignee bar": {
+  "venue": "Lignée Bar",
+  "lat": -34.60248,
+  "lng": -58.38021,
+  "verified": true,
+  "by": "georef"
+ },
+ "tokyo club costanera": {
+  "venue": "Tokyo Club, Costanera",
+  "lat": -34.5468,
+  "lng": -58.43094,
+  "verified": false,
+  "by": "georef"
+ },
+ "lulu palermo palermo": {
+  "venue": "Lulú Palermo, Palermo",
+  "lat": -34.59202,
+  "lng": -58.42663,
+  "verified": false,
+  "by": "georef"
+ },
+ "melt": {
+  "venue": "Melt",
+  "lat": -34.59239,
+  "lng": -58.40586,
+  "verified": false,
+  "by": "georef"
+ },
+ "foro costanera norte costanera": {
+  "venue": "Foro Costanera Norte, Costanera",
+  "lat": -34.55106,
+  "lng": -58.42881,
+  "verified": false,
+  "by": "georef"
+ },
+ "fragment amerika": {
+  "venue": "Fragment @ Amerika",
+  "lat": -34.59857,
+  "lng": -58.4235,
+  "verified": true,
+  "by": "georef"
+ },
+ "under club amerika": {
+  "venue": "Under Club @ Amerika",
+  "lat": -34.59857,
+  "lng": -58.4235,
+  "verified": true,
+  "by": "georef"
+ },
+ "downtempo rooftop": {
+  "venue": "Downtempo Rooftop",
+  "lat": -34.58867,
+  "lng": -58.48514,
+  "verified": true,
+  "by": "georef"
+ },
+ "movistar arena": {
+  "venue": "Movistar Arena",
+  "lat": -34.59463,
+  "lng": -58.44754,
+  "verified": true,
+  "by": "georef"
+ },
+ "niceto club": {
+  "venue": "Niceto Club",
+  "lat": -34.58725,
+  "lng": -58.43857,
+  "verified": true,
+  "by": "georef"
+ },
+ "jazz voyeur club hotel melia recoleta plaza": {
+  "venue": "JAZZ VOYEUR CLUB - Hotel Melia Recoleta Plaza",
+  "lat": -34.58693,
+  "lng": -58.38752,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "la viruta": {
+  "venue": "La Viruta",
+  "lat": -34.58305,
+  "lng": -58.47288,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "cobra": {
+  "venue": "Cobra",
+  "lat": -34.56975,
+  "lng": -58.42081,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "centro cultural nueva uriarte": {
+  "venue": "Centro Cultural Nueva Uriarte",
+  "lat": -34.58975,
+  "lng": -58.43537,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "cafe berlin": {
+  "venue": "Café Berlín",
+  "lat": -34.59295,
+  "lng": -58.50816,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "rie bar": {
+  "venue": "Ríe Bar",
+  "lat": -34.71232,
+  "lng": -58.28379,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "forest dan": {
+  "venue": "Forest Dan",
+  "lat": -34.50547,
+  "lng": -58.4934,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "niceto bar": {
+  "venue": "Niceto Bar",
+  "lat": -34.58727,
+  "lng": -58.43855,
+  "verified": true,
+  "by": "georef"
+ },
+ "casa jache": {
+  "venue": "Casa Jache",
+  "lat": -34.62316,
+  "lng": -58.46493,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "la paz arriba": {
+  "venue": "La Paz Arriba",
+  "lat": -34.59618,
+  "lng": -58.39338,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "torquato tasso": {
+  "venue": "Torquato Tasso",
+  "lat": -34.6264,
+  "lng": -58.37109,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "crobar": {
+  "venue": "Crobar",
+  "lat": -34.56924,
+  "lng": -58.42021,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "tribuna plaza": {
+  "venue": "Tribuna Plaza",
+  "lat": -34.56698,
+  "lng": -58.42925,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "pura vida": {
+  "venue": "Pura Vida",
+  "lat": -34.56442,
+  "lng": -58.46092,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "caix": {
+  "venue": "Caix",
+  "lat": -34.56893,
+  "lng": -58.3955,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "archi": {
+  "venue": "Archi",
+  "lat": -34.55777,
+  "lng": -58.45061,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "la nube": {
+  "venue": "La Nube",
+  "lat": -34.54368,
+  "lng": -58.43764,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "avant garten": {
+  "venue": "Avant Garten",
+  "lat": -34.57023,
+  "lng": -58.42146,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "under club": {
+  "venue": "Under Club",
+  "lat": -34.58596,
+  "lng": -58.44016,
+  "verified": false,
+  "by": "osm-name"
+ },
+ "groove": {
+  "venue": "Groove",
+  "lat": -34.57944,
+  "lng": -58.42306,
+  "verified": false,
+  "by": "osm-name"
+ }
+}

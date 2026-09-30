@@ -108,6 +108,10 @@ async function checkEndpoint({ path, minItems, required }) {
     // (lib/places.js), sin copiarla.
     const fuera = items.filter((it) => it?.area === "amba" && namesOtherCity(`${it.venue || ""} ${it.address || ""}`));
     if (fuera.length) fail(path, "amba", `marcados AMBA pero de otra ciudad: ${fuera.slice(0, 3).map((it) => `${it.name} (${it.venue})`).join(" | ")}`);
+    // Mapa: solo eventos del AMBA llevan ubicación, y toda ubicación cae en el AMBA.
+    const geoMal = items.filter((it) => it?.geo && (it.area !== "amba" || !(it.geo.lat > -35.1 && it.geo.lat < -34.3 && it.geo.lng > -59.1 && it.geo.lng < -58.1)));
+    if (geoMal.length) fail(path, "mapa", `ubicación fuera del AMBA: ${geoMal.slice(0, 3).map((it) => `${it.venue} (${it.geo.lat}, ${it.geo.lng})`).join(" | ")}`);
+    if (!items.some((it) => it?.geo)) fail(path, "mapa", "ningún evento trae ubicación: ¿falta data/venues-geo.json?");
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
   }

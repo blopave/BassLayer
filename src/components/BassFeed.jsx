@@ -5,6 +5,7 @@ import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
 import { Pulsar, nightKey } from "./Pulsar";
+import { BassMap } from "./BassMap";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -238,7 +239,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const sheetRef = useFocusTrap(sheetOpen, () => setSheetOpen(false));
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
-  const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
+  const [section, setSection] = useState("eventos"); // "eventos" | "mapa" | "noticias" | "festivales"
   // Noche elegida en el Pulsar ("" = todas): filtra la agenda a esa fecha.
   const [night, setNight] = useState("");
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
@@ -466,6 +467,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           <span className="bl-bass-section-label">{t("section.events")}</span>
         </button>
         <button
+          className={`bl-bass-section-btn${section === "mapa" ? " active" : ""}`}
+          onClick={() => setSection("mapa")}
+        >
+          <span className="bl-bass-section-label">{t("section.map")}</span>
+        </button>
+        <button
           className={`bl-bass-section-btn${section === "noticias" ? " active" : ""}`}
           onClick={() => setSection("noticias")}
         >
@@ -479,7 +486,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </button>
       </div>
 
-      {section === "festivales" ? (
+      {section === "mapa" ? (
+        <BassMap events={regionEvents} today={todayInBA()} onSelect={onSelect} />
+      ) : section === "festivales" ? (
         <FestivalsList
           festivals={festivals}
           loading={festivalsLoading}
