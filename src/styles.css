@@ -2923,7 +2923,12 @@
 /* Los tags scrollean en horizontal: sin fundido, la última pastilla cortada
    contra el aside parecía meterse debajo del panel Mercados. */
 .bl-layer-main .bl-filters { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
-.bl-layer-aside { position:sticky; top:12px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
+/* Se engancha debajo de la barra de precios (sticky, 57 px) y no detrás:
+   con top:12px la barra tapaba "Pulso del mercado" al scrollear. */
+.bl-layer-aside { position:sticky; top:69px; display:flex; flex-direction:column; gap:10px; margin:14px 32px 0 0; }
+/* Pantallas bajas: enganchado no entra entero (se escondía Tendencia), así
+   que scrollea con la página. */
+@media (max-height:760px) { .bl-layer-aside { position:static; } }
 
 /* ── Pulso del mercado (sept 2026, dirección B) ──
    Terminal + dólar + tendencia en un solo módulo: etiqueta legible, número

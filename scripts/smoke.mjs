@@ -361,6 +361,18 @@ async function run(vp) {
       const crudas = fTags.filter((x) => /^(markets|economy|companies|crypto|global|wallstreet|world)$/i.test(x.trim()));
       if (crudas.length) fail(vp.name, "finanzas", `etiquetas sin traducir: ${[...new Set(crudas)].join(", ")}`);
       if (!(await page.locator(".layer-filters", { hasText: /Wall Street y la Fed|Wall Street & the Fed/ }).count())) fail(vp.name, "finanzas", "falta el filtro Wall Street y la Fed");
+      // El Pulso enganchado queda debajo de la barra de precios, no detrás.
+      if (await page.locator(".bl-mpulse-head").isVisible().catch(() => false)) {
+        await page.mouse.move(vp.viewport.width / 3, vp.viewport.height * 0.6);
+        await page.mouse.wheel(0, 900);
+        await page.waitForTimeout(600);
+        const covered = await page.evaluate(() => {
+          const bar = document.querySelector(".bl-price-bar")?.getBoundingClientRect();
+          const head = document.querySelector(".bl-mpulse-head")?.getBoundingClientRect();
+          return !!(bar && head && head.top < bar.bottom && head.bottom > bar.top);
+        });
+        if (covered) fail(vp.name, "finanzas", "al scrollear, la barra de precios tapa \"Pulso del mercado\"");
+      }
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
     }
