@@ -4,7 +4,6 @@ import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
-import { BassMap } from "./BassMap";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -238,7 +237,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const sheetRef = useFocusTrap(sheetOpen, () => setSheetOpen(false));
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
-  const [section, setSection] = useState("eventos"); // "eventos" | "mapa" | "noticias" | "festivales"
+  const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
   const { saved } = useSavedEvents();
   const [savedOnly, setSavedOnly] = useState(false);
@@ -463,12 +462,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           <span className="bl-bass-section-label">{t("section.events")}</span>
         </button>
         <button
-          className={`bl-bass-section-btn${section === "mapa" ? " active" : ""}`}
-          onClick={() => setSection("mapa")}
-        >
-          <span className="bl-bass-section-label">{t("section.map")}</span>
-        </button>
-        <button
           className={`bl-bass-section-btn${section === "noticias" ? " active" : ""}`}
           onClick={() => setSection("noticias")}
         >
@@ -482,9 +475,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </button>
       </div>
 
-      {section === "mapa" ? (
-        <BassMap events={regionEvents} today={todayInBA()} onSelect={onSelect} />
-      ) : section === "festivales" ? (
+      {section === "festivales" ? (
         <FestivalsList
           festivals={festivals}
           loading={festivalsLoading}

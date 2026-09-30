@@ -125,26 +125,6 @@ async function run(vp) {
       await page.waitForTimeout(500);
     }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
-    // Mapa (sept 2026): los venues ubicados son puntos; tocar uno muestra su
-    // agenda y cada fiesta abre su ficha. Después se vuelve a Eventos.
-    await page.locator(".bl-bass-section-btn", { hasText: /Mapa|Map/ }).click();
-    await page.locator(".bl-bmap svg").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-    const mapVenues = await page.locator(".bl-bmap .blm-venue").count();
-    if (mapVenues < 10) fail(vp.name, "mapa", `${mapVenues} venues en el mapa (esperaba ≥10)`);
-    if (mapVenues) {
-      await page.locator(".blm-venue .blm-hit").first().dispatchEvent("click");
-      const rows = await page.locator(".bl-bmap-venue li button").count();
-      if (!rows) fail(vp.name, "mapa", "tocar un venue no muestra su agenda");
-      else {
-        await page.locator(".bl-bmap-venue li button").first().click();
-        const mapModal = await page.locator('.bl-modal-overlay[role="dialog"]').waitFor({ state: "visible", timeout: 8_000 }).then(() => true).catch(() => false);
-        if (!mapModal) fail(vp.name, "mapa", "tocar una fiesta del venue no abre su ficha");
-        await page.keyboard.press("Escape");
-        await page.waitForTimeout(500);
-      }
-    }
-    await page.locator(".bl-bass-section-btn", { hasText: /Eventos|Events/ }).click();
-    await page.locator(".bl-ev-open").first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);
     await page.waitForTimeout(800);

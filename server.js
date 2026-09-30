@@ -20,7 +20,6 @@ import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
-import { venueKey } from "./lib/venues.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
 import matter from "gray-matter";
@@ -264,12 +263,6 @@ function registerImages(list, field = "image") {
   }
 }
 
-// Ubicación de los venues del AMBA para el Mapa de Bass (sept 2026): la
-// genera scripts/geocode-venues.mjs desde la dirección de cada fuente
-// (OpenStreetMap) y viaja en el repo. Sin archivo o sin venue, sin `geo`.
-let VENUE_GEO = {};
-try { VENUE_GEO = JSON.parse(readFileSync(new URL("./data/venues-geo.json", import.meta.url), "utf-8")); } catch { /* sin mapa */ }
-
 // Limpieza final de cada evento. Corre en cada build y también sobre el
 // snapshot en disco: después de un deploy se sirve el snapshot hasta que la
 // build nueva termina, y tiene que salir igual de limpio.
@@ -289,8 +282,6 @@ function tidyEvents(events) {
     // Superficie de Bass: CABA + GBA (AMBA). Acá y no solo en la build: el
     // snapshot en disco también tiene que salir con la marca (sept 2026).
     if (isAmba(ev)) ev.area = "amba"; else delete ev.area;
-    const g = ev.area === "amba" && VENUE_GEO[venueKey(ev.venue)];
-    if (g) ev.geo = { lat: g.lat, lng: g.lng }; else delete ev.geo;
   }
   return events;
 }

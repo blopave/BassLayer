@@ -5754,38 +5754,3 @@ select.bl-venue-input { cursor:pointer; }
   .blh-list { columns:1; }
   .blh-list button { grid-template-columns:64px minmax(0,1fr); padding:12px 4px; }
 }
-
-/* ── Mapa de Bass (sept 2026): la agenda como constelación porteña ── */
-.bl-bmap { margin:18px 32px 30px; display:flex; flex-direction:column; gap:14px; }
-.bl-bmap svg { display:block; }
-.bl-bmap-win { display:flex; gap:8px; flex-wrap:wrap; }
-.bl-bmap-chip { padding:7px 14px; border-radius:999px; border:1px solid var(--bl-border); background:none; color:var(--bl-text-sec); font:600 13px var(--font-sans); cursor:pointer; transition:color .2s, border-color .2s, background .2s; }
-.bl-bmap-chip.is-on { color:var(--bl-accent-bass); border-color:color-mix(in srgb, var(--bl-accent-bass) 55%, transparent); background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); }
-.blm-caba path { fill:color-mix(in srgb, var(--bl-text) 2.5%, transparent); stroke:var(--bl-text); stroke-opacity:.14; stroke-width:.8; stroke-linejoin:round; }
-.blm-glow { pointer-events:none; }
-.blm-venue { cursor:pointer; outline:none; }
-.blm-hit { fill:transparent; }
-.blm-dot { fill:var(--bl-accent-bass); stroke:var(--bl-bg); stroke-width:1; transition:r .2s; }
-.blm-venue.is-on .blm-dot { fill:var(--bl-text); }
-.blm-venue:focus-visible .blm-dot { stroke:var(--bl-text); stroke-width:2; }
-.blm-label { fill:var(--bl-text); font:600 12px var(--font-sans); pointer-events:none; }
-.blm-label.is-on { fill:var(--bl-accent-bass); }
-.bl-bmap-far { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-.bl-bmap-far > span { color:var(--bl-text-ter); font:500 11px var(--font-mono); letter-spacing:.08em; text-transform:uppercase; margin-right:4px; }
-.bl-bmap-hint, .bl-bmap-foot { margin:0; color:var(--bl-text-ter); font-size:13px; }
-.bl-bmap-foot { font:500 11px var(--font-mono); letter-spacing:.02em; line-height:1.5; }
-.bl-bmap-venue { border:1px solid var(--bl-border-sub); border-radius:12px; padding:16px 18px; background:var(--bl-subtle-bg); }
-.bl-bmap-vhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-.bl-bmap-venue h3 { margin:0; font:620 21px var(--font-sans); letter-spacing:-.015em; color:var(--bl-text); }
-.bl-bmap-close { background:none; border:0; color:var(--bl-text-ter); font-size:16px; cursor:pointer; padding:4px; }
-.bl-bmap-addr { margin:4px 0 10px; color:var(--bl-text-ter); font-size:13px; }
-.bl-bmap-venue ul { list-style:none; margin:0; padding:0; }
-.bl-bmap-venue li button { display:flex; gap:14px; align-items:baseline; width:100%; padding:10px 0; border:0; border-top:1px solid var(--bl-border-sub); background:none; cursor:pointer; text-align:left; }
-.bl-bmap-venue .when { flex:none; width:118px; white-space:nowrap; color:var(--bl-text-sec); font:500 12px var(--font-mono); }
-.bl-bmap-venue .name { color:var(--bl-text); font:550 15px var(--font-sans); }
-.bl-bmap-venue li button:hover .name { color:var(--bl-accent-bass); }
-@media (max-width:768px) {
-  .bl-bmap { margin:14px 16px 24px; }
-  .blm-label { font-size:10.5px; }
-  .bl-bmap-venue .when { width:104px; font-size:11px; }
-}
