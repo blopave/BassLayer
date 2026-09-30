@@ -11,9 +11,11 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
 // izquierda, con toda su franja tocable. Solo títulos: sin datos ni fechas
-// (Pablo, sept 2026). "Estaciones" (30-sep): la curva usa todo el ancho y
-// cada título va pegado a su punto, como un mapa de subte; la línea se corta
-// limpia detrás del nombre. El abanico cierra la pantalla.
+// (Pablo, sept 2026). "Estaciones" (30-sep): cada título va pegado a su
+// punto, como un mapa de subte; la línea se corta limpia detrás del nombre.
+// "Estratos" (30-sep, auditoría): en mobile el tiempo SUBE — el abanico del
+// futuro abre la pantalla, Noticias (hoy) es la primera estación y el pasado
+// se sedimenta hacia abajo hasta Hitos. Layer = capa.
 
 // Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
 // arriba/abajo, magnitud = altura). Todas viven en un momento REAL de la
@@ -36,7 +38,11 @@ const NODES = [
 
 // Mobile vertical: margen arriba, alto de cada franja, tramo del abanico
 // (hoy → halving) y pie (eje de precios). El alto del gráfico sale de acá.
-const VT = 48, VGAP = 92, VFAN = 300, VB = 56;
+const VT = 40, VGAP = 92, VFAN = 420, VB = 56;
+// Techo de la escala mobile: con $2,5 M (y no $250 k) hoy cae cerca del 60 %
+// del ancho y el abanico se abre a los dos lados desde su punto real, sin
+// correrlo (la auditoría marcó que desplazarlo no salía del dato).
+const V_CEIL = 2_500_000;
 
 // Títulos-estación: tamaño y ancho medido (para ubicarlos al lado del punto y
 // cortar la línea detrás). Mismo font que .blc-ttl; sin canvas, estimación.
@@ -143,20 +149,24 @@ export function LayerCurve({ news = [], onEnter }) {
     });
 
     if (mobile) {
-      // Vertical: el tiempo baja (una franja de VGAP por sección) y el precio
-      // (log, $100 → $250k: la curva arranca en 2013, cuando BTC pasó los $100)
-      // usa todo el ancho: los títulos van pegados a su punto, no en columna.
-      const Hh = VT + 7 * VGAP + VFAN + VB, x0 = 26, x1 = W - 26;
-      const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [nextHalving, VT + 7 * VGAP + VFAN], [END, VT + 7 * VGAP + VFAN + 20]]);
-      const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
-      // Cada nombre, del lado del punto donde entra (derecha si hay lugar).
+      // Estratos: el tiempo sube. Arriba el abanico (halving → hoy, VFAN),
+      // después una franja de VGAP por sección de hoy hacia atrás; la curva
+      // arranca en Hitos (2013), abajo de todo. Precio en log, $100 → V_CEIL.
+      const Hh = VT + VFAN + 7 * VGAP + VB, x0 = 24, x1 = W - 24;
+      const yToday = VT + VFAN;
+      const Yt = seg([...times.map((tt, i) => [tt, yToday + (7 - i) * VGAP]), [nextHalving, VT], [END, VT - 20]]);
+      const lc = Math.log10(V_CEIL) - 2;
+      const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
+      // Todos los nombres a la izquierda de su estación (un solo borde de
+      // lectura); a la derecha solo si no entran.
       const nodes = NODES.map((n, i) => {
         const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), tw = ttlWidth(t(SECTION_LABEL[n.key]));
-        const tx = cx + 17 + tw <= W - 10 ? cx + 17 : Math.max(10, cx - 17 - tw);
+        const tx = cx - 17 - tw >= 10 ? cx - 17 - tw : cx + 17;
         return { ...n, tt: times[i], cx, cy, tx, tw, box: { x: tx - 7, y: cy - TTL_FS * 0.62, w: tw + 14, h: TTL_FS * 1.18 } };
       });
-      const pxDec = (x1 - x0) / (Math.log10(250000) - 2);
-      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
+      const pxDec = (x1 - x0) / lc;
+      const past = H.filter((h) => T(h.t) >= times[0]);
+      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
     }
 
     const Hh = size.h, L = 64, R = 60, TOP = 120, BOT = 46;
@@ -181,15 +191,13 @@ export function LayerCurve({ news = [], onEnter }) {
     if (!geo) return null;
     const until = geo.nextHalving;
     if (geo.V) {
-      // Mobile: el abanico es el cierre de la pantalla (Pablo, 30-sep). Sale
-      // del punto de hoy y en su primer tercio se corre al centro para abrirse
-      // a todo el ancho; la lupa ×4 es la misma, solo cambia desde dónde abre.
-      const yEnd = geo.Yt(until), mid = geo.W * 0.55;
-      const ease = (tt) => { const f = Math.min(1, (tt - geo.TODAY) / ((until - geo.TODAY) / 3)); return f * f * (3 - 2 * f); };
+      // Mobile (Estratos): el abanico abre la pantalla hacia arriba desde el
+      // punto de hoy, con la misma lupa y sin desplazarlo.
+      const yEnd = geo.Yt(until);
       return {
         until,
-        toPoint: (tt, p) => [geo.xt + (mid - geo.xt) * ease(tt) + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
-        clip: { x: 8, y: geo.yt, w: geo.W - 16, h: yEnd - geo.yt + 2 },
+        toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
+        clip: { x: 8, y: yEnd - 2, w: geo.W - 16, h: geo.yt - yEnd + 2 },
         fade: { x1: 0, y1: geo.yt, x2: 0, y2: yEnd },
       };
     }
@@ -245,12 +253,12 @@ export function LayerCurve({ news = [], onEnter }) {
   const vertical = geo?.V && (
     <svg className="blc-v" viewBox={`0 0 ${geo.W} ${geo.Hh}`} role="img" aria-label={t("curve.chartAria")}>
       <defs>
-        <linearGradient id="blc-cgv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
+        <linearGradient id="blc-cgv" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
       </defs>
       <g className="blc-grid" mask="url(#blc-kov)">
-        {/* La escala del pasado termina hoy: el abanico va con su propia lupa. */}
+        {/* La escala del pasado empieza hoy: el abanico va con su propia lupa. */}
         {[1000, 100000].map((p) => (
-          <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={18} y2={geo.yt} /><text x={geo.Xp(p)} y={10} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
+          <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={geo.yt} y2={geo.Hh - 34} /><text x={geo.Xp(p)} y={geo.Hh - 16} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
       <defs>
@@ -261,13 +269,9 @@ export function LayerCurve({ news = [], onEnter }) {
         </mask>
       </defs>
       <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) - 6} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 4} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+      {/* Sin puntitos de hitos en mobile: sin rótulo se leían como ruido. */}
       <path className="blc-curve" mask="url(#blc-kov)" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
-      <g className="blc-ms" mask="url(#blc-kov)">
-        {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) <= geo.TODAY).map((x) => (
-          <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
-        ))}
-      </g>
       {geo.nodes.map((n, i) => {
         const label = name(n.key);
         return (

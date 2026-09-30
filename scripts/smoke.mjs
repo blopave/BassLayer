@@ -295,6 +295,13 @@ async function run(vp) {
           return gap > 24 || Math.abs((t.top + t.bottom) / 2 - (d.top + d.bottom) / 2) > 12 || t.left < 0 || t.right > innerWidth;
         }).length);
         if (far) fail(vp.name, "layer", `mobile: ${far} títulos sueltos de su punto en la curva`);
+        // Estratos (30-sep): el tiempo sube. Noticias (hoy) es la primera
+        // estación desde arriba y el abanico queda encima, con aire (≥360 px).
+        const order = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.map((g) => [g.classList.contains("is-today"), g.querySelector(".blc-dot").getBoundingClientRect().top]).sort((a, b) => a[1] - b[1]));
+        if (!order[0]?.[0]) fail(vp.name, "layer", "mobile: Noticias no es la primera estación de arriba");
+        const fanBox = await page.locator(".blc-v .blc-fan").evaluate((g) => { const r = g.getBoundingClientRect(); return { h: r.height, bottom: r.bottom }; }).catch(() => null);
+        const todayTop = order.find((o) => o[0])?.[1] ?? 0;
+        if (!fanBox || fanBox.h < 360 || fanBox.bottom > todayTop + 20) fail(vp.name, "layer", `mobile: el abanico no abre la pantalla arriba de hoy (${JSON.stringify(fanBox)})`);
         const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
         if (fanW < vp.viewport.width * 0.75) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥75% del ancho)`);
       }
