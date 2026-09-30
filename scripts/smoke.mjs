@@ -306,6 +306,22 @@ async function run(vp) {
         // perdió la lupa del abanico.
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
+      // Ficha debajo de la curva (desktop, 30-sep): al pasar por una sección
+      // se abre en el espacio libre de abajo, no encima de la curva.
+      if (vp.viewport.width > 768 && vp.viewport.height >= 800) {
+        await pill(/ETFs/).hover();
+        await page.waitForTimeout(400);
+        const dockBox = await page.locator(".blc-pv.is-dock").boundingBox().catch(() => null);
+        const dotBox = await page.locator(".blc-node").filter({ hasText: /ETFs/ }).first().locator(".blc-dot").boundingBox().catch(() => null);
+        if (!dockBox || !dotBox || dockBox.y < dotBox.y + dotBox.height) fail(vp.name, "layer", "desktop: la ficha de la sección no se abre debajo de la curva");
+        await page.mouse.move(5, 5);
+        await page.waitForTimeout(400);
+      }
+      // Impulsos (mobile, 30-sep): cada tanto una rama se enciende hasta su título.
+      if (vp.viewport.width <= 768) {
+        const lit = await page.waitForSelector(".blc-v .blc-node.is-lit", { timeout: 9000 }).then(() => true).catch(() => false);
+        if (!lit) fail(vp.name, "layer", "mobile: la curva no enciende ningún título");
+      }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");

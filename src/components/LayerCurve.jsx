@@ -73,6 +73,8 @@ const FAN_ZOOM = 4;
 // En mobile la banda de la curva es angosta (la columna de nombres va al
 // lado): la lupa del abanico es mayor para que se abra; va rotulada igual.
 const FAN_ZOOM_V = 7;
+// Lo que tarda un impulso en recorrer una rama (mobile); igual que en el CSS.
+const PULSE_MS = 700;
 
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
@@ -80,6 +82,11 @@ export function LayerCurve({ news = [], onEnter }) {
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [sel, setSel] = useState(null);       // sección con vista previa
+  // Mobile (30-sep, Pablo): la curva manda impulsos por una rama al azar y
+  // el título se enciende al llegar. Quieto con reduced-motion y en pausa
+  // cuando no se ve.
+  const [pulse, setPulse] = useState(null);   // { i, n }
+  const [lit, setLit] = useState(null);
   const shownAt = useRef(0);
   const hideT = useRef(null);
   // En desktop la vista previa se cierra con un respiro: da tiempo a llevar el
@@ -113,6 +120,25 @@ export function LayerCurve({ news = [], onEnter }) {
   const cyc = d.cycles;
   const H = cyc?.priceHistory || [];
   const mobile = size.w > 0 && size.w <= 768;
+
+  useEffect(() => {
+    if (!mobile || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    let visible = true, n = 0, last = -1, t1, t2, t3;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
+    if (stageRef.current) io.observe(stageRef.current);
+    const fire = () => {
+      if (visible && !document.hidden) {
+        let i; do i = Math.floor(Math.random() * NODES.length); while (i === last);
+        last = i;
+        setPulse({ i, n: ++n });
+        t2 = setTimeout(() => setLit(i), PULSE_MS);            // llega: se enciende
+        t3 = setTimeout(() => setLit((v) => (v === i ? null : v)), PULSE_MS + 1100);
+      }
+      t1 = setTimeout(fire, 900 + Math.random() * 1500);
+    };
+    t1 = setTimeout(fire, 2600);                                // después del dibujo inicial
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); io.disconnect(); };
+  }, [mobile]);
 
   // Contenido de cada sección: nombre, momento, historia y dato vivo.
   const content = useMemo(() => {
@@ -184,7 +210,11 @@ export function LayerCurve({ news = [], onEnter }) {
       return { ...n, tt, cx, cy, kx, ey, fs, branch };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
-    return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
+    // Ficha de la sección (30-sep, Pablo): vive en el espacio libre debajo de
+    // la curva (2018.6 → hoy), no flotando encima. Sin lugar, vuelve a flotar.
+    const DOCK_FROM = 2018.6, dockTop = Math.max(...H.filter((h) => T(h.t) >= DOCK_FROM).map((h) => Y(h.p))) + 34;
+    const dock = { x: X(DOCK_FROM), y: dockTop, w: X(TODAY) - X(DOCK_FROM) - 16, h: Hh - BOT - 14 - dockTop };
+    return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes, dock: dock.h >= 150 && dock.w >= 460 ? dock : null };
   }, [H, size, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada en hoy.
@@ -226,26 +256,36 @@ export function LayerCurve({ news = [], onEnter }) {
   // Vista previa (hover de desktop): qué hay en la sección, su dato vivo y
   // por qué vive en ese punto de la curva.
   const selNodeP = sel != null && geo ? geo.nodes[sel] : null;
+  const dock = geo?.dock;
   const preview = selNodeP && (
     <div
-      className="blc-pv"
+      key={selNodeP.key}
+      className={`blc-pv${dock ? " is-dock" : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
-      style={{ left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
+      style={dock
+        ? { left: dock.x, top: dock.y, width: dock.w, maxHeight: dock.h }
+        : { left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
       onMouseEnter={() => clearTimeout(hideT.current)}
       onMouseLeave={hideSoon}
     >
-      <div className="k">{tk(selNodeP.key, "when")}</div>
-      <h3>{name(selNodeP.key)}</h3>
-      <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
-      <div className="big">{content[selNodeP.key].v ?? "—"}</div>
-      <div className="rows">
-        {content[selNodeP.key].rows.map(([a, b], j) => (
-          <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
-        ))}
+      <div className="pv-a">
+        <div className="k">{tk(selNodeP.key, "when")}</div>
+        <h3>{name(selNodeP.key)}</h3>
+        <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
       </div>
-      <p className="why">{tk(selNodeP.key, "why")}</p>
-      <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
+      <div className="pv-b">
+        <div className="big">{content[selNodeP.key].v ?? "—"}</div>
+        <div className="rows">
+          {content[selNodeP.key].rows.map(([a, b], j) => (
+            <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
+          ))}
+        </div>
+      </div>
+      <div className="pv-c">
+        <p className="why">{tk(selNodeP.key, "why")}</p>
+        <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
+      </div>
     </div>
   );
 
@@ -264,7 +304,7 @@ export function LayerCurve({ news = [], onEnter }) {
         return (
           <g
             key={n.key}
-            className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}`}
+            className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
             style={{ animationDelay: `${2.1 + (NODES.length - 1 - i) * 0.1}s` }}
             tabIndex={0}
             role="button"
@@ -275,6 +315,7 @@ export function LayerCurve({ news = [], onEnter }) {
             <rect className="blc-hit" x="0" y={n.ly - VROW / 2} width={geo.W} height={VROW} />
             <path className="blc-branch-glow" d={n.branch} />
             <path className="blc-branch" d={n.branch} />
+            {pulse?.i === i && <path key={pulse.n} className="blc-pulse" d={n.branch} pathLength="100" />}
             <circle className="blc-end" cx={n.ex} cy={n.ly} r="2.4" />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="13" />
@@ -335,6 +376,10 @@ export function LayerCurve({ news = [], onEnter }) {
                 );
               })}
             </g>
+            {/* La ficha cuelga de su punto: una plomada al espacio de abajo. */}
+            {selNodeP && dock && (
+              <path className="blc-plumb" d={`M${selNodeP.cx},${selNodeP.cy + 10}L${Math.min(Math.max(selNodeP.cx, dock.x + 18), dock.x + dock.w - 18)},${dock.y}`} />
+            )}
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
               const label = name(n.key);

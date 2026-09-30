@@ -5620,6 +5620,29 @@ select.bl-venue-input { cursor:pointer; }
   animation:blc-pv .22s var(--ease-out-expo);
 }
 @keyframes blc-pv { from { opacity:0; transform:translateY(8px) scale(.98); } }
+/* Ficha anclada debajo de la curva (30-sep): tres columnas — qué es, el dato
+   vivo, por qué vive ahí y "Entrar". Sin sombra de tarjeta flotante. */
+.blc-pv.is-dock {
+  display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.9fr); gap:28px; align-items:start;
+  padding:20px 24px; overflow:hidden; box-shadow:none;
+  background:color-mix(in srgb, var(--bl-bg) 72%, transparent);
+  border:1px solid color-mix(in srgb, var(--bl-accent-layer) 26%, var(--bl-border));
+  animation:blc-dock .28s var(--ease-out-expo);
+}
+@keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
+.blc-pv.is-dock h3 { font-size:28px; }
+.blc-pv.is-dock .rows { margin-top:10px; }
+.blc-pv.is-dock .why { margin-top:0; font-size:12.5px; line-height:1.5; }
+.blc-pv.is-dock .go { width:auto; margin-top:14px; white-space:nowrap; letter-spacing:.08em; }
+.blc-pv.is-dock .big .up, .blc-pv.is-dock .big .down, .blc-pv.is-dock .r .up, .blc-pv.is-dock .r .down { color:inherit; } /* un color */
+.blc-plumb { fill:none; stroke:var(--bl-accent-layer); stroke-width:1; stroke-dasharray:2 4; opacity:.55; pointer-events:none; }
+/* Impulsos (mobile): un destello recorre la rama y enciende el título. */
+.blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
+  filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
+@keyframes blc-pulse { to { stroke-dashoffset:-100; } }
+.blc-v .blc-ttl { transition:fill .9s ease-out, filter .9s ease-out; }
+.blc-v .blc-node.is-lit .blc-ttl { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
+.blc-v .blc-node.is-lit .blc-end { fill:#fff; }
 .blc-pv .k { font:500 10px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-accent-layer); }
 .blc-pv h3 { margin:6px 0 2px; font-size:26px; letter-spacing:-.025em; color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 14px; font-size:13.5px; line-height:1.5; color:var(--bl-text-sec); }
