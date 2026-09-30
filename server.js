@@ -19,7 +19,7 @@ import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE } from "./lib/content-rules.js";
-import { detectCity, isAmbaCity } from "./lib/places.js";
+import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
 import matter from "gray-matter";
@@ -272,6 +272,13 @@ function tidyEvents(events) {
   for (let i = events.length - 1; i >= 0; i--) if (NOT_A_SHOW_TITLE.test(events[i].name || "")) events.splice(i, 1);
   for (const ev of events) {
     ev.artists = cleanLineup(ev.artists);
+    // Ciudad asignada con texto parcial (sept 2026: "Belgrano esquina Peredo"
+    // → CABA, antes de completarse "Córdoba Capital"): si venue o dirección
+    // nombran otra ciudad del país, se vuelve a derivar con el texto final.
+    // Misma regla que check-content (lib/places.js).
+    if (ev.region === "AR" && ev.city === "CABA" && namesOtherCity(`${ev.venue || ""} ${ev.address || ""}`)) {
+      ev.city = detectCity(ev.venue, ev.address, ev.name) || ev.city;
+    }
     // Superficie de Bass: CABA + GBA (AMBA). Acá y no solo en la build: el
     // snapshot en disco también tiene que salir con la marca (sept 2026).
     if (isAmba(ev)) ev.area = "amba"; else delete ev.area;
@@ -1157,7 +1164,7 @@ const FINANCE_OUT = [
   /(^|\s)my (friend|husband|wife|kids?|parents?|mom|dad|sister|brother|boss|partner)\b|^my\b/i,
   /\bI (sold|was|am|have|had|bought|lost|made|quit|retired|spent|paid|earn|make|want|need)\b/,
   /\b(travel cards?|credit cards?|points guy|retirement|social security|medicare|401\(k\)|mortgage|car payments?|car loans?)\b/i,
-  /\b(aumentos?|prepagas?|colectivos|peajes|alquileres|sueldos?|0 ?km|autos?|cars?|pickups?|nafteras?|combustibles|surtidores|jubilaci\w*|aguinaldo|anses|tarifas?)\b/i,
+  /\b(aumentos?|prepagas?|colectivos|peajes|alquileres|sueldos?|0 ?km|autos?|pickups?|nafteras?|combustibles|surtidores|jubilaci\w*|aguinaldo|anses|tarifas?)\b/i,
   /^d[óo]lar( blue)?( hoy)?( y d[óo]lar blue hoy)?( minuto a minuto)?:/i,
 ];
 const financeKeep = (title) => !FINANCE_OUT.some((rx) => rx.test(title));
@@ -1237,11 +1244,10 @@ app.get("/api/finance-news", async (req, res) => {
     const news = quotaApplied.slice(0, 40).map(({ _mins, _pubDate, ...rest }) => rest);
     // Titulares en inglés: traducidos (marcados en el cliente, con el original
     // a un toque). Cacheado por texto; sin cupo, queda el original.
-    for (const n of news) {
-      if (n.lang !== "en") continue;
+    await eachLimit(news.filter((n) => n.lang === "en"), 4, async (n) => {
       const es = await translateText(n.title, "en", "es");
       if (es) n.titleEs = es;
-    }
+    });
     if (news.length) { registerImages(news); setCache("financeNews", news); }
     const serve = news.length ? news : (cache.financeNews.data || news);
     res.json(applyFilter(serve));
@@ -3439,6 +3445,13 @@ function saveTranslationsSoon() {
   translationsSaveTimer.unref?.();
 }
 let translateQuotaUntil = 0;
+// Recorre `items` con hasta `n` tareas a la vez (traducciones: sin esperar
+// una por una ni saturar el servicio gratuito).
+async function eachLimit(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await fn(items[i++]); }));
+}
+
 async function translateText(text, from, to) {
   if (!text || from === to) return null;
   const key = `${from}>${to}:${crypto.createHash("md5").update(text).digest("hex")}`;
@@ -4235,7 +4248,7 @@ const predAllowed = (e) => {
 // glosario son nombres propios y quedan como vienen.
 const MONTHS_EN = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const monthIdx = (m) => MONTHS_EN.indexOf(m.toLowerCase());
-const monthEs = (m) => (monthIdx(m) >= 0 ? MONTHS_ES[monthIdx(m)].toLowerCase() : m);
+const monthEs = (m) => { const i = monthIdx(m); return i >= 0 ? MONTHS_ES[i].toLowerCase() : m; };
 function predLabelEs(label) {
   let t = String(label).trim();
   if (/^no change$/i.test(t)) return "Sin cambios";
@@ -4255,11 +4268,12 @@ function predLabelEs(label) {
 // El traductor habla castellano de España y no conoce las marcas.
 const PRED_TITLE_FIX = [
   [/Antrópic[ao]/g, "Anthropic"], [/Géminis/g, "Gemini"], [/\bsubidas?\b/g, (w) => w.replace("subida", "suba")],
-  [/\b([Tt])ipos\b/g, (_, t) => (t === "T" ? "Tasas" : "tasas")], [/_{2,}|\.{3}/g, "…"],
+  [/\b([Tt])ipos\b/g, (_, t) => (t === "T" ? "Tasas" : "tasas")],
 ];
+const ellipsize = (t) => t.replace(/_{2,}|\.{3}/g, "…");
 // "Gemini 4.0 released by...?" sale "¿Gemini 4.0 lanzado por…?": la pregunta
 // es la fecha, así que se dice así ("Gemini 4.0 lanzado: ¿cuándo?").
-const predTitleEs = (t) => PRED_TITLE_FIX.reduce((s, [rx, to]) => s.replace(rx, to), t)
+const predTitleEs = (t) => PRED_TITLE_FIX.reduce((s, [rx, to]) => s.replace(rx, to), ellipsize(t))
   .replace(/^¿(.+?)(?:\s(?:por|para|en|antes del?))?\s?…\?$/, "$1: ¿cuándo?");
 
 // Los resultados que vale la pena mostrar: los inciertos (3–97 %), los de más
@@ -4320,12 +4334,12 @@ app.get("/api/prediction-markets", async (req, res) => {
     }
     // Títulos: traductor (una vez por texto, cacheado en disco) + arreglos
     // locales; etiquetas: glosario. Sin cupo de traducción, va el original.
-    for (const ev of events) {
+    await eachLimit(events, 4, async (ev) => {
       const es = await translateText(ev.title, "en", "es");
       if (es) ev.titleEs = predTitleEs(es);
-      ev.title = ev.title.replace(/_{2,}|\.{3}/g, "…");
+      ev.title = ellipsize(ev.title);
       for (const o of ev.outcomes) if (!o.binary) o.labelEs = predLabelEs(o.label);
-    }
+    });
     setCache("predictions", events);
     res.json(events);
   } catch (e) {

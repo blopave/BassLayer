@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
+import { api, shared } from "../utils/api";
+import { formatUsdCompact } from "../utils/format";
+import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 
 // Predicciones (sept 2026): un evento de Polymarket por tarjeta con sus
 // resultados principales, agrupados por tema. Los títulos vienen traducidos
 // por máquina (marcado, con el original a un toque); las etiquetas de
 // resultado, por glosario en el server.
 const GROUP_ORDER = ["crypto", "fed", "macro", "tech", "argentina"];
-
-function fmtVolume(n) {
-  if (!n || n < 1000) return `$${Math.round(n || 0)}`;
-  if (n < 1_000_000) return `$${(n / 1000).toFixed(0)}K`;
-  return `$${(n / 1_000_000).toFixed(1)}M`;
-}
 
 function daysLeft(iso) {
   const ms = iso ? new Date(iso).getTime() - Date.now() : NaN;
@@ -23,14 +20,12 @@ function daysLeft(iso) {
 
 function PredictionCard({ ev, idx, es }) {
   const { t } = useLocale();
-  const [original, setOriginal] = useState(false);
-  const translated = es && ev.titleEs;
-  const title = translated && !original ? ev.titleEs : ev.title;
+  const tr = useTranslatedTitle(ev, es);
   const left = daysLeft(ev.endDate);
   return (
     <article className="bl-predict-card bl-reveal" style={{ transitionDelay: `${Math.min(idx * 0.03, 0.24)}s` }}>
       <div className="bl-predict-top">
-        <h4 className="bl-predict-question" lang={translated && !original ? "es" : "en"}>{title}</h4>
+        <h4 className="bl-predict-question" lang={tr.lang}>{tr.title}</h4>
         {left && <span className="bl-predict-deadline" title={t("predict.closes")}>{left}</span>}
       </div>
       <ul className="bl-predict-outcomes">
@@ -43,13 +38,9 @@ function PredictionCard({ ev, idx, es }) {
         ))}
       </ul>
       <div className="bl-predict-foot">
-        {translated ? (
-          <button type="button" className="bl-predict-tr" aria-pressed={original} onClick={() => setOriginal((v) => !v)}>
-            {original ? t("predict.showTranslation") : <>{t("artist.autoTranslated")} · <u>{t("predict.showOriginal")}</u></>}
-          </button>
-        ) : <span />}
+        {tr.translated ? <TranslateToggle tr={tr} /> : <span />}
         <a className="bl-predict-link" href={ev.url} target="_blank" rel="noopener noreferrer">
-          <span className="bl-predict-vol">{fmtVolume(ev.volume24h)} {t("predict.vol24")} · </span>Polymarket <span aria-hidden="true">↗</span>
+          <span className="bl-predict-vol">{formatUsdCompact(ev.volume24h)} {t("predict.vol24")} · </span>Polymarket <span aria-hidden="true">↗</span>
         </a>
       </div>
     </article>
@@ -65,9 +56,8 @@ export function PredictionMarkets() {
   const load = () => {
     setLoading(true);
     setError(false);
-    // ?v=2: forma nueva (eventos agrupados); que el navegador no reuse la vieja
-    fetch("/api/prediction-markets?v=2")
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    // Misma caché que la curva de Layer (useLayerData): un solo pedido.
+    shared("predictions", api.predictionMarkets)
       .then((data) => setEvents(Array.isArray(data) ? data : []))
       .catch(() => setError(true))
       .then(() => setLoading(false));

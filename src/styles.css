@@ -5604,35 +5604,36 @@ select.bl-venue-input { cursor:pointer; }
 .blc-branch, .blc-branch-glow, .blc-end { pointer-events:none; }
 .blc-node:hover .blc-branch, .blc-node.is-on .blc-branch, .blc-node:focus-visible .blc-branch { opacity:1; stroke-width:1.8; }
 .blc-rail-hit { fill:transparent; }
-.blc-rn { fill:var(--bl-text); font:620 17px var(--font-sans); letter-spacing:-.012em; transition:fill .2s; }
+.blc-rn { fill:var(--bl-text); font:620 17px var(--font-sans); letter-spacing:-.012em; transition:fill .9s ease-out, filter .9s ease-out; }
 .blc-rv { font:500 11.5px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:18px; }
 .blc-rv * { color:inherit !important; } /* un color: el dato no se tiñe de rojo/verde */
-.blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); }
+.blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); transition:fill .15s; } /* el hover responde ya; el impulso se apaga lento */
 .blc-node:hover .blc-dot, .blc-node.is-on .blc-dot { fill:var(--bl-accent-layer); }
 .blc-node.is-today .blc-dot { stroke:var(--bl-text); } .blc-node.is-today .blc-core { fill:var(--bl-text); }
 .blc-node:focus-visible .blc-rn { text-decoration:underline; }
-.blc-pv {
-  position:absolute; z-index:6; width:330px; padding:18px; border-radius:14px;
+/* Ficha de sección: la caja (posición y entrada) y la tarjeta (.pv-in).
+   La caja entra una vez; al pasar a otra sección solo cambia el contenido,
+   con un fundido corto: sin parpadeo. */
+.blc-pv { position:absolute; z-index:6; width:330px; animation:blc-pv .22s var(--ease-out-expo); }
+@keyframes blc-pv { from { opacity:0; transform:translateY(8px) scale(.98); } }
+.blc-pv .pv-in {
+  padding:18px; border-radius:14px;
   background:color-mix(in srgb, var(--bl-surface) 96%, transparent); border:1px solid var(--bl-border);
   box-shadow:0 30px 80px rgba(0,0,0,.45); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  animation:blc-pv .22s var(--ease-out-expo);
+  animation:blc-pv-in .18s ease-out;
 }
-@keyframes blc-pv { from { opacity:0; transform:translateY(8px) scale(.98); } }
-/* Ficha anclada debajo de la curva (30-sep): tres columnas — qué es, el dato
-   vivo, por qué vive ahí y "Entrar". Sin sombra de tarjeta flotante. */
-/* La caja entra una vez (al abrir); al pasar a otra sección solo cambia el
-   contenido, con un fundido corto: sin parpadeo. */
-.blc-pv.is-dock { padding:0; background:none; border:0; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; animation:blc-dock .28s var(--ease-out-expo); }
-.blc-pv .pv-in { animation:blc-pv-in .18s ease-out; }
 @keyframes blc-pv-in { from { opacity:0; } }
+/* Anclada debajo de la curva (30-sep): tres columnas — qué es, el dato vivo,
+   por qué vive ahí y "Entrar" — sin sombra de tarjeta flotante. */
+.blc-pv.is-dock { animation:blc-dock .28s var(--ease-out-expo); }
+@keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
 .blc-pv.is-dock .pv-in {
   display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(max-content,.9fr); gap:28px; align-items:start;
   padding:20px 24px; overflow:hidden; box-shadow:none;
   background:color-mix(in srgb, var(--bl-bg) 72%, transparent);
-  border:1px solid color-mix(in srgb, var(--bl-accent-layer) 26%, var(--bl-border)); border-radius:14px;
-  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border-color:color-mix(in srgb, var(--bl-accent-layer) 26%, var(--bl-border));
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
 }
-@keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
 .blc-pv.is-dock h3 { font-size:27px; } /* escala de la portada: 11 · 13 · 17 · 21 · 27 */
 .blc-pv.is-dock .rows { margin-top:10px; }
 .blc-pv.is-dock .why { margin-top:0; font-size:12.5px; line-height:1.5; }
@@ -5643,7 +5644,6 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
   filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
 @keyframes blc-pulse { to { stroke-dashoffset:-100; } }
-.blc-ttl, .blc-rn { transition:fill .9s ease-out, filter .9s ease-out; }
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
 .blc-node.is-lit .blc-end { fill:#fff; }
 .blc-pv .k { font:500 10px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-accent-layer); }
@@ -5675,8 +5675,8 @@ select.bl-venue-input { cursor:pointer; }
   .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-fan { animation:none; opacity:1; } .blc-live, .blc-walk.is-new { animation:none; }
 }
 @media (max-width:768px) {
-  /* Mobile = curva vertical (dirección A, sept 2026): el tiempo baja con el
-     scroll y cada sección es una franja tocable con su título. El alto del
+  /* Mobile = curva vertical ("Ramas", 30-sep): el abanico arriba, la curva
+     en su banda y una fila tocable por sección con su nombre. El alto del
      gráfico lo calcula LayerCurve.jsx. */
   .blc { height:auto; min-height:0; }
   .blc-stage { flex:none; min-height:600px; margin:8px 0 24px; touch-action:auto; } /* el alto exacto lo pone LayerCurve */
@@ -5689,8 +5689,8 @@ select.bl-venue-input { cursor:pointer; }
 .blc-hit { fill:transparent; transition:fill .2s; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
 .blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
-.blc-ttl { fill:var(--bl-text); font:620 21px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
-.blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
+.blc-ttl { fill:var(--bl-text); font:620 21px var(--font-sans); letter-spacing:-.024em; transition:fill .9s ease-out, filter .9s ease-out; }
+.blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); transition:fill .15s; }
 /* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
 .blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }
 .blc-v .blc-node:active .blc-dot { fill:var(--bl-accent-layer); }

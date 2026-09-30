@@ -5,18 +5,15 @@ import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
+import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 
 // Temas por contenido del server (detectFinanceTag) → labels vía i18n.
 const FINANCE_TAGS = ["All", "argentina", "wallstreet", "companies", "world"];
 
-// Titulares en inglés: en castellano se muestran traducidos por máquina,
-// marcados y con el original a un toque (mismo criterio que las bios).
+// Titulares en inglés: traducidos y marcados (TranslatedTitle).
 function FinanceNewsItem({ item, idx, tagLabel, es }) {
-  const { t } = useLocale();
   const [imgFailed, setImgFailed] = useState(false);
-  const [original, setOriginal] = useState(false);
-  const translated = es && item.titleEs;
-  const title = translated && !original ? item.titleEs : item.title;
+  const tr = useTranslatedTitle(item, es), title = tr.title;
   const showPill = !!(item.tag && item.image && !imgFailed);
   // Link directo a la fuente (atribución + fair use): el titular lleva al medio.
   const open = () => item.url && window.open(item.url, "_blank", "noopener,noreferrer");
@@ -32,23 +29,13 @@ function FinanceNewsItem({ item, idx, tagLabel, es }) {
     >
       <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
       <div className="bl-layer-news-body">
-        <h3 className="bl-layer-news-title" lang={translated && !original ? "es" : item.lang}>{title}</h3>
+        <h3 className="bl-layer-news-title" lang={tr.lang}>{title}</h3>
         <div className="bl-finance-news-meta">
           <span className="bl-finance-news-source">{item.source}</span>
-          {item.lang && item.lang !== (es ? "es" : "en") && !translated && <span className="bl-finance-news-lang">{item.lang.toUpperCase()}</span>}
+          {item.lang && item.lang !== (es ? "es" : "en") && !tr.translated && <span className="bl-finance-news-lang">{item.lang.toUpperCase()}</span>}
           {item.time && <span className="bl-finance-news-time">{item.time}</span>}
         </div>
-        {translated && (
-          <button
-            type="button"
-            className="bl-predict-tr bl-finance-tr"
-            aria-pressed={original}
-            onClick={(e) => { e.stopPropagation(); setOriginal((v) => !v); }}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            {original ? t("predict.showTranslation") : <>{t("artist.autoTranslated")} · <u>{t("predict.showOriginal")}</u></>}
-          </button>
-        )}
+        <TranslateToggle tr={tr} className="bl-finance-tr" />
         {showPill && <span className="bl-layer-news-tag-pill">{tagLabel}</span>}
       </div>
     </article>

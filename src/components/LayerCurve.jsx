@@ -80,6 +80,19 @@ const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
 const BEAT = 1200;
 
+// Una rama (mobile y desktop): brillo, trazo, el impulso cuando lo hay (su
+// número reinicia la animación) y el remate junto al nombre.
+function Branch({ d, pulse, end: [x, y], r }) {
+  return (
+    <>
+      <path className="blc-branch-glow" d={d} />
+      <path className="blc-branch" d={d} />
+      {pulse ? <path key={pulse} className="blc-pulse" d={d} pathLength="100" /> : null}
+      <circle className="blc-end" cx={x} cy={y} r={r} />
+    </>
+  );
+}
+
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
   const d = useLayerData();
@@ -344,10 +357,7 @@ export function LayerCurve({ news = [], onEnter }) {
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
             <rect className="blc-hit" x="0" y={n.ly - VROW / 2} width={geo.W} height={VROW} />
-            <path className="blc-branch-glow" d={n.branch} />
-            <path className="blc-branch" d={n.branch} />
-            {pulse?.i === i && <path key={pulse.n} className="blc-pulse" d={n.branch} pathLength="100" />}
-            <circle className="blc-end" cx={n.ex} cy={n.ly} r="2.4" />
+            <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.ex, n.ly]} r={2.4} />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
             {/* Puntos chicos: en 2021 Acciones y Eventos caen a 7 px (fechas reales). */}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="9" />
@@ -430,10 +440,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
-                  <path className="blc-branch-glow" d={n.branch} />
-                  <path className="blc-branch" d={n.branch} />
-                  {pulse?.i === i && <path key={pulse.n} className="blc-pulse" d={n.branch} pathLength="100" />}
-                  <circle className="blc-end" cx={n.kx + 6} cy={n.ey} r="2.6" />
+                  <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.kx + 6, n.ey]} r={2.6} />
                   {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="8" />}
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
