@@ -11,8 +11,9 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
 // izquierda, con toda su franja tocable. Solo títulos: sin datos ni fechas
-// (Pablo, sept 2026). "Hilo" (30-sep): la curva ocupa el 70 % del ancho, un
-// hilo une cada título con su punto y el abanico cierra a todo el ancho.
+// (Pablo, sept 2026). "Estaciones" (30-sep): la curva usa todo el ancho y
+// cada título va pegado a su punto, como un mapa de subte; la línea se corta
+// limpia detrás del nombre. El abanico cierra la pantalla.
 
 // Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
 // arriba/abajo, magnitud = altura). Todas viven en un momento REAL de la
@@ -35,15 +36,16 @@ const NODES = [
 
 // Mobile vertical: margen arriba, alto de cada franja, tramo del abanico
 // (hoy → halving) y pie (eje de precios). El alto del gráfico sale de acá.
-const VT = 48, VGAP = 92, VFAN = 330, VB = 56;
+const VT = 48, VGAP = 92, VFAN = 300, VB = 56;
 
-// Ancho de un título mobile (para que el hilo arranque donde termina). Mismo
-// font que .blc-ttl; sin canvas (tests), una estimación por letra.
-const TTL_FONT = "620 30px 'Geist Variable', system-ui, sans-serif";
+// Títulos-estación: tamaño y ancho medido (para ubicarlos al lado del punto y
+// cortar la línea detrás). Mismo font que .blc-ttl; sin canvas, estimación.
+const TTL_FS = 27;
+const TTL_FONT = `620 ${TTL_FS}px 'Geist Variable', system-ui, sans-serif`;
 let ttlCtx;
 const ttlWidth = (s) => {
   try { ttlCtx ??= document.createElement("canvas").getContext("2d"); ttlCtx.font = TTL_FONT; return ttlCtx.measureText(s).width; }
-  catch { return s.length * 16; }
+  catch { return s.length * 15; }
 };
 
 // Interpolación por tramos: [[t, pos], …] → pos(t).
@@ -143,12 +145,16 @@ export function LayerCurve({ news = [], onEnter }) {
     if (mobile) {
       // Vertical: el tiempo baja (una franja de VGAP por sección) y el precio
       // (log, $100 → $250k: la curva arranca en 2013, cuando BTC pasó los $100)
-      // arranca al 30% del ancho: en cada fila el punto cae a la derecha de su
-      // título (los años baratos quedan arriba, fuera de las filas largas).
-      const Hh = VT + 7 * VGAP + VFAN + VB, x0 = Math.round(W * 0.30), x1 = W - 22;
+      // usa todo el ancho: los títulos van pegados a su punto, no en columna.
+      const Hh = VT + 7 * VGAP + VFAN + VB, x0 = 26, x1 = W - 26;
       const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [nextHalving, VT + 7 * VGAP + VFAN], [END, VT + 7 * VGAP + VFAN + 20]]);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
-      const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]), tw: ttlWidth(t(SECTION_LABEL[n.key])) }));
+      // Cada nombre, del lado del punto donde entra (derecha si hay lugar).
+      const nodes = NODES.map((n, i) => {
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), tw = ttlWidth(t(SECTION_LABEL[n.key]));
+        const tx = cx + 17 + tw <= W - 10 ? cx + 17 : Math.max(10, cx - 17 - tw);
+        return { ...n, tt: times[i], cx, cy, tx, tw, box: { x: tx - 7, y: cy - TTL_FS * 0.62, w: tw + 14, h: TTL_FS * 1.18 } };
+      });
       const pxDec = (x1 - x0) / (Math.log10(250000) - 2);
       return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
     }
@@ -178,7 +184,7 @@ export function LayerCurve({ news = [], onEnter }) {
       // Mobile: el abanico es el cierre de la pantalla (Pablo, 30-sep). Sale
       // del punto de hoy y en su primer tercio se corre al centro para abrirse
       // a todo el ancho; la lupa ×4 es la misma, solo cambia desde dónde abre.
-      const yEnd = geo.Yt(until), mid = geo.W / 2;
+      const yEnd = geo.Yt(until), mid = geo.W * 0.55;
       const ease = (tt) => { const f = Math.min(1, (tt - geo.TODAY) / ((until - geo.TODAY) / 3)); return f * f * (3 - 2 * f); };
       return {
         until,
@@ -235,29 +241,29 @@ export function LayerCurve({ news = [], onEnter }) {
   );
 
   // Mobile: la curva vertical. Cada sección es una franja entera tocable con
-  // su título grande a la izquierda, alineado con su punto en la curva.
+  // su título-estación pegado a su punto en la curva.
   const vertical = geo?.V && (
     <svg className="blc-v" viewBox={`0 0 ${geo.W} ${geo.Hh}`} role="img" aria-label={t("curve.chartAria")}>
       <defs>
         <linearGradient id="blc-cgv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
-        <linearGradient id="blc-agv" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".14" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
       </defs>
-      <g className="blc-grid">
+      <g className="blc-grid" mask="url(#blc-kov)">
         {/* La escala del pasado termina hoy: el abanico va con su propia lupa. */}
         {[1000, 100000].map((p) => (
           <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={18} y2={geo.yt} /><text x={geo.Xp(p)} y={10} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
       <defs>
-        {/* El área del pasado se disuelve en los últimos 140 px antes de hoy: sin corte de color. */}
-        <linearGradient id="blc-amgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.yt - 140} x2="0" y2={geo.yt}><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
-        <mask id="blc-amv" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amgv)" /></mask>
+        {/* Estaciones: la línea (y la grilla) se cortan limpias detrás de cada nombre. */}
+        <mask id="blc-kov" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}>
+          <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" />
+          {geo.nodes.map((n) => <rect key={n.key} x={n.box.x} y={n.box.y} width={n.box.w} height={n.box.h} rx="6" fill="#000" />)}
+        </mask>
       </defs>
-      <path className="blc-area" mask="url(#blc-amv)" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
       <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
       <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) - 6} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
-      <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
-      <g className="blc-ms">
+      <path className="blc-curve" mask="url(#blc-kov)" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
+      <g className="blc-ms" mask="url(#blc-kov)">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) <= geo.TODAY).map((x) => (
           <circle key={x.t + x.type} cx={geo.Xp(x.price)} cy={geo.Yt(T(x.t))} r="2.5" />
         ))}
@@ -277,12 +283,10 @@ export function LayerCurve({ news = [], onEnter }) {
           >
             <rect className="blc-hit" x="0" y={n.cy - VGAP / 2} width={geo.W} height={VGAP} />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="7" />}
-            {/* El hilo: une el título con su punto en la curva. */}
-            {n.cx - 16 > 16 + n.tw + 12 && <line className="blc-thread" x1={16 + n.tw + 12} x2={n.cx - 16} y1={n.cy} y2={n.cy} />}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="16" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
-            <text className="blc-ttl" x="16" y={n.cy + 10.5}>{label}</text>
+            <text className="blc-ttl" x={n.tx} y={n.cy + TTL_FS * 0.35}>{label}</text>
           </g>
         );
       })}

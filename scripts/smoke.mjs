@@ -286,10 +286,15 @@ async function run(vp) {
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
-        // "Hilo" (30-sep): cada título unido a su punto y el abanico como
-        // cierre a todo el ancho (antes quedaba en el tercio derecho).
-        const threads = await page.locator(".blc-v .blc-thread").count();
-        if (threads < 6) fail(vp.name, "layer", `mobile: ${threads} hilos entre títulos y puntos (esperaba ≥6)`);
+        // "Estaciones" (30-sep): cada título va pegado a su punto en la curva
+        // (no en una columna aparte), entero en pantalla; el abanico cierra a
+        // todo el ancho (antes quedaba en el tercio derecho).
+        const far = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.filter((g) => {
+          const d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-ttl").getBoundingClientRect();
+          const gap = Math.min(Math.abs(t.left - d.right), Math.abs(d.left - t.right));
+          return gap > 24 || Math.abs((t.top + t.bottom) / 2 - (d.top + d.bottom) / 2) > 12 || t.left < 0 || t.right > innerWidth;
+        }).length);
+        if (far) fail(vp.name, "layer", `mobile: ${far} títulos sueltos de su punto en la curva`);
         const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
         if (fanW < vp.viewport.width * 0.75) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥75% del ancho)`);
       }

@@ -5654,15 +5654,11 @@ select.bl-venue-input { cursor:pointer; }
   .bl-layer-back { margin-left:0; }
 }
 .blc-v .blc-curve { stroke:url(#blc-cgv); stroke-width:2.3; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--bl-accent-layer) 35%, transparent)); }
-/* Hilo título → punto: presente pero por debajo de la curva. */
-.blc-thread { stroke:var(--bl-accent-layer); stroke-opacity:.32; stroke-width:1; stroke-dasharray:1.5 4.5; stroke-linecap:round; transition:stroke-opacity .2s; }
-.blc-v .blc-node:active .blc-thread, .blc-v .blc-node.is-on .blc-thread { stroke-opacity:.8; }
-.blc-v .blc-area { fill:url(#blc-agv); }
 .blc-v .blc-node { -webkit-tap-highlight-color:transparent; }
 .blc-hit { fill:transparent; transition:fill .2s; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
 .blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
-.blc-ttl { fill:var(--bl-text); font:620 30px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
+.blc-ttl { fill:var(--bl-text); font:620 27px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
 .blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
 /* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
 .blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }
