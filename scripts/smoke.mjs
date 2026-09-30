@@ -253,7 +253,7 @@ async function run(vp) {
     // es el único índice (sin franja ni lista debajo). Desktop: cápsulas que no
     // se pisan. Mobile: curva vertical con solo títulos y franjas tocables.
     // Entrar a Ciclos (click o toque entra directo) y volver a la curva.
-    const pill = (re) => page.locator(".blc-node").filter({ hasText: re }).first().locator(".blc-pill, .blc-hit");
+    const pill = (re) => page.locator(".blc-node").filter({ hasText: re }).first().locator(".blc-rail-hit, .blc-hit");
     const nodes = await page.locator(".blc-node").count();
     const dup = await page.locator(".blc-strip, .blc-it").count();
     if (nodes !== 8 || dup) fail(vp.name, "layer", `la curva tiene ${nodes} puntos y ${dup} accesos repetidos debajo (esperaba 8 y 0)`);
@@ -277,33 +277,34 @@ async function run(vp) {
       const walks = await page.locator(".blc-fan .blc-walk").count();
       if (walks < 20) fail(vp.name, "layer", `el futuro tiene ${walks} caminos simulados (esperaba ≥20)`);
       if (await page.locator(".blc-proj").count()) fail(vp.name, "layer", "volvió la línea punteada del futuro");
-      const pills = await page.locator(".blc-pill").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map(({ x, y, width: w, height: h }) => ({ x, y, w, h })));
+      const pills = await page.locator(".blc-rn").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map(({ x, y, width: w, height: h }) => ({ x, y, w, h })));
       const clash = pills.some((a, i) => pills.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
-      if (clash) fail(vp.name, "layer", "hay cápsulas de la curva pisadas entre sí");
-      if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "una cápsula se sale de la pantalla");
+      if (clash) fail(vp.name, "layer", "hay títulos del riel pisados entre sí");
+      if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "un título del riel se sale de la pantalla");
+      if (vp.viewport.width > 768 && (await page.locator(".blc-branch").count()) !== 8) fail(vp.name, "layer", "desktop: faltan ramas entre la curva y el riel");
       if (vp.viewport.width <= 768) {
         const hits = await page.locator(".blc-hit").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
-        // "Estaciones" (30-sep): cada título va pegado a su punto en la curva
-        // (no en una columna aparte), entero en pantalla; el abanico cierra a
-        // todo el ancho (antes quedaba en el tercio derecho).
-        const far = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.filter((g) => {
-          const d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-ttl").getBoundingClientRect();
-          const gap = Math.min(Math.abs(t.left - d.right), Math.abs(d.left - t.right));
-          return gap > 24 || Math.abs((t.top + t.bottom) / 2 - (d.top + d.bottom) / 2) > 12 || t.left < 0 || t.right > innerWidth;
+        // Ramas (30-sep): cada sección sale de su punto con una rama que
+        // termina en su nombre, y las 8 entran en la primera pantalla.
+        const loose = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.filter((g) => {
+          const b = g.querySelector(".blc-branch"), d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-ttl").getBoundingClientRect();
+          if (!b) return true;
+          const m = b.getScreenCTM(), a = b.getPointAtLength(0), z = b.getPointAtLength(b.getTotalLength());
+          const A = new DOMPoint(a.x, a.y).matrixTransform(m), Z = new DOMPoint(z.x, z.y).matrixTransform(m);
+          const fromDot = Math.hypot(A.x - (d.left + d.right) / 2, A.y - (d.top + d.bottom) / 2) < 6;
+          const toTitle = t.left - Z.x >= 0 && t.left - Z.x < 26 && Math.abs(Z.y - (t.top + t.bottom) / 2) < 14;
+          return !fromDot || !toTitle || t.right > innerWidth;
         }).length);
-        if (far) fail(vp.name, "layer", `mobile: ${far} títulos sueltos de su punto en la curva`);
-        // Estratos (30-sep): el tiempo sube. Noticias (hoy) es la primera
-        // estación desde arriba y el abanico queda encima, con aire (≥360 px).
-        const order = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.map((g) => [g.classList.contains("is-today"), g.querySelector(".blc-dot").getBoundingClientRect().top]).sort((a, b) => a[1] - b[1]));
-        if (!order[0]?.[0]) fail(vp.name, "layer", "mobile: Noticias no es la primera estación de arriba");
-        const fanBox = await page.locator(".blc-v .blc-fan").evaluate((g) => { const r = g.getBoundingClientRect(); return { h: r.height, bottom: r.bottom }; }).catch(() => null);
-        const todayTop = order.find((o) => o[0])?.[1] ?? 0;
-        if (!fanBox || fanBox.h < 360 || fanBox.bottom > todayTop + 20) fail(vp.name, "layer", `mobile: el abanico no abre la pantalla arriba de hoy (${JSON.stringify(fanBox)})`);
+        if (loose) fail(vp.name, "layer", `mobile: ${loose} secciones sin rama de su punto a su nombre`);
+        const below = await page.locator(".blc-v .blc-ttl").evaluateAll((ts) => ts.filter((t) => t.getBoundingClientRect().bottom > innerHeight).length);
+        if (below) fail(vp.name, "layer", `mobile: ${below} secciones fuera de la primera pantalla`);
         const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
-        if (fanW < vp.viewport.width * 0.75) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥75% del ancho)`);
+        // Los caminos son aleatorios: el ancho varía; por debajo de la mitad se
+        // perdió la lupa del abanico.
+        if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);

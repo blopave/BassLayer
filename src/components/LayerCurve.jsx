@@ -4,67 +4,75 @@ import { FutureFan } from "./FutureFan";
 import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLabel, useLayerData } from "../utils/layer";
 
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
-// navegación. Cada sección vive en un momento real de la curva y se entra
-// tocando su cápsula (la curva es el único índice: sin franja ni lista, sept
-// 2026). Un solo hover: el de las secciones (sin cruz ni precio por mes:
-// competía con la navegación; el precio mes a mes vive en Hitos).
-// Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
-// scroll; el precio va a la derecha y cada sección es un título grande a la
-// izquierda, con toda su franja tocable. Solo títulos: sin datos ni fechas
-// (Pablo, sept 2026). "Estaciones" (30-sep): cada título va pegado a su
-// punto, como un mapa de subte; la línea se corta limpia detrás del nombre.
-// "Estratos" (30-sep, auditoría): en mobile el tiempo SUBE — el abanico del
-// futuro abre la pantalla, Noticias (hoy) es la primera estación y el pasado
-// se sedimenta hacia abajo hasta Hitos. Layer = capa.
+// navegación. Cada sección vive en un momento real de la curva (la curva es
+// el único índice, sept 2026). Un solo hover: el de las secciones.
+// "Ramas" (30-sep, tras la auditoría y referentes: Tufte, Minard, Beck): cada
+// sección sale de su punto con una RAMA que es una lupa de la curva — el
+// precio real de BTC alrededor de ese momento (±9 meses; hoy, los últimos 7
+// días hora por hora) — con el mismo trazo que la curva principal, y termina
+// en su nombre. Como las ramas llevan cada nombre a su lugar, el eje de
+// tiempo es REAL (sin tramos comprimidos) y los nombres quedan parejos: en
+// mobile, una columna con las 8 secciones y el abanico en una sola pantalla;
+// en desktop, un riel de títulos arriba. Todo en un color (Pablo: el rojo/
+// verde por sección rompía la estética de Layer).
 
-// Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
-// arriba/abajo, magnitud = altura). Todas viven en un momento REAL de la
-// curva, en orden cronológico; hoy (Noticias) es la última y de ahí se abre
-// el abanico del futuro (Pablo, sept 2026: "el pasado se navega, el futuro se
-// pregunta"). Anclas verificadas con 2+ fuentes: Eventos = Bitcoin 2021 en
-// Miami, donde El Salvador anunció la ley bitcoin (CBS, NPR, CNBC, CoinDesk);
-// Predicciones = elección de EE.UU. 2024, Polymarket supera US$3.000 M en un
-// mercado (The Block, Yahoo Finance).
+// Dónde vive cada sección. Todas en un momento REAL de la curva, en orden
+// cronológico; hoy (Noticias) es la última y de ahí se abre el abanico del
+// futuro ("el pasado se navega, el futuro se pregunta"). Anclas verificadas
+// con 2+ fuentes: Eventos = Bitcoin 2021 en Miami, donde El Salvador anunció
+// la ley bitcoin (CBS, NPR, CNBC, CoinDesk); Predicciones = elección de
+// EE.UU. 2024, Polymarket supera US$3.000 M en un mercado (The Block, Yahoo
+// Finance).
 const NODES = [
-  { key: "historia", at: "2013-11", dy: -1 },
-  { key: "finanzas", at: "2020-03", dy: 1 },
-  { key: "acciones", at: "2021-02", dy: -1 },
-  { key: "eventos", at: "2021-06", dy: 1 },
-  { key: "etfs", at: "2024-01", dy: -1 },
-  { key: "predicciones", at: "2024-11", dy: 1 },
-  { key: "ciclos", at: "peak", dy: -1 },
-  { key: "noticias", at: "today", dy: 1 },
+  { key: "historia", at: "2013-11" },
+  { key: "finanzas", at: "2020-03" },
+  { key: "acciones", at: "2021-02" },
+  { key: "eventos", at: "2021-06" },
+  { key: "etfs", at: "2024-01" },
+  { key: "predicciones", at: "2024-11" },
+  { key: "ciclos", at: "peak" },
+  { key: "noticias", at: "today" },
 ];
 
-// Mobile vertical: margen arriba, alto de cada franja, tramo del abanico
-// (hoy → halving) y pie (eje de precios). El alto del gráfico sale de acá.
-const VT = 40, VGAP = 92, VFAN = 420, VB = 56;
-// Techo de la escala mobile: con $2,5 M (y no $250 k) hoy cae cerca del 60 %
-// del ancho y el abanico se abre a los dos lados desde su punto real, sin
-// correrlo (la auditoría marcó que desplazarlo no salía del dato).
+// Mobile: margen arriba, abanico (halving → hoy), una fila por sección y pie.
+// Las 8 secciones y el abanico entran en una pantalla de 390 × 844.
+const VT = 14, VFAN = 214, VROW = 60, VB = 44;
+// Techo de la escala mobile: hoy cae en el tercio izquierdo de la banda de
+// la curva y el abanico se abre a los dos lados desde su punto real.
 const V_CEIL = 2_500_000;
 
-// Títulos-estación: tamaño y ancho medido (para ubicarlos al lado del punto y
-// cortar la línea detrás). Mismo font que .blc-ttl; sin canvas, estimación.
-const TTL_FS = 27;
-const TTL_FONT = `620 ${TTL_FS}px 'Geist Variable', system-ui, sans-serif`;
-let ttlCtx;
-const ttlWidth = (s) => {
-  try { ttlCtx ??= document.createElement("canvas").getContext("2d"); ttlCtx.font = TTL_FONT; return ttlCtx.measureText(s).width; }
-  catch { return s.length * 15; }
-};
-
-// Interpolación por tramos: [[t, pos], …] → pos(t).
-const seg = (bx) => (tt) => {
-  for (let i = 1; i < bx.length; i++) if (tt <= bx[i][0]) { const [a, fa] = bx[i - 1], [b, fb] = bx[i]; return fa + ((tt - a) / (b - a)) * (fb - fa); }
-  return bx[bx.length - 1][1];
-};
+// Rama = lupa: log-precio alrededor de `tt` (±9 meses de la serie mensual;
+// hoy, la serie horaria de 7 días si está) como desvío de la recta entre sus
+// extremos, normalizado a ±1 — así arranca en el punto y termina en el nombre.
+function lens(H, tt, today, spark) {
+  const a = tt >= today - 0.02 && spark?.length > 12
+    ? spark.filter((_, i) => i % 2 === 0).map((p) => Math.log10(p))
+    : H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => Math.log10(h.p));
+  if (a.length < 3) return [0, 0];
+  const n = a.length - 1, r = a.map((v, i) => v - (a[0] + ((a[n] - a[0]) * i) / n));
+  const m = Math.max(1e-9, ...r.map(Math.abs));
+  return r.map((v) => v / m);
+}
+// La rama: una curva de Bézier de la sección a su nombre con la lupa encima
+// (desvío sobre la normal, que se apaga en las puntas).
+function branchPath([x0, y0], c1, c2, [x1, y1], offs, amp) {
+  const B = (t) => { const u = 1 - t; return [u * u * u * x0 + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * x1, u * u * u * y0 + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * y1]; };
+  const n = offs.length - 1;
+  return offs.map((o, i) => {
+    const t = i / n, [px, py] = B(t), [qx, qy] = B(Math.min(1, t + 0.01)), [rx, ry] = B(Math.max(0, t - 0.01));
+    const L = Math.hypot(qx - rx, qy - ry) || 1, e = o * amp * Math.sin(Math.PI * t) ** 0.6;
+    return `${i ? "L" : "M"}${(px - ((qy - ry) / L) * e).toFixed(1)},${(py + ((qx - rx) / L) * e).toFixed(1)}`;
+  }).join("");
+}
 
 // Lupa del futuro: de hoy en adelante la escala del precio se amplía ×4
 // (rotulado en pantalla) para que los caminos posibles se abran de verdad; a
 // la escala de 12 años (×10.000) su rango real, ±3× en dos años, se vería
 // como una sola línea.
 const FAN_ZOOM = 4;
+// En mobile la banda de la curva es angosta (la columna de nombres va al
+// lado): la lupa del abanico es mayor para que se abra; va rotulada igual.
+const FAN_ZOOM_V = 7;
 
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
@@ -72,9 +80,6 @@ export function LayerCurve({ news = [], onEnter }) {
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [sel, setSel] = useState(null);       // sección con vista previa
-  // El hilo mide los títulos: se vuelve a medir cuando llega la fuente real.
-  const [fontsReady, setFontsReady] = useState(false);
-  useEffect(() => { let on = true; document.fonts?.ready.then(() => on && setFontsReady(true)); return () => { on = false; }; }, []);
   const shownAt = useRef(0);
   const hideT = useRef(null);
   // En desktop la vista previa se cierra con un respiro: da tiempo a llevar el
@@ -136,9 +141,6 @@ export function LayerCurve({ news = [], onEnter }) {
     const END = nextHalving + 0.1;
     const peakT = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
     const at = { today: TODAY, peak: peakT };
-    // Eje de tiempo por tramos: cada sección cae a la misma distancia en
-    // pantalla (la historia 2012→2020 comprimida al inicio). La curva sigue
-    // siendo el precio real; solo cambia cuánto lugar ocupa cada tramo.
     const times = NODES.map((n) => at[n.at] ?? T(n.at));
     const last = H[H.length - 1].p;
     const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
@@ -148,55 +150,54 @@ export function LayerCurve({ news = [], onEnter }) {
       len: pts.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0),
     });
 
+    const spark = list(d.prices).find((x) => x.sym === "BTC")?.sparkline;
+    const lensOf = (tt) => lens(H, tt, TODAY, spark);
+
     if (mobile) {
-      // Estratos: el tiempo sube. Arriba el abanico (halving → hoy, VFAN),
-      // después una franja de VGAP por sección de hoy hacia atrás; la curva
-      // arranca en Hitos (2013), abajo de todo. Precio en log, $100 → V_CEIL.
-      const Hh = VT + VFAN + 7 * VGAP + VB, x0 = 24, x1 = W - 24;
-      const yToday = VT + VFAN;
-      const Yt = seg([...times.map((tt, i) => [tt, yToday + (7 - i) * VGAP]), [nextHalving, VT], [END, VT - 20]]);
+      // Tiempo real: el abanico arriba (halving → hoy) y el pasado hacia
+      // abajo hasta Hitos. La curva va en una banda a la izquierda; los
+      // nombres, en una columna pareja a la derecha (una fila por sección).
+      const T0 = times[0], yToday = VT + VFAN, yBot = yToday + 7 * VROW;
+      const Hh = yBot + VB, x0 = 14, x1 = Math.round(W * 0.46), lx = Math.round(W * 0.58);
+      const Yt = (tt) => (tt >= TODAY ? yToday - ((tt - TODAY) / (nextHalving - TODAY)) * (yToday - VT) : yToday + ((TODAY - tt) / (TODAY - T0)) * (yBot - yToday));
       const lc = Math.log10(V_CEIL) - 2;
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
-      // Todos los nombres a la izquierda de su estación (un solo borde de
-      // lectura); a la derecha solo si no entran.
       const nodes = NODES.map((n, i) => {
-        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), tw = ttlWidth(t(SECTION_LABEL[n.key]));
-        const tx = cx - 17 - tw >= 10 ? cx - 17 - tw : cx + 17;
-        return { ...n, tt: times[i], cx, cy, tx, tw, box: { x: tx - 7, y: cy - TTL_FS * 0.62, w: tw + 14, h: TTL_FS * 1.18 } };
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + (NODES.length - 1 - i) * VROW, ex = lx - 12;
+        const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.35, cy], [ex - (ex - cx) * 0.35, ly], [ex, ly], lensOf(times[i]), 7);
+        return { ...n, tt: times[i], cx, cy, lx, ly, ex, branch };
       });
       const pxDec = (x1 - x0) / lc;
-      const past = H.filter((h) => T(h.t) >= times[0]);
-      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
+      const past = H.filter((h) => T(h.t) >= T0);
+      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, yBot, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
     }
 
-    const Hh = size.h, L = 64, R = 60, TOP = 120, BOT = 46;
-    // Las 8 secciones hasta el 72% del ancho; el resto es el abanico (hoy → halving).
-    const f = seg([[2012, 0], ...times.map((tt, i) => [tt, 0.07 + (0.65 * i) / (times.length - 1)]), [nextHalving, 0.97], [END, 1]]);
-    const X = (tt) => L + f(tt) * (W - L - R);
+    // Desktop: eje de tiempo real (2012 → halving) y un riel de títulos
+    // parejos arriba, hasta un poco pasado hoy; cada rama sube a su título.
+    const Hh = size.h, L = 64, R = 60, TOP = 170, BOT = 46, RAIL = 26;
+    const X = (tt) => L + ((tt - 2012) / (END - 2012)) * (W - L - R);
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
+    const gapx = (X(TODAY) + 40 - L - 110) / (NODES.length - 1), fs = gapx < 125 ? 15 : 17;
     const nodes = NODES.map((n, i) => {
-      const tt = times[i], cx = X(tt), cy = Y(priceAt(tt));
-      const pw = Math.max(t(SECTION_LABEL[n.key]).length * 9.2, 12 * 7.2) + 34;
-      const dir = Math.sign(n.dy), ph = 48, gap = 58;
-      const py = dir < 0 ? cy - gap * Math.abs(n.dy) - ph : cy + gap * Math.abs(n.dy) - 10;
-      const px = Math.max(L - 4, Math.min(cx - pw / 2, W - R - pw + 4));
-      return { ...n, tt, cx, cy, pill: { x: px, y: py, w: pw, h: ph, dir } };
+      const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), kx = L + i * gapx, ey = RAIL + 46;
+      const branch = branchPath([cx, cy], [cx, cy - (cy - ey) * 0.45], [kx + 6, ey + (cy - ey) * 0.45], [kx + 6, ey], lensOf(tt), 13 * Math.min(1, gapx / 150));
+      return { ...n, tt, cx, cy, kx, ey, fs, branch };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
-    return { W, Hh, L, R, TOP, BOT, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
-  }, [H, size, mobile, cyc, t, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+    return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
+  }, [H, size, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada en hoy.
   const fan = useMemo(() => {
     if (!geo) return null;
     const until = geo.nextHalving;
     if (geo.V) {
-      // Mobile (Estratos): el abanico abre la pantalla hacia arriba desde el
-      // punto de hoy, con la misma lupa y sin desplazarlo.
+      // Mobile: el abanico abre la pantalla hacia arriba desde el punto de
+      // hoy, sin desplazarlo.
       const yEnd = geo.Yt(until);
       return {
         until,
-        toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
+        toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM_V, geo.Yt(tt)],
         clip: { x: 8, y: yEnd - 2, w: geo.W - 16, h: geo.yt - yEnd + 2 },
         fade: { x1: 0, y1: geo.yt, x2: 0, y2: yEnd },
       };
@@ -205,7 +206,7 @@ export function LayerCurve({ news = [], onEnter }) {
     return {
       until,
       toPoint: (tt, p) => [geo.X(tt), geo.yt - Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM],
-      clip: { x: geo.xt, y: 8, w: xEnd - geo.xt + 2, h: geo.Hh - geo.BOT - 8 },
+      clip: { x: geo.xt, y: geo.TOP - 60, w: xEnd - geo.xt + 2, h: geo.Hh - geo.BOT - geo.TOP + 60 }, // debajo del riel
       fade: { x1: geo.xt, y1: 0, x2: xEnd, y2: 0 },
     };
   }, [geo]);
@@ -248,55 +249,43 @@ export function LayerCurve({ news = [], onEnter }) {
     </div>
   );
 
-  // Mobile: la curva vertical. Cada sección es una franja entera tocable con
-  // su título-estación pegado a su punto en la curva.
+  // Mobile: la curva en su banda, las ramas y la columna de nombres. Cada
+  // fila entera es tocable. Solo títulos (Pablo: sin datos ni fechas).
   const vertical = geo?.V && (
     <svg className="blc-v" viewBox={`0 0 ${geo.W} ${geo.Hh}`} role="img" aria-label={t("curve.chartAria")}>
       <defs>
-        <linearGradient id="blc-cgv" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
-      </defs>
-      <g className="blc-grid" mask="url(#blc-kov)">
-        {/* La escala del pasado empieza hoy: el abanico va con su propia lupa. */}
-        {[1000, 100000].map((p) => (
-          <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={geo.yt} y2={geo.Hh - 34} /><text x={geo.Xp(p)} y={geo.Hh - 16} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
-        ))}
-      </g>
-      <defs>
-        {/* Estaciones: la línea (y la grilla) se cortan limpias detrás de cada nombre. */}
-        <mask id="blc-kov" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}>
-          <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" />
-          {geo.nodes.map((n) => <rect key={n.key} x={n.box.x} y={n.box.y} width={n.box.w} height={n.box.h} rx="6" fill="#000" />)}
-        </mask>
+        <linearGradient id="blc-cgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.yBot} x2="0" y2={geo.yt}><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
       </defs>
       <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 4} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
-      {/* Sin puntitos de hitos en mobile: sin rótulo se leían como ruido. */}
-      <path className="blc-curve" mask="url(#blc-kov)" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
+      <text className="blc-fut-l" x={geo.W - 14} y={VT + 10} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM_V })}</text>
+      <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       {geo.nodes.map((n, i) => {
         const label = name(n.key);
         return (
           <g
             key={n.key}
             className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}`}
-            style={{ animationDelay: `${2.1 + i * 0.12}s` }}
+            style={{ animationDelay: `${2.1 + (NODES.length - 1 - i) * 0.1}s` }}
             tabIndex={0}
             role="button"
             aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
             onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
-            <rect className="blc-hit" x="0" y={n.cy - VGAP / 2} width={geo.W} height={VGAP} />
-            {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="7" />}
-            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="16" />
-            <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
-            <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
-            <text className="blc-ttl" x={n.tx} y={n.cy + TTL_FS * 0.35}>{label}</text>
+            <rect className="blc-hit" x="0" y={n.ly - VROW / 2} width={geo.W} height={VROW} />
+            <path className="blc-branch-glow" d={n.branch} />
+            <path className="blc-branch" d={n.branch} />
+            <circle className="blc-end" cx={n.ex} cy={n.ly} r="2.4" />
+            {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
+            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="13" />
+            <circle className="blc-dot" cx={n.cx} cy={n.cy} r="5.5" />
+            <circle className="blc-core" cx={n.cx} cy={n.cy} r="2" />
+            <text className="blc-ttl" x={n.lx} y={n.ly + 7}>{label}</text>
           </g>
         );
       })}
     </svg>
   );
-
 
   return (
     <section className="blc" aria-label={t("curve.aria")}>
@@ -323,7 +312,7 @@ export function LayerCurve({ news = [], onEnter }) {
               {[10, 1000, 100000].map((p) => (
                 <g key={p}><line x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.L} y={geo.Y(p) - 6}>{fmtUsd(p, locale)}</text></g>
               ))}
-              {[2012, 2016, 2020, 2022, 2024, 2026, 2028].map((y) => (
+              {[2012, 2014, 2016, 2018, 2020, 2022, 2024, 2026, 2028].map((y) => (
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
@@ -333,7 +322,7 @@ export function LayerCurve({ news = [], onEnter }) {
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
             {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
-            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.TOP - 96} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.TOP - 70} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
             <g className="blc-ms">
               {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
                 const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
@@ -349,31 +338,32 @@ export function LayerCurve({ news = [], onEnter }) {
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
               const label = name(n.key);
-              const { x: px, y: py, w: pw, h: ph, dir } = n.pill;
               return (
                 <g
                   key={n.key}
                   className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}`}
-                  style={{ animationDelay: `${2.1 + i * 0.16}s` }}
+                  style={{ animationDelay: `${2.1 + i * 0.12}s` }}
                   tabIndex={0}
                   role="button"
                   aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
                   onMouseEnter={() => show(i)}
                   onMouseLeave={hideSoon}
                   onFocus={(e) => e.currentTarget.matches(":focus-visible") && show(i)}
-                  onClick={(e) => { e.stopPropagation(); onEnter(NODES[i].key); }}
+                  onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
-                  <line className="blc-stem" x1={n.cx} x2={n.cx} y1={n.cy + (dir > 0 ? 10 : -10)} y2={dir > 0 ? py : py + ph} />
-                  {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="9" />}
-                  <circle className="blc-halo" cx={n.cx} cy={n.cy} r="19" />
-                  <circle className="blc-dot" cx={n.cx} cy={n.cy} r="9" />
-                  <circle className="blc-core" cx={n.cx} cy={n.cy} r="3" />
-                  <rect className="blc-pill" x={px} y={py} width={pw} height={ph} rx="10" />
-                  <text className="blc-nm" x={px + 14} y={py + 21}>{label}</text>
-                  <foreignObject x={px + 14} y={py + 26} width={pw - 30} height="18"><div className="blc-vl">{c.v ?? " "}</div></foreignObject>
-                  <text className="blc-ar" x={px + pw - 20} y={py + 29}>→</text>
-                  <circle cx={n.cx} cy={n.cy} r="22" fill="transparent" />
+                  <path className="blc-branch-glow" d={n.branch} />
+                  <path className="blc-branch" d={n.branch} />
+                  <circle className="blc-end" cx={n.kx + 6} cy={n.ey} r="2.6" />
+                  {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="8" />}
+                  <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
+                  <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
+                  <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.6" />
+                  {/* Riel: nombre + dato vivo, en un color (el dato en gris). */}
+                  <rect className="blc-rail-hit" x={n.kx - 4} y={geo.RAIL - 6} width={geo.gapx - 8} height="58" />
+                  <text className="blc-rn" x={n.kx} y={geo.RAIL + 12} style={{ fontSize: n.fs }}>{label}</text>
+                  <foreignObject x={n.kx} y={geo.RAIL + 18} width={geo.gapx - 10} height="18"><div className="blc-rv">{c.v ?? " "}</div></foreignObject>
+                  <circle cx={n.cx} cy={n.cy} r="20" fill="transparent" />
                 </g>
               );
             })}

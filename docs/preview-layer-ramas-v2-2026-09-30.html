@@ -1,0 +1,189 @@
+<meta charset="utf-8">
+<title>Ramas v2 · referentes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{ --bg:#0f1316; --line:#243038; --text:#eef2f3; --sec:#9aa7ad; --ter:#66747b; --acc:#6CB8C8; }
+*{box-sizing:border-box} body{margin:0;background:#0a0d0f;color:var(--text);font-family:'Geist',system-ui,sans-serif;padding:28px 24px 60px}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} h2{font-size:16px;font-weight:600;margin:44px 0 14px}
+.lead{color:var(--sec);font-size:14px;max-width:80ch;margin:0 0 10px;line-height:1.55}
+.refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:18px 0 8px}
+.ref{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--sec);line-height:1.45}
+.ref b{display:block;color:var(--text);font-size:13.5px;margin-bottom:3px} .ref i{color:var(--acc);font-style:normal}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:10px;width:390px} .opt b{font-size:15px} .opt p{margin:0;color:var(--sec);font-size:13px;line-height:1.45;min-height:112px}
+.opt .src{font:11px 'Geist Mono',monospace;color:var(--acc);min-height:0}
+.phone{width:390px;height:844px;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:var(--bg)}
+.bar{height:56px;display:flex;align-items:center;justify-content:center;gap:90px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ter)} .bar span:last-child{letter-spacing:.4em;color:var(--acc)}
+.tick{height:44px;border-bottom:1px solid var(--line);font:12px 'Geist Mono',monospace;color:var(--ter);display:flex;align-items:center;padding:0 14px;white-space:nowrap;overflow:hidden}
+.desk{width:1200px;max-width:100%;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+svg{display:block} .note{color:var(--ter);font:12px 'Geist Mono',monospace;margin-top:30px;max-width:100ch;line-height:1.6}
+</style>
+<h1>Ramas v2: la línea que une cada sección, pensada con los mejores</h1>
+<p class="lead">En v1 la rama era solo un conector: una curva genérica de A a B. Los referentes coinciden en que una línea en un gráfico tiene que <b>decir algo</b> o <b>ordenar algo</b>. Cuatro direcciones, cada una anclada en un referente y con los datos reales de hoy:</p>
+<div class="refs">
+  <div class="ref"><b>Tufte · sparklines</b>Gráficos "del tamaño de una palabra", hechos solo de dato. → <i>A: la rama ES un mini-gráfico de su sección.</i></div>
+  <div class="ref"><b>Minard · Napoleón 1812</b>El ancho de la línea codifica cantidad. → <i>B: la rama es un afluente cuyo grosor es la actividad de hoy.</i></div>
+  <div class="ref"><b>Beck · Vignelli · subte</b>Solo 0°, 45° y 90°, estaciones parejas, "de punto a punto". → <i>C: haz de vías que se ordena en diagonal.</i></div>
+  <div class="ref"><b>Amanda Cox · NYT</b>"La capa de anotación es lo más importante que hacemos". → <i>D: la línea termina siendo el renglón del título.</i></div>
+  <div class="ref"><b>Fragapane · Lupi (Pentagram)</b>Formas orgánicas cuando hay algo vivo detrás del dato; la belleza como método para que la gente mire. → <i>el trazo de A y B.</i></div>
+</div>
+
+<h2>Mobile · las 8 secciones en una pantalla</h2>
+<div class="row">
+  <div class="opt"><b>A · Rama-dato</b><p>Cada rama sale de su punto y se convierte en el mini-gráfico de su sección, subrayando el nombre. Noticias muestra su ritmo de 24 h, Eventos los próximos 120 días, Hitos los 32 hechos, Ciclos el precio desde el pico. El índice es también un tablero.</p><span class="src">dato real · tinta = información</span><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $84,092 +1.2% · ETH · SOL</div><svg id="A"></svg></div></div>
+  <div class="opt"><b>B · Afluentes</b><p>Cada rama es una cinta que nace ancha en la curva y se afina hasta el nombre, como un afluente. El ancho en la raíz es cuánto se movió hoy: 29 noticias pesan más que 16 eventos. Es orgánica y a la vez medible.</p><span class="src">dato real · ancho = volumen del día</span><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $84,092 +1.2% · ETH · SOL</div><svg id="B"></svg></div></div>
+  <div class="opt"><b>C · Haz de vías</b><p>Las ramas salen en horizontal, doblan con chaflanes a 45° y bajan paralelas, separadas como las vías del subte. La curva del precio es orgánica y el menú es un diagrama de ingeniería: el contraste es el diseño.</p><span class="src">estructura · Beck / Vignelli</span><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $84,092 +1.2% · ETH · SOL</div><svg id="C"></svg></div></div>
+  <div class="opt"><b>D · Renglón</b><p>La rama llega al título y sigue de largo como su subrayado, hasta un remate con el dato vivo. Título, línea y dato son una sola pieza tipográfica. Es la más sobria y editorial.</p><span class="src">tipografía · capa de anotación</span><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $84,092 +1.2% · ETH · SOL</div><svg id="D"></svg></div></div>
+</div>
+
+<h2>Desktop · A · Rama-dato</h2>
+<p class="lead">Las ramas suben desde su fecha real y cada una se abre en su mini-gráfico, bajo un riel de títulos parejos. En el eje de tiempo real, 2020–21 y 2024–26 se amontonan en la curva, pero arriba cada sección tiene el mismo lugar.</p>
+<div class="desk"><svg id="DA"></svg></div>
+<p class="note">mockup · curva = precio mensual real de BTC (eje de tiempo real) · abanico = 32 caminos simulados con la volatilidad real, sin tendencia · mini-gráficos con datos reales del 30-sep: noticias y finanzas por hora (24 h), eventos cripto por fecha (120 días), 32 hitos por fecha, BTC desde el pico de oct-2025, probabilidades del mercado principal de Polymarket, variación del día promedio de ETFs y acciones.</p>
+
+<script>
+const D = [["2012-01",5.9],["2012-02",4.8],["2012-03",4.9],["2012-04",5],["2012-05",5.2],["2012-06",6.6],["2012-07",10.4],["2012-08",9.9],["2012-09",12.1],["2012-10",11],["2012-11",12.4],["2012-12",13.1],["2013-01",20.4],["2013-02",33.5],["2013-03",116],["2013-04",107],["2013-05",129],["2013-06",84.5],["2013-07",98.3],["2013-08",130],["2013-09",104],["2013-10",202],["2013-11",955],["2013-12",732],["2014-01",815],["2014-02",567],["2014-03",455],["2014-04",449],["2014-05",661],["2014-06",650],["2014-07",598],["2014-08",479],["2014-09",391],["2014-10",324],["2014-11",380],["2014-12",314],["2015-01",217],["2015-02",275],["2015-03",247],["2015-04",231],["2015-05",229],["2015-06",262],["2015-07",282],["2015-08",228],["2015-09",237],["2015-10",310],["2015-11",377],["2015-12",434],["2016-01",372],["2016-02",423],["2016-03",416],["2016-04",453],["2016-05",532],["2016-06",668],["2016-07",540],["2016-08",571],["2016-09",613],["2016-10",697],["2016-11",742],["2016-12",1013],["2017-01",984],["2017-02",1191],["2017-03",1078],["2017-04",1448],["2017-05",2414],["2017-06",2412],["2017-07",2856],["2017-08",4725],["2017-09",4379],["2017-10",6463],["2017-11",9839],["2017-12",13716],["2018-01",10285],["2018-02",10327],["2018-03",6924],["2018-04",9246],["2018-05",7485],["2018-06",6390],["2018-07",7731],["2018-08",7011],["2018-09",6627],["2018-10",6372],["2018-11",4041],["2018-12",3703],["2019-01",3434],["2019-02",3814],["2019-03",4104],["2019-04",5321],["2019-05",8555],["2019-06",10854],["2019-07",10081],["2019-08",9587],["2019-09",8289],["2019-10",9141],["2019-11",7542],["2019-12",7195],["2020-01",9353],["2020-02",8524],["2020-03",6410],["2020-04",8620],["2020-05",9448],["2020-06",9139],["2020-07",11335],["2020-08",11650],["2020-09",10777],["2020-10",13791],["2020-11",19696],["2020-12",28924],["2021-01",33093],["2021-02",45136],["2021-03",58741],["2021-04",57694],["2021-05",37254],["2021-06",35045],["2021-07",41462],["2021-08",47101],["2021-09",43824],["2021-10",61300],["2021-11",56951],["2021-12",46217],["2022-01",38467],["2022-02",43160],["2022-03",45510],["2022-04",37631],["2022-05",31801],["2022-06",19942],["2022-07",23293],["2022-08",20050],["2022-09",19423],["2022-10",20491],["2022-11",17164],["2022-12",16542],["2023-01",23125],["2023-02",23142],["2023-03",28465],["2023-04",29233],["2023-05",27210],["2023-06",30472],["2023-07",29232],["2023-08",25941],["2023-09",26963],["2023-10",34640],["2023-11",37724],["2023-12",42284],["2024-01",42580],["2024-02",61131],["2024-03",71280],["2024-04",60672],["2024-05",67540],["2024-06",62772],["2024-07",64628],["2024-08",58974],["2024-09",63328],["2024-10",70292],["2024-11",96408],["2024-12",93576],["2025-01",102430],["2025-02",84350],["2025-03",82550],["2025-04",94172],["2025-05",104592],["2025-06",107147],["2025-07",115764],["2025-08",108246],["2025-09",114049],["2025-10",109608],["2025-11",90360],["2025-12",87648],["2026-01",78741],["2026-02",66973],["2026-03",68284],["2026-04",76347],["2026-05",73674],["2026-06",58625],["2026-07",62888],["2026-08",63978]];
+const S = {"news": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 6, 12], "fin": [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2, 2, 4, 5, 9], "events": [0, 1, 6, 8, 13, 13, 14, 25, 27, 29, 30, 40, 43, 49, 61, 98], "milestones": ["2013-04", "2013-10", "2013-12", "2014-02", "2015-07", "2016-08", "2017-08", "2017-09", "2017-12", "2019-06", "2020-03", "2020-08", "2020-10", "2020-12", "2021-02", "2021-04", "2021-05", "2021-09", "2021-10", "2021-11", "2022-05", "2022-06", "2022-09", "2022-11", "2023-03", "2023-06", "2023-11", "2024-01", "2024-03", "2024-12", "2025-03", "2025-07"], "cycle": [109608, 90360, 87648, 78741, 66973, 68284, 76347, 73674, 58625, 62888, 63978], "pred": [46, 14, 7], "etf": -0.14, "stock": 0.3, "counts": {"news": 29, "fin": 31, "events": 16, "pred": 17, "ms": 32}};
+const tnum = (s) => { const [y, m] = s.split("-").map(Number); return y + (m - 1) / 12; };
+const PTS = D.map(([t, p]) => [tnum(t), Math.log10(p)]);
+const T0 = 2013.83, TN = PTS.at(-1)[0], TH = 2028.3;
+const rets = PTS.slice(-49).map((p, i, a) => i ? p[1] - a[i - 1][1] : 0).slice(1);
+const sd = Math.sqrt(rets.reduce((s, r) => s + r * r, 0) / rets.length);
+let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+const WALKS = Array.from({ length: 32 }, () => { let v = 0; return Array.from({ length: 20 }, () => (v += gauss() * sd)); });
+const NS = "http://www.w3.org/2000/svg";
+const el = (p, n, a, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; };
+const near = (t) => PTS.reduce((b, p) => Math.abs(p[0] - t) < Math.abs(b[0] - t) ? p : b)[1];
+const cv = document.createElement("canvas").getContext("2d");
+const tw = (s, fs, w = 600) => { cv.font = `${w} ${fs}px Geist`; return cv.measureText(s).width; };
+const ACC = "#6CB8C8";
+// secciones (de hoy hacia atrás) con su dato
+const SECS = [
+  { k: "noticias", name: "Noticias", at: TN, v: `${S.counts.news} hoy`, n: S.counts.news },
+  { k: "ciclos", name: "Ciclos BTC", at: 2025.75, v: "▼ Markdown", n: 12, neg: true },
+  { k: "pred", name: "Predicciones", at: 2024.83, v: `${S.counts.pred} mercados`, n: S.counts.pred },
+  { k: "etfs", name: "ETFs", at: 2024.0, v: `${S.etf > 0 ? "+" : ""}${S.etf.toFixed(2).replace(".", ",")}% hoy`, n: 9, neg: S.etf < 0 },
+  { k: "eventos", name: "Eventos", at: 2021.42, v: `${S.counts.events} próximos`, n: S.counts.events },
+  { k: "acciones", name: "Acciones", at: 2021.08, v: `${S.stock > 0 ? "+" : ""}${S.stock.toFixed(2).replace(".", ",")}% hoy`, n: 12, neg: S.stock < 0 },
+  { k: "finanzas", name: "Finanzas", at: 2020.17, v: `${S.counts.fin} notas`, n: S.counts.fin },
+  { k: "hitos", name: "Hitos", at: 2013.83, v: `${S.counts.ms} hechos`, n: S.counts.ms },
+];
+// mini-gráfico de cada sección: puntos normalizados [0..1]×[0..1] (y: 1 = arriba)
+function spark(k) {
+  const norm = (a) => { const mx = Math.max(...a), mn = Math.min(...a); return a.map((v, i) => [i / (a.length - 1), mx === mn ? .5 : (v - mn) / (mx - mn)]); };
+  const cum = (a) => { let s = 0; return a.map((v) => (s += v)); };
+  switch (k) {
+    case "noticias": return { kind: "bars", pts: S.news.map((v, i) => [i / 23, v]) };
+    case "finanzas": return { kind: "bars", pts: S.fin.map((v, i) => [i / 23, v]) };
+    case "eventos": return { kind: "ticks", xs: S.events.map((d) => d / 120) };
+    case "hitos": return { kind: "ticks", xs: S.milestones.map((m) => (tnum(m) - 2009) / (TN - 2009)) };
+    case "ciclos": return { kind: "line", pts: norm(S.cycle.map(Math.log10)) };
+    case "pred": return { kind: "steps", vals: S.pred };
+    case "etfs": return { kind: "slope", v: S.etf };
+    case "acciones": return { kind: "slope", v: S.stock };
+  }
+}
+function drawSpark(g, k, x, y, w, h, neg) {       // y = línea base
+  const sp = spark(k), col = neg ? "#e07a66" : ACC;
+  if (sp.kind === "bars") { const mx = Math.max(1, ...sp.pts.map((p) => p[1])); for (const [fx, v] of sp.pts) { const bh = v ? 2 + v / mx * (h - 2) : 1; el(g, "rect", { x: x + fx * (w - 3), y: y - bh, width: 2.2, height: bh, fill: col, "fill-opacity": v ? .9 : .25 }); } }
+  if (sp.kind === "ticks") { el(g, "line", { x1: x, x2: x + w, y1: y, y2: y, stroke: col, "stroke-opacity": .35 }); for (const fx of sp.xs) el(g, "line", { x1: x + fx * w, x2: x + fx * w, y1: y, y2: y - h * .8, stroke: col, "stroke-width": 1.4 }); }
+  if (sp.kind === "line") { el(g, "path", { d: "M" + sp.pts.map(([fx, fy]) => `${(x + fx * w).toFixed(1)},${(y - fy * h).toFixed(1)}`).join("L"), fill: "none", stroke: col, "stroke-width": 1.6 }); }
+  if (sp.kind === "steps") { let cx = x; const tot = sp.vals.reduce((a, b) => a + b, 0) || 1; sp.vals.forEach((v, i) => { const ww = v / tot * w - 2; el(g, "rect", { x: cx, y: y - h * .75, width: Math.max(2, ww), height: h * .75, rx: 2, fill: col, "fill-opacity": [.9, .5, .3][i] ?? .2 }); cx += ww + 2; }); }
+  if (sp.kind === "slope") { const dy = Math.max(-1, Math.min(1, sp.v / 1.5)) * h; el(g, "path", { d: `M${x},${y - h / 2}L${x + w},${y - h / 2 - dy}`, stroke: col, "stroke-width": 1.8, fill: "none" }); el(g, "circle", { cx: x + w, cy: y - h / 2 - dy, r: 2.6, fill: col }); }
+}
+function station(g, x, y, r = 5) {
+  el(g, "circle", { cx: x, cy: y, r: r + 8, fill: ACC, "fill-opacity": .09 });
+  el(g, "circle", { cx: x, cy: y, r, fill: "#0f1316", stroke: ACC, "stroke-width": 2.4 });
+  el(g, "circle", { cx: x, cy: y, r: 1.8, fill: ACC });
+}
+function mobile(id, mode) {
+  const svg = document.getElementById(id), W = 390, H = 844 - 101;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const defs = el(svg, "defs", {});
+  const yTop = 16, yToday = 236, yBot = H - 54;
+  const Y = (t) => t >= TN ? yToday - (t - TN) / (TH - TN) * (yToday - yTop) : yToday + (TN - t) / (TN - T0) * (yBot - yToday);
+  const xa = 16, xb = 176, lc = Math.log10(2.5e6) - 2, X = (l) => xa + (l - 2) / lc * (xb - xa);
+  const g = el(svg, "g", {});
+  const tx = X(PTS.at(-1)[1]), k = (xb - xa) / lc * 4;
+  const fade = el(defs, "linearGradient", { id: id + "fd", gradientUnits: "userSpaceOnUse", x1: 0, y1: yToday, x2: 0, y2: yTop });
+  el(fade, "stop", { offset: 0, "stop-color": ACC, "stop-opacity": .7 }); el(fade, "stop", { offset: 1, "stop-color": ACC, "stop-opacity": 0 });
+  for (const w of WALKS) { let s = `M${tx},${yToday}`; w.forEach((v, i) => { s += `L${Math.max(6, Math.min(W - 6, tx + v * k)).toFixed(1)},${(yToday - (i + 1) / 20 * (yToday - yTop)).toFixed(1)}`; }); el(g, "path", { d: s, fill: "none", stroke: `url(#${id}fd)`, "stroke-width": 1 }); }
+  const past = PTS.filter((p) => p[0] >= T0);
+  const d = "M" + past.map(([t, l]) => `${X(l).toFixed(1)},${Y(t).toFixed(1)}`).join("L");
+  el(g, "path", { d, fill: "none", stroke: ACC, "stroke-width": 7, "stroke-opacity": .07, "stroke-linejoin": "round" });
+  el(g, "path", { d, fill: "none", stroke: ACC, "stroke-width": 2.2, "stroke-linejoin": "round" });
+  const gap = (yBot - yToday) / 7, lx = 232;
+  SECS.forEach((s, j) => {
+    const nx = X(near(s.at)), ny = Y(s.at), ly = yToday + j * gap;
+    const bg = el(g, "g", {});
+    if (mode === "A") {
+      // conector corto que se vuelve el mini-gráfico, bajo el nombre
+      el(bg, "path", { d: `M${nx},${ny} C${nx + 40},${ny} ${lx - 40},${ly + 10} ${lx - 4},${ly + 10}`, fill: "none", stroke: ACC, "stroke-width": 1.3, "stroke-opacity": .7 });
+      drawSpark(bg, s.k, lx, ly + 22, 124, 12, s.neg);
+      el(bg, "text", { x: lx, y: ly + 3, fill: "#eef2f3", "font-size": 19, "font-weight": 600, "letter-spacing": "-0.015em" }, s.name);
+      el(bg, "text", { x: lx, y: ly + 37, fill: s.neg ? "#e07a66" : "#8a979d", "font-size": 10, "font-family": "Geist Mono" }, s.v);
+    }
+    if (mode === "B") {
+      const w0 = 2 + Math.sqrt(s.n) * 1.4, ex = lx - 8, ey = ly;
+      const c1x = nx + 60, c2x = ex - 60;
+      const top = `M${nx},${ny - w0 / 2} C${c1x},${ny - w0 / 2} ${c2x},${ey - .5} ${ex},${ey - .5}`;
+      const bot = `L${ex},${ey + .5} C${c2x},${ey + .5} ${c1x},${ny + w0 / 2} ${nx},${ny + w0 / 2}Z`;
+      const gr = el(defs, "linearGradient", { id: id + "r" + j, gradientUnits: "userSpaceOnUse", x1: nx, y1: 0, x2: ex, y2: 0 });
+      el(gr, "stop", { offset: 0, "stop-color": ACC, "stop-opacity": .75 }); el(gr, "stop", { offset: 1, "stop-color": ACC, "stop-opacity": .25 });
+      el(bg, "path", { d: top + bot, fill: `url(#${id}r${j})` });
+      el(bg, "text", { x: lx, y: ly + 7, fill: "#eef2f3", "font-size": 20, "font-weight": 600, "letter-spacing": "-0.015em" }, s.name);
+      el(bg, "text", { x: lx, y: ly + 24, fill: "#66747b", "font-size": 10.5, "font-family": "Geist Mono" }, s.v);
+    }
+    if (mode === "C") {
+      // octilineal: horizontal → chaflán 45° → vertical por su carril → 45° → horizontal
+      const lane = 214 - j * 4.5, c = 7, dy = ly - ny, sgn = Math.sign(dy) || 1;
+      let p = `M${nx},${ny}`;
+      if (Math.abs(dy) < 2) p += `L${lx - 10},${ly}`;
+      else p += `L${lane - c},${ny}L${lane},${ny + sgn * c}L${lane},${ly - sgn * c}L${lane + c},${ly}L${lx - 10},${ly}`;
+      el(bg, "path", { d: p, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-opacity": .8, "stroke-linejoin": "round" });
+      el(bg, "line", { x1: lx - 10, x2: lx - 10, y1: ly - 7, y2: ly + 7, stroke: ACC, "stroke-width": 3 });
+      el(bg, "text", { x: lx, y: ly + 7, fill: "#eef2f3", "font-size": 20, "font-weight": 600, "letter-spacing": "-0.015em" }, s.name);
+      el(bg, "text", { x: lx, y: ly + 24, fill: "#66747b", "font-size": 10.5, "font-family": "Geist Mono" }, s.v);
+    }
+    if (mode === "D") {
+      const w = tw(s.name, 20), ul = ly + 11;
+      el(bg, "path", { d: `M${nx},${ny} C${nx + 46},${ny} ${lx - 46},${ul} ${lx - 2},${ul}L${W - 14},${ul}`, fill: "none", stroke: ACC, "stroke-width": 1.3, "stroke-opacity": .75 });
+      el(bg, "circle", { cx: W - 14, cy: ul, r: 2.5, fill: ACC });
+      el(bg, "text", { x: lx, y: ly + 4, fill: "#eef2f3", "font-size": 20, "font-weight": 600, "letter-spacing": "-0.015em" }, s.name);
+      el(bg, "text", { x: W - 14, y: ul + 15, "text-anchor": "end", fill: s.neg ? "#e07a66" : "#9aa7ad", "font-size": 10.5, "font-family": "Geist Mono" }, s.v);
+    }
+    station(bg, nx, ny);
+  });
+  el(g, "text", { x: W - 12, y: yTop + 8, "text-anchor": "end", fill: "#66747b", "font-size": 10, "font-family": "Geist Mono" }, "escala ×4");
+}
+function desktopA(id) {
+  const svg = document.getElementById(id), W = 1200, H = 640;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.style.maxWidth = "100%"; svg.style.height = "auto";
+  const defs = el(svg, "defs", {});
+  const xL = 60, xR = W - 40, X = (t) => xL + (t - T0) / (TH - T0) * (xR - xL);
+  const yA = 300, yB = 600, lo = 2, hi = Math.log10(2.5e5), Y = (l) => yB - (l - lo) / (hi - lo) * (yB - yA);
+  const g = el(svg, "g", {});
+  for (const [p, lab] of [[1000, "$1.000"], [100000, "$100.000"]]) { const y = Y(Math.log10(p)); el(g, "line", { x1: xL, x2: xR, y1: y, y2: y, stroke: "#243038" }); el(g, "text", { x: xL, y: y - 6, fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, lab); }
+  for (let yr = 2014; yr <= 2028; yr += 2) el(g, "text", { x: X(yr), y: H - 10, "text-anchor": "middle", fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, yr);
+  const past = PTS.filter((p) => p[0] >= T0);
+  const d = "M" + past.map(([t, l]) => `${X(t).toFixed(1)},${Y(l).toFixed(1)}`).join("L");
+  const fade = el(defs, "linearGradient", { id: "dfd", gradientUnits: "userSpaceOnUse", x1: X(TN), y1: 0, x2: X(TH), y2: 0 });
+  el(fade, "stop", { offset: 0, "stop-color": ACC, "stop-opacity": .7 }); el(fade, "stop", { offset: 1, "stop-color": ACC, "stop-opacity": 0 });
+  const ty = Y(PTS.at(-1)[1]), k = (yB - yA) / (hi - lo) * 4;
+  for (const w of WALKS) { let s = `M${X(TN)},${ty}`; w.forEach((v, i) => { s += `L${X(TN + (i + 1) / 20 * (TH - TN)).toFixed(1)},${(ty - v * k).toFixed(1)}`; }); el(g, "path", { d: s, fill: "none", stroke: "url(#dfd)", "stroke-width": 1 }); }
+  el(g, "path", { d: d + `L${X(TN)},${yB}L${X(T0)},${yB}Z`, fill: ACC, "fill-opacity": .05 });
+  el(g, "path", { d, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-linejoin": "round" });
+  const order = [...SECS].reverse(), cw = 118, gapx = (X(TN) + 30 - xL - cw) / 7, ry = 44;
+  order.forEach((s, i) => {
+    const nx = X(s.at), ny = Y(near(s.at)), kx = xL + i * gapx, base = ry + 58;
+    el(g, "path", { d: `M${nx},${ny} C${nx},${ny - 110} ${kx + 8},${base + 110} ${kx + 8},${base + 8}`, fill: "none", stroke: ACC, "stroke-width": 1.3, "stroke-opacity": .6 });
+    drawSpark(g, s.k, kx + 8, base, cw - 10, 14, s.neg);
+    el(g, "text", { x: kx + 8, y: ry + 16, fill: "#eef2f3", "font-size": 17, "font-weight": 600, "letter-spacing": "-0.01em" }, s.name);
+    el(g, "text", { x: kx + 8, y: ry + 34, fill: s.neg ? "#e07a66" : "#9aa7ad", "font-size": 11, "font-family": "Geist Mono" }, s.v);
+    station(g, nx, ny, 6);
+  });
+  el(g, "text", { x: xR, y: yA - 18, "text-anchor": "end", fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, "escala ×4");
+}
+document.fonts.ready.then(() => { ["A", "B", "C", "D"].forEach((m) => mobile(m, m)); desktopA("DA"); });
+</script>

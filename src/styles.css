@@ -5593,21 +5593,26 @@ select.bl-venue-input { cursor:pointer; }
 .blc-ms text { fill:var(--bl-text-ter); opacity:.7; font:500 9px var(--font-mono); letter-spacing:.06em; }
 .blc-node { cursor:pointer; opacity:0; animation:blc-pop .5s cubic-bezier(.2,1.4,.4,1) forwards; outline:none; }
 @keyframes blc-pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-.blc-halo { fill:var(--bl-accent-layer); opacity:.14; transform-box:fill-box; transform-origin:center; animation:blc-halo 2.6s ease-in-out infinite; }
-@keyframes blc-halo { 50% { transform:scale(1.8); opacity:.03; } }
+/* Halo quieto: con las ramas, 8 puntos latiendo era ruido; late solo hoy (.blc-live). */
+.blc-halo { fill:var(--bl-accent-layer); opacity:.12; }
 .blc-dot { fill:var(--bl-bg); stroke:var(--bl-accent-layer); stroke-width:2.5; }
 .blc-core { fill:var(--bl-accent-layer); }
-.blc-stem { stroke:var(--bl-accent-layer); stroke-width:1.2; opacity:.45; }
-.blc-pill { fill:var(--bl-surface); stroke:color-mix(in srgb, var(--bl-accent-layer) 30%, var(--bl-border)); transition:fill .2s, stroke .2s; }
-.blc-nm { fill:var(--bl-text); font:650 16px var(--font-sans); letter-spacing:-.015em; }
-.blc-vl { font:500 11.5px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:18px; }
-.blc-vl .up { color:var(--bl-up); } .blc-vl .down { color:var(--bl-down); }
-.blc-ar { fill:var(--bl-accent-layer); font:500 14px var(--font-mono); opacity:0; transition:opacity .2s; }
-.blc-node:hover .blc-pill, .blc-node.is-on .blc-pill { fill:color-mix(in srgb, var(--bl-accent-layer) 12%, var(--bl-surface)); stroke:var(--bl-accent-layer); }
+/* Ramas (30-sep): cada sección sale de su punto con una lupa de la curva,
+   mismo trazo que la curva principal y en un solo color. */
+.blc-branch { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.35; stroke-linejoin:round; stroke-linecap:round; opacity:.78; transition:opacity .2s, stroke-width .2s; }
+.blc-branch-glow { fill:none; stroke:var(--bl-accent-layer); stroke-width:6; stroke-linejoin:round; opacity:.06; }
+.blc-end { fill:#bfe8f0; }
+/* Las ramas cruzan filas ajenas: no capturan toques (cada fila es de su sección). */
+.blc-branch, .blc-branch-glow, .blc-end { pointer-events:none; }
+.blc-node:hover .blc-branch, .blc-node.is-on .blc-branch, .blc-node:focus-visible .blc-branch { opacity:1; stroke-width:1.8; }
+.blc-rail-hit { fill:transparent; }
+.blc-rn { fill:var(--bl-text); font:620 17px var(--font-sans); letter-spacing:-.012em; transition:fill .2s; }
+.blc-rv { font:500 11.5px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:18px; }
+.blc-rv * { color:inherit !important; } /* un color: el dato no se tiñe de rojo/verde */
+.blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); }
 .blc-node:hover .blc-dot, .blc-node.is-on .blc-dot { fill:var(--bl-accent-layer); }
-.blc-node:hover .blc-ar, .blc-node.is-on .blc-ar { opacity:1; }
 .blc-node.is-today .blc-dot { stroke:var(--bl-text); } .blc-node.is-today .blc-core { fill:var(--bl-text); }
-.blc-node:focus-visible .blc-pill { stroke-width:2.5; stroke:var(--bl-accent-layer); }
+.blc-node:focus-visible .blc-rn { text-decoration:underline; }
 .blc-pv {
   position:absolute; z-index:6; width:330px; padding:18px; border-radius:14px;
   background:color-mix(in srgb, var(--bl-surface) 96%, transparent); border:1px solid var(--bl-border);
@@ -5641,7 +5646,7 @@ select.bl-venue-input { cursor:pointer; }
 .bl-layer-back svg { transition:transform var(--duration-fast); }
 .bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
-  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-fan { animation:none; opacity:1; } .blc-halo, .blc-live, .blc-walk.is-new { animation:none; }
+  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-fan { animation:none; opacity:1; } .blc-live, .blc-walk.is-new { animation:none; }
 }
 @media (max-width:768px) {
   /* Mobile = curva vertical (dirección A, sept 2026): el tiempo baja con el
@@ -5658,7 +5663,7 @@ select.bl-venue-input { cursor:pointer; }
 .blc-hit { fill:transparent; transition:fill .2s; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
 .blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
-.blc-ttl { fill:var(--bl-text); font:620 27px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
+.blc-ttl { fill:var(--bl-text); font:620 21px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
 .blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
 /* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
 .blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }

@@ -44,6 +44,7 @@ export function useLayerData() {
     shared("financeNews", api.financeNews).then(set("finance")).catch(() => {});
     shared("cryptoEvents", api.cryptoEvents).then(set("events")).catch(() => {});
     shared("predictions", api.predictionMarkets).then(set("predictions")).catch(() => {});
+    shared("prices", api.prices).then(set("prices")).catch(() => {}); // la rama de hoy: BTC 7 días
     return () => { alive = false; };
   }, []);
   return d;

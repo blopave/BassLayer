@@ -1,0 +1,130 @@
+<meta charset="utf-8">
+<title>Ramas · opciones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{ --bg:#0f1316; --line:#243038; --text:#eef2f3; --sec:#9aa7ad; --ter:#66747b; --acc:#6CB8C8; }
+*{box-sizing:border-box} body{margin:0;background:#0a0d0f;color:var(--text);font-family:'Geist',system-ui,sans-serif;padding:28px 24px 60px}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} h2{font-size:16px;font-weight:600;margin:44px 0 14px}
+.lead{color:var(--sec);font-size:14px;max-width:76ch;margin:0 0 24px;line-height:1.5}
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:10px} .opt b{font-size:15px} .opt p{margin:0;color:var(--sec);font-size:13px;line-height:1.45;max-width:390px}
+.phone{width:390px;height:844px;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:var(--bg);position:relative}
+.bar{height:56px;display:flex;align-items:center;justify-content:center;gap:90px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ter)} .bar span:last-child{letter-spacing:.4em;color:var(--acc)}
+.tick{height:44px;border-bottom:1px solid var(--line);font:12px 'Geist Mono',monospace;color:var(--ter);display:flex;align-items:center;gap:22px;padding:0 14px;white-space:nowrap;overflow:hidden}
+.desk{width:1200px;max-width:100%;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.desk .opt p{max-width:none}
+svg{display:block} .fold{position:absolute;left:0;right:0;bottom:0;height:0;border-top:1px dashed #6CB8C855}
+.note{color:var(--ter);font:12px 'Geist Mono',monospace;margin-top:30px}
+</style>
+<h1>Ramas: cada sección nace de la curva</h1>
+<p class="lead">Cada sección sale de su punto real como una rama propia, que se separa de la curva principal y termina en su nombre. Como las ramas llevan el nombre a su lugar, la curva vuelve a un eje de tiempo real (2013 → 2028, sin comprimir), y los nombres quedan parejos, tocables y todos a la vista.</p>
+
+<h2>Mobile · las 8 secciones y el abanico en una sola pantalla (390 × 844)</h2>
+<div class="row">
+  <div class="opt"><b>M1 · Columna</b><p>La curva baja por la izquierda y las ramas se abren hacia una columna de nombres a la derecha, como un índice que crece de la línea.</p><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $64,212 +1.2% · ETH $2,693 · SOL $120</div><svg id="M1"></svg></div></div>
+  <div class="opt"><b>M2 · Peine</b><p>La curva va por el centro y las ramas salen alternadas a los dos lados, como hojas de un tallo. Es más orgánica, pero los nombres tienen menos ancho.</p><div class="phone"><div class="bar"><span>Bass</span><span>LAYER</span></div><div class="tick">BTC $64,212 +1.2% · ETH $2,693 · SOL $120</div><svg id="M2"></svg></div></div>
+</div>
+
+<h2>Desktop · 1200 × 640</h2>
+<div class="opt"><b>D1 · Riel</b><p>Las ramas suben desde cada punto y desembocan en una fila pareja de cápsulas arriba, que funciona como el menú del mundo Layer, nacido de la curva. Las ramas no se cruzan porque las cápsulas siguen el orden del tiempo.</p><div class="desk"><svg id="D1"></svg></div></div>
+<div class="opt" style="margin-top:26px"><b>D2 · Copa</b><p>Las ramas se abren arriba y abajo de la curva, alternadas, y la curva queda como el tronco del medio. Es más escultórica y tiene más aire alrededor de cada sección.</p><div class="desk"><svg id="D2"></svg></div></div>
+<p class="note">mockup · curva = precio mensual real de BTC en eje de tiempo real · abanico = 32 caminos simulados con la volatilidad real, sin tendencia · datos de las cápsulas: ejemplos del día</p>
+
+<script>
+const D = [["2012-01",5.9],["2012-02",4.8],["2012-03",4.9],["2012-04",5],["2012-05",5.2],["2012-06",6.6],["2012-07",10.4],["2012-08",9.9],["2012-09",12.1],["2012-10",11],["2012-11",12.4],["2012-12",13.1],["2013-01",20.4],["2013-02",33.5],["2013-03",116],["2013-04",107],["2013-05",129],["2013-06",84.5],["2013-07",98.3],["2013-08",130],["2013-09",104],["2013-10",202],["2013-11",955],["2013-12",732],["2014-01",815],["2014-02",567],["2014-03",455],["2014-04",449],["2014-05",661],["2014-06",650],["2014-07",598],["2014-08",479],["2014-09",391],["2014-10",324],["2014-11",380],["2014-12",314],["2015-01",217],["2015-02",275],["2015-03",247],["2015-04",231],["2015-05",229],["2015-06",262],["2015-07",282],["2015-08",228],["2015-09",237],["2015-10",310],["2015-11",377],["2015-12",434],["2016-01",372],["2016-02",423],["2016-03",416],["2016-04",453],["2016-05",532],["2016-06",668],["2016-07",540],["2016-08",571],["2016-09",613],["2016-10",697],["2016-11",742],["2016-12",1013],["2017-01",984],["2017-02",1191],["2017-03",1078],["2017-04",1448],["2017-05",2414],["2017-06",2412],["2017-07",2856],["2017-08",4725],["2017-09",4379],["2017-10",6463],["2017-11",9839],["2017-12",13716],["2018-01",10285],["2018-02",10327],["2018-03",6924],["2018-04",9246],["2018-05",7485],["2018-06",6390],["2018-07",7731],["2018-08",7011],["2018-09",6627],["2018-10",6372],["2018-11",4041],["2018-12",3703],["2019-01",3434],["2019-02",3814],["2019-03",4104],["2019-04",5321],["2019-05",8555],["2019-06",10854],["2019-07",10081],["2019-08",9587],["2019-09",8289],["2019-10",9141],["2019-11",7542],["2019-12",7195],["2020-01",9353],["2020-02",8524],["2020-03",6410],["2020-04",8620],["2020-05",9448],["2020-06",9139],["2020-07",11335],["2020-08",11650],["2020-09",10777],["2020-10",13791],["2020-11",19696],["2020-12",28924],["2021-01",33093],["2021-02",45136],["2021-03",58741],["2021-04",57694],["2021-05",37254],["2021-06",35045],["2021-07",41462],["2021-08",47101],["2021-09",43824],["2021-10",61300],["2021-11",56951],["2021-12",46217],["2022-01",38467],["2022-02",43160],["2022-03",45510],["2022-04",37631],["2022-05",31801],["2022-06",19942],["2022-07",23293],["2022-08",20050],["2022-09",19423],["2022-10",20491],["2022-11",17164],["2022-12",16542],["2023-01",23125],["2023-02",23142],["2023-03",28465],["2023-04",29233],["2023-05",27210],["2023-06",30472],["2023-07",29232],["2023-08",25941],["2023-09",26963],["2023-10",34640],["2023-11",37724],["2023-12",42284],["2024-01",42580],["2024-02",61131],["2024-03",71280],["2024-04",60672],["2024-05",67540],["2024-06",62772],["2024-07",64628],["2024-08",58974],["2024-09",63328],["2024-10",70292],["2024-11",96408],["2024-12",93576],["2025-01",102430],["2025-02",84350],["2025-03",82550],["2025-04",94172],["2025-05",104592],["2025-06",107147],["2025-07",115764],["2025-08",108246],["2025-09",114049],["2025-10",109608],["2025-11",90360],["2025-12",87648],["2026-01",78741],["2026-02",66973],["2026-03",68284],["2026-04",76347],["2026-05",73674],["2026-06",58625],["2026-07",62888],["2026-08",63978]];
+const SEC = [["Hitos","2013-11","32 hechos"],["Finanzas","2020-03","31 notas"],["Acciones","2021-02","GOOGL +3,18%"],["Eventos","2021-06","26 próximos"],["ETFs","2024-01","IBIT +0,84%"],["Predicciones","2024-11","17 mercados"],["Ciclos BTC","2025-10","▼ Markdown"],["Noticias","2026-08","29 hoy"]];
+const tnum = (s) => { const [y, m] = s.split("-").map(Number); return y + (m - 1) / 12; };
+const PTS = D.map(([t, p]) => [tnum(t), Math.log10(p)]);
+const T0 = 2013.83, TN = PTS.at(-1)[0], TH = 2028.3;
+const rets = PTS.slice(-49).map((p, i, a) => i ? p[1] - a[i - 1][1] : 0).slice(1);
+const sd = Math.sqrt(rets.reduce((s, r) => s + r * r, 0) / rets.length);
+let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+const WALKS = Array.from({ length: 32 }, () => { let v = 0; return Array.from({ length: 20 }, () => (v += gauss() * sd)); });
+const NS = "http://www.w3.org/2000/svg";
+const el = (p, n, a, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; };
+const near = (t) => PTS.reduce((b, p) => Math.abs(p[0] - t) < Math.abs(b[0] - t) ? p : b)[1];
+function base(svg, W, H, id) {
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); svg.style.maxWidth = "100%"; svg.style.height = "auto";
+  const defs = el(svg, "defs", {});
+  const gf = el(defs, "linearGradient", { id: id + "f", gradientUnits: "objectBoundingBox", x1: 0, y1: 0, x2: 0, y2: 1 });
+  return defs;
+}
+function station(g, x, y, r = 6) {
+  el(g, "circle", { cx: x, cy: y, r: r + 9, fill: "#6CB8C8", "fill-opacity": .09 });
+  el(g, "circle", { cx: x, cy: y, r, fill: "#0f1316", stroke: "#6CB8C8", "stroke-width": 2.5 });
+  el(g, "circle", { cx: x, cy: y, r: 2, fill: "#6CB8C8" });
+}
+function branch(g, d, w = 1.6) { el(g, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": w, "stroke-opacity": .75, "stroke-linecap": "round" }); }
+
+// ── Mobile ──
+function mobile(id, mode) {
+  const svg = document.getElementById(id), W = 390, H = 844 - 101;
+  base(svg, W, H, id);
+  const yTop = 18, yToday = 250, yBot = H - 60;               // abanico 232 px, pasado 433 px
+  const Y = (t) => t >= TN ? yToday - (t - TN) / (TH - TN) * (yToday - yTop) : yToday + (TN - t) / (TN - T0) * (yBot - yToday);
+  const [xa, xb] = mode === 1 ? [18, 200] : [70, 320];
+  const lc = Math.log10(2.5e6) - 2, X = (l) => xa + (l - 2) / lc * (xb - xa);
+  const past = PTS.filter((p) => p[0] >= T0);
+  const d = "M" + past.map(([t, l]) => `${X(l).toFixed(1)},${Y(t).toFixed(1)}`).join("L");
+  const g = el(svg, "g", {});
+  // abanico hacia arriba
+  const tx = X(PTS.at(-1)[1]), k = (xb - xa) / lc * 4;
+  const fade = el(svg.querySelector("defs"), "linearGradient", { id: id + "fd", gradientUnits: "userSpaceOnUse", x1: 0, y1: yToday, x2: 0, y2: yTop });
+  el(fade, "stop", { offset: 0, "stop-color": "#6CB8C8", "stop-opacity": .7 }); el(fade, "stop", { offset: 1, "stop-color": "#6CB8C8", "stop-opacity": 0 });
+  for (const w of WALKS) { let s = `M${tx},${yToday}`; w.forEach((v, i) => { s += `L${Math.max(8, Math.min(W - 8, tx + v * k)).toFixed(1)},${(yToday - (i + 1) / 20 * (yToday - yTop)).toFixed(1)}`; }); el(g, "path", { d: s, fill: "none", stroke: `url(#${id}fd)`, "stroke-width": 1 }); }
+  el(g, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": 7, "stroke-opacity": .08, "stroke-linejoin": "round" });
+  el(g, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": 2.2, "stroke-linejoin": "round" });
+  // nombres parejos (de hoy hacia atrás)
+  const order = [...SEC].reverse();
+  const gap = (yBot - yToday) / 7;
+  order.forEach(([name, at], j) => {
+    const t = at === "2026-08" ? TN : tnum(at), nx = X(near(t)), ny = Y(t), ly = yToday + j * gap;
+    let lx, anchor, dpath;
+    if (mode === 1) { lx = 236; anchor = "start"; dpath = `M${nx},${ny} C${nx + 70},${ny} ${lx - 70},${ly} ${lx - 14},${ly}`; }
+    else { const right = j % 2 === 0; lx = right ? W - 16 : 16; anchor = right ? "end" : "start";
+      const tw = name.length * 11; const end = right ? W - 22 - tw : 22 + tw; dpath = `M${nx},${ny} C${nx + (right ? 50 : -50)},${ny} ${end + (right ? -60 : 60)},${ly} ${end + (right ? -6 : 6)},${ly}`; }
+    branch(g, dpath);
+    station(g, nx, ny, 5);
+    el(g, "text", { x: lx, y: ly + 7, "text-anchor": anchor, fill: "#eef2f3", "font-size": mode === 1 ? 21 : 19, "font-weight": 600, "letter-spacing": "-0.015em" }, name);
+  });
+  el(g, "text", { x: W - 14, y: yTop + 10, "text-anchor": "end", fill: "#66747b", "font-size": 10, "font-family": "Geist Mono" }, "escala ×4");
+}
+// ── Desktop ──
+function desktop(id, mode) {
+  const svg = document.getElementById(id), W = 1200, H = 640;
+  base(svg, W, H, id);
+  const xL = 60, xR = W - 40, X = (t) => xL + (t - T0) / (TH - T0) * (xR - xL);
+  const yA = mode === 1 ? 250 : 190, yB = mode === 1 ? 600 : 470;   // banda del precio
+  const lo = 2, hi = Math.log10(2.5e5), Y = (l) => yB - (l - lo) / (hi - lo) * (yB - yA);
+  const g = el(svg, "g", {});
+  for (const [p, lab] of [[1000, "$1.000"], [100000, "$100.000"]]) { const y = Y(Math.log10(p)); el(g, "line", { x1: xL, x2: xR, y1: y, y2: y, stroke: "#243038" }); el(g, "text", { x: xL, y: y - 6, fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, lab); }
+  for (let yr = 2014; yr <= 2028; yr += 2) el(g, "text", { x: X(yr), y: H - 12, "text-anchor": "middle", fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, yr);
+  const past = PTS.filter((p) => p[0] >= T0);
+  const d = "M" + past.map(([t, l]) => `${X(t).toFixed(1)},${Y(l).toFixed(1)}`).join("L");
+  const fade = el(svg.querySelector("defs"), "linearGradient", { id: id + "fd", gradientUnits: "userSpaceOnUse", x1: X(TN), y1: 0, x2: X(TH), y2: 0 });
+  el(fade, "stop", { offset: 0, "stop-color": "#6CB8C8", "stop-opacity": .7 }); el(fade, "stop", { offset: 1, "stop-color": "#6CB8C8", "stop-opacity": 0 });
+  const ty = Y(PTS.at(-1)[1]), k = (yB - yA) / (hi - lo) * 4;
+  for (const w of WALKS) { let s = `M${X(TN)},${ty}`; w.forEach((v, i) => { s += `L${X(TN + (i + 1) / 20 * (TH - TN)).toFixed(1)},${(ty - v * k).toFixed(1)}`; }); el(g, "path", { d: s, fill: "none", stroke: `url(#${id}fd)`, "stroke-width": 1 }); }
+  el(g, "path", { d: d + `L${X(TN)},${yB}L${X(T0)},${yB}Z`, fill: "#6CB8C8", "fill-opacity": .05 });
+  el(g, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": 2, "stroke-linejoin": "round" });
+  const cw = 132, ch = 50;
+  const n = SEC.length, span = X(TN) + 40 - xL;
+  SEC.forEach(([name, at, v], i) => {
+    const t = at === "2026-08" ? TN : tnum(at), nx = X(t), ny = Y(near(t));
+    let kx, ky, up;
+    if (mode === 1) { kx = xL + i * ((span - cw) / (n - 1)); ky = 40; up = true; }
+    else { up = i % 2 === 0; const lane = up ? i / 2 : (i - 1) / 2; kx = xL + 40 + (i) * ((span - cw - 40) / (n - 1)); ky = up ? 36 + (lane % 2) * 0 : 540; }
+    const cx = kx + cw / 2, ey = up ? ky + ch : ky;
+    const dir = up ? -1 : 1;
+    branch(g, `M${nx},${ny} C${nx},${ny + dir * 90} ${cx},${ey - dir * 110} ${cx},${ey}`, 1.5);
+    station(g, nx, ny, 6.5);
+    el(g, "rect", { x: kx, y: ky, width: cw, height: ch, rx: 10, fill: "#141b20", stroke: "#6CB8C8", "stroke-opacity": .35 });
+    el(g, "circle", { cx: kx + 16, cy: ky + 18, r: 4, fill: "none", stroke: "#6CB8C8", "stroke-width": 2 });
+    el(g, "text", { x: kx + 28, y: ky + 23, fill: "#eef2f3", "font-size": 15, "font-weight": 600 }, name);
+    el(g, "text", { x: kx + 28, y: ky + 40, fill: v.startsWith("▼") ? "#e07a66" : /\+/.test(v) ? "#6cc08f" : "#9aa7ad", "font-size": 11.5, "font-family": "Geist Mono" }, v);
+  });
+  el(g, "text", { x: xR, y: mode === 1 ? 236 : 176, "text-anchor": "end", fill: "#66747b", "font-size": 11, "font-family": "Geist Mono" }, "escala ×4");
+}
+document.fonts.ready.then(() => { mobile("M1", 1); mobile("M2", 2); desktop("D1", 1); desktop("D2", 2); });
+</script>
