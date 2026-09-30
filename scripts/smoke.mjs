@@ -16,6 +16,7 @@ import { getEventDate } from "../src/i18n/strings.js";
 import { cleanArtists } from "../src/utils/artists.js";
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
+import sharp from "sharp";
 import { lowContrast, homeCollisions, posterOverflow, floatingOverlaps } from "./lib/ui-checks.mjs";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3000";
@@ -312,6 +313,26 @@ async function run(vp) {
         const fanD = await page.locator(".blc-fan").first().evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
         if (fanD < vp.viewport.width * 0.17) fail(vp.name, "layer", `desktop: el abanico ocupa ${Math.round(fanD)}px (esperaba ≥17% del ancho)`);
         if (await page.locator(".blc-ms").count()) fail(vp.name, "layer", "desktop: volvieron los rótulos de hitos sobre la curva");
+      }
+      // Chequeo de diseño (30-sep, Pablo: estándar premium). Una fila de
+      // píxeles del fondo del gráfico, cerca del eje: un salto brusco entre
+      // vecinos es una costura o un borde duro (franja del futuro, relleno que
+      // arranca de golpe). Y el rótulo de escala fuera de la zona de caminos.
+      if (vp.viewport.width > 768) {
+        await page.mouse.move(2, 2);
+        const row = await page.locator(".blc-stage svg").first().evaluate((svg) => {
+          svg.scrollIntoView({ block: "end" });                 // Layer scrollea en un contenedor propio
+          const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, k = r.width / vb.width;
+          return { x0: r.left + 90 * k, x1: r.right - 90 * k, y: Math.min(innerHeight - 2, r.top + (vb.height - 66) * k) };
+        });
+        const shot = await page.screenshot({ clip: { x: row.x0, y: row.y, width: row.x1 - row.x0, height: 1 } });
+        const { data, info } = await sharp(shot).raw().toBuffer({ resolveWithObject: true });
+        const lum = []; for (let x = 0; x < info.width; x += 8) { const i = x * info.channels; lum.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]); }
+        const jump = Math.max(...lum.slice(1).map((v, i) => Math.abs(v - lum[i])));
+        if (jump > 2.2) fail(vp.name, "diseño", `costura en el fondo del gráfico (salto de ${jump.toFixed(1)} niveles entre vecinos)`);
+        const lab = await page.locator(".blc-fut-l").first().boundingBox();
+        const clip = await page.locator(".blc-fan clipPath rect").first().boundingBox();
+        if (lab && clip && lab.y + lab.height > clip.y) fail(vp.name, "diseño", "el rótulo de escala queda sobre los caminos del abanico");
       }
       // Impulsos también en desktop (más espaciados; con el mouse fuera de la curva).
       if (vp.viewport.width > 768) {

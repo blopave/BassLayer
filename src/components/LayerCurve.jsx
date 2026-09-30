@@ -210,8 +210,9 @@ export function LayerCurve({ news = [], onEnter }) {
 
     // Desktop: el pasado en tiempo real (2012 → hoy) y el futuro como LUPA
     // (Pablo, 30-sep: que el abanico gane lugar): de hoy al halving ocupa el
-    // FUT_SHARE del ancho, en su propia escala, marcada con una franja y el
-    // rótulo de escala — como la lupa ×4 del precio. Riel de títulos arriba.
+    // FUT_SHARE del ancho, en su propia escala, marcada por el rótulo de
+    // escala y los años del eje — como la lupa ×4 del precio (sin franja de
+    // fondo: dejaba una costura de dos tonos en hoy). Riel de títulos arriba.
     const Hh = size.h, L = 64, R = 60, TOP = 170, BOT = 46, RAIL = 26;
     const span = W - L - R, xNow = L + span * (1 - FUT_SHARE);
     const X = (tt) => (tt <= TODAY ? L + ((tt - 2012) / (TODAY - 2012)) * (xNow - L) : xNow + ((tt - TODAY) / (END - TODAY)) * (W - R - xNow));
@@ -248,7 +249,7 @@ export function LayerCurve({ news = [], onEnter }) {
       return {
         until,
         toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM_V, geo.Yt(tt)],
-        clip: { x: 8, y: yEnd - 2, w: geo.W - 16, h: geo.yt - yEnd + 2 },
+        clip: { x: 8, y: yEnd + 14, w: geo.W - 16, h: geo.yt - yEnd - 14 }, // debajo del rótulo de escala
         fade: { x1: 0, y1: geo.yt, x2: 0, y2: yEnd },
       };
     }
@@ -317,8 +318,17 @@ export function LayerCurve({ news = [], onEnter }) {
       <defs>
         <linearGradient id="blc-cgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.yBot} x2="0" y2={geo.yt}><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
       </defs>
-      <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 14} y={VT + 10} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM_V })}</text>
+      {/* Los caminos se desvanecen arriba y contra los bordes: sin cortes rectos. */}
+      <defs>
+        <linearGradient id="blc-fvg" gradientUnits="userSpaceOnUse" x1="0" y1={VT + 14} x2="0" y2={VT + 90}><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" stopOpacity="1" /></linearGradient>
+        <linearGradient id="blc-fhg" gradientUnits="userSpaceOnUse" x1="8" y1="0" x2={geo.W - 8} y2="0">
+          <stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".1" stopColor="#fff" stopOpacity="1" /><stop offset=".9" stopColor="#fff" stopOpacity="1" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <mask id="blc-fvm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-fvg)" /></mask>
+        <mask id="blc-fhm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-fhg)" /></mask>
+      </defs>
+      <g mask="url(#blc-fvm)"><g mask="url(#blc-fhm)"><FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} /></g></g>
+      <text className="blc-fut-l" x={geo.W - 14} y={VT + 4} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM_V })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       {geo.nodes.map((n, i) => {
         const label = name(n.key);
@@ -369,8 +379,13 @@ export function LayerCurve({ news = [], onEnter }) {
               <linearGradient id="blc-cg" x1="0" x2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
               <linearGradient id="blc-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".16" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
               <clipPath id="blc-cp"><rect x="0" y="0" width={geo.W} height={geo.Hh - geo.BOT} /></clipPath>
-              {/* El área del pasado se disuelve en los últimos 160 px antes de hoy: sin corte de color. */}
-              <linearGradient id="blc-amg" gradientUnits="userSpaceOnUse" x1={geo.xt - 160} y1="0" x2={geo.xt} y2="0"><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#000" /></linearGradient>
+              {/* El área entra suave en 2012 y se disuelve en el último tercio antes
+                  de hoy con curva suave: con 160 px lineales quedaba una franja. */}
+              <linearGradient id="blc-amg" gradientUnits="userSpaceOnUse" x1={geo.L} y1="0" x2={geo.xt} y2="0">
+                {[[0, 0], [0.05, 1], [0.62, 1], [0.72, 0.86], [0.8, 0.6], [0.88, 0.32], [0.95, 0.1], [1, 0]].map(([o, v]) => (
+                  <stop key={o} offset={o} stopColor="#fff" stopOpacity={v} />
+                ))}
+              </linearGradient>
               <mask id="blc-am" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amg)" /></mask>
             </defs>
             <g className="blc-grid">
@@ -381,18 +396,19 @@ export function LayerCurve({ news = [], onEnter }) {
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
-            {/* La lupa del futuro: una franja apenas visible desde hoy. */}
+
+            {/* Los caminos se desvanecen hacia el riel (sin corte recto arriba). */}
             <defs>
-              <linearGradient id="blc-fbg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".055" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
+              <linearGradient id="blc-ffg" gradientUnits="userSpaceOnUse" x1="0" y1={geo.RAIL + 50} x2="0" y2={geo.RAIL + 150}><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" stopOpacity="1" /></linearGradient>
+              <mask id="blc-ffm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-ffg)" /></mask>
             </defs>
-            <rect className="blc-futband" x={geo.xt} y={geo.RAIL + 50} width={geo.W - geo.xt} height={geo.Hh - geo.BOT - geo.RAIL - 50} />
-            <FutureFan id="blc-fan" H={H} label={t("curve.fanAria")} {...fan} />
+            <g mask="url(#blc-ffm)"><FutureFan id="blc-fan" H={H} label={t("curve.fanAria")} {...fan} /></g>
             <g clipPath="url(#blc-cp)">
               <path className="blc-area" mask="url(#blc-am)" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
             {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
-            <text className="blc-fut-l" x={geo.W - geo.R - 8} y={geo.TOP - 44} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+            <text className="blc-fut-l" x={geo.W - geo.R} y={geo.RAIL + 40} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
             {/* La ficha cuelga de su punto: una plomada al espacio de abajo. */}
             {selNodeP && dock && (
               <path className="blc-plumb" d={`M${selNodeP.cx},${selNodeP.cy + 10}L${Math.min(Math.max(selNodeP.cx, dock.x + 18), dock.x + dock.w - 18)},${dock.y}`} />
