@@ -1,4 +1,4 @@
-import { useRef, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoBATimeline } from "./CryptoBATimeline";
@@ -94,6 +94,14 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
     requestAnimationFrame(() => backRef.current?.scrollIntoView({ block: "start", behavior: "auto" }));
   };
 
+  // Pestañas más grandes (30-sep): en mobile no entran todas; la activa se
+  // centra sola para que siempre se vea dónde estás.
+  const tabsRef = useRef(null);
+  useEffect(() => {
+    const nav = tabsRef.current, on = nav?.querySelector(".bl-layer-tab.active");
+    if (nav && on) nav.scrollLeft = on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2;
+  }, [section]);
+
   // Portada: la curva de Bitcoin como mapa de secciones. Al entrar a una
   // sección se ve Layer como siempre, con "← Volver a la curva" arriba.
   if (section === "portada") {
@@ -108,7 +116,7 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         <button type="button" className="bl-layer-back" onClick={() => setSection("portada")} aria-label={t("curve.back")} title={t("curve.back")}>
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13 8H3m4-4L3 8l4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <nav className="bl-layer-tabs" aria-label={t("aside.sections")}>
+        <nav className="bl-layer-tabs" aria-label={t("aside.sections")} ref={tabsRef}>
           {SECTIONS.map(([key, labelKey]) => (
             <button
               key={key}

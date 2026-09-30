@@ -2902,16 +2902,22 @@
   overflow-x:auto; scrollbar-width:none;
 }
 .bl-layer-tabs::-webkit-scrollbar { display:none; }
+/* Pestañas "Punto de la curva" (Pablo, 30-sep): misma letra que los títulos
+   de la curva, y la activa lleva el punto ◉ de la curva. */
 .bl-layer-tab {
-  display:inline-flex; align-items:center; gap:6px; padding:12px 2px 11px;
-  background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer;
-  font-family:var(--font-mono); font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:var(--bl-text-sec);
-  white-space:nowrap; transition:color var(--duration-fast), border-color var(--duration-fast);
+  display:inline-flex; align-items:center; gap:8px; padding:13px 0 14px;
+  background:none; border:0; cursor:pointer;
+  font:600 17px var(--font-sans); letter-spacing:-.012em; color:var(--bl-text-ter);
+  white-space:nowrap; transition:color var(--duration-fast);
 }
-.bl-layer-tab:hover { color:var(--bl-text); }
-.bl-layer-tab.active { color:var(--bl-accent-layer); border-bottom-color:var(--bl-accent-layer); }
-.bl-layer-tab:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
-.bl-layer-tab-cnt { color:var(--bl-text-ter); letter-spacing:1px; }
+.bl-layer-tab:hover { color:var(--bl-text-sec); }
+.bl-layer-tab.active { color:var(--bl-text); }
+.bl-layer-tab.active::before {
+  content:""; flex:none; width:9px; height:9px; border-radius:50%;
+  border:2.5px solid var(--bl-accent-layer); box-shadow:0 0 0 5px color-mix(in srgb, var(--bl-accent-layer) 13%, transparent);
+}
+.bl-layer-tab:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; border-radius:4px; }
+.bl-layer-tab-cnt { font:500 10px var(--font-mono); letter-spacing:.04em; color:var(--bl-text-ter); align-self:flex-start; margin-top:1px; }
 .bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
 
 .bl-layer-h { margin:22px 32px 4px; font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--bl-text); }
@@ -2995,7 +3001,7 @@
      largo y los botones no encogen): la fila se desbordaba y "Ciclos" quedaba
      recortado fuera de la vista. En mobile las acomodamos en grid 2×2. */
   .bl-layer-tabs { margin:2px 16px 0; gap:18px; }
-  .bl-layer-tab { font-size:10px; padding:10px 2px 9px; }
+  .bl-layer-tab { font-size:16px; padding:12px 0 13px; }
   .bl-layer-grid { grid-template-columns:1fr; }
   /* Terminal comprimido: cuatro cifras en una fila; lectura y trending quedan en desktop. */
   .bl-terminal-reading { display:none; }
@@ -5624,7 +5630,7 @@ select.bl-venue-input { cursor:pointer; }
 /* Barra de sección: ← (volver a la curva) + pestañas en una sola fila. La
    flecha queda fija y las pestañas scrollean detrás en mobile. */
 .bl-layer-bar { scroll-margin-top:60px; /* ticker sticky del panel (42 px) + aire */ display:flex; align-items:stretch; gap:14px; margin:14px 32px 0; border-bottom:1px solid var(--bl-border); }
-.bl-layer-bar .bl-layer-tabs { flex:1; min-width:0; margin:0; border-bottom:0; }
+.bl-layer-bar .bl-layer-tabs { position:relative; flex:1; min-width:0; margin:0; border-bottom:0; } /* relative: offsetLeft de las pestañas se mide acá */
 .bl-layer-back {
   flex:none; align-self:center; display:grid; place-items:center; width:40px; height:40px; margin:4px 0 4px -4px; padding:0;
   border:1px solid var(--bl-border-sub); border-radius:10px; background:none; cursor:pointer; color:var(--bl-accent-layer);
@@ -5647,13 +5653,16 @@ select.bl-venue-input { cursor:pointer; }
   .bl-layer-bar { margin:10px 16px 0; gap:10px; }
   .bl-layer-back { margin-left:0; }
 }
-.blc-v .blc-curve { stroke:url(#blc-cgv); }
+.blc-v .blc-curve { stroke:url(#blc-cgv); stroke-width:2.3; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--bl-accent-layer) 35%, transparent)); }
+/* Hilo título → punto: presente pero por debajo de la curva. */
+.blc-thread { stroke:var(--bl-accent-layer); stroke-opacity:.32; stroke-width:1; stroke-dasharray:1.5 4.5; stroke-linecap:round; transition:stroke-opacity .2s; }
+.blc-v .blc-node:active .blc-thread, .blc-v .blc-node.is-on .blc-thread { stroke-opacity:.8; }
 .blc-v .blc-area { fill:url(#blc-agv); }
 .blc-v .blc-node { -webkit-tap-highlight-color:transparent; }
 .blc-hit { fill:transparent; transition:fill .2s; }
 .blc-v .blc-node:active .blc-hit, .blc-v .blc-node.is-on .blc-hit { fill:color-mix(in srgb, var(--bl-accent-layer) 7%, transparent); }
 .blc-v .blc-node:focus-visible .blc-hit { stroke:var(--bl-accent-layer); stroke-width:2; }
-.blc-ttl { fill:var(--bl-text); font:620 28px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
+.blc-ttl { fill:var(--bl-text); font:620 30px var(--font-sans); letter-spacing:-.024em; transition:fill .2s; }
 .blc-v .blc-node:active .blc-ttl, .blc-v .blc-node.is-on .blc-ttl { fill:var(--bl-accent-layer); }
 /* En touch el :hover de desktop queda pegado tras tocar: solo cuenta el toque. */
 .blc-v .blc-node:hover:not(:active):not(.is-on) .blc-dot { fill:var(--bl-bg); }

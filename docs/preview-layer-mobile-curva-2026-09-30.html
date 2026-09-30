@@ -1,0 +1,107 @@
+<meta charset="utf-8">
+<title>Curva mobile · opciones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{ --bg:#0f1316; --bg2:#141a1e; --line:#243038; --text:#eef2f3; --sec:#9aa7ad; --ter:#66747b; --acc:#6CB8C8; --sans:'Geist',system-ui,sans-serif; --mono:'Geist Mono',ui-monospace,monospace; }
+*{box-sizing:border-box} body{margin:0;background:#0a0d0f;color:var(--text);font-family:var(--sans);padding:28px 24px 60px}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} .lead{color:var(--sec);font-size:14px;max-width:70ch;margin:0 0 26px;line-height:1.5}
+h2{font-size:15px;font-weight:600;margin:40px 0 14px;letter-spacing:-.01em}
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:10px;width:390px}
+.opt b{font-size:15px} .opt p{margin:0;color:var(--sec);font-size:13px;line-height:1.45;min-height:58px}
+.phone{width:390px;border:1px solid var(--line);border-radius:28px;overflow:hidden;background:var(--bg)}
+.phone .top{height:56px;display:flex;align-items:center;justify-content:center;gap:90px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ter)}
+.phone .top span:last-child{letter-spacing:.4em;color:var(--acc)}
+svg{display:block}
+.tabs{border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:6px 20px 0;margin-bottom:10px;overflow:hidden}
+.tabs .strip{display:flex;gap:26px;align-items:flex-end;white-space:nowrap;border-bottom:1px solid var(--line);overflow:hidden}
+.back{width:40px;height:40px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;color:var(--acc);margin:0 4px 8px 0;flex:none}
+/* T1 */ .t1 .tb{font:500 15px var(--sans);color:var(--sec);padding:12px 0 12px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.t1 .tb.on{color:var(--text);border-color:var(--acc)} .t1 sup{font:500 10px var(--mono);color:var(--ter);margin-left:3px}
+/* T2 */ .t2 .strip{gap:22px} .t2 .tb{font:600 17px var(--sans);letter-spacing:-.01em;color:var(--ter);padding:12px 0 13px;display:flex;align-items:center;gap:8px}
+.t2 .tb.on{color:var(--text)} .t2 .tb.on::before{content:"";width:9px;height:9px;border-radius:50%;border:2.5px solid var(--acc);box-shadow:0 0 0 5px rgba(108,184,200,.12)}
+.t2 sup{font:500 10px var(--mono);color:var(--ter)}
+/* T3 */ .t3 .tb{font:500 12.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#b9c4c9;padding:14px 0 13px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.t3 .tb.on{color:var(--acc);border-color:var(--acc)}
+.tlabel{font-size:13px;color:var(--sec);margin:18px 0 8px} .tlabel b{color:var(--text)}
+.note{color:var(--ter);font:12px var(--mono);margin-top:34px}
+@media (max-width:700px){ body{padding:20px 16px} .opt,.phone{width:100%} }
+</style>
+
+<h1>Layer mobile: curva con más presencia</h1>
+<p class="lead">Tres direcciones para la portada mobile de Layer, dibujadas con la curva real de BTC (mensual, 2012→hoy) y el abanico hasta el próximo halving como final. Abajo, tres versiones de las pestañas de sección.</p>
+
+<div class="row">
+  <div class="opt"><b>A · Hilo</b><p>La curva ocupa más ancho y gana grosor. Cada título se une a su punto con un hilo fino. El abanico se abre en todo el ancho como cierre.</p><div class="phone"><div class="top"><span>Bass</span><span>LAYER</span></div><svg id="A"></svg></div></div>
+  <div class="opt"><b>B · Sobre la curva</b><p>Los títulos viven pegados a su punto: la curva cruza la pantalla y cada sección se lee donde está en el tiempo. La conexión es total. El abanico es el cierre, a todo el ancho.</p><div class="phone"><div class="top"><span>Bass</span><span>LAYER</span></div><svg id="B"></svg></div></div>
+  <div class="opt"><b>C · Paisaje</b><p>Debajo de la curva hay una superficie suave, y cada título apoya en su nivel de precio con una línea horizontal. Es más gráfico y más editorial. El abanico brilla al final.</p><div class="phone"><div class="top"><span>Bass</span><span>LAYER</span></div><svg id="C"></svg></div></div>
+</div>
+
+<h2>Pestañas de sección (dentro de cada sección)</h2>
+<div class="tlabel"><b>T1 · Sans</b>: misma familia que los títulos de la curva, 15 px, subrayado de acento.</div>
+<div class="tabs t1"><div class="strip"><span class="back">←</span><span class="tb">Noticias<sup>30</sup></span><span class="tb">Eventos</span><span class="tb on">Predicciones</span><span class="tb">Ciclos BTC</span><span class="tb">Hitos</span><span class="tb">Finanzas</span><span class="tb">ETFs</span><span class="tb">Acciones</span></div></div>
+<div class="tlabel"><b>T2 · Punto de la curva</b>: 17 px semibold, y la activa lleva el mismo punto ◉ que la curva. Así la sección y la portada hablan el mismo idioma.</div>
+<div class="tabs t2"><div class="strip"><span class="back">←</span><span class="tb">Noticias <sup>30</sup></span><span class="tb">Eventos</span><span class="tb on">Predicciones</span><span class="tb">Ciclos BTC</span><span class="tb">Hitos</span><span class="tb">Finanzas</span><span class="tb">ETFs</span><span class="tb">Acciones</span></div></div>
+<div class="tlabel"><b>T3 · Mono reforzada</b>: la de hoy, más grande (12,5 px) y con más contraste.</div>
+<div class="tabs t3"><div class="strip"><span class="back">←</span><span class="tb">Noticias 30</span><span class="tb">Eventos</span><span class="tb on">Predicciones</span><span class="tb">Ciclos BTC</span><span class="tb">Hitos</span><span class="tb">Finanzas</span><span class="tb">ETFs</span><span class="tb">Acciones</span></div></div>
+<p class="note">mockup · curva = datos reales mensuales · abanico = 32 caminos simulados con la volatilidad real de 48 meses, sin tendencia</p>
+
+<script>
+const D = [["2012-01",5.9],["2012-02",4.8],["2012-03",4.9],["2012-04",5],["2012-05",5.2],["2012-06",6.6],["2012-07",10.4],["2012-08",9.9],["2012-09",12.1],["2012-10",11],["2012-11",12.4],["2012-12",13.1],["2013-01",20.4],["2013-02",33.5],["2013-03",116],["2013-04",107],["2013-05",129],["2013-06",84.5],["2013-07",98.3],["2013-08",130],["2013-09",104],["2013-10",202],["2013-11",955],["2013-12",732],["2014-01",815],["2014-02",567],["2014-03",455],["2014-04",449],["2014-05",661],["2014-06",650],["2014-07",598],["2014-08",479],["2014-09",391],["2014-10",324],["2014-11",380],["2014-12",314],["2015-01",217],["2015-02",275],["2015-03",247],["2015-04",231],["2015-05",229],["2015-06",262],["2015-07",282],["2015-08",228],["2015-09",237],["2015-10",310],["2015-11",377],["2015-12",434],["2016-01",372],["2016-02",423],["2016-03",416],["2016-04",453],["2016-05",532],["2016-06",668],["2016-07",540],["2016-08",571],["2016-09",613],["2016-10",697],["2016-11",742],["2016-12",1013],["2017-01",984],["2017-02",1191],["2017-03",1078],["2017-04",1448],["2017-05",2414],["2017-06",2412],["2017-07",2856],["2017-08",4725],["2017-09",4379],["2017-10",6463],["2017-11",9839],["2017-12",13716],["2018-01",10285],["2018-02",10327],["2018-03",6924],["2018-04",9246],["2018-05",7485],["2018-06",6390],["2018-07",7731],["2018-08",7011],["2018-09",6627],["2018-10",6372],["2018-11",4041],["2018-12",3703],["2019-01",3434],["2019-02",3814],["2019-03",4104],["2019-04",5321],["2019-05",8555],["2019-06",10854],["2019-07",10081],["2019-08",9587],["2019-09",8289],["2019-10",9141],["2019-11",7542],["2019-12",7195],["2020-01",9353],["2020-02",8524],["2020-03",6410],["2020-04",8620],["2020-05",9448],["2020-06",9139],["2020-07",11335],["2020-08",11650],["2020-09",10777],["2020-10",13791],["2020-11",19696],["2020-12",28924],["2021-01",33093],["2021-02",45136],["2021-03",58741],["2021-04",57694],["2021-05",37254],["2021-06",35045],["2021-07",41462],["2021-08",47101],["2021-09",43824],["2021-10",61300],["2021-11",56951],["2021-12",46217],["2022-01",38467],["2022-02",43160],["2022-03",45510],["2022-04",37631],["2022-05",31801],["2022-06",19942],["2022-07",23293],["2022-08",20050],["2022-09",19423],["2022-10",20491],["2022-11",17164],["2022-12",16542],["2023-01",23125],["2023-02",23142],["2023-03",28465],["2023-04",29233],["2023-05",27210],["2023-06",30472],["2023-07",29232],["2023-08",25941],["2023-09",26963],["2023-10",34640],["2023-11",37724],["2023-12",42284],["2024-01",42580],["2024-02",61131],["2024-03",71280],["2024-04",60672],["2024-05",67540],["2024-06",62772],["2024-07",64628],["2024-08",58974],["2024-09",63328],["2024-10",70292],["2024-11",96408],["2024-12",93576],["2025-01",102430],["2025-02",84350],["2025-03",82550],["2025-04",94172],["2025-05",104592],["2025-06",107147],["2025-07",115764],["2025-08",108246],["2025-09",114049],["2025-10",109608],["2025-11",90360],["2025-12",87648],["2026-01",78741],["2026-02",66973],["2026-03",68284],["2026-04",76347],["2026-05",73674],["2026-06",58625],["2026-07",62888],["2026-08",63978]];
+const NODES = [["Hitos","2013-11"],["Finanzas","2020-03"],["Acciones","2021-02"],["Eventos","2021-06"],["ETFs","2024-01"],["Predicciones","2024-11"],["Ciclos BTC","2025-10"],["Noticias","2026-08"]];
+const W = 390, tnum = (s) => { const [y, m] = s.split("-").map(Number); return y + (m - 1) / 12; };
+const pts = D.map(([t, p]) => [tnum(t), Math.log10(p)]);
+const lmin = Math.log10(3), lmax = Math.log10(160000);
+// volatilidad mensual real (48 meses)
+const rets = pts.slice(-49).map((p, i, a) => i ? p[1] - a[i - 1][1] : 0).slice(1);
+const sd = Math.sqrt(rets.reduce((s, r) => s + r * r, 0) / rets.length);
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+const WALKS = Array.from({ length: 32 }, () => { let v = 0; return Array.from({ length: 20 }, () => (v += gauss() * sd)); });
+const NS = "http://www.w3.org/2000/svg";
+const el = (p, n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+
+function draw(id, o) {
+  const svg = document.getElementById(id);
+  const VT = 70, GAP = o.gap, FAN = o.fan, H = VT + 7 * GAP + FAN + 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const defs = el(svg, "defs", {});
+  const g1 = el(defs, "linearGradient", { id: id + "g", x1: 0, x2: 1, y1: 0, y2: 0 });
+  el(g1, "stop", { offset: 0, "stop-color": "#6CB8C8", "stop-opacity": 0 }); el(g1, "stop", { offset: 1, "stop-color": "#6CB8C8", "stop-opacity": .16 });
+  const gf = el(defs, "linearGradient", { id: id + "f", x1: 0, x2: 0, y1: 0, y2: 1 });
+  el(gf, "stop", { offset: 0, "stop-color": "#6CB8C8", "stop-opacity": .9 }); el(gf, "stop", { offset: 1, "stop-color": "#6CB8C8", "stop-opacity": .05 });
+  const X = (l) => o.x0 + (l - lmin) / (lmax - lmin) * (o.x1 - o.x0);
+  const times = NODES.map((n) => tnum(n[1]));
+  const Y = (t) => { if (t <= times[0]) return VT - 50 + (t - 2012) / (times[0] - 2012) * 50;
+    for (let i = 1; i < times.length; i++) if (t <= times[i]) return VT + (i - 1) * GAP + (t - times[i - 1]) / (times[i] - times[i - 1]) * GAP;
+    return VT + 7 * GAP; };
+  const P = pts.map(([t, l]) => [X(l), Y(t)]);
+  const d = "M" + P.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L");
+  if (o.area) el(svg, "path", { d: `M0,${P[0][1]}L${d.slice(1)}L0,${P.at(-1)[1]}Z`, fill: `url(#${id}g)` });
+  el(svg, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": o.sw + 5, "stroke-opacity": .08, "stroke-linejoin": "round" });
+  el(svg, "path", { d, fill: "none", stroke: "#6CB8C8", "stroke-width": o.sw, "stroke-linejoin": "round" });
+  // abanico: arranca en el punto de hoy y se recentra en el ancho completo
+  const [tx, ty] = P.at(-1), cx = W / 2, top = ty, bot = ty + FAN, k = (W / 2 - 30) / (3.2 * sd * Math.sqrt(20));
+  for (const w of WALKS) {
+    let s = `M${tx},${ty}`;
+    w.forEach((v, i) => { const f = (i + 1) / 20, y = top + f * FAN, ease = Math.min(1, f * 3), x = tx + (cx - tx) * ease + v * k * f ** .15;
+      s += `L${Math.max(12, Math.min(W - 12, x)).toFixed(1)},${y.toFixed(1)}`; });
+    el(svg, "path", { d: s, fill: "none", stroke: `url(#${id}f)`, "stroke-width": 1.1, "stroke-opacity": .55 });
+  }
+  // secciones
+  NODES.forEach(([name], i) => {
+    const y = VT + i * GAP, x = X(pts.reduce((b, p) => Math.abs(p[0] - times[i]) < Math.abs(b[0] - times[i]) ? p : b)[1]);
+    let tx0 = 22, anchor = "start";
+    if (o.onCurve) { if (x > W * 0.55) { tx0 = x - 20; anchor = "end"; } else { tx0 = x + 20; } }
+    const t = el(svg, "text", { x: tx0, y: y + o.fs * .34, "text-anchor": anchor, fill: "#eef2f3", "font-family": "Geist, system-ui", "font-size": o.fs, "font-weight": 600, "letter-spacing": "-0.02em" });
+    t.textContent = name;
+    if (o.leader) { const tw = t.getComputedTextLength(); el(svg, "line", { x1: 22 + tw + 12, x2: x - 12, y1: y, y2: y, stroke: "#6CB8C8", "stroke-opacity": o.area ? .35 : .28, "stroke-width": 1, "stroke-dasharray": o.area ? "none" : "2 4" }); }
+    el(svg, "circle", { cx: x, cy: y, r: 16, fill: "#6CB8C8", "fill-opacity": .08 });
+    el(svg, "circle", { cx: x, cy: y, r: 6.5, fill: "#0f1316", stroke: "#6CB8C8", "stroke-width": 2.6 });
+    el(svg, "circle", { cx: x, cy: y, r: 2.2, fill: "#6CB8C8" });
+  });
+}
+draw("A", { x0: W * .30, x1: W - 18, gap: 86, fan: 330, sw: 2.2, fs: 30, leader: true });
+draw("B", { x0: 18, x1: W - 18, gap: 86, fan: 330, sw: 2.2, fs: 28, onCurve: true });
+draw("C", { x0: W * .34, x1: W - 18, gap: 86, fan: 350, sw: 2, fs: 30, leader: true, area: true });
+</script>

@@ -10,9 +10,9 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLa
 // competía con la navegación; el precio mes a mes vive en Hitos).
 // Mobile (dirección A, sept 2026): la curva gira y el tiempo baja con el
 // scroll; el precio va a la derecha y cada sección es un título grande a la
-// izquierda (28 px), con toda su franja tocable. Solo títulos: sin datos ni
-// fechas (Pablo, sept 2026); la curva arranca donde terminan los títulos.
-// Dirección elegida por Pablo (sept 2026) entre varias maquetas.
+// izquierda, con toda su franja tocable. Solo títulos: sin datos ni fechas
+// (Pablo, sept 2026). "Hilo" (30-sep): la curva ocupa el 70 % del ancho, un
+// hilo une cada título con su punto y el abanico cierra a todo el ancho.
 
 // Dónde vive cada sección y cómo se ubica su cápsula en desktop (dy: signo =
 // arriba/abajo, magnitud = altura). Todas viven en un momento REAL de la
@@ -35,7 +35,16 @@ const NODES = [
 
 // Mobile vertical: margen arriba, alto de cada franja, tramo del abanico
 // (hoy → halving) y pie (eje de precios). El alto del gráfico sale de acá.
-const VT = 48, VGAP = 92, VFAN = 230, VB = 84;
+const VT = 48, VGAP = 92, VFAN = 330, VB = 56;
+
+// Ancho de un título mobile (para que el hilo arranque donde termina). Mismo
+// font que .blc-ttl; sin canvas (tests), una estimación por letra.
+const TTL_FONT = "620 30px 'Geist Variable', system-ui, sans-serif";
+let ttlCtx;
+const ttlWidth = (s) => {
+  try { ttlCtx ??= document.createElement("canvas").getContext("2d"); ttlCtx.font = TTL_FONT; return ttlCtx.measureText(s).width; }
+  catch { return s.length * 16; }
+};
 
 // Interpolación por tramos: [[t, pos], …] → pos(t).
 const seg = (bx) => (tt) => {
@@ -55,6 +64,9 @@ export function LayerCurve({ news = [], onEnter }) {
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [sel, setSel] = useState(null);       // sección con vista previa
+  // El hilo mide los títulos: se vuelve a medir cuando llega la fuente real.
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => { let on = true; document.fonts?.ready.then(() => on && setFontsReady(true)); return () => { on = false; }; }, []);
   const shownAt = useRef(0);
   const hideT = useRef(null);
   // En desktop la vista previa se cierra con un respiro: da tiempo a llevar el
@@ -131,11 +143,12 @@ export function LayerCurve({ news = [], onEnter }) {
     if (mobile) {
       // Vertical: el tiempo baja (una franja de VGAP por sección) y el precio
       // (log, $100 → $250k: la curva arranca en 2013, cuando BTC pasó los $100)
-      // arranca al 45% del ancho, donde terminan los títulos de 28 px.
-      const Hh = VT + 7 * VGAP + VFAN + VB, x0 = Math.round(W * 0.45), x1 = W - 22;
+      // arranca al 30% del ancho: en cada fila el punto cae a la derecha de su
+      // título (los años baratos quedan arriba, fuera de las filas largas).
+      const Hh = VT + 7 * VGAP + VFAN + VB, x0 = Math.round(W * 0.30), x1 = W - 22;
       const Yt = seg([[2012, VT - 46], ...times.map((tt, i) => [tt, VT + i * VGAP]), [nextHalving, VT + 7 * VGAP + VFAN], [END, VT + 7 * VGAP + VFAN + 20]]);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / (Math.log10(250000) - 2)) * (x1 - x0);
-      const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]) }));
+      const nodes = NODES.map((n, i) => ({ ...n, tt: times[i], cx: Xp(priceAt(times[i])), cy: Yt(times[i]), tw: ttlWidth(t(SECTION_LABEL[n.key])) }));
       const pxDec = (x1 - x0) / (Math.log10(250000) - 2);
       return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, ...draw(H.slice(Math.max(0, H.findIndex((h) => h.p >= 100))).map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: Yt(TODAY), nodes };
     }
@@ -155,18 +168,22 @@ export function LayerCurve({ news = [], onEnter }) {
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
     return { W, Hh, L, R, TOP, BOT, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes };
-  }, [H, size, mobile, cyc, t]);
+  }, [H, size, mobile, cyc, t, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada en hoy.
   const fan = useMemo(() => {
     if (!geo) return null;
     const until = geo.nextHalving;
     if (geo.V) {
-      const yEnd = geo.Yt(until);
+      // Mobile: el abanico es el cierre de la pantalla (Pablo, 30-sep). Sale
+      // del punto de hoy y en su primer tercio se corre al centro para abrirse
+      // a todo el ancho; la lupa ×4 es la misma, solo cambia desde dónde abre.
+      const yEnd = geo.Yt(until), mid = geo.W / 2;
+      const ease = (tt) => { const f = Math.min(1, (tt - geo.TODAY) / ((until - geo.TODAY) / 3)); return f * f * (3 - 2 * f); };
       return {
         until,
-        toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
-        clip: { x: geo.x0 - 30, y: geo.yt, w: geo.W - geo.x0 + 30, h: yEnd - geo.yt + 2 },
+        toPoint: (tt, p) => [geo.xt + (mid - geo.xt) * ease(tt) + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM, geo.Yt(tt)],
+        clip: { x: 8, y: geo.yt, w: geo.W - 16, h: yEnd - geo.yt + 2 },
         fade: { x1: 0, y1: geo.yt, x2: 0, y2: yEnd },
       };
     }
@@ -226,8 +243,9 @@ export function LayerCurve({ news = [], onEnter }) {
         <linearGradient id="blc-agv" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".14" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
       </defs>
       <g className="blc-grid">
+        {/* La escala del pasado termina hoy: el abanico va con su propia lupa. */}
         {[1000, 100000].map((p) => (
-          <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={0} y2={geo.Hh - 40} /><text x={geo.Xp(p)} y={geo.Hh - 22} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
+          <g key={p}><line x1={geo.Xp(p)} x2={geo.Xp(p)} y1={18} y2={geo.yt} /><text x={geo.Xp(p)} y={10} textAnchor="middle">{fmtUsd(p, locale)}</text></g>
         ))}
       </g>
       <defs>
@@ -237,7 +255,7 @@ export function LayerCurve({ news = [], onEnter }) {
       </defs>
       <path className="blc-area" mask="url(#blc-amv)" d={`${geo.path}L${geo.x0},${geo.yt}L${geo.x0},${geo.pts[0][1]}Z`} />
       <FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} />
-      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) + 22} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
+      <text className="blc-fut-l" x={geo.W - 16} y={geo.Yt(geo.nextHalving) - 6} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       <g className="blc-ms">
         {(cyc.milestones || []).filter((x) => x.price >= 100 && T(x.t) <= geo.TODAY).map((x) => (
@@ -259,10 +277,12 @@ export function LayerCurve({ news = [], onEnter }) {
           >
             <rect className="blc-hit" x="0" y={n.cy - VGAP / 2} width={geo.W} height={VGAP} />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="7" />}
-            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="15" />
+            {/* El hilo: une el título con su punto en la curva. */}
+            {n.cx - 16 > 16 + n.tw + 12 && <line className="blc-thread" x1={16 + n.tw + 12} x2={n.cx - 16} y1={n.cy} y2={n.cy} />}
+            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="16" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.8" />
-            <text className="blc-ttl" x="16" y={n.cy + 10}>{label}</text>
+            <text className="blc-ttl" x="16" y={n.cy + 10.5}>{label}</text>
           </g>
         );
       })}

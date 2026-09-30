@@ -286,11 +286,25 @@ async function run(vp) {
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
+        // "Hilo" (30-sep): cada título unido a su punto y el abanico como
+        // cierre a todo el ancho (antes quedaba en el tercio derecho).
+        const threads = await page.locator(".blc-v .blc-thread").count();
+        if (threads < 6) fail(vp.name, "layer", `mobile: ${threads} hilos entre títulos y puntos (esperaba ≥6)`);
+        const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
+        if (fanW < vp.viewport.width * 0.75) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥75% del ancho)`);
       }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);
+      // Pestañas con presencia (30-sep): letra de los títulos, ≥15 px, y la
+      // activa con el punto de la curva, visible en la fila.
+      const tab = await page.locator(".bl-layer-tab.active").evaluate((el) => {
+        const cs = getComputedStyle(el), nav = el.parentElement.getBoundingClientRect(), r = el.getBoundingClientRect();
+        return { fs: parseFloat(cs.fontSize), mono: /mono/i.test(cs.fontFamily), dot: getComputedStyle(el, "::before").content !== "none", inView: r.left >= nav.left - 1 && r.right <= nav.right + 1 };
+      }).catch(() => null);
+      if (!tab || tab.fs < 15 || tab.mono || !tab.dot) fail(vp.name, "layer", `pestañas: ${JSON.stringify(tab)} (esperaba sans ≥15px con el punto de la curva)`);
+      else if (!tab.inView) fail(vp.name, "layer", "la pestaña activa queda fuera de la vista");
       // Dentro de una sección (sept 2026): "Volver" a la vista y sin taparse
       // con el ticker; pestañas en todas las pantallas; Pulso del mercado
       // (en mobile, tira que se despliega) en lugar de terminal + dólar.
