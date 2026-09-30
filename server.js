@@ -1152,8 +1152,11 @@ function detectFinanceTag(title, slug) {
 // (ya está en el Pulso, con número y no titular).
 const FINANCE_OUT = [
   /^[‘'"“].*[’'"”]:/,                                                        // cita en primera persona como título
-  /\b(I'?m|I’m|I’d|I'd|my (husband|wife|kids?|parents?)|should I|am I)\b/,
-  /\b(travel cards?|credit cards?|points guy|retirement|social security|mortgage|car payments?|car loans?)\b/i,
+  // primera persona: "Should I start one too?", "My friend’s…", "After I sold TOMS…"
+  /\b(I'?m|I’m|I’d|I'd|should I|am I|can I|do I)\b/i,
+  /(^|\s)my (friend|husband|wife|kids?|parents?|mom|dad|sister|brother|boss|partner)\b|^my\b/i,
+  /\bI (sold|was|am|have|had|bought|lost|made|quit|retired|spent|paid|earn|make|want|need)\b/,
+  /\b(travel cards?|credit cards?|points guy|retirement|social security|medicare|401\(k\)|mortgage|car payments?|car loans?)\b/i,
   /\b(aumentos?|prepagas?|colectivos|peajes|alquileres|sueldos?|0 ?km|autos?|cars?|pickups?|nafteras?|combustibles|surtidores|jubilaci\w*|aguinaldo|anses|tarifas?)\b/i,
   /^d[óo]lar( blue)?( hoy)?( y d[óo]lar blue hoy)?( minuto a minuto)?:/i,
 ];

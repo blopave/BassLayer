@@ -137,7 +137,7 @@ async function checkEndpoint({ path, minItems, required }) {
     const TAGS = new Set(["argentina", "wallstreet", "companies", "world"]);
     const raros = [...new Set(items.map((it) => it.tag).filter((t) => !TAGS.has(t)))];
     if (raros.length) fail(path, "tema", `temas viejos o desconocidos: ${raros.join(", ")}`);
-    const fuera = items.filter((it) => /\b(I'?m|I’m|my husband|my wife|should I|am I|prepagas?|aumentos?)\b/i.test(it.title || ""));
+    const fuera = items.filter((it) => /\b(I'?m|I’m|my (husband|wife|friend)|should I|am I|prepagas?|aumentos?)\b|\bI (sold|was|bought|lost|quit)\b/i.test(it.title || ""));
     if (fuera.length) fail(path, "curaduria", fuera.slice(0, 3).map((it) => it.title.slice(0, 70)).join(" | "));
   }
 

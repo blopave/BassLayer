@@ -75,6 +75,8 @@ const FAN_ZOOM = 4;
 const FAN_ZOOM_V = 7;
 // Lo que tarda un impulso en recorrer una rama (mobile); igual que en el CSS.
 const PULSE_MS = 700;
+// Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
+const BEAT = 1200;
 
 export function LayerCurve({ news = [], onEnter }) {
   const { t, locale } = useLocale();
@@ -82,9 +84,12 @@ export function LayerCurve({ news = [], onEnter }) {
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [sel, setSel] = useState(null);       // sección con vista previa
-  // Mobile (30-sep, Pablo): la curva manda impulsos por una rama al azar y
-  // el título se enciende al llegar. Quieto con reduced-motion y en pausa
-  // cuando no se ve.
+  // Impulsos (30-sep, Pablo): la curva manda un destello por una rama al
+  // azar y el título se enciende al llegar. Mobile cada 1,2–2,4 s; desktop
+  // más espaciado (3,6–4,8 s) y en pausa mientras el mouse explora la curva
+  // o la ficha está abierta: invita, no interrumpe. Todo sobre un pulso base
+  // de 1,2 s (el abanico redibuja cada 0,6 s y hoy late cada 2,4 s). Quieto
+  // con reduced-motion y en pausa cuando no se ve.
   const [pulse, setPulse] = useState(null);   // { i, n }
   const [lit, setLit] = useState(null);
   const shownAt = useRef(0);
@@ -121,24 +126,27 @@ export function LayerCurve({ news = [], onEnter }) {
   const H = cyc?.priceHistory || [];
   const mobile = size.w > 0 && size.w <= 768;
 
+  const busy = useRef(false);                  // desktop: el mouse está en la curva
+  useEffect(() => { busy.current = sel != null; }, [sel]);
   useEffect(() => {
-    if (!mobile || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    if (!size.w || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const [every, spread] = mobile ? [BEAT, BEAT] : [BEAT * 3, BEAT];
     let visible = true, n = 0, last = -1, t1, t2, t3;
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
     if (stageRef.current) io.observe(stageRef.current);
     const fire = () => {
-      if (visible && !document.hidden) {
+      if (visible && !document.hidden && (mobile || !busy.current)) { // en táctil no hay "explorando"
         let i; do i = Math.floor(Math.random() * NODES.length); while (i === last);
         last = i;
         setPulse({ i, n: ++n });
         t2 = setTimeout(() => setLit(i), PULSE_MS);            // llega: se enciende
         t3 = setTimeout(() => setLit((v) => (v === i ? null : v)), PULSE_MS + 1100);
       }
-      t1 = setTimeout(fire, 900 + Math.random() * 1500);
+      t1 = setTimeout(fire, every + Math.random() * spread);
     };
     t1 = setTimeout(fire, 2600);                                // después del dibujo inicial
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); io.disconnect(); };
-  }, [mobile]);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); io.disconnect(); setPulse(null); setLit(null); };
+  }, [mobile, size.w > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Contenido de cada sección: nombre, momento, historia y dato vivo.
   const content = useMemo(() => {
@@ -206,7 +214,10 @@ export function LayerCurve({ news = [], onEnter }) {
     const gapx = (X(TODAY) + 40 - L - 110) / (NODES.length - 1), fs = gapx < 125 ? 15 : 17;
     const nodes = NODES.map((n, i) => {
       const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), kx = L + i * gapx, ey = RAIL + 46;
-      const branch = branchPath([cx, cy], [cx, cy - (cy - ey) * 0.45], [kx + 6, ey + (cy - ey) * 0.45], [kx + 6, ey], lensOf(tt), 13 * Math.min(1, gapx / 150));
+      // Controles: sube casi vertical desde el punto y entra vertical al riel;
+      // el primer control ya se inclina hacia su título, así las ramas del
+      // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
+      const branch = branchPath([cx, cy], [cx + (kx + 6 - cx) * 0.18, cy - (cy - ey) * 0.5], [kx + 6, ey + (cy - ey) * 0.38], [kx + 6, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
       return { ...n, tt, cx, cy, kx, ey, fs, branch };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
@@ -259,7 +270,6 @@ export function LayerCurve({ news = [], onEnter }) {
   const dock = geo?.dock;
   const preview = selNodeP && (
     <div
-      key={selNodeP.key}
       className={`blc-pv${dock ? " is-dock" : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
@@ -269,6 +279,7 @@ export function LayerCurve({ news = [], onEnter }) {
       onMouseEnter={() => clearTimeout(hideT.current)}
       onMouseLeave={hideSoon}
     >
+      <div className="pv-in" key={selNodeP.key}>
       <div className="pv-a">
         <div className="k">{tk(selNodeP.key, "when")}</div>
         <h3>{name(selNodeP.key)}</h3>
@@ -285,6 +296,7 @@ export function LayerCurve({ news = [], onEnter }) {
       <div className="pv-c">
         <p className="why">{tk(selNodeP.key, "why")}</p>
         <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
+      </div>
       </div>
     </div>
   );
@@ -318,9 +330,10 @@ export function LayerCurve({ news = [], onEnter }) {
             {pulse?.i === i && <path key={pulse.n} className="blc-pulse" d={n.branch} pathLength="100" />}
             <circle className="blc-end" cx={n.ex} cy={n.ly} r="2.4" />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
-            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="13" />
-            <circle className="blc-dot" cx={n.cx} cy={n.cy} r="5.5" />
-            <circle className="blc-core" cx={n.cx} cy={n.cy} r="2" />
+            {/* Puntos chicos: en 2021 Acciones y Eventos caen a 7 px (fechas reales). */}
+            <circle className="blc-halo" cx={n.cx} cy={n.cy} r="9" />
+            <circle className="blc-dot" cx={n.cx} cy={n.cy} r="4.5" />
+            <circle className="blc-core" cx={n.cx} cy={n.cy} r="1.7" />
             <text className="blc-ttl" x={n.lx} y={n.ly + 7}>{label}</text>
           </g>
         );
@@ -337,6 +350,8 @@ export function LayerCurve({ news = [], onEnter }) {
         className={`blc-stage${geo ? " is-ready" : ""}`}
         style={geo?.V ? { height: geo.Hh } : undefined}
         ref={stageRef}
+        onMouseEnter={() => { busy.current = true; }}
+        onMouseLeave={() => { busy.current = sel != null; }}
       >
         {geo?.V && vertical}
         {geo && !geo.V && (
@@ -386,7 +401,7 @@ export function LayerCurve({ news = [], onEnter }) {
               return (
                 <g
                   key={n.key}
-                  className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}`}
+                  className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
                   style={{ animationDelay: `${2.1 + i * 0.12}s` }}
                   tabIndex={0}
                   role="button"
@@ -399,6 +414,7 @@ export function LayerCurve({ news = [], onEnter }) {
                 >
                   <path className="blc-branch-glow" d={n.branch} />
                   <path className="blc-branch" d={n.branch} />
+                  {pulse?.i === i && <path key={pulse.n} className="blc-pulse" d={n.branch} pathLength="100" />}
                   <circle className="blc-end" cx={n.kx + 6} cy={n.ey} r="2.6" />
                   {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="8" />}
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />

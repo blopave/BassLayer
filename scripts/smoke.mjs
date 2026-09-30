@@ -306,6 +306,12 @@ async function run(vp) {
         // perdió la lupa del abanico.
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
+      // Impulsos también en desktop (más espaciados; con el mouse fuera de la curva).
+      if (vp.viewport.width > 768) {
+        await page.mouse.move(2, 2);
+        const litD = await page.waitForSelector(".blc-node.is-lit", { timeout: 14000 }).then(() => true).catch(() => false);
+        if (!litD) fail(vp.name, "layer", "desktop: la curva no enciende ningún título");
+      }
       // Ficha debajo de la curva (desktop, 30-sep): al pasar por una sección
       // se abre en el espacio libre de abajo, no encima de la curva.
       if (vp.viewport.width > 768 && vp.viewport.height >= 800) {

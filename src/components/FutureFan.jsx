@@ -11,7 +11,7 @@ import { T } from "../utils/layer";
 // navegación sigue siendo de las secciones.
 
 const N = 32;
-const EVERY_MS = 520;
+const EVERY_MS = 600;  // medio pulso base de la portada (LayerCurve BEAT = 1,2 s)
 
 function volatility(H) {
   const r = [];
