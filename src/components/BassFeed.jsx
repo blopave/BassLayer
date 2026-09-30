@@ -4,6 +4,7 @@ import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
+import { Pulsar, nightKey } from "./Pulsar";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -238,6 +239,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
+  // Noche elegida en el Pulsar ("" = todas): filtra la agenda a esa fecha.
+  const [night, setNight] = useState("");
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
   const { saved } = useSavedEvents();
   const [savedOnly, setSavedOnly] = useState(false);
@@ -326,6 +329,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     if (cityFilter !== "Todas") ctx = ctx.filter((e) => e.city === cityFilter);
     if (esteFinde) { const b = weekendBounds(); ctx = ctx.filter((e) => isThisWeekend(getEventDate(e), b)); }
     if (hoyOnly) { const today = todayInBA(); ctx = ctx.filter((e) => isToday(getEventDate(e), today)); }
+    if (night) ctx = ctx.filter((e) => { const d = getEventDate(e); return d && nightKey(d) === night; });
     if (search) {
       const q = search.toLowerCase();
       ctx = ctx.filter((e) =>
@@ -338,7 +342,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     for (const e of ctx) { const f = e.family || "other"; counts[f] = (counts[f] || 0) + 1; }
     const list = filter === "All" ? ctx : ctx.filter((e) => (e.family || "") === filter);
     return { filtered: list, familyCounts: counts };
-  }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
+  }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved, night]);
 
   // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
@@ -447,7 +451,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Cuántos filtros hay puestos. Va como contador en el disparador para que el
   // estado siga siendo visible con el sheet cerrado.
   const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "amba" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
-  const clearFilters = () => { setWhen(""); changeRegion("amba"); };
+  const clearFilters = () => { setWhen(""); changeRegion("amba"); setNight(""); };
 
   let itemIdx = 0;
 
@@ -498,9 +502,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {/* Portada editorial: solo sin búsqueda ni filtro temporal — cuando el
           usuario ya está buscando algo puntual, el hero es ruido. */}
       {/* El hero del finde aparece con los eventos: reservamos su alto mientras cargan (CLS). */}
-      {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <WeekendHero events={regionEvents} onSelect={onSelect} />)}
+      {/* Pulsar: la portada de Bass (identidad, como la curva de Layer). Tocar
+          una noche filtra la agenda; el héroe del finde queda para la vista general. */}
+      {!search && !when && !loading && <Pulsar events={regionEvents} today={todayInBA()} night={night} onNight={setNight} onSelect={onSelect} />}
+      {!search && !when && !night && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <WeekendHero events={regionEvents} onSelect={onSelect} />)}
       {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan por acá. */}
-      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
+      {!search && !when && !night && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
 
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />

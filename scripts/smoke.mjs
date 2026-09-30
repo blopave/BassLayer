@@ -124,6 +124,29 @@ async function run(vp) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
     }
+    // Pulsar (sept 2026): la portada de Bass. Una línea por noche (10 en
+    // mobile, 14 en desktop), tocar una noche con fiestas filtra la agenda a
+    // esa fecha y tocar un pico abre el evento.
+    const pulsarNights = await page.locator(".bl-pulsar .blp-night").count();
+    if (pulsarNights !== (vp.viewport.width < 700 ? 10 : 14)) fail(vp.name, "pulsar", `${pulsarNights} noches en el Pulsar`);
+    const busy = page.locator(".bl-pulsar .blp-night:has(.blp-peak)").nth(1);
+    if (await busy.count()) {
+      const day = await busy.locator(".blp-day").textContent();
+      await busy.evaluate((el) => el.scrollIntoView({ block: "center" })); // no debajo de la barra fija del line-up
+      await busy.locator(".blp-hit").click({ position: { x: 24, y: 16 } }); // sobre el rótulo del día: el centro puede ser un pico
+      await page.waitForTimeout(500);
+      const labels = await page.locator(".bl-ev-open").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+      const dd = (day.match(/\d+/) || [])[0];
+      const other = labels.filter((l) => dd && !new RegExp(`- 0?${dd} `).test(l));
+      if (!labels.length || other.length) fail(vp.name, "pulsar", `tocar "${day}" no filtra la agenda a esa noche (${other.length} de otra fecha)`);
+      await page.locator(".blp-clear").click();
+      await page.waitForTimeout(400);
+      await page.locator(".bl-pulsar .blp-peak").first().dispatchEvent("click");
+      const peakModal = await page.locator('.bl-modal-overlay[role="dialog"]').waitFor({ state: "visible", timeout: 8_000 }).then(() => true).catch(() => false);
+      if (!peakModal) fail(vp.name, "pulsar", "tocar un pico no abre el evento");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+    }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);

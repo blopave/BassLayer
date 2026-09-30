@@ -1,0 +1,160 @@
+<meta charset="utf-8">
+<title>Bass · identidad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{ --bg:#111315; --line:#2a2622; --text:#f1ece8; --sec:#a89e96; --ter:#6f675f; --acc:#C49070; }
+*{box-sizing:border-box} body{margin:0;background:#0b0c0d;color:var(--text);font-family:'Geist',system-ui,sans-serif;padding:28px 24px 70px}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} h2{font-size:17px;font-weight:600;margin:52px 0 6px;letter-spacing:-.01em}
+.lead{color:var(--sec);font-size:14px;max-width:84ch;margin:0 0 12px;line-height:1.55}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+.phone{width:390px;height:844px;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:var(--bg);flex:none}
+.bar{height:56px;display:flex;align-items:center;justify-content:center;gap:90px;border-bottom:1px solid var(--line);font-size:13px;color:var(--ter)} .bar span:first-child{letter-spacing:.4em;color:var(--acc)}
+.desk{width:1200px;max-width:100%;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.deskbar{height:64px;display:flex;align-items:center;justify-content:center;gap:260px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ter)} .deskbar span:first-child{letter-spacing:.45em;color:var(--acc);font-size:22px}
+svg{display:block;max-width:100%;height:auto} .note{color:var(--ter);font:12px 'Geist Mono',monospace;margin-top:10px;max-width:110ch;line-height:1.6}
+.ref{font:12px 'Geist Mono',monospace;color:var(--acc);margin:0 0 4px}
+</style>
+<h1>Bass: un objeto propio, como la curva de Layer</h1>
+<p class="lead">Tres direcciones, dibujadas con los eventos reales del AMBA de las próximas noches (desde el miércoles 30 de septiembre). Cada una es navegación además de imagen: tocar un pico, una noche o un punto lleva a los eventos, igual que la curva lleva a las secciones de Layer.</p>
+
+<h2>1 · Pulsar</h2>
+<p class="ref">Referencia: Peter Saville · Joy Division, Unknown Pleasures (1979)</p>
+<p class="lead">Cada línea es una noche; cada pico, una fiesta real ubicada en su hora de inicio (de 16 h a 8 h). La altura crece con el tamaño del line-up. Hoy va arriba, en el color de Bass, y las noches sin fiestas quedan planas: el ritmo de la semana se ve de un golpe. Tocás un pico y entrás al evento; tocás una línea y ves la noche. Es hermana de Layer: allá una línea recorre el tiempo, acá una línea por noche.</p>
+<div class="row"><div class="phone"><div class="bar"><span>BASS</span><span>Layer</span></div><svg id="P1"></svg></div><div class="desk" style="flex:1;min-width:600px"><div class="deskbar"><span>BASS</span><span>Layer</span></div><svg id="P2"></svg></div></div>
+
+<h2>2 · La onda</h2>
+<p class="ref">Referencia: la forma de onda de un tema (SoundCloud, Ableton)</p>
+<p class="lead">Las próximas semanas como la onda de un tema: cada barra es una noche y su altura, cuántas fiestas hay. Un cabezal marca hoy, y los findes aparecen como los golpes del tema. Abajo, la noche elegida con su lista. Es la contraparte directa de la curva de Layer: allá el pasado del precio, acá lo que viene.</p>
+<div class="row"><div class="phone"><div class="bar"><span>BASS</span><span>Layer</span></div><svg id="W1"></svg></div><div class="desk" style="flex:1;min-width:600px"><div class="deskbar"><span>BASS</span><span>Layer</span></div><svg id="W2"></svg></div></div>
+
+<h2>3 · Mapa vivo</h2>
+<p class="ref">Referencia: cartografía nocturna, constelaciones</p>
+<p class="lead">Buenos Aires como una constelación: cada barrio con fiestas en los próximos 7 días brilla según cuántas tiene. La costa del Río de la Plata es el único trazo del mapa. Es muy porteño, pero hoy solo 58 de los 148 eventos dicen su barrio: para que el mapa sea fiel habría que ubicar cada venue.</p>
+<div class="row"><div class="phone"><div class="bar"><span>BASS</span><span>Layer</span></div><svg id="C1"></svg></div><div class="desk" style="flex:1;min-width:600px"><div class="deskbar"><span>BASS</span><span>Layer</span></div><svg id="C2"></svg></div></div>
+<p class="note">mockup · datos reales de /api/events (AMBA, próximas 45 noches desde el 30-sep): 148 eventos, 147 con hora de inicio, 58 con barrio en el venue o la dirección · mapa: posiciones aproximadas por barrio, costa esquemática</p>
+
+<script>
+const D = {"ev": [{"d": 0, "h": 16.0, "n": "Galeria Inesperada", "v": "Movistar Arena", "a": 0, "b": "villa crespo"}, {"d": 0, "h": 19.0, "n": "(30/09) FERIADO: MARIO PEREYRA en Maldin", "v": "Maldini Alto Avellaneda", "a": 0, "b": null}, {"d": 0, "h": 19.0, "n": "HIGH VIS", "v": "Uniclub", "a": 0, "b": null}, {"d": 0, "h": 20.0, "n": "ALBERT PLA en Niceto Club", "v": "Niceto Club", "a": 0, "b": "palermo"}, {"d": 0, "h": 20.0, "n": "Indigo 5teto - Binelli Distefano Rippari", "v": "JAZZ VOYEUR CLUB - Hotel Melia", "a": 0, "b": "recoleta"}, {"d": 0, "h": 20.0, "n": "Bailamos rock y socializamos 30 de septi", "v": "La Viruta", "a": 0, "b": null}, {"d": 0, "h": 20.0, "n": "Agustín Handal", "v": "Cobra", "a": 0, "b": null}, {"d": 0, "h": 20.0, "n": "Farolero en CCNU", "v": "Centro Cultural Nueva Uriarte", "a": 0, "b": null}, {"d": 0, "h": 20.5, "n": "Lindsey Stirling - Duality Tour", "v": "Teatro Gran Rex", "a": 0, "b": null}, {"d": 0, "h": 20.75, "n": "Horacio Lavandera en Cafe Berlin", "v": "Café Berlín", "a": 0, "b": null}, {"d": 0, "h": 21.0, "n": "El Poeta - Canciones de Leonard Cohen en", "v": "La Trastienda", "a": 0, "b": "san telmo"}, {"d": 0, "h": 21.0, "n": "Cerca de Rosario - Tributo a Blefari", "v": "Biri Biri", "a": 0, "b": "villa crespo"}, {"d": 0, "h": 21.0, "n": "Pipa en Bernal", "v": "Ríe Bar", "a": 0, "b": null}, {"d": 0, "h": 21.0, "n": "Centenario y los nabos en Imaginario Cul", "v": "IMAGINARIO CULTURAL BAR", "a": 0, "b": null}, {"d": 0, "h": 21.0, "n": "Tributo a SODA STEREO - Forestando Músic", "v": "Forest Dan", "a": 0, "b": null}, {"d": 0, "h": 21.0, "n": "NINA URKU - Andes Trópico", "v": "La Tierra Invisible", "a": 0, "b": null}, {"d": 1, "h": 19.0, "n": "NONPALIDECE FESTEJA 30 AÑOS", "v": "C Art Media", "a": 0, "b": "chacarita"}, {"d": 1, "h": 19.0, "n": "Taylor Swift - Midnights 3 am Edition Mú", "v": "Auditorio Espacio Cendas", "a": 0, "b": null}, {"d": 1, "h": 19.0, "n": "ABSCHIEDSPARTY en Salón Pueyrredón", "v": "Salon Pueyrredon", "a": 0, "b": null}, {"d": 1, "h": 19.0, "n": "RICCITELLI X COMITÉ 357", "v": "Comité 357", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "THE MODE.", "v": "Premier", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "PIANO BAR: MANU PIRÓ", "v": "Niceto Bar", "a": 0, "b": "palermo"}, {"d": 1, "h": 20.0, "n": "PPA BLUES – ALBUM RELEASE SHOW", "v": "The Lift - Godoy Cruz 1967", "a": 0, "b": "palermo"}, {"d": 1, "h": 20.0, "n": "Piter en concierto Biri Biri", "v": "Biri Biri", "a": 0, "b": "villa crespo"}, {"d": 1, "h": 20.0, "n": "Matorral en Ferona", "v": "FERONA", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "INSPECTOR – TOUR 30 AÑOS", "v": "The Roxy Live", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "Amigos Famosos", "v": "Imaginario Cultural Bar", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "Hombrepie", "v": "Casa Jache", "a": 0, "b": null}, {"d": 1, "h": 20.0, "n": "DYANGO en la Sala Ginastera - Teatro Arg", "v": "Teatro Argentino Centro Provin", "a": 0, "b": null}, {"d": 1, "h": 20.5, "n": "Hablando Huevadas", "v": "Teatro Gran Rex", "a": 0, "b": null}, {"d": 1, "h": 20.5, "n": "SOL FEIGE & RUSSELL KRANES -Songs We Lov", "v": "JAZZ VOYEUR CLUB - Hotel Melia", "a": 0, "b": "recoleta"}, {"d": 1, "h": 20.5, "n": "En el Cosmos presenta su disco en Lucill", "v": "lucille", "a": 0, "b": "palermo"}, {"d": 1, "h": 20.5, "n": "Papina de Palma y Juanito el Cantor.", "v": "La Paz Arriba", "a": 0, "b": null}, {"d": 1, "h": 20.5, "n": "Nadia Larcher", "v": "El Cirko", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "ROBBIE WILLIAMS", "v": "Movistar Arena", "a": 0, "b": "villa crespo"}, {"d": 1, "h": 21.0, "n": "Hadonais Nieves - Directo al corazón", "v": "Las vegas club", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "STANDARDS TRIO", "v": "Prez Jazz & Music Club", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "COLORES DEL SUD - CUARTETO", "v": "Clásica Y Moderna", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "Festival Vinilo - Sebastian Zanetto trío", "v": "CAFÉ VINILO", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "Otros tangos", "v": "EL ALAMBIQUE", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "Los Mentirosos en Ramos Mejia", "v": "La Quadra Rock Club", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "Guauchos", "v": "La Tangente", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "Marta Gomez", "v": "Municipal Theater \"Trinidad Gu", "a": 0, "b": null}, {"d": 1, "h": 21.0, "n": "CADENA PERPETUA en San Miguel", "v": "XLR Club", "a": 0, "b": "once"}, {"d": 1, "h": 22.0, "n": "Bruja Salguero", "v": "Torquato Tasso", "a": 0, "b": null}, {"d": 1, "h": 22.0, "n": "SuperVos", "v": "Sullivan's Irish Pub", "a": 0, "b": null}, {"d": 1, "h": 23.916666666666668, "n": "STICKY - FIESTA DE REGGAETON - Jueves 1 ", "v": "THE BLACK HOUSE", "a": 0, "b": null}, {"d": 1, "h": 23.983333333333334, "n": "BLACK CREAM ORIGINAL JUE 01/10", "v": "BlackCream", "a": 0, "b": null}, {"d": 2, "h": 23.0, "n": "Yubik · Fran Bonetti", "v": "Crobar", "a": 3, "b": "palermo"}, {"d": 2, "h": 23.0, "n": "Nick Varon", "v": "La Biblioteca, San Telmo", "a": 1, "b": "san telmo"}, {"d": 2, "h": 23.0, "n": "Elio Riso · Festa Bros", "v": "2GTHR @ Morocco", "a": 3, "b": "costa salguero"}, {"d": 2, "h": 23.983333333333334, "n": "Carlos Alfonsin · Damián Rejas", "v": "One More Club, Villa Devoto", "a": 3, "b": "villa devoto"}, {"d": 2, "h": 23.0, "n": "Magdalena", "v": "Rarest, Salta", "a": 1, "b": null}, {"d": 2, "h": 23.983333333333334, "n": "Guy Mantzur - Somos Produce · Espacio Ch", "v": "TBA - Espacio CHN, Ituzaingo", "a": 1, "b": null}, {"d": 2, "h": 23.0, "n": "Brigado Crew at Chica Granada · Mendoza ", "v": "TBA", "a": 2, "b": null}, {"d": 2, "h": 23.983333333333334, "n": "Fuocco's NIGHT", "v": "Blue Velvet Bar de Copas", "a": 1, "b": null}, {"d": 2, "h": null, "n": "BURGERPALUSA", "v": "Tribuna Plaza", "a": 0, "b": null}, {"d": 2, "h": 32.0, "n": "Arcadio", "v": "Liverpool Club", "a": 0, "b": null}, {"d": 2, "h": 32.0, "n": "Aire Arcano Kids", "v": "Haven Bar", "a": 0, "b": null}, {"d": 2, "h": 19.0, "n": "Airbag - Al parecer todo ha sido una tra", "v": "Auditorio Espacio Cendas", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "SANTI MUK en Niceto Club (+ 18 años)", "v": "Niceto Club", "a": 0, "b": "palermo"}, {"d": 2, "h": 20.0, "n": "Tocho y los carroñeros", "v": "Pura Vida", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "DELFINA ARROYO - STUDIO SESSIONS!", "v": "CLUB TEMPLE - Espacio Studio", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "Natalí Giffi 15 Años de Folklore", "v": "Marquee Session Live", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "FESTIVAL REGGAE LA PLATA", "v": "Centro Cultural Omar Favero", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "CICLO VISIÓN // LOUDED + FAIFER + LOS SA", "v": "Club Conjura", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "MAY SANTORO Y CARLA BON", "v": "La Casa de Lolita", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "Viva Elástico", "v": "Biri Biri", "a": 0, "b": "villa crespo"}, {"d": 2, "h": 20.0, "n": "Viole Vecchio + Nadar de Noche + Los Sub", "v": "Roseti", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "LA BOHEME EN VIVO - DIA II", "v": "CAFE ROCK LA VE", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "Living Rondewine", "v": "Rondeman Abasto", "a": 0, "b": "abasto"}, {"d": 2, "h": 20.0, "n": "Red Hot Minute / Tributo a Red Hot Chili", "v": "MUSH", "a": 0, "b": null}, {"d": 2, "h": 20.0, "n": "ALREDEDOR", "v": "Picadilly", "a": 0, "b": null}, {"d": 3, "h": 23.0, "n": "Miss Monique", "v": "Mandarine Park", "a": 1, "b": "costanera"}, {"d": 3, "h": 23.983333333333334, "n": "Ace Ventura", "v": "RPC Night @ Groove", "a": 1, "b": "palermo"}, {"d": 3, "h": 23.0, "n": "Jakojako y Mylah", "v": "Under Club @ Blow, Palermo", "a": 2, "b": "palermo"}, {"d": 3, "h": 23.0, "n": "Victoria Whynot", "v": "La Biblioteca, San Telmo", "a": 1, "b": "san telmo"}, {"d": 3, "h": 23.983333333333334, "n": "Aldo Haydar · Gonzalo Cesar", "v": "Caix", "a": 4, "b": "costanera"}, {"d": 3, "h": 23.0, "n": "Emanuel Satie y Maga", "v": "Archi", "a": 2, "b": "costanera"}, {"d": 3, "h": 23.0, "n": "Esa · Harari", "v": "Artlab", "a": 5, "b": null}, {"d": 3, "h": 23.0, "n": "Rigzz · Palo Manieri", "v": "Lignée Bar", "a": 7, "b": null}, {"d": 3, "h": 23.0, "n": "Mai Iachetti y Stevie Paladini", "v": "Tokyo Club, Costanera", "a": 2, "b": "costanera"}, {"d": 3, "h": 23.0, "n": "Finally Alone · Tommy", "v": "Lulú Palermo, Palermo", "a": 3, "b": "palermo"}, {"d": 3, "h": 23.983333333333334, "n": "Matías Sundblad · Facu Gonzalez", "v": "One More Club, Villa Devoto", "a": 4, "b": "villa devoto"}, {"d": 3, "h": 23.983333333333334, "n": "Last Pines · Martín Pose", "v": "Melt", "a": 3, "b": null}, {"d": 3, "h": 23.983333333333334, "n": "Hector Couto · Rei", "v": "Cayococo, Santiago del Estero", "a": 3, "b": null}, {"d": 3, "h": 23.0, "n": "Guy Mantzur y Juan Ibañez", "v": "Autodromo, La Rioja", "a": 2, "b": null}, {"d": 3, "h": 23.0, "n": "Nicolás Taboada", "v": "La Boite, Tucumán", "a": 1, "b": null}, {"d": 3, "h": 23.983333333333334, "n": "Lulu Matheu y China Ortiz", "v": "Aquabarra, San Luis", "a": 2, "b": null}, {"d": 3, "h": 23.983333333333334, "n": "FUN FUN con Djs Pareja all night long", "v": "The Shamrock Bar & Basement", "a": 1, "b": null}, {"d": 3, "h": 23.983333333333334, "n": "John Cosani - Black House · San Telmo - ", "v": "TBA - Black House, San Telmo", "a": 2, "b": "san telmo"}, {"d": 3, "h": 23.983333333333334, "n": "IGNEUM Pres. Desconocidos", "v": "TBA - SAN TELMO, CABA. ", "a": 2, "b": "san telmo"}, {"d": 3, "h": 23.983333333333334, "n": "BLANCAh - Circus · Grand Hall La Plata -", "v": "TBA - Grand Hall, La Plata", "a": 1, "b": null}, {"d": 4, "h": 15.0, "n": "VICTORIA WHYNOT · Inndrive - Aurora Aniv", "v": "TBA - Area Costanera, Quilmes", "a": 1, "b": "costanera"}, {"d": 7, "h": 19.0, "n": "Mutek.ar Edición 8", "v": "TBA - Varias Locaciones / Seve", "a": 0, "b": null}, {"d": 9, "h": 23.983333333333334, "n": "Rodriguez Jr - My House · La Biblioteca ", "v": "TBA - La Biblioteca, San Telmo", "a": 1, "b": "san telmo"}, {"d": 10, "h": 23.0, "n": "Alci", "v": "Crobar", "a": 3, "b": "palermo"}, {"d": 10, "h": 17.0, "n": "Blond:ish", "v": "Foro Costanera Norte, Costaner", "a": 1, "b": "costanera"}, {"d": 10, "h": 23.0, "n": "Camelphat · Jan Blomqvist", "v": "Mandarine Park", "a": 3, "b": "costanera"}, {"d": 10, "h": 23.0, "n": "Volpe · Seph(live) · HERS & DEL OLMO at ", "v": "Nomad Warehouse // Galpón Merc", "a": 4, "b": null}, {"d": 10, "h": 23.983333333333334, "n": "Marcelo Vasami - Somos Produce · La Bibl", "v": "TBA - La Biblioteca, San Telmo", "a": 1, "b": "san telmo"}, {"d": 10, "h": 17.0, "n": "Facundo Mohrr - Corona Sunsets · Cafayat", "v": "TBA - Finca El Recreo, Cafayat", "a": 2, "b": null}, {"d": 10, "h": 23.983333333333334, "n": "ILLUSIONIZE - Costanera Buenos Aires - A", "v": "TBA - Locación a confirmar, Co", "a": 1, "b": "costanera"}, {"d": 11, "h": 23.0, "n": "Dana Ruh · Satoshi Tomiie", "v": "Mutek AR @ Varias locaciones", "a": 10, "b": null}, {"d": 11, "h": 23.0, "n": "Chelina Manuhutu", "v": "Rio Electronic @ Punta Carrasc", "a": 3, "b": null}, {"d": 11, "h": 23.983333333333334, "n": "SYNTESIS 2º ANIVERSARIO: Zisko · Bondarü", "v": "Dune Park", "a": 4, "b": null}, {"d": 11, "h": 23.983333333333334, "n": "Miguel Bastida - Área Costanera Quilmes ", "v": "TBA - Area Costanera, Quilmes", "a": 1, "b": "costanera"}, {"d": 11, "h": 30.5, "n": "Silvie Loto + Dimmish x Mushroom – Estad", "v": "TBA - Estadio Nacional, Ezeiza", "a": 2, "b": null}, {"d": 11, "h": 17.0, "n": "Los Totora x Wineex · Finca El Recreo · ", "v": "TBA - Finca El Recreo, Cafayat", "a": 0, "b": null}, {"d": 11, "h": 23.983333333333334, "n": "Shai T x Somos Produce – La Biblioteca ·", "v": "TBA - La Biblioteca, San Telmo", "a": 0, "b": "san telmo"}, {"d": 11, "h": 23.983333333333334, "n": "Maxi Degrassi - Savage · BNN Costanera -", "v": "TBA - BNN, Costanera", "a": 1, "b": "costanera"}, {"d": 11, "h": 23.983333333333334, "n": "CASSIMM · Matias Sundblad - La Playa - A", "v": "TBA - Club Morocco, Costanera", "a": 2, "b": "costanera"}, {"d": 11, "h": 23.983333333333334, "n": "Transformation - Grand Hall · La Plata -", "v": "TBA - Grand Hall, La Plata", "a": 0, "b": null}, {"d": 11, "h": 23.0, "n": "Brigado Crew at La Cantera · Cordoba - A", "v": "TBA", "a": 1, "b": null}, {"d": 16, "h": 23.0, "n": "Th;en", "v": "The Bow", "a": 3, "b": "costanera"}, {"d": 16, "h": 23.0, "n": "DJ Tennis", "v": "Crobar", "a": 4, "b": "palermo"}, {"d": 16, "h": 23.0, "n": "999 x Nada pres. David Löhlein", "v": "La Nube", "a": 5, "b": null}, {"d": 16, "h": 21.0, "n": "Innen x AVG pres. Manu Oubiña · Mich", "v": "Avant Garten", "a": 2, "b": null}, {"d": 16, "h": 23.983333333333334, "n": "Boris Brejcha La Fabrica Córdoba", "v": "La Fabrica", "a": 1, "b": null}, {"d": 16, "h": 23.983333333333334, "n": "Squadra Phonica x TRESCEROTRES", "v": "TBA", "a": 3, "b": null}, {"d": 16, "h": 23.983333333333334, "n": "Enacordia Showcase X Diskonnect", "v": "Chilli Street Club", "a": 3, "b": null}, {"d": 16, "h": 23.0, "n": "Maceo Plex · Native Beach Club · Cardale", "v": "TBA - Native Beach Club, Carda", "a": 2, "b": null}, {"d": 16, "h": 23.983333333333334, "n": "Jast - 2gthr · Club Morocco · Costanera ", "v": "TBA - Club Morocco, Costanera", "a": 0, "b": "costanera"}, {"d": 16, "h": 23.983333333333334, "n": "Sol Porro - My House · La Biblioteca - A", "v": "TBA - La Biblioteca, San Telmo", "a": 0, "b": "san telmo"}, {"d": 17, "h": 23.0, "n": "Boris Brejcha", "v": "Mandarine Park", "a": 3, "b": "costanera"}, {"d": 17, "h": 16.5, "n": "Lee Burridge · Danny Tenaglia - Corona S", "v": "TBA - Ciudad Universitaria, Be", "a": 4, "b": "belgrano"}, {"d": 17, "h": 23.983333333333334, "n": "Tantum - Somos Produce · La Biblioteca -", "v": "TBA - La Biblioteca, San Telmo", "a": 1, "b": "san telmo"}, {"d": 17, "h": 23.983333333333334, "n": "Culto pres. The Ripped & Alexa Strange A", "v": "TBA - MICROCENTRO.", "a": 1, "b": "microcentro"}, {"d": 17, "h": 23.983333333333334, "n": "Fiesta Sexhum: Monsters Kink", "v": "Maquinal Espacio Cultural", "a": 1, "b": null}, {"d": 23, "h": 23.0, "n": "Nick Warren", "v": "Fragment @ Amerika", "a": 2, "b": null}, {"d": 24, "h": 23.0, "n": "Solomun", "v": "Mandarine Park", "a": 1, "b": "costanera"}, {"d": 24, "h": 23.983333333333334, "n": "Fabio Florido 7 HORAS", "v": "Under Club", "a": 1, "b": null}, {"d": 24, "h": 23.983333333333334, "n": "Velvet Is Back", "v": "Otra Historia Club Cultural", "a": 2, "b": null}, {"d": 24, "h": 23.983333333333334, "n": "Rocío Portillo - La Biblioteca · San Tel", "v": "TBA - La Biblioteca, San Telmo", "a": 0, "b": "san telmo"}, {"d": 25, "h": 23.0, "n": "Nick Warren", "v": "TBA - AMK Club, Almagro", "a": 1, "b": "almagro"}, {"d": 25, "h": 30.0, "n": "Mushroom · Estadio Nacional Ezeiza - ALL", "v": "TBA - Estadio Nacional, Ezeiza", "a": 0, "b": null}, {"d": 30, "h": 23.983333333333334, "n": "Oliver Heldens", "v": "Oasis Open Air", "a": 1, "b": "costanera"}, {"d": 30, "h": 23.983333333333334, "n": "Collabs 3000 - Julieta Lake - Kølpøs", "v": "Under Club", "a": 2, "b": null}, {"d": 30, "h": 23.0, "n": "0800-LINEA-CALIENTE & DESEO pres. Hallow", "v": "Deseo BS AS", "a": 2, "b": null}, {"d": 30, "h": 23.983333333333334, "n": "Javier Bussola - Karmic · La Biblioteca ", "v": "TBA - La Biblioteca, San Telmo", "a": 0, "b": "san telmo"}, {"d": 31, "h": 23.983333333333334, "n": "Mike Rish - Somos Produce · La Bibliotec", "v": "TBA - La Biblioteca, San Telmo", "a": 0, "b": "san telmo"}, {"d": 31, "h": 23.983333333333334, "n": "ATOM", "v": "TBA - Vivero Club ", "a": 0, "b": null}, {"d": 31, "h": 23.0, "n": "Cødigo Halloween - Mushroom · Microcentr", "v": "TBA - Palacio de la Reconquist", "a": 0, "b": "microcentro"}, {"d": 31, "h": 18.0, "n": "Juan Hansen - Chacra El Descanso · La Pl", "v": "TBA - Chacra El Descanso, La P", "a": 1, "b": null}, {"d": 37, "h": 23.5, "n": "KLAV PRES. Chloé Caillet & LUKE ALESSI", "v": "Deseo BS AS", "a": 4, "b": null}, {"d": 37, "h": 23.983333333333334, "n": "KETTEN presents SINGULARITY experience -", "v": "TBA - Secret Location Anunced ", "a": 0, "b": null}, {"d": 38, "h": 23.983333333333334, "n": "Nora En Pure - 2gthr · Archi Club Open A", "v": "TBA - Archi Club, Costanera", "a": 2, "b": "costanera"}, {"d": 39, "h": 18.0, "n": "Ezequiel Arias - Circus · La Plata - ALL", "v": "TBA - Chacra El Descanso, La P", "a": 1, "b": null}], "barrios": {"costanera": [-34.566, -58.405], "costa salguero": [-34.574, -58.401], "palermo": [-34.588, -58.43], "san telmo": [-34.621, -58.372], "villa crespo": [-34.599, -58.438], "recoleta": [-34.588, -58.393], "villa devoto": [-34.601, -58.513], "microcentro": [-34.603, -58.377], "chacarita": [-34.587, -58.455], "once": [-34.609, -58.406], "abasto": [-34.603, -58.411], "belgrano": [-34.562, -58.456], "colegiales": [-34.574, -58.45], "almagro": [-34.61, -58.42], "villa urquiza": [-34.573, -58.487], "barracas": [-34.645, -58.38], "la boca": [-34.635, -58.363], "retiro": [-34.592, -58.376], "puerto madero": [-34.611, -58.363], "nuñez": [-34.545, -58.463], "caballito": [-34.618, -58.44], "congreso": [-34.609, -58.392]}, "today": "2026-09-30"};
+const NS = "http://www.w3.org/2000/svg", ACC = "#C49070";
+const el = (p, n, a, t) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+const DOW = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"], MON = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const T0 = new Date(D.today + "T12:00:00");
+const dayOf = (o) => { const d = new Date(T0); d.setDate(d.getDate() + o); return d; };
+const nightLabel = (o) => o === 0 ? "Hoy" : `${DOW[dayOf(o).getDay()]} ${dayOf(o).getDate()}`;
+const byNight = (o) => D.ev.filter((e) => e.d === o);
+// Cada fiesta, su pico (el más alto manda; los que se superponen suman un
+// poco): picos en punta, sin mesetas. Altura por tamaño del line-up.
+const peak1 = (e) => Math.min(1.25, 0.6 + Math.log2(1 + e.a) * 0.2);
+// Eventos de día (antes de las 15 h) o de after (después de las 9 h): su pico
+// entero en el borde del eje, no una rampa cortada.
+const hOf = (e) => Math.min(32.4, Math.max(15.6, e.h));
+const peakAt = (evs, h) => { let mx = 0, sum = 0; for (const e of evs) { const g = peak1(e) * Math.exp(-(((h - hOf(e)) / 0.3) ** 2)); mx = Math.max(mx, g); sum += g; } return mx + 0.12 * (sum - mx); };
+const clip = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+const size = (svg, W, H) => { svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H); };
+
+// ── 1 · Pulsar ──
+function pulsar(id, W, H, N, x0, x1, top, gap, amp) {
+  const svg = document.getElementById(id); size(svg, W, H);
+  const hx = (h) => x0 + ((h - 15) / 18) * (x1 - x0);
+  for (let o = 0; o < N; o++) {
+    const base = top + o * gap, evs = byNight(o).filter((e) => e.h);
+    const pts = [];
+    for (let x = x0; x <= x1; x += 2) {
+      const h = 15 + ((x - x0) / (x1 - x0)) * 18;
+      pts.push([x, base - peakAt(evs, h) * amp]);
+    }
+    const d = "M" + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L");
+    el(svg, "path", { d: `${d}L${x1},${base + gap * 2}L${x0},${base + gap * 2}Z`, fill: "#111315" });   // tapa las líneas de atrás
+    el(svg, "path", { d, fill: "none", stroke: o === 0 ? ACC : "#e9e2dc", "stroke-opacity": o === 0 ? 1 : Math.max(.35, .9 - o * .035), "stroke-width": o === 0 ? 1.8 : 1.2, "stroke-linejoin": "round" });
+    el(svg, "text", { x: x0 - 12, y: base + 3, "text-anchor": "end", fill: o === 0 ? ACC : "#6f675f", "font-size": 10, "font-family": "Geist Mono" }, nightLabel(o));
+    if (evs.length) el(svg, "text", { x: x1 + 10, y: base + 3, fill: "#6f675f", "font-size": 10, "font-family": "Geist Mono" }, evs.length);
+  }
+  const ay = top + (N - 1) * gap + 26;
+  for (const [h, l] of [[16, "16 h"], [20, "20 h"], [24, "00 h"], [28, "04 h"], [32, "08 h"]]) el(svg, "text", { x: hx(h), y: ay, "text-anchor": "middle", fill: "#6f675f", "font-size": 10, "font-family": "Geist Mono" }, l);
+  // un pico elegido (el de hoy con más line-up): así se lee al tocarlo
+  const top1 = byNight(0).filter((e) => e.h).sort((a, b) => b.a - a.a)[0];
+  if (top1) {
+    // Rótulo del pico elegido, en el aire de arriba y con su hilo: no pisa líneas.
+    const x = hx(hOf(top1)), py = top - peakAt(byNight(0).filter((e) => e.h), hOf(top1)) * amp, ly = top - amp * 1.4 - 30;
+    el(svg, "line", { x1: x, x2: x, y1: py - 5, y2: ly + 6, stroke: ACC, "stroke-opacity": .6 });
+    el(svg, "circle", { cx: x, cy: py, r: 3, fill: ACC });
+    const right = x < (x0 + x1) / 2, tx = right ? x + 8 : x - 8, anchor = right ? "start" : "end";
+    el(svg, "text", { x: tx, y: ly, "text-anchor": anchor, fill: "#f1ece8", "font-size": 12.5, "font-weight": 600 }, clip(top1.n, 28));
+    el(svg, "text", { x: tx, y: ly + 15, "text-anchor": anchor, fill: "#a89e96", "font-size": 10.5, "font-family": "Geist Mono" }, `${clip(top1.v, 22)} · ${String(Math.floor(top1.h % 24)).padStart(2, "0")} h`);
+  }
+}
+// ── 2 · La onda ──
+function wave(id, W, H, N, x0, x1, mid, amp, listTop, rows, cols) {
+  const svg = document.getElementById(id); size(svg, W, H);
+  const bw = (x1 - x0) / N, max = Math.max(...Array.from({ length: N }, (_, o) => byNight(o).length));
+  for (let o = 0; o < N; o++) {
+    const c = byNight(o).length, h = c ? 3 + Math.sqrt(c / max) * amp : 1.5, x = x0 + o * bw;
+    el(svg, "rect", { x: x + 1, y: mid - h, width: Math.max(1.5, bw - 2.5), height: h * 2, rx: 1.5, fill: o === 0 ? ACC : "#e9e2dc", "fill-opacity": o === 0 ? 1 : c ? .78 : .25 });
+    const dd = dayOf(o); if (dd.getDay() === 5 && o < N - 1) el(svg, "text", { x: x + bw, y: mid + amp + 22, "text-anchor": "middle", fill: "#6f675f", "font-size": 10, "font-family": "Geist Mono" }, `${dd.getDate()} ${MON[dd.getMonth()]}`);
+  }
+  el(svg, "line", { x1: x0, x2: x0, y1: mid - amp - 14, y2: mid + amp + 8, stroke: ACC, "stroke-width": 1.5 });
+  el(svg, "text", { x: x0, y: mid - amp - 20, fill: ACC, "font-size": 10.5, "font-family": "Geist Mono" }, "HOY");
+  // La noche elegida (hoy) y, en desktop, la siguiente al lado.
+  for (let c = 0; c < cols; c++) {
+    const cx = x0 + c * ((x1 - x0) / cols), evs = byNight(c).filter((e) => e.h).sort((a, b) => a.h - b.h);
+    el(svg, "text", { x: cx, y: listTop, fill: c ? "#a89e96" : "#f1ece8", "font-size": 18, "font-weight": 600 }, `${c ? nightLabel(c) : "Hoy"} · ${byNight(c).length} fiestas`);
+    evs.slice(0, rows).forEach((e, i) => {
+      const y = listTop + 32 + i * 46;
+      el(svg, "text", { x: cx, y, fill: "#a89e96", "font-size": 11, "font-family": "Geist Mono" }, `${String(Math.floor(e.h % 24)).padStart(2, "0")}:${String(Math.round((e.h % 1) * 60)).padStart(2, "0")}`);
+      el(svg, "text", { x: cx + 52, y, fill: "#f1ece8", "font-size": 14, "font-weight": 550 }, clip(e.n, 36));
+      el(svg, "text", { x: cx + 52, y: y + 16, fill: "#6f675f", "font-size": 11 }, clip(e.v, 42));
+    });
+  }
+}
+// ── 3 · Mapa vivo ──
+function map(id, W, H, pad, listTop) {
+  const svg = document.getElementById(id); size(svg, W, H);
+  const [lo0, lo1, la0, la1] = [-58.53, -58.345, -34.535, -34.655];
+  const k = Math.min((W - 2 * pad) / (lo1 - lo0), (H - 2 * pad) / (la0 - la1));
+  const P = (la, lo) => [pad + (lo - lo0) * k, pad + (la0 - la) * k];
+  const coast = [[-34.535, -58.455], [-34.545, -58.44], [-34.557, -58.418], [-34.566, -58.402], [-34.578, -58.39], [-34.59, -58.371], [-34.603, -58.358], [-34.618, -58.352], [-34.635, -58.355], [-34.648, -58.36]];
+  el(svg, "path", { d: "M" + coast.map(([a, b]) => P(a, b).map((v) => v.toFixed(1)).join(",")).join("L"), fill: "none", stroke: "#e9e2dc", "stroke-opacity": .35, "stroke-width": 1.2, "stroke-dasharray": "1 5", "stroke-linecap": "round" });
+  const [, ry] = P(-34.556, -58.352); el(svg, "text", { x: W - pad, y: ry, fill: "#6f675f", "font-size": 10, "font-family": "Geist Mono", "text-anchor": "end" }, "Río de la Plata");
+  const week = D.ev.filter((e) => e.d <= 6 && e.b), cnt = {};
+  for (const e of week) cnt[e.b] = (cnt[e.b] || 0) + 1;
+  const defs = el(svg, "defs", {}); const g = el(defs, "radialGradient", { id: id + "g" }); el(g, "stop", { offset: 0, "stop-color": ACC, "stop-opacity": .55 }); el(g, "stop", { offset: 1, "stop-color": ACC, "stop-opacity": 0 });
+  // Rótulos sin pisarse: los barrios con fiestas primero; cada uno prueba
+  // derecha / izquierda / arriba / abajo y, si ninguno entra, no va.
+  const placed = [], cap = (b) => b[0].toUpperCase() + b.slice(1);
+  const hit = (r) => placed.some((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h);
+  const order = Object.entries(D.barrios).sort(([a], [b]) => (cnt[b] || 0) - (cnt[a] || 0));
+  for (const [b, [la, lo]] of order) {
+    const [x, y] = P(la, lo), c = cnt[b] || 0, r = c ? 2.5 + Math.sqrt(c) : 1.4;
+    placed.push({ x: x - r, y: y - r, w: 2 * r, h: 2 * r });
+    if (c) el(svg, "circle", { cx: x, cy: y, r: 10 + Math.sqrt(c) * 9, fill: `url(#${id}g)` });
+    el(svg, "circle", { cx: x, cy: y, r, fill: c ? ACC : "#6f675f", "fill-opacity": c ? 1 : .6 });
+  }
+  for (const [b, [la, lo]] of order) {
+    const [x, y] = P(la, lo), c = cnt[b] || 0, fs = (c ? 11.5 : 9.5) * (W < 500 ? 0.88 : 1), txt = cap(b) + (c ? ` · ${c}` : "");
+    const w = txt.length * fs * 0.56, h = fs + 2;
+    const ok = [[x + 8, y - h / 2], [x - 8 - w, y - h / 2], [x - w / 2, y - h - 7], [x - w / 2, y + 7], [x + 6, y + 5], [x + 6, y - h - 5], [x - 6 - w, y + 5], [x - 6 - w, y - h - 5]].find(([rx, ry]) => rx > 4 && rx + w < W - 4 && !hit({ x: rx, y: ry, w, h }));
+    if (!ok) continue;
+    placed.push({ x: ok[0], y: ok[1], w, h });
+    el(svg, "text", { x: ok[0], y: ok[1] + fs - 1, fill: c ? "#f1ece8" : "#6f675f", "font-size": fs, "font-weight": c ? 600 : 400 }, txt);
+  }
+  if (listTop) {
+    el(svg, "text", { x: pad, y: listTop, fill: "#f1ece8", "font-size": 18, "font-weight": 600 }, "Esta semana, por barrio");
+    const mx = Math.max(...Object.values(cnt));
+    Object.entries(cnt).sort((a, b) => b[1] - a[1]).forEach(([b, c], i) => {
+      const y = listTop + 34 + i * 34;
+      el(svg, "text", { x: pad, y, fill: "#f1ece8", "font-size": 14, "font-weight": 550 }, cap(b));
+      el(svg, "rect", { x: pad + 124, y: y - 8, width: Math.max(3, (W - 2 * pad - 160) * (c / mx)), height: 5, rx: 2.5, fill: ACC, "fill-opacity": .8 });
+      el(svg, "text", { x: W - pad, y, "text-anchor": "end", fill: "#a89e96", "font-size": 11, "font-family": "Geist Mono" }, c);
+    });
+  }
+  el(svg, "text", { x: pad, y: H - 18, fill: "#6f675f", "font-size": 10, "font-family": "Geist Mono" }, `próximos 7 días · ${week.length} fiestas con barrio`);
+}
+document.fonts.ready.then(() => {
+  pulsar("P1", 390, 788, 14, 64, 356, 110, 46, 40);
+  pulsar("P2", 1200, 620, 14, 120, 1080, 110, 34, 42);
+  wave("W1", 390, 788, 30, 16, 374, 150, 70, 300, 9, 1);
+  wave("W2", 1200, 620, 45, 60, 1140, 160, 90, 330, 5, 2);
+  map("C1", 390, 788, 24, 300);
+  map("C2", 1200, 620, 60);
+});
+</script>
