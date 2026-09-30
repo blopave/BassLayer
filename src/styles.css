@@ -5589,10 +5589,7 @@ select.bl-venue-input { cursor:pointer; }
 /* "Hoy" late: un anillo que se abre y se apaga sobre el punto del presente. */
 .blc-live { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.5; opacity:0; transform-box:fill-box; transform-origin:center; animation:blc-live 2.4s ease-out 2.6s infinite; pointer-events:none; }
 @keyframes blc-live { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
-.blc-ms circle { fill:var(--bl-bg); stroke:var(--bl-border); }
-/* Rótulos de hitos: contexto, por debajo de las ramas; se aclaran al explorar. */
-.blc-ms text { fill:var(--bl-text-ter); opacity:.4; font:500 9px var(--font-mono); letter-spacing:.06em; transition:opacity .3s; }
-.blc-stage:hover .blc-ms text { opacity:.75; }
+.blc-futband { fill:url(#blc-fbg); pointer-events:none; }
 .blc-node { cursor:pointer; opacity:0; animation:blc-pop .5s cubic-bezier(.2,1.4,.4,1) forwards; outline:none; }
 @keyframes blc-pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 /* Halo quieto: con las ramas, 8 puntos latiendo era ruido; late solo hoy (.blc-live). */

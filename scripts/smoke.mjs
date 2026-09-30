@@ -306,6 +306,13 @@ async function run(vp) {
         // perdió la lupa del abanico.
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
+      // El futuro como lupa (30-sep): el abanico ocupa ≥17 % del ancho y la
+      // curva va sin rótulos de hitos (HALVING, FONDO, PICO viven en Hitos).
+      if (vp.viewport.width > 768) {
+        const fanD = await page.locator(".blc-fan").first().evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
+        if (fanD < vp.viewport.width * 0.17) fail(vp.name, "layer", `desktop: el abanico ocupa ${Math.round(fanD)}px (esperaba ≥17% del ancho)`);
+        if (await page.locator(".blc-ms").count()) fail(vp.name, "layer", "desktop: volvieron los rótulos de hitos sobre la curva");
+      }
       // Impulsos también en desktop (más espaciados; con el mouse fuera de la curva).
       if (vp.viewport.width > 768) {
         await page.mouse.move(2, 2);

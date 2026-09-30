@@ -73,6 +73,8 @@ const FAN_ZOOM = 4;
 // En mobile la banda de la curva es angosta (la columna de nombres va al
 // lado): la lupa del abanico es mayor para que se abra; va rotulada igual.
 const FAN_ZOOM_V = 7;
+// Desktop: parte del ancho para el futuro (hoy → halving), en su propia escala.
+const FUT_SHARE = 0.24;
 // Lo que tarda un impulso en recorrer una rama (mobile); igual que en el CSS.
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
@@ -206,12 +208,18 @@ export function LayerCurve({ news = [], onEnter }) {
       return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, yBot, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
     }
 
-    // Desktop: eje de tiempo real (2012 → halving) y un riel de títulos
-    // parejos arriba, hasta un poco pasado hoy; cada rama sube a su título.
+    // Desktop: el pasado en tiempo real (2012 → hoy) y el futuro como LUPA
+    // (Pablo, 30-sep: que el abanico gane lugar): de hoy al halving ocupa el
+    // FUT_SHARE del ancho, en su propia escala, marcada con una franja y el
+    // rótulo de escala — como la lupa ×4 del precio. Riel de títulos arriba.
     const Hh = size.h, L = 64, R = 60, TOP = 170, BOT = 46, RAIL = 26;
-    const X = (tt) => L + ((tt - 2012) / (END - 2012)) * (W - L - R);
+    const span = W - L - R, xNow = L + span * (1 - FUT_SHARE);
+    const X = (tt) => (tt <= TODAY ? L + ((tt - 2012) / (TODAY - 2012)) * (xNow - L) : xNow + ((tt - TODAY) / (END - TODAY)) * (W - R - xNow));
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
-    const gapx = (X(TODAY) + 40 - L - 110) / (NODES.length - 1), fs = gapx < 125 ? 15 : 17;
+    // El riel pasa un poco sobre la zona del futuro (los caminos empiezan
+    // debajo del riel): así entran los 8 títulos también en 1000 px.
+    const railEnd = xNow + (W - R - xNow) * 0.45;
+    const gapx = (railEnd - L - 110) / (NODES.length - 1), fs = gapx < 100 ? 14 : gapx < 125 ? 15 : 17;
     const nodes = NODES.map((n, i) => {
       const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), kx = L + i * gapx, ey = RAIL + 46;
       // Controles: sube casi vertical desde el punto y entra vertical al riel;
@@ -228,7 +236,8 @@ export function LayerCurve({ news = [], onEnter }) {
     return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes, dock: dock.h >= 150 && dock.w >= 460 ? dock : null };
   }, [H, size, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada en hoy.
+  // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada
+  // en hoy. Sin rótulos de hitos sobre la curva (Pablo, 30-sep): viven en Hitos.
   const fan = useMemo(() => {
     if (!geo) return null;
     const until = geo.nextHalving;
@@ -247,7 +256,7 @@ export function LayerCurve({ news = [], onEnter }) {
     return {
       until,
       toPoint: (tt, p) => [geo.X(tt), geo.yt - Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM],
-      clip: { x: geo.xt, y: geo.TOP - 60, w: xEnd - geo.xt + 2, h: geo.Hh - geo.BOT - geo.TOP + 60 }, // debajo del riel
+      clip: { x: geo.xt, y: geo.RAIL + 50, w: xEnd - geo.xt + 2, h: geo.Hh - geo.BOT - geo.RAIL - 50 }, // debajo del riel
       fade: { x1: geo.xt, y1: 0, x2: xEnd, y2: 0 },
     };
   }, [geo]);
@@ -368,29 +377,22 @@ export function LayerCurve({ news = [], onEnter }) {
               {[10, 1000, 100000].map((p) => (
                 <g key={p}><line x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.L} y={geo.Y(p) - 6}>{fmtUsd(p, locale)}</text></g>
               ))}
-              {[2012, 2014, 2016, 2018, 2020, 2022, 2024, 2026, 2028].map((y) => (
+              {[2012, 2014, 2016, 2018, 2020, 2022, 2024, 2026, 2027, 2028].filter((y) => y <= geo.nextHalving).map((y) => (
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
               ))}
             </g>
+            {/* La lupa del futuro: una franja apenas visible desde hoy. */}
+            <defs>
+              <linearGradient id="blc-fbg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".055" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
+            </defs>
+            <rect className="blc-futband" x={geo.xt} y={geo.RAIL + 50} width={geo.W - geo.xt} height={geo.Hh - geo.BOT - geo.RAIL - 50} />
             <FutureFan id="blc-fan" H={H} label={t("curve.fanAria")} {...fan} />
             <g clipPath="url(#blc-cp)">
               <path className="blc-area" mask="url(#blc-am)" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
             {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
-            <text className="blc-fut-l" x={geo.X(geo.nextHalving)} y={geo.TOP - 70} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
-            <g className="blc-ms">
-              {(cyc.milestones || []).filter((x) => T(x.t) <= geo.TODAY).map((x) => {
-                const cx = geo.X(T(x.t)), cy = geo.Y(x.price);
-                const near = geo.nodes.some((n) => Math.abs(n.tt - T(x.t)) < 0.7);
-                if (cy >= geo.Hh - geo.BOT) return null;
-                return (
-                  <g key={x.t + x.type}><circle cx={cx} cy={cy} r="2.5" />
-                    {!near && <text x={cx} y={cy + (x.type === "bottom" ? 16 : -9)} textAnchor="middle">{(locale === "en" ? x.labelEn || x.label : x.label).toUpperCase()}</text>}
-                  </g>
-                );
-              })}
-            </g>
+            <text className="blc-fut-l" x={geo.W - geo.R - 8} y={geo.TOP - 44} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
             {/* La ficha cuelga de su punto: una plomada al espacio de abajo. */}
             {selNodeP && dock && (
               <path className="blc-plumb" d={`M${selNodeP.cx},${selNodeP.cy + 10}L${Math.min(Math.max(selNodeP.cx, dock.x + 18), dock.x + dock.w - 18)},${dock.y}`} />
