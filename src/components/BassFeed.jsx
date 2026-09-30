@@ -4,6 +4,7 @@ import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
+import { BassTrack } from "./BassTrack";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api } from "../utils/api";
@@ -148,65 +149,6 @@ function isThisWeekend(eventDate, bounds = weekendBounds()) {
   return evDay >= bounds.friday && evDay < bounds.monday;
 }
 
-// El momento dashboard de Bass: qué pasa hoy y este finde, con 2-3 destacados
-// con artwork. La lectura curada que Layer ya tenía y Bass no — el hermano
-// cálido del status de mercado.
-function WeekendHero({ events, onSelect }) {
-  const { t, locale } = useLocale();
-  const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
-  const { picks, todayN, weekendN, sound } = useMemo(() => {
-    const today = todayInBA();
-    const bounds = weekendBounds();
-    const dated = events.map((ev) => ({ ev, date: getEventDate(ev) })).filter((x) => x.date);
-    const weekend = dated.filter((x) => isThisWeekend(x.date, bounds));
-    const todayN = dated.filter((x) => isToday(x.date, today)).length;
-    const counts = {};
-    for (const x of weekend) { const f = x.ev.family; if (f) counts[f] = (counts[f] || 0) + 1; }
-    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-    // Destacados: primero los curados (featured), después los que tienen flyer
-    // real; a igualdad, el más próximo.
-    const score = (x) => (x.ev.featured ? 2 : 0) + (x.ev.image ? 1 : 0);
-    const picks = [...weekend]
-      .sort((a, b) => score(b) - score(a) || a.date - b.date)
-      .slice(0, 3);
-    return { picks, todayN, weekendN: weekend.length, sound: top ? top[0] : null };
-  }, [events]);
-
-  if (picks.length === 0) return null;
-
-  return (
-    <section className="bl-hero" aria-label={t("hero.title")}>
-      <div className="bl-hero-head">
-        <h2 className="bl-hero-title bl-bass-t-stamp">{t("hero.title")}</h2>
-        <div className="bl-hero-stats">
-          <span className="bl-hero-stat bl-bass-t-label"><b>{todayN}</b> {t("day.today")}</span>
-          <span className="bl-hero-stat bl-bass-t-label"><b>{weekendN}</b> {t("hero.weekend")}</span>
-          {sound && <span className="bl-hero-stat bl-bass-t-label"><b>{t(`family.${sound}`)}</b> {t("hero.sound")}</span>}
-        </div>
-        {/* Mobile: los tres stats se reemplazan por un único dato quieto —
-            dos líneas de mono trackeada antes del contenido eran ruido. */}
-        <span className="bl-hero-stat bl-hero-count bl-bass-t-label"><b>{weekendN}</b> {t("hero.events")}</span>
-      </div>
-      <div className="bl-hero-tiles">
-        {picks.map(({ ev, date }) => (
-          <button
-            type="button"
-            className="bl-hero-tile"
-            key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
-            onClick={() => onSelect(ev)}
-            aria-label={`${ev.name} — ${ev.venue}`}
-          >
-            <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} fit="contain" width={200} />
-            <div className="bl-hero-tile-name">{noOrphanSep(ev.name)}</div>
-            <div className="bl-hero-tile-meta bl-bass-t-label">
-              {(dayNames[date.getDay()] || "").slice(0, 3)} · {ev.venue}
-            </div>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival, presetWhen }) {
   const { t, locale } = useLocale();
@@ -449,6 +391,18 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "amba" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
   const clearFilters = () => { setWhen(""); changeRegion("amba"); };
 
+  // Cues del índice: Noticias y Festivales son pestañas; Hoy, El finde y
+  // Agenda entran a Eventos filtrado; De gira lleva a su bloque.
+  const toList = () => requestAnimationFrame(() => document.querySelector(".bass-filters")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  const onCue = (k) => {
+    if (k === "news") setSection("noticias");
+    else if (k === "fests") setSection("festivales");
+    else if (k === "today") { setWhen("hoy"); toList(); }
+    else if (k === "weekend") { setWhen("finde"); toList(); }
+    else if (k === "tour") document.querySelector(".bl-tour")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    else toList();
+  };
+
   let itemIdx = 0;
 
   return (
@@ -498,7 +452,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {/* Portada editorial: solo sin búsqueda ni filtro temporal — cuando el
           usuario ya está buscando algo puntual, el hero es ruido. */}
       {/* El hero del finde aparece con los eventos: reservamos su alto mientras cargan (CLS). */}
-      {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <WeekendHero events={regionEvents} onSelect={onSelect} />)}
+      {/* Portada: el índice como un track (las secciones son hot cues en su
+          momento real). Reemplazó al héroe del finde (sept 2026). */}
+      {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} allEvents={events} today={todayInBA()} weekend={weekendBounds()} onCue={onCue} />)}
       {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan por acá. */}
       {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
 

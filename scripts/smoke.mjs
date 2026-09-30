@@ -124,6 +124,27 @@ async function run(vp) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
     }
+    // Índice de Bass (sept 2026): la forma de onda con las secciones como hot
+    // cues. Tocar Noticias abre la pestaña; tocar Hoy filtra la agenda a hoy.
+    await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+    const cues = await page.locator(".bl-btrack .btk-cue").count();
+    if (cues < 5) fail(vp.name, "índice", `${cues} cues en el índice de Bass (esperaba ≥5)`);
+    if (cues) {
+      await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
+      const newsOn = await page.locator(".bl-bass-section-btn.active", { hasText: /Noticias|News/ }).count();
+      if (!newsOn) fail(vp.name, "índice", "el cue Noticias no abre Noticias");
+      await page.locator(".bl-bass-section-btn", { hasText: /Eventos|Events/ }).click();
+      await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      await page.locator(".btk-cue", { hasText: /^B|Hoy|Today/ }).filter({ hasText: /Hoy|Today/ }).first().dispatchEvent("click");
+      await page.waitForTimeout(600);
+      const whenVal = await page.locator(".bl-ctrl-select").first().inputValue().catch(() => null);
+      const whenBtn = await page.locator(".bl-ctrl-filters-btn.has-filters").count();
+      if (whenVal !== "hoy" && !whenBtn) fail(vp.name, "índice", "el cue Hoy no filtra la agenda a hoy");
+      // Volver a la vista general para el resto del flujo.
+      if (whenVal === "hoy") await page.locator(".bl-ctrl-select").first().selectOption("");
+      else { await page.locator(".bl-ctrl-filters-btn").click(); await page.locator(".bl-ctrl-sheet select, [role=dialog] select").first().selectOption("").catch(() => {}); await page.keyboard.press("Escape"); }
+      await page.waitForTimeout(500);
+    }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();
     if (count < 10) fail(vp.name, "feed", `solo ${count} eventos en la agenda`);

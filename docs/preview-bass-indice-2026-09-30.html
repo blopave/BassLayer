@@ -1,0 +1,103 @@
+<meta charset="utf-8">
+<title>Bass · el índice como un track</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{ --bg:#141210; --line:#2b2621; --text:#f3eee9; --sec:#a79c92; --ter:#6d645c; --acc:#C49070; --acc2:#e9c6a8; }
+*{box-sizing:border-box} body{margin:0;background:#0b0a09;color:var(--text);font-family:'Geist',system-ui,sans-serif;padding:28px 24px 80px}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} .lead{color:var(--sec);font-size:14px;max-width:88ch;margin:0 0 18px;line-height:1.55}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:390px;height:844px;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:var(--bg);flex:none}
+.desk{flex:1;min-width:640px;max-width:1200px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg)}
+.top{height:58px;display:flex;align-items:center;justify-content:center;gap:120px;border-bottom:1px solid var(--line)} .top b{font:800 26px 'Geist';color:var(--acc);letter-spacing:-.03em} .top span{letter-spacing:.35em;color:var(--ter);font-size:12px}
+.tick{height:40px;border-bottom:1px solid var(--line);font:12px 'Geist Mono';color:var(--ter);display:flex;align-items:center;padding:0 16px;white-space:nowrap;overflow:hidden}
+svg{display:block} .cue{cursor:pointer} .cue:hover .nm{fill:var(--acc)}
+.note{color:var(--ter);font:12px 'Geist Mono',monospace;margin-top:28px;max-width:110ch;line-height:1.6}
+</style>
+<h1>Bass: el índice como un track</h1>
+<p class="lead">La portada de Bass es la forma de onda de un tema que ya empezó a sonar. Lo reproducido (atenuado) es la semana que pasó: su volumen, las noticias de cada día. Lo que viene son las fiestas de cada día en Buenos Aires, dos meses hacia adelante. Las secciones son <b>hot cues</b> en su momento real: Noticias en lo que ya sonó, Hoy en el cabezal, El finde, la próxima gira, el primer festival grande en Argentina y la Agenda al final. Tocar un cue entra a la sección, como los nodos de la curva de Layer.</p>
+<div class="row">
+  <div class="phone"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">16:00 Galeria Inesperada · 19:00 HIGH VIS · 20:00 ALBERT PLA</div><svg id="M"></svg></div>
+  <div class="desk"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">16:00 Galeria Inesperada · 19:00 HIGH VIS · 20:00 ALBERT PLA · 20:00 Indigo 5teto</div><svg id="D"></svg></div>
+</div>
+<p class="note">mockup · datos reales: fiestas por día en el AMBA (/api/events, próximos 60 días; más peso con line-up), noticias por día de la última semana (/api/bass-news), primera gira después del finde (lib/tours.js: Camelphat, Blond:ish · 10 oct), primer festival grande en Argentina de /api/festivals (Creamfields BA · 14 nov) · la onda no es audio · desktop: lo reproducido ocupa un tramo propio (lupa), como el futuro en Layer</p>
+<script>
+const D = {"perDay":[16,32,27.5,25.25,1.25,0,0,1,0,1.25,9.25,14.5,0,0,0,0,15.5,7.5,0,0,0,0,0,1.5,5,2.25,0,0,0,0,5.25,4.25,0,0,0,0,0,3,2.5,1.25,0,0,0,0,0,3,0,0,0,0,0,3.25,9.75,6.75,0,0,0,2,2.75,3.5],"past":[0,0,0,0,0,8,32],"tourDay":3,"tourName":"Miss Monique","festDay":2,"festName":"Austin City Limits","fri":2,"counts":{"today":16,"news":40,"tours":18,"fests":8,"all":168}};
+const NS = "http://www.w3.org/2000/svg", ACC = "#C49070";
+const el = (p, n, a, t) => { const x = document.createElementNS(NS, n); for (const k in a) x.setAttribute(k, a[k]); if (t != null) x.textContent = t; p.appendChild(x); return x; };
+const MON = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const T0 = new Date(2026, 8, 30), dayOf = (o) => { const d = new Date(T0); d.setDate(d.getDate() + o); return d; };
+const lbl = (o) => { const d = dayOf(o); return `${d.getDate()} ${MON[d.getMonth()]}`; };
+const finde = D.perDay.slice(D.fri, D.fri + 3).reduce((a, b) => a + b, 0);
+const CUES = [
+  { k: "A", name: "Noticias", at: -1, sub: `${D.past[6]} notas ayer` },
+  { k: "B", name: "Hoy", at: 0, sub: `${Math.round(D.perDay[0])} fiestas` },
+  { k: "C", name: "El finde", at: D.fri + 0.5, sub: `${lbl(D.fri)} – ${lbl(D.fri + 2)}` },
+  { k: "D", name: "De gira", at: 10, sub: "Camelphat · 10 oct" },
+  { k: "E", name: "Festivales", at: 45, sub: "Creamfields BA · 14 nov" },
+  { k: "F", name: "Agenda", at: 59, sub: `${D.counts.all} fiestas en total` },
+];
+// Energía continua: cada día es una noche (pico a las ~23 h del día).
+const energy = (t) => {
+  let s = 0;
+  if (t < 0) { for (let i = 0; i < 7; i++) s += D.past[i] / 14 * Math.exp(-(((t - (i - 7 + 0.5)) / 0.32) ** 2)); }
+  else for (let i = 0; i < 60; i++) s += D.perDay[i] / 20 * Math.exp(-(((t - (i + 0.9)) / 0.42) ** 2));
+  return s;
+};
+function desk() {
+  const svg = document.getElementById("D"), W = 1150, H = 340;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.style.width = "100%"; svg.style.height = "auto";
+  const x0 = 34, x1 = W - 34, xNow = x0 + (x1 - x0) * 0.14, mid = 212, amp = 62;
+  const X = (t) => (t < 0 ? x0 + ((t + 7) / 7) * (xNow - x0) : xNow + (t / 60) * (x1 - xNow));
+  const vmax = 1.6;
+  for (let x = x0; x <= x1; x += 2.6) {
+    const t = x < xNow ? -7 + ((x - x0) / (xNow - x0)) * 7 : ((x - xNow) / (x1 - xNow)) * 60;
+    const h = 1.2 + Math.pow(Math.min(1, energy(t) / vmax), 0.65) * amp;
+    el(svg, "line", { x1: x, x2: x, y1: mid - h, y2: mid + h * 0.6, stroke: ACC, "stroke-opacity": t < 0 ? .33 : .88, "stroke-width": 1.6, "stroke-linecap": "round" });
+  }
+  el(svg, "line", { x1: xNow, x2: xNow, y1: mid - amp - 14, y2: mid + amp * 0.6 + 12, stroke: "#f3eee9", "stroke-width": 1.6 });
+  el(svg, "text", { x: xNow, y: mid + amp * 0.6 + 26, "text-anchor": "middle", "font-size": 10, "font-weight": 600, "font-family": "Geist Mono", fill: "#f3eee9" }, "AHORA");
+  // Riel parejo arriba (como el de Layer): cada cue baja con un hilo hasta su
+  // momento real en la onda.
+  const railY = 18, cw = (x1 - x0) / CUES.length;
+  CUES.forEach((c, i) => {
+    const x = X(c.at), kx = x0 + i * cw + 6, g = el(svg, "g", { class: "cue" });
+    const top = mid - amp - 6;
+    el(g, "path", { d: `M${kx + 11},${railY + 50} C${kx + 11},${railY + 90} ${x},${top - 40} ${x},${top}`, fill: "none", stroke: "#e9c6a8", "stroke-opacity": .55 });
+    el(g, "line", { x1: x, x2: x, y1: top, y2: mid + amp * 0.6, stroke: "#e9c6a8", "stroke-opacity": .5, "stroke-dasharray": "2 3" });
+    el(g, "rect", { x: kx, y: railY, width: 22, height: 22, rx: 3, fill: ACC });
+    el(g, "text", { x: kx + 11, y: railY + 15.5, "text-anchor": "middle", "font-size": 12, "font-weight": 700, "font-family": "Geist Mono", fill: "#171210" }, c.k);
+    el(g, "text", { class: "nm", x: kx + 30, y: railY + 16.5, "font-size": 18, "font-weight": 650, fill: "#f3eee9", "letter-spacing": "-0.012em" }, c.name);
+    el(g, "text", { x: kx + 30, y: railY + 36, "font-size": 10.5, "font-family": "Geist Mono", fill: "#a79c92" }, c.sub);
+  });
+  // eje
+  [["-7d", -7], ["ayer", -1]].forEach(([l, t]) => el(svg, "text", { x: X(t), y: H - 8, "text-anchor": "middle", "font-size": 10, "font-family": "Geist Mono", fill: "#6d645c" }, l));
+  for (let t = 7; t <= 56; t += 7) el(svg, "text", { x: X(t), y: H - 8, "text-anchor": "middle", "font-size": 10, "font-family": "Geist Mono", fill: "#6d645c" }, lbl(t));
+}
+function mobile() {
+  const svg = document.getElementById("M"), W = 390, H = 844 - 58 - 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const top = 26, yNow = 110, bot = H - 40, cx = 80, amp = 60;
+  const Y = (t) => (t < 0 ? top + ((t + 7) / 7) * (yNow - top) : yNow + (t / 60) * (bot - yNow));
+  const vmax = 1.6;
+  for (let y = top; y <= bot; y += 2.5) {
+    const t = y < yNow ? -7 + ((y - top) / (yNow - top)) * 7 : ((y - yNow) / (bot - yNow)) * 60;
+    const h = 1 + Math.pow(Math.min(1, energy(t) / vmax), 0.65) * amp;
+    el(svg, "line", { x1: cx - h * 0.6, x2: cx + h, y1: y, y2: y, stroke: ACC, "stroke-opacity": t < 0 ? .33 : .88, "stroke-width": 1.6, "stroke-linecap": "round" });
+  }
+  el(svg, "line", { x1: 14, x2: 170, y1: yNow, y2: yNow, stroke: "#f3eee9", "stroke-width": 1.5 });
+  el(svg, "text", { x: 14, y: yNow - 6, "font-size": 9.5, "font-weight": 600, "font-family": "Geist Mono", fill: "#f3eee9" }, "AHORA");
+  const lx = 196, gap = (bot - 60 - top) / (CUES.length - 1);
+  CUES.forEach((c, i) => {
+    const y = Y(c.at), ly = top + 24 + i * gap, g = el(svg, "g", { class: "cue" });
+    el(g, "path", { d: `M${cx + amp + 6},${y} C${lx - 30},${y} ${lx - 50},${ly} ${lx - 8},${ly}`, fill: "none", stroke: "#e9c6a8", "stroke-opacity": .55 });
+    el(g, "line", { x1: cx - amp * 0.6 - 4, x2: cx + amp + 6, y1: y, y2: y, stroke: "#e9c6a8", "stroke-opacity": .45, "stroke-dasharray": "2 3" });
+    el(g, "rect", { x: lx, y: ly - 11, width: 22, height: 22, rx: 3, fill: ACC });
+    el(g, "text", { x: lx + 11, y: ly + 4.5, "text-anchor": "middle", "font-size": 12, "font-weight": 700, "font-family": "Geist Mono", fill: "#171210" }, c.k);
+    el(g, "text", { class: "nm", x: lx + 32, y: ly + 5, "font-size": 21, "font-weight": 650, fill: "#f3eee9", "letter-spacing": "-0.015em" }, c.name);
+    el(g, "text", { x: lx + 32, y: ly + 22, "font-size": 10.5, "font-family": "Geist Mono", fill: "#a79c92" }, c.sub.length > 24 ? c.sub.slice(0, 23) + "…" : c.sub);
+  });
+  el(svg, "text", { x: 14, y: top - 8, "font-size": 9.5, "font-family": "Geist Mono", fill: "#6d645c" }, "hace 7 días");
+  el(svg, "text", { x: 14, y: bot + 20, "font-size": 9.5, "font-family": "Geist Mono", fill: "#6d645c" }, lbl(59));
+}
+document.fonts.ready.then(() => { desk(); mobile(); });
+</script>

@@ -5754,3 +5754,27 @@ select.bl-venue-input { cursor:pointer; }
   .blh-list { columns:1; }
   .blh-list button { grid-template-columns:64px minmax(0,1fr); padding:12px 4px; }
 }
+
+/* ── Índice de Bass (sept 2026): la forma de onda del CDJ con las secciones
+   como hot cues en su momento real. Un color: el cobre de Bass. ── */
+.bl-btrack { margin:14px 32px 10px; }
+.bl-btrack svg { display:block; overflow:visible; }
+.btk-bar { stroke:var(--bl-accent-bass); stroke-opacity:.88; stroke-width:1.6; stroke-linecap:round; }
+.btk-bar.is-past { stroke-opacity:.32; }
+.btk-now { stroke:var(--bl-text); stroke-width:1.5; }
+.btk-nowl { fill:var(--bl-text); font:600 9.5px var(--font-mono); letter-spacing:.08em; }
+.btk-cue { cursor:pointer; outline:none; }
+.btk-hit { fill:transparent; }
+.btk-thread { fill:none; stroke:var(--bl-accent-bass); stroke-opacity:.5; stroke-width:1; pointer-events:none; transition:stroke-opacity .2s; }
+.btk-mark { stroke:var(--bl-accent-bass); stroke-opacity:.5; stroke-width:1; stroke-dasharray:2 3; pointer-events:none; }
+.btk-pad { fill:var(--bl-accent-bass); }
+.btk-letter { fill:#171210; font:700 12px var(--font-mono); pointer-events:none; }
+.btk-name { fill:var(--bl-text); font:650 18px var(--font-sans); letter-spacing:-.012em; transition:fill .15s; }
+.btk-sub { fill:var(--bl-text-sec); font:500 10.5px var(--font-mono); letter-spacing:.02em; }
+.btk-tick { fill:var(--bl-text-ter); font:500 10px var(--font-mono); }
+.btk-cue:focus-visible .btk-pad { stroke:var(--bl-text); stroke-width:2; }
+@media (hover:hover) { .btk-cue:hover .btk-name { fill:var(--bl-accent-bass); } .btk-cue:hover .btk-thread { stroke-opacity:.9; } }
+@media (max-width:768px) {
+  .bl-btrack { margin:10px 16px 4px; }
+  .btk-name { font-size:21px; }
+}
