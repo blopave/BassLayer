@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { MONTHS_ABBR, getEventDate } from "../i18n/strings";
 import { api, shared } from "../utils/api";
+import { useIsMobile } from "../utils/constants";
 
 // Portada de Bass (sept–oct 2026, Pablo): el índice como un track. Lo que la
 // curva de análisis técnico es para Layer (el instrumento de su público), la
@@ -29,7 +30,7 @@ const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de 
 const CUE_BEATS = 8;                          // mobile: golpes por parte en el loop
 const SCAN_BEATS = 8;                         // preescucha: el cabezal cruza la parte en 2 compases
 const FLOW = 0.45;                            // partes/s: cómo viaja el golpe desde ahora
-const NEWS_BINS = 24, NEWS_H = 1;             // Noticias: 24 h en tramos de 1 h (el feed cubre ~1 día)
+const NEWS_BINS = 24;                         // Noticias: 24 h en tramos de 1 h (el feed cubre ~1 día)
 const AGENDA_DAYS = 30;                       // Agenda: un tramo por día
 const FEST_WEEKS = 26;                        // Festivales: un tramo por semana
 const WORD_SHARE = 0.6;                       // la palabra ocupa ~60 % de su parte: aire a los costados
@@ -66,9 +67,14 @@ function hit(ph) {
 let measurer = null;
 const textWidth = (s, font) => { measurer = measurer || document.createElement("canvas").getContext("2d"); measurer.font = font; return measurer.measureText(s).width; };
 
-export function BassTrack({ events, today, onCue }) {
+// `todayKey`: el día en Buenos Aires (YYYY-MM-DD). Un string, no un Date: la
+// memo se estabiliza por valor y pasada la medianoche se actualiza sola.
+// `onCue(section)` recibe la sección de BassFeed ("noticias" | "eventos" | "festivales").
+export function BassTrack({ events, todayKey, onCue }) {
   const { t, locale } = useLocale();
   const M = MONTHS_ABBR[locale] || MONTHS_ABBR.es;
+  const today = useMemo(() => { const [y, m, d] = todayKey.split("-").map(Number); return new Date(y, m - 1, d); }, [todayKey]);
+  const isMobile = useIsMobile();             // sin hover (mobile o táctil): el loop hace la preescucha
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const [w, setW] = useState(0);
@@ -107,7 +113,7 @@ export function BassTrack({ events, today, onCue }) {
     for (const n of news) {
       const m = minsAgo(n.time);
       if (m == null) continue;
-      const o = Math.floor(m / 60 / NEWS_H);
+      const o = Math.floor(m / 60);
       if (o < NEWS_BINS) newsBins[NEWS_BINS - 1 - o]++;
       if (m < 1440) lastDay++;
     }
@@ -124,8 +130,7 @@ export function BassTrack({ events, today, onCue }) {
       if (o < AGENDA_DAYS) agendaBins[o] += 1 + Math.min(1, (ev.artists?.length || 0) / 4);
     }
 
-    const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const next = fests.filter((f) => (f.dates_start || "") >= todayISO).sort((a, b) => a.dates_start.localeCompare(b.dates_start));
+    const next = fests.filter((f) => (f.dates_start || "") >= todayKey).sort((a, b) => a.dates_start.localeCompare(b.dates_start));
     const festBins = Array(FEST_WEEKS).fill(0);
     for (const f of next) {
       const wk = Math.floor(off(new Date(`${f.dates_start}T12:00:00`)) / 7);
@@ -135,28 +140,29 @@ export function BassTrack({ events, today, onCue }) {
     const festSub = fest ? `${fest.name.replace(/\s+Buenos Aires$/i, " BA")} · ${day(new Date(`${fest.dates_start}T12:00:00`))}` : "";
 
     return [
-      { k: "news", env: envelope(newsBins), name: t("section.news"), sub: news.length ? t("track.newsSub", { n: lastDay }) : "", span: t("track.spanNews") },
-      { k: "agenda", env: envelope(agendaBins), name: t("track.agenda"), sub: t("track.agendaSub", { today: todayN, n: upcoming }), span: t("track.spanAgenda") },
-      { k: "fests", env: envelope(festBins), name: t("section.festivals"), sub: festSub, span: t("track.spanFests") },
+      { k: "noticias", env: envelope(newsBins), name: t("section.news"), sub: news.length ? t("track.newsSub", { n: lastDay }) : "", span: t("track.spanNews") },
+      { k: "eventos", env: envelope(agendaBins), name: t("track.agenda"), sub: t("track.agendaSub", { today: todayN, n: upcoming }), span: t("track.spanAgenda") },
+      { k: "festivales", env: envelope(festBins), name: t("section.festivals"), sub: festSub, span: t("track.spanFests") },
     ];
-  }, [events, news, fests, today, t, M, locale]);
-
-  // Energía del tema en u ∈ [0, 3): parte = ⌊u⌋, continua, con mezcla suave
-  // entre partes (como en un mix). Piso de señal (0,16) + datos.
-  const energy = (u) => {
-    const s = Math.min(2, Math.floor(u)), f = u - s, at = (i, x) => 0.16 + 0.84 * data[i].env(Math.max(0, Math.min(1, x)));
-    let e = at(s, f);
-    const X = 0.06;
-    if (f < X && s > 0) e = e * (0.5 + f / X / 2) + at(s - 1, 1) * (0.5 - f / X / 2);
-    if (f > 1 - X && s < 2) e = e * (0.5 + (1 - f) / X / 2) + at(s + 1, 0) * (0.5 - (1 - f) / X / 2);
-    return e;
-  };
+  }, [events, news, fests, today, todayKey, t, M, locale]);
 
   const mobile = w > 0 && w <= 768;
   // Geometría: la onda (una línea en desktop, una pista por parte en mobile),
-  // la palabra de cada parte centrada en ella y su dato debajo.
+  // la palabra de cada parte centrada en ella y su dato debajo. Todo lo que no
+  // cambia entre cuadros se calcula acá una vez; las barras quedan agrupadas
+  // por parte y por brillo para dibujar cada grupo de un solo trazo.
   const geo = useMemo(() => {
     if (!w) return null;
+    // Energía del tema en u ∈ [0, 3): parte = ⌊u⌋, continua, con mezcla suave
+    // entre partes (como en un mix). Piso de señal (0,16) + datos.
+    const energy = (u) => {
+      const s = Math.min(2, Math.floor(u)), f = u - s, at = (i, x) => 0.16 + 0.84 * data[i].env(Math.max(0, Math.min(1, x)));
+      let e = at(s, f);
+      const X = 0.06;
+      if (f < X && s > 0) e = e * (0.5 + f / X / 2) + at(s - 1, 1) * (0.5 - f / X / 2);
+      if (f > 1 - X && s < 2) e = e * (0.5 + (1 - f) / X / 2) + at(s + 1, 0) * (0.5 - (1 - f) / X / 2);
+      return e;
+    };
     const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || "system-ui, sans-serif";
     const H = mobile ? 600 : Math.round(Math.max(440, Math.min(700, (avail || 720) - 24)));
     const seg = mobile ? w : w / 3;
@@ -168,35 +174,36 @@ export function BassTrack({ events, today, onCue }) {
       const x = mobile ? 0 : j * seg, y = mobile ? (j * H) / 3 : 0;
       const mid = mobile ? y + 78 : (H - 66) / 2 + 4, amp = mobile ? 58 : mid - 34;
       const ww = textWidth(p.name, font), wx = x + (seg - ww) / 2;
-      return { ...p, j, x, y, seg, h: mobile ? H / 3 : H, mid, amp, wx, ww };
+      // Caja de la palabra (en px CSS): ahí se compone la máscara de letras.
+      const box = { x: Math.floor(wx - 6), y: Math.floor(mid - size), w: Math.ceil(ww + 12), h: Math.ceil(2 * size) };
+      return { ...p, j, x, y, seg, h: mobile ? H / 3 : H, mid, amp, wx, ww, box };
     });
-    const bars = [];
+    const groups = new Map(), words = [[], [], []];
     let i = 0;
-    const step = mobile ? 2.6 : 3, lw = mobile ? 1.5 : 1.8;
-    const lane = (c, from, to, u0, u1) => {
+    const step = mobile ? 2.6 : 3;
+    // Una pista: de `from` a `to` recorre el tema de u0 a u1 (desktop: las tres partes; mobile: una).
+    const lane = (from, to, u0, u1) => {
       for (let px = from; px <= to; px += step, i++) {
-        const u = Math.min(2.999, u0 + ((px - from) / (to - from)) * (u1 - u0)), e = energy(u);
+        const u = Math.min(2.999, u0 + ((px - from) / (to - from)) * (u1 - u0)), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
         // Aire alrededor de la palabra: la onda se aquieta (nunca se corta).
         const room = Math.min(smooth((px - (c.wx - 30)) / 30), smooth((c.wx + c.ww + 30 - px) / 30));
-        bars.push({ j: c.j, u, px, e, mid: c.mid, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), quiet: 1 - 0.58 * room, word: room > 0.01 });
+        const dist = u - 1;       // en partes, desde ahora (comienzo de la Agenda)
+        const b = { j: c.j, f: u - c.j, u, px, mid: c.mid, cap: c.amp + 6, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0, m: 1 };
+        const q = Math.round((1 - 0.58 * room) * 8) / 8, key = c.j * 10 + q;
+        if (!groups.has(key)) groups.set(key, { j: c.j, q, bars: [] });
+        groups.get(key).bars.push(b);
+        if (room > 0.01) words[c.j].push(b);
       }
     };
-    if (mobile) parts.forEach((c) => lane(c, 2, w - 2, c.j, c.j + 0.999));
-    else {
-      // Una sola onda: cada barra toma la palabra de su parte para el aire.
-      for (let px = 2; px <= w - 2; px += step, i++) {
-        const u = Math.min(2.999, ((px - 2) / (w - 4)) * 3), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
-        const room = Math.min(smooth((px - (c.wx - 30)) / 30), smooth((c.wx + c.ww + 30 - px) / 30));
-        bars.push({ j: c.j, u, px, e, mid: c.mid, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), quiet: 1 - 0.58 * room, word: room > 0.01 });
-      }
-    }
-    return { H, parts, bars, lw, step, size, font };
-  }, [w, mobile, avail, data, fonts]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mobile) parts.forEach((c) => lane(2, w - 2, c.j, c.j + 0.999));
+    else lane(2, w - 2, 0, 3);
+    return { H, parts, groups: [...groups.values()], words, lw: mobile ? 1.5 : 1.8, size, font };
+  }, [w, mobile, avail, data, fonts]);
 
-  // Loop de partes en mobile: solo con el track en pantalla y sin "reducir movimiento".
+  // Loop de partes sin hover: solo con el track en pantalla y sin "reducir movimiento".
   const [auto, setAuto] = useState(0);
-  const still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const loop = mobile && live && !still;
+  const still = useMemo(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
+  const loop = isMobile && live && !still;
   useEffect(() => {
     if (!loop) return undefined;
     const id = setInterval(() => setAuto((n) => n + 1), BEAT * CUE_BEATS * 1000);
@@ -213,22 +220,28 @@ export function BassTrack({ events, today, onCue }) {
   // arrancó la preescucha.
   const motor = useRef({ time: [0, 0, 0], rate: [1, 1, 1], alpha: [0.42, 0.9, 0.9], lit: [0.8, 0.95, 0.95], scanFrom: 0, scanIdx: -1, last: 0 });
 
+  // Recursos del dibujo: se arman una vez por geometría (no en cada entrada o
+  // salida de pantalla): tamaño del canvas, la máscara de letras y el lienzo
+  // de las letras encendidas, y los colores del tema.
+  const gfx = useRef(null);
   useEffect(() => {
     const cv = canvasRef.current;
-    if (!cv || !geo) return undefined;
+    if (!cv || !geo) { gfx.current = null; return; }
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const W = w, H = geo.H;
-    const mk = (c) => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.lineCap = "round"; return x; };
-    const ctx = mk(cv);
-    // Las palabras como máscara: las barras encendidas solo se ven dentro de las letras.
-    const mask = document.createElement("canvas"), mctx = mk(mask);
+    const mk = (c) => { c.width = Math.round(w * dpr); c.height = Math.round(geo.H * dpr); const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.lineCap = "round"; return x; };
+    const ctx = mk(cv), mask = document.createElement("canvas"), mctx = mk(mask), litCv = document.createElement("canvas"), lctx = mk(litCv);
     mctx.font = geo.font; mctx.textBaseline = "middle"; mctx.fillStyle = "#000";
     for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);
-    const litCv = document.createElement("canvas"), lctx = mk(litCv);
     const css = getComputedStyle(cv);
-    const color = css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c";
-    const ink = css.getPropertyValue("--bl-text").trim() || "#f1ece4";
-    const S = motor.current;
+    gfx.current = { dpr, ctx, mask, litCv, lctx, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c", ink: css.getPropertyValue("--bl-text").trim() || "#f1ece4" };
+  }, [geo, w]);
+
+  // El motor: cuadro a cuadro mientras está en pantalla; quieto con "reducir movimiento".
+  useEffect(() => {
+    const G = gfx.current;
+    if (!G || !geo) return undefined;
+    const { dpr, ctx, mask, litCv, lctx, color, ink } = G;
+    const W = w, H = geo.H, S = motor.current;
     let raf = 0;
     const frame = (now) => {
       const dt = S.last ? Math.min(0.05, (now - S.last) / 1000) : 0;
@@ -246,25 +259,24 @@ export function BassTrack({ events, today, onCue }) {
       }
       const scan = s >= 0 && !still ? (((now - S.scanFrom) / 1000) / (BEAT * SCAN_BEATS)) % 1 : -1;
       ctx.clearRect(0, 0, W, H);
-      lctx.globalCompositeOperation = "source-over";
-      lctx.clearRect(0, 0, W, H);
       ctx.lineWidth = geo.lw; ctx.strokeStyle = color;
-      lctx.lineWidth = geo.lw * 1.55; lctx.strokeStyle = ink;
-      for (const b of geo.bars) {
-        const j = b.j, c = geo.parts[j], tt = still ? 0 : S.time[j], f = b.u - j;
-        let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + b.u * 1.7);
-        const dist = b.u - 1;     // en partes, desde ahora (comienzo de la Agenda)
-        const kick = dist >= 0 && !still ? (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j] : 0;
-        m += 0.3 * kick;
-        const scanning = j === s && scan >= 0;
-        if (scanning) m += 0.45 * Math.exp(-((((f - scan) * c.seg) / 16) ** 2));
-        const h = Math.min(c.amp + 6, b.h * m);
-        ctx.globalAlpha = S.alpha[j] * b.quiet * (scanning && f > scan ? 0.5 : 1);
-        ctx.beginPath(); ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h); ctx.stroke();
-        if (b.word) {
-          // La letra: la misma barra, encendida y a lo alto de la palabra; late con el golpe.
-          lctx.globalAlpha = Math.min(1, S.lit[j] * (0.86 + 0.5 * kick));
-          lctx.beginPath(); lctx.moveTo(b.px, b.mid - geo.size); lctx.lineTo(b.px, b.mid + geo.size); lctx.stroke();
+      // La onda, un trazo por grupo (parte × brillo); en preescucha, lo que
+      // ya cruzó el cabezal encendido y lo que falta a media luz.
+      for (const g of geo.groups) {
+        const j = g.j, seg = geo.parts[j].seg, tt = still ? 0 : S.time[j], scanning = j === s && scan >= 0;
+        for (const lit of scanning ? [true, false] : [null]) {
+          ctx.globalAlpha = S.alpha[j] * g.q * (lit === false ? 0.5 : 1);
+          ctx.beginPath();
+          for (const b of g.bars) {
+            if ((lit === true && b.f > scan) || (lit === false && b.f <= scan)) continue;
+            let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + b.u * 1.7);
+            b.kick = b.gain && !still ? b.gain * hit((tt - b.dist / FLOW) / BEAT) * S.rate[j] : 0;
+            m += 0.3 * b.kick;
+            if (scanning) m += 0.45 * Math.exp(-((((b.f - scan) * seg) / 16) ** 2));
+            const h = Math.min(b.cap, b.h * m);
+            ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h);
+          }
+          ctx.stroke();
         }
       }
       if (s >= 0 && scan >= 0) {
@@ -272,9 +284,24 @@ export function BassTrack({ events, today, onCue }) {
         ctx.globalAlpha = 0.9; ctx.strokeStyle = ink; ctx.lineWidth = 1.25;
         ctx.beginPath(); ctx.moveTo(x, c.mid - c.amp - 4); ctx.lineTo(x, c.mid + c.amp + 4); ctx.stroke();
       }
-      lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
-      lctx.setTransform(1, 0, 0, 1, 0, 0); lctx.drawImage(mask, 0, 0); lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.globalAlpha = 1; ctx.drawImage(litCv, 0, 0, W, H);
+      // Las letras: las mismas barras, encendidas a lo alto de la palabra y
+      // recortadas a sus glifos; laten con el golpe. Solo dentro de cada caja.
+      lctx.lineWidth = geo.lw * 1.55; lctx.strokeStyle = ink;
+      for (const c of geo.parts) {
+        const { x, y, w: bw, h: bh } = c.box, ws = geo.words[c.j];
+        let kick = 0;
+        for (const b of ws) kick += b.kick || 0;
+        lctx.globalCompositeOperation = "source-over";
+        lctx.clearRect(x, y, bw, bh);
+        lctx.globalAlpha = Math.min(1, S.lit[c.j] * (0.86 + 0.5 * (ws.length ? kick / ws.length : 0)));
+        lctx.beginPath();
+        for (const b of ws) { lctx.moveTo(b.px, b.mid - geo.size); lctx.lineTo(b.px, b.mid + geo.size); }
+        lctx.stroke();
+        lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
+        lctx.drawImage(mask, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(litCv, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
+      }
       if (!still && live) raf = requestAnimationFrame(frame);
       else S.last = 0;
     };
@@ -292,11 +319,11 @@ export function BassTrack({ events, today, onCue }) {
   });
 
   return (
-    <section className={`bl-btrack${live ? " is-live" : ""}${mobile ? " is-lanes" : ""}`} data-solo={solo || ""} aria-label={t("track.aria")} ref={wrapRef}>
+    <section className="bl-btrack" data-solo={solo || ""} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo && (
         <div className="btk-stage" style={{ height: geo.H }}>
-          <canvas ref={canvasRef} className="btk-canvas" style={{ width: w, height: geo.H }} data-live={live && !still ? "1" : "0"} aria-hidden="true" />
+          <canvas ref={canvasRef} className="btk-canvas" style={{ width: w, height: geo.H }} aria-hidden="true" />
           <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
             {geo.parts.map((c) => (
               <g key={c.k} {...partProps(c)} data-axis={Math.round(c.mid)}>

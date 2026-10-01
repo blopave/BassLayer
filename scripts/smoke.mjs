@@ -55,6 +55,14 @@ const brokenImages = (root) => root.evaluate((el) =>
 // El modal entero tiene que entrar en pantalla: CTA dentro del viewport y el
 // flyer visible dentro del modal (sept 2026: con line-ups largos la grilla
 // crecía, el flyer se iba fuera de vista y la botonera quedaba recortada).
+// Portada de Bass: tocar una sección de la onda (el <g> del SVG; el click real
+// lo intercepta el propio SVG que la contiene).
+const clickCue = (page, re) => page.locator(".btk-cue", { hasText: re }).first().dispatchEvent("click");
+// ¿La Agenda está filtrada a hoy? Mobile: pastilla activa; desktop: el select de Cuándo.
+const hoyActive = async (page, vp) => (vp.isMobile
+  ? (await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count()) > 0
+  : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy");
+
 async function checkModalFits(page, vpName) {
   const r = await page.evaluate(() => {
     const box = (s) => document.querySelector(s)?.getBoundingClientRect();
@@ -126,9 +134,11 @@ async function run(vp) {
       await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
       await page.waitForTimeout(300);
       // La onda se dibuja en canvas cuadro a cuadro: dos cuadros separados tienen que diferir.
-      const frameA = await page.locator(".btk-canvas").evaluate((c) => c.toDataURL()).catch(() => "");
+      // Una franja chica a la altura del comienzo de la Agenda (no la imagen entera).
+      const strip = () => page.locator(".btk-canvas").evaluate((c) => { const y = Math.round(c.height / (c.width > c.height ? 2 : 3)), d = c.getContext("2d").getImageData(Math.round(c.width / 3), y - 60, 200, 120).data; let h = 0; for (let i = 3; i < d.length; i += 16) h = (h * 31 + d[i]) | 0; return String(h); }).catch(() => "");
+      const frameA = await strip();
       await page.waitForTimeout(250);
-      const frameB = await page.locator(".btk-canvas").evaluate((c) => c.toDataURL()).catch(() => "");
+      const frameB = await strip();
       if (!frameA || frameA === frameB) fail(vp.name, "índice", "la onda no suena (el canvas no se mueve)");
       await page.locator(".btk-cue").last().focus();
       await page.waitForTimeout(150);
@@ -161,7 +171,7 @@ async function run(vp) {
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
       if (vp.isMobile) {
         const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
-        await page.waitForTimeout(4300);
+        await page.waitForFunction((f) => document.querySelector(".btk-cue.is-hot .btk-name")?.textContent !== f, first, { timeout: 5000 }).catch(() => {});
         const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
         if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
       }
@@ -177,7 +187,7 @@ async function run(vp) {
         await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
       }
       // Agenda: Cuándo primero. En mobile, las pastillas a la vista; en desktop, la barra.
-      await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click");
+      await clickCue(page, /Agenda|Listings/);
       await page.waitForTimeout(500);
       if (!(await page.locator(".bl-bass-section-btn.active", { hasText: /Agenda|Listings/ }).count())) fail(vp.name, "índice", "el cue Agenda no abre la Agenda");
       if (vp.isMobile) {
@@ -186,16 +196,16 @@ async function run(vp) {
         else await hoyChip.click();
       } else await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().selectOption("hoy");
       await page.waitForTimeout(500);
-      const hoyOn = vp.isMobile ? await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count() : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy";
+      const hoyOn = await hoyActive(page, vp);
       if (!hoyOn) fail(vp.name, "agenda", "Hoy no filtra la agenda");
       // La flecha devuelve al track, a la vista y sin el filtro.
       await page.locator(".bl-bass-back").click();
       await page.waitForTimeout(500);
       if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "la flecha desde la Agenda no vuelve al track");
       else if (!(await page.locator(".bl-btrack").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight / 2; }))) fail(vp.name, "índice", "volver al track deja la pantalla en otro lado (el track queda fuera de vista)");
-      await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click");
+      await clickCue(page, /Agenda|Listings/);
       await page.waitForTimeout(500);
-      const stillHoy = vp.isMobile ? await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count() : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy";
+      const stillHoy = await hoyActive(page, vp);
       if (stillHoy) fail(vp.name, "índice", "volver al track no limpia el filtro Hoy");
     }
 
@@ -292,7 +302,7 @@ async function run(vp) {
     // 4b. Mobile: el FAB se esconde al bajar leyendo (en desktop vive en el header)
     if (vp.isMobile) {
       // Cerrar un evento abierto por link deja la portada (el track): a leer, a la Agenda.
-      if (await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).count()) { await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click"); await page.waitForTimeout(500); }
+      if (await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).count()) { await clickCue(page, /Agenda|Listings/); await page.waitForTimeout(500); }
       const scrollPanel = (y) => page.evaluate((y) => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollTo(0, y), y);
       await scrollPanel(900);
       await page.waitForTimeout(600);

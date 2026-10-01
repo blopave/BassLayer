@@ -7,7 +7,7 @@ import { OnTour } from "./OnTour";
 import { BassTrack } from "./BassTrack";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
-import { api } from "../utils/api";
+import { api, shared } from "../utils/api";
 import { useIsMobile } from "../utils/constants";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
@@ -196,7 +196,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const loadBassNews = () => {
     setBassNewsLoading(true);
     setBassNewsError(null);
-    api.bassNews()
+    // Mismo pedido (y caché) que la onda de la portada: no se baja dos veces.
+    shared("bassNews", api.bassNews)
       .then((items) => { setBassNews(items || []); })
       .catch(() => setBassNewsError(t("feed.bassNewsLoadError")))
       .finally(() => setBassNewsLoading(false));
@@ -212,7 +213,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const loadFestivals = (region = festivalsRegion) => {
     setFestivalsLoading(true);
     setFestivalsError(null);
-    api.festivals(region)
+    shared(region === "All" ? "festivals" : `festivals:${region}`, () => api.festivals(region))
       .then((items) => { setFestivals(items || []); })
       .catch(() => setFestivalsError(t("feed.festivalsLoadError")))
       .finally(() => setFestivalsLoading(false));
@@ -394,10 +395,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "amba" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
   const clearFilters = () => { setWhen(""); changeRegion("amba"); };
 
-  // Tres cues, tres secciones (Pablo, sept 2026): Noticias en lo que ya sonó,
-  // la Agenda en el cabezal y Festivales en su pico. Hoy, el finde, De gira y
-  // la búsqueda viven dentro de la Agenda.
-  const onCue = (k) => setSection(k === "news" ? "noticias" : k === "fests" ? "festivales" : "eventos");
+  // Tres secciones en la portada (Pablo, sept 2026): Noticias, Agenda y
+  // Festivales; Hoy, el finde, De gira y la búsqueda viven dentro de la Agenda.
   // Lo que filtra la agenda desde afuera (deep link /eventos/hoy, género,
   // venue, búsqueda) abre la Agenda.
   useEffect(() => {
@@ -409,7 +408,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // y salir de la portada deja una entrada en el historial: el atrás del
   // navegador o el gesto del celular también vuelven a la frecuencia.
   const atPortada = section === "track";
-  const trackToday = useMemo(() => todayInBA(), []); // fija: la onda no se recalcula en cada render
   const scrollToTrack = useRef(false);
   const resetToTrack = () => {
     setSection("track"); setWhen(""); if (search) onSearch?.("");
@@ -488,9 +486,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           onSelect={onSelectNews}
         />
       ) : section === "track" ? (
-        /* Portada: el índice como un track (las secciones son hot cues en su
-           momento real). Mientras cargan los eventos, su alto reservado (CLS). */
-        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={trackToday} onCue={onCue} />
+        /* Portada: la onda con las secciones hechas de onda (BassTrack). Mientras
+           cargan los eventos se dibuja igual y reserva su alto (CLS). */
+        <BassTrack events={regionEvents} todayKey={BA_YMD_FORMAT.format(new Date())} onCue={setSection} />
       ) : (
         <>
 
