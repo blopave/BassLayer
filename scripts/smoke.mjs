@@ -133,8 +133,18 @@ async function run(vp) {
       await page.locator(".btk-cue").last().focus();
       await page.waitForTimeout(150);
       if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
-      // La portada es solo la onda y sus links: cada sección, la cabecera de su clip.
-      if (await page.locator(".bl-btrack .btk-clip").count() !== cues) fail(vp.name, "índice", "cada sección tiene que ser un clip de la onda");
+      // La portada es solo la onda y sus links, sin cajas: cada link vive sobre el
+      // eje de la onda (en el break de su parte) y no pisa la onda ni el cabezal.
+      const offAxis = await page.locator(".bl-btrack .btk-cue").evaluateAll((gs) => gs.filter((g) => {
+        const svg = g.ownerSVGElement.getBoundingClientRect(), n = g.querySelector(".btk-name").getBoundingClientRect();
+        return !g.dataset.axis || !(Math.abs(n.top + n.height / 2 - (svg.top + Number(g.dataset.axis))) <= 40);
+      }).length);
+      if (offAxis) fail(vp.name, "índice", `${offAxis} link(s) fuera del eje de la onda`);
+      const overlap = await page.locator(".bl-btrack").evaluate((el) => {
+        const now = el.querySelector(".btk-now")?.getBoundingClientRect();
+        return [...el.querySelectorAll(".btk-sub, .btk-name")].some((t) => { const r = t.getBoundingClientRect(); return now && r.right > now.left && r.left < now.right && r.bottom > now.top && r.top < now.bottom; });
+      });
+      if (overlap) fail(vp.name, "índice", "un link pisa el cabezal AHORA");
       await page.locator(".btk-cue").last().blur();
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
       if (vp.isMobile) {

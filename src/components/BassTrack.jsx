@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { MONTHS_ABBR, getEventDate } from "../i18n/strings";
 import { api, shared } from "../utils/api";
@@ -6,13 +6,15 @@ import { api, shared } from "../utils/api";
 // Portada de Bass (sept 2026, Pablo): el índice como un track. Lo que la curva
 // de análisis técnico es para Layer (el instrumento de su público), la forma
 // de onda lo es para Bass. La portada es solo eso: el tema y sus secciones.
-// El tema son tres clips, como en el arreglo de Ableton o Rekordbox, y cada
-// sección es la cabecera de su clip — el link ES su pedazo de onda:
+// Una sola onda, sin cajas: el tema tiene tres partes y cada sección vive en
+// el BREAK con que arranca la suya — la onda se abre en un silencio (fundido
+// de salida y de entrada, como un breakdown) y el link está ahí, sobre el eje
+// de la onda, adentro de la frecuencia:
 //   A Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora (atenuado).
 //   B Agenda     — desde el cabezal (AHORA): las fiestas de los próximos 30 días.
 //   C Festivales — el cierre: los festivales de los próximos 6 meses.
-// Desktop: los clips en fila, a lo ancho y alto de la pantalla. Mobile: tres
-// pistas apiladas, cada onda de izquierda a derecha.
+// Desktop: la onda de punta a punta, a lo alto de la pantalla. Mobile: tres
+// pistas sin cajas, cada una arranca con su break y sigue con su onda.
 // Cada clip se dibuja con sus datos reales, comprimido como un master (sus
 // altos y bajos, ver envelope), sobre un piso de señal. La textura es textura.
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
@@ -69,6 +71,8 @@ export function BassTrack({ events, today, onCue }) {
   const [fests, setFests] = useState([]);
   const [hot, setHot] = useState(null);       // clip bajo el mouse o con foco
   const [live, setLive] = useState(false);    // en pantalla: suena (fuera, no gasta)
+  const [textW, setTextW] = useState([]);     // ancho real de cada link (medido): el break es a su medida
+  const labelRefs = useRef([]);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return undefined;
@@ -132,29 +136,41 @@ export function BassTrack({ events, today, onCue }) {
   }, [events, news, fests, today, t, M, locale]);
 
   const mobile = w > 0 && w <= 768;
-  // Geometría de los clips: cada uno es un rectángulo con cabecera, onda (en
-  // `mid`, media amplitud `amp`) y pie. Desktop en fila; mobile apilados.
+  // Geometría: cada parte tiene su break (el hueco donde vive el link, ancho a
+  // la medida del texto) y su onda, que entra y sale con un fundido. Desktop:
+  // las tres partes a lo ancho, sobre un mismo eje; mobile: una pista por parte.
   const geo = useMemo(() => {
     if (!w) return null;
-    const GAP = mobile ? 14 : 12, HEAD = mobile ? 40 : 46, FOOT = mobile ? 26 : 32;
-    const H = mobile ? 600 : Math.round(Math.max(420, Math.min(720, (avail || 720) - 24)));
+    const H = mobile ? 600 : Math.round(Math.max(420, Math.min(680, (avail || 720) - 24)));
+    const nameCh = mobile ? 12 : 17, subCh = mobile ? 6.6 : 7.2, spanCh = mobile ? 7 : 7.6;   // estimación hasta medir
+    const FADE = mobile ? 18 : 28;
     const clips = data.map((p, j) => {
-      const cw = mobile ? w : (w - 2 * GAP) / 3, ch = mobile ? (H - 2 * GAP) / 3 : H;
-      const x = mobile ? 0 : j * (cw + GAP), y = mobile ? j * (ch + GAP) : 0;
-      const top = y + HEAD + 8, bot = y + ch - FOOT;
-      return { ...p, j, x, y, cw, ch, mid: (top + bot) / 2, amp: (bot - top) / 2 - 2, pad: mobile ? 12 : 16 };
+      const x = mobile ? 0 : (j * w) / 3, cw = mobile ? w : w / 3, y = mobile ? (j * H) / 3 : 0, ch = mobile ? H / 3 : H;
+      const mid = mobile ? y + ch / 2 : H / 2 - 10, amp = mobile ? ch / 2 - 24 : H / 2 - 44;
+      const lx = x + (mobile ? 0 : FADE);                            // dónde arranca el link (mismo aire en las tres)
+      const tw = textW[j] || Math.max(36 + p.name.length * nameCh, p.sub.length * subCh, p.span.length * spanCh);
+      const wx0 = lx + tw + (mobile ? 18 : 30), wx1 = x + cw;        // la onda de la parte
+      return { ...p, j, x, cw, y, ch, mid, amp, lx, wx0, wx1 };
     });
     const bars = [];
     let i = 0;
+    const step = mobile ? 2.6 : 3;
     for (const c of clips) {
-      const x0 = c.x + c.pad, x1 = c.x + c.cw - c.pad, step = mobile ? 2.6 : 3;
-      for (let px = x0; px <= x1; px += step, i++) {
-        const f = (px - x0) / (x1 - x0), e = 0.16 + 0.84 * c.env(f);   // piso de señal + datos
-        bars.push({ j: c.j, f, px, e, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)) });
+      for (let px = c.wx0; px <= c.wx1 - 2; px += step, i++) {
+        const f = (px - c.wx0) / (c.wx1 - c.wx0), e = 0.16 + 0.84 * c.env(f);   // piso de señal + datos
+        // Fundido de entrada después del break y de salida antes del próximo.
+        const fade = Math.min(1, (px - c.wx0) / FADE, (c.wx1 - px) / FADE), tp = fade * fade * (3 - 2 * fade);
+        bars.push({ j: c.j, f, px, e, h: 1 + tp * e * c.amp * (0.35 + 0.65 * grain(i)), tp });
       }
     }
-    return { H, HEAD, FOOT, clips, bars, lw: mobile ? 1.5 : 1.8 };
-  }, [w, mobile, avail, data]);
+    return { H, clips, bars, lw: mobile ? 1.5 : 1.8 };
+  }, [w, mobile, avail, data, textW]);
+
+  // Medir los links ya dibujados (fuente real) y ajustar el break a su medida.
+  useLayoutEffect(() => {
+    const m = labelRefs.current.map((g) => { try { return Math.ceil(g.getBBox().width); } catch { return 0; } });
+    if (m.length === 3 && m.every((x) => x > 0) && m.some((x, j) => Math.abs(x - (textW[j] || 0)) > 1)) setTextW(m);
+  });
 
   // Loop de clips en mobile: solo con el track en pantalla y sin "reducir movimiento".
   const [auto, setAuto] = useState(0);
@@ -214,15 +230,15 @@ export function BassTrack({ events, today, onCue }) {
             if (b.j !== j || (lit === true && b.f > scan) || (lit === false && b.f <= scan)) continue;
             let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + (j + b.f) * 1.7);
             const dist = j + b.f - 1;     // en clips, desde el cabezal (comienzo de la Agenda)
-            if (dist >= 0 && !still) m += 0.3 * (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j];
-            if (scanning) m += 0.45 * Math.exp(-((((b.f - scan) * c.cw) / 16) ** 2));
+            if (dist >= 0 && !still) m += 0.3 * (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j] * b.tp;
+            if (scanning) m += 0.45 * b.tp * Math.exp(-((((b.f - scan) * (c.wx1 - c.wx0)) / 16) ** 2));
             const h = Math.min(c.amp + 6, b.h * m);
             ctx.moveTo(b.px, c.mid - h); ctx.lineTo(b.px, c.mid + h);
           }
           ctx.stroke();
         }
         if (scanning) {
-          const x = c.x + c.pad + scan * (c.cw - 2 * c.pad);
+          const x = c.wx0 + scan * (c.wx1 - c.wx0);
           ctx.globalAlpha = 0.9; ctx.strokeStyle = ink; ctx.lineWidth = 1.25;
           ctx.beginPath(); ctx.moveTo(x, c.mid - c.amp - 4); ctx.lineTo(x, c.mid + c.amp + 4); ctx.stroke();
           ctx.lineWidth = geo.lw;
@@ -253,17 +269,21 @@ export function BassTrack({ events, today, onCue }) {
           <canvas ref={canvasRef} className="btk-canvas" style={{ width: w, height: geo.H }} data-live={live && !still ? "1" : "0"} aria-hidden="true" />
           <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
             {geo.clips.map((c) => (
-              <g key={c.k} {...clipProps(c)}>
-                <rect className="btk-clip" x={c.x + 0.5} y={c.y + 0.5} width={c.cw - 1} height={c.ch - 1} rx="5" />
-                <path className="btk-head" d={`M${c.x + 0.5},${c.y + geo.HEAD} V${c.y + 5.5} a5,5 0 0 1 5,-5 H${c.x + c.cw - 5.5} a5,5 0 0 1 5,5 V${c.y + geo.HEAD} Z`} />
-                <rect className="btk-pad" x={c.x + c.pad} y={c.y + (geo.HEAD - 22) / 2} width="22" height="22" rx="3" />
-                <text className="btk-letter" x={c.x + c.pad + 11} y={c.y + geo.HEAD / 2 + 4.5} textAnchor="middle">{c.letter}</text>
-                <text className="btk-name" x={c.x + c.pad + 32} y={c.y + geo.HEAD / 2 + (mobile ? 6 : 7)}>{c.name}</text>
-                <text className="btk-sub" x={c.x + c.cw - c.pad} y={c.y + geo.HEAD / 2 + 4} textAnchor="end">{c.sub}</text>
-                <text className="btk-span" x={c.x + c.pad} y={c.y + c.ch - (geo.FOOT - 12) / 2 - 2}>
-                  {c.k === "agenda" && <tspan className="btk-nowl">{t("track.now")}{"  ·  "}</tspan>}{c.span}
-                </text>
-                {c.k === "agenda" && <line className="btk-now" x1={c.x + c.pad} x2={c.x + c.pad} y1={c.mid - c.amp - 4} y2={c.mid + c.amp + 4} />}
+              <g key={c.k} {...clipProps(c)} data-axis={Math.round(c.mid)}>
+                <rect className="btk-hit" x={c.x} y={c.y} width={c.cw} height={c.ch} />
+                <g ref={(el) => { labelRefs.current[c.j] = el; }}>
+                  <rect className="btk-pad" x={c.lx} y={c.mid - 33} width="24" height="24" rx="3" />
+                  <text className="btk-letter" x={c.lx + 12} y={c.mid - 16.5} textAnchor="middle">{c.letter}</text>
+                  <text className="btk-name" x={c.lx + 34} y={c.mid - 12}>{c.name}</text>
+                  <text className="btk-sub" x={c.lx} y={c.mid + 14}>{c.sub}</text>
+                  <text className="btk-span" x={c.lx} y={c.mid + 31}>{c.span}</text>
+                </g>
+                {c.k === "agenda" && (
+                  <>
+                    <line className="btk-now" x1={c.wx0 - 3} x2={c.wx0 - 3} y1={c.mid - c.amp - 6} y2={c.mid + c.amp + 6} />
+                    <text className="btk-nowl" x={c.wx0 - 3} y={c.mid + c.amp + 22} textAnchor="middle">{t("track.now")}</text>
+                  </>
+                )}
               </g>
             ))}
           </svg>
