@@ -348,17 +348,6 @@ async function run(vp) {
     if (!festHeads.length) fail(vp.name, "festivales", "sin bloques Buenos Aires / mundo");
     else if (festHeads.length > 1 && !/buenos aires/i.test(festHeads[0])) fail(vp.name, "festivales", `el primer bloque es "${festHeads[0]}", no Buenos Aires`);
 
-    // 5e. Colofón de Bass (oct 2026): fuentes reales y el cruce a Layer (el puente entre mundos).
-    const foot = page.locator(".bl-wfoot.is-bass");
-    if (!(await foot.count())) fail(vp.name, "colofón", "Bass no tiene colofón al pie");
-    else {
-      if (!(await foot.locator(".wf-sources li").count())) fail(vp.name, "colofón", "el colofón de Bass no lista sus fuentes");
-      await foot.locator(".wf-cross").scrollIntoViewIfNeeded();
-      await foot.locator(".wf-cross").click();
-      await page.waitForTimeout(700);
-      if ((await page.locator(".bl-root").getAttribute("data-section")) !== "layer") fail(vp.name, "colofón", "«Cruzar a Layer» no cambia de mundo");
-    }
-
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
@@ -418,10 +407,9 @@ async function run(vp) {
         if (loose) fail(vp.name, "layer", `mobile: ${loose} secciones sin rama de su punto a su nombre`);
         const below = await page.locator(".blc-v .blc-ttl").evaluateAll((ts) => ts.filter((t) => t.getBoundingClientRect().bottom > innerHeight).length);
         if (below) fail(vp.name, "layer", `mobile: ${below} secciones fuera de la primera pantalla`);
-        // Los caminos son aleatorios y se renuevan: el ancho varía de un momento
-        // a otro. Se toma el mayor de tres; por debajo de la mitad se perdió la lupa.
-        let fanW = 0;
-        for (let k = 0; k < 3; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= vp.viewport.width * 0.5) break; await page.waitForTimeout(700); }
+        const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
+        // Los caminos son aleatorios: el ancho varía; por debajo de la mitad se
+        // perdió la lupa del abanico.
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
       // El futuro como lupa (30-sep): el abanico ocupa ≥17 % del ancho y la

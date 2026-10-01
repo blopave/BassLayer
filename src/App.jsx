@@ -21,7 +21,6 @@ import { LayerFeed } from "./components/LayerFeed";
 import HomeFusion from "./components/HomeFusion";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
-import { WorldFooter } from "./components/WorldFooter";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -1014,7 +1013,9 @@ export default function App() {
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <LineupTicker events={localEvents} loading={eventsLoading} onSelect={openEvent} />
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
-            <WorldFooter world="bass" events={events} prices={prices} onCross={() => swipeTo(1)} onAbout={() => setShowAbout(true)} />
+            <footer className="bl-terminal-footer">
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
+            </footer>
           </div>
 
           {/* Panel 1: LAYER */}
@@ -1022,7 +1023,9 @@ export default function App() {
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} loading={prices === null} onSelect={setSelectedPrice} />
             {layerSeen.current && <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />}
-            <WorldFooter world="layer" events={events} news={news} onCross={() => swipeTo(0)} onAbout={() => setShowAbout(true)} />
+            <footer className="bl-terminal-footer">
+              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
+            </footer>
           </div>
         </div>
       </section>

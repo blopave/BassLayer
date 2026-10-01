@@ -153,7 +153,7 @@ async function run(vp) {
   await step("festival-modal", async () => { await page.locator(".bl-ev-list article, .bl-ev-list [role=button], .bl-ev-list button").first().click(); await dialog.waitFor({ timeout: 8000 }); });
   await esc();
 
-  await step("about", async () => { await page.locator(".bl-util-about, .wf-about").first().click(); await dialog.waitFor({ timeout: 5000 }); });
+  await step("about", async () => { await page.locator(".bl-util-about, .bl-terminal-link").first().click(); await dialog.waitFor({ timeout: 5000 }); });
   await esc();
 
   // Layer

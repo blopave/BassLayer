@@ -362,10 +362,6 @@ export const STRINGS = {
     "lang.switchToEs": "Cambiar a español",
 
     "home.bass": "Fiestas, shows y festivales",
-    "footer.sources": "Fuentes",
-    "footer.cross": "Cruzar a",
-    "footer.about": "Acerca de BassLayer",
-    "footer.todayParties": "{n} fiestas hoy",
     "home.blockchain": "Blockchain · Cripto · Mercados",
     "home.city": "Buenos Aires",
     "home.evento": "evento",
@@ -757,10 +753,6 @@ export const STRINGS = {
     "lang.switchToEs": "Switch to Spanish",
 
     "home.bass": "Parties, shows & festivals",
-    "footer.sources": "Sources",
-    "footer.cross": "Cross to",
-    "footer.about": "About BassLayer",
-    "footer.todayParties": "{n} parties today",
     "home.blockchain": "Blockchain · Crypto · Markets",
     "home.city": "Buenos Aires",
     "home.evento": "event",
