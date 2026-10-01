@@ -129,11 +129,16 @@ async function run(vp) {
     await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
     const cues = await page.locator(".bl-btrack .btk-cue").count();
     if (cues < 5) fail(vp.name, "índice", `${cues} cues en el índice de Bass (esperaba ≥5)`);
+    if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
     if (cues) {
       await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
       const newsOn = await page.locator(".bl-bass-section-btn.active", { hasText: /Noticias|News/ }).count();
       if (!newsOn) fail(vp.name, "índice", "el cue Noticias no abre Noticias");
-      await page.locator(".bl-bass-section-btn", { hasText: /Eventos|Events/ }).click();
+      // El track es el único índice: en la portada no hay pestañas; se vuelve con la flecha.
+      if (await page.locator(".bl-btrack").count()) fail(vp.name, "índice", "dentro de Noticias sigue visible el track");
+      await page.locator(".bl-bass-back").click();
+      await page.waitForTimeout(300);
+      if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass volvió a mostrar las pestañas");
       await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
       await page.locator(".btk-cue", { hasText: /^B|Hoy|Today/ }).filter({ hasText: /Hoy|Today/ }).first().dispatchEvent("click");
       await page.waitForTimeout(600);
@@ -258,7 +263,7 @@ async function run(vp) {
     // 5d. Festivales: Buenos Aires arriba, el mundo abajo (sept 2026).
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: /^Bass —/ }).first().click().catch(() => {});
-    await page.locator(".bl-bass-section-btn").filter({ hasText: /Festival/ }).first().click().catch(() => {});
+    await page.locator(".btk-cue", { hasText: /Festival/ }).first().dispatchEvent("click").catch(() => {});
     await page.locator(".bl-fest-k").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
     const festHeads = await page.locator(".bl-fest-k").allTextContents();
     if (!festHeads.length) fail(vp.name, "festivales", "sin bloques Buenos Aires / mundo");

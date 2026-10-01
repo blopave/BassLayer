@@ -407,8 +407,21 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   return (
     <>
-      {/* Section toggle: Eventos · Noticias · Festivales */}
+      {/* El track es el único índice de Bass (Pablo, sept 2026: "todas las
+          secciones deben ir ahí"): en la portada no hay pestañas. Dentro de
+          Noticias o Festivales, flecha para volver al track + pestañas, como
+          dentro de una sección de Layer. */}
+      {section !== "eventos" && (
       <div className="bl-bass-sections">
+        <button
+          type="button"
+          className="bl-layer-back bl-bass-back"
+          onClick={() => { setSection("eventos"); requestAnimationFrame(() => document.querySelector(".bl-btrack")?.scrollIntoView({ block: "start" })); }}
+          aria-label={t("track.back")}
+          title={t("track.back")}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13 8H3m4-4L3 8l4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
         <button
           className={`bl-bass-section-btn${section === "eventos" ? " active" : ""}`}
           onClick={() => setSection("eventos")}
@@ -428,6 +441,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           <span className="bl-bass-section-label">{t("section.festivals")}</span>
         </button>
       </div>
+      )}
 
       {section === "festivales" ? (
         <FestivalsList

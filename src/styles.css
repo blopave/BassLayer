@@ -4263,7 +4263,7 @@ select.bl-venue-input { cursor:pointer; }
 /* Tabs editoriales — sin caja. La tipografía Bodoni hace toda la jerarquía;
    el activo se marca con subrayado cobre (masthead de revista), no con un box. */
 .bl-bass-sections {
-  display:flex;
+  display:flex; align-items:center;
   gap:clamp(20px, 4vw, 40px);
   padding:18px 32px 0;
   margin-bottom:4px;
@@ -5778,3 +5778,19 @@ select.bl-venue-input { cursor:pointer; }
   .bl-btrack { margin:10px 16px 4px; }
   .btk-name { font-size:21px; }
 }
+
+/* Flecha para volver al track (Bass), en cobre. */
+.bl-bass-back { color:var(--bl-accent-bass); margin:0 0 6px; }
+.bl-bass-back:hover { background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); border-color:var(--bl-accent-bass); }
+/* Pestañas de Bass dentro de una sección (sept 2026): mismo idioma que las de
+   Layer — letra de los títulos, 17/16 px, y la activa con el punto del cue. */
+.bl-bass-sections { gap:22px; overflow-x:auto; scrollbar-width:none; }
+.bl-bass-sections::-webkit-scrollbar { display:none; }
+.bl-bass-sections .bl-bass-section-btn { display:inline-flex; align-items:center; gap:8px; border-bottom:0; padding:13px 0 14px; white-space:nowrap; }
+.bl-bass-sections .bl-bass-section-label { font:600 17px var(--font-sans); letter-spacing:-.012em; color:var(--bl-text-ter); }
+.bl-bass-sections .bl-bass-section-btn.active .bl-bass-section-label { color:var(--bl-text); }
+.bl-bass-sections .bl-bass-section-btn.active::before {
+  content:""; flex:none; width:9px; height:9px; border-radius:50%;
+  border:2.5px solid var(--bl-accent-bass); box-shadow:0 0 0 5px color-mix(in srgb, var(--bl-accent-bass) 13%, transparent);
+}
+@media (max-width:768px) { .bl-bass-sections .bl-bass-section-label { font-size:16px; } .bl-bass-sections { gap:18px; } }
