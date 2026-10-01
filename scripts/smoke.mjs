@@ -133,12 +133,8 @@ async function run(vp) {
       await page.locator(".btk-cue").last().focus();
       await page.waitForTimeout(150);
       if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
-      // Desktop: el display "Sonando" muestra la parte elegida, con contenido real.
-      if (!vp.isMobile) {
-        const deckName = await page.locator(".btk-deck-name").textContent().catch(() => "");
-        const deckItems = await page.locator(".btk-deck-item").count();
-        if (!/Festival/.test(deckName || "") || !deckItems) fail(vp.name, "índice", `el display Sonando no sigue al cue (${deckName}, ${deckItems} ítems)`);
-      }
+      // La portada es solo la onda y sus links: cada sección, la cabecera de su clip.
+      if (await page.locator(".bl-btrack .btk-clip").count() !== cues) fail(vp.name, "índice", "cada sección tiene que ser un clip de la onda");
       await page.locator(".btk-cue").last().blur();
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
       if (vp.isMobile) {
@@ -146,9 +142,6 @@ async function run(vp) {
         await page.waitForTimeout(4300);
         const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
         if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
-        // El display de abajo sigue al loop: muestra la parte que suena.
-        const deckNow = await page.locator(".btk-deck-name").textContent().catch(() => "");
-        if (!next || !(deckNow || "").includes(next)) fail(vp.name, "índice", `en mobile el display no sigue al loop (suena ${next}, muestra ${deckNow})`);
       }
       if (await page.locator(".btk-cue", { hasText: /Noticias|News/ }).count()) {
         await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");

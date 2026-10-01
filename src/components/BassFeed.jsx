@@ -490,7 +490,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       ) : section === "track" ? (
         /* Portada: el índice como un track (las secciones son hot cues en su
            momento real). Mientras cargan los eventos, su alto reservado (CLS). */
-        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={trackToday} onCue={onCue} onSelect={onSelect} onSelectNews={onSelectNews} onSelectFestival={onSelectFestival} />
+        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={trackToday} onCue={onCue} />
       ) : (
         <>
 
