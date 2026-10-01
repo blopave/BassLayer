@@ -136,8 +136,10 @@ async function run(vp) {
       if (!newsOn) fail(vp.name, "índice", "el cue Noticias no abre Noticias");
       // El track es el único índice: en la portada no hay pestañas; se vuelve con la flecha.
       if (await page.locator(".bl-btrack").count()) fail(vp.name, "índice", "dentro de Noticias sigue visible el track");
-      await page.locator(".bl-bass-back").click();
-      await page.waitForTimeout(300);
+      // Siempre se vuelve al track: acá con el atrás del navegador (o el gesto del celular).
+      await page.evaluate(() => history.back());
+      await page.waitForTimeout(400);
+      if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "el atrás del navegador desde Noticias no vuelve al track");
       if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass volvió a mostrar las pestañas");
       await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
       await page.locator(".btk-cue", { hasText: /^B|Hoy|Today/ }).filter({ hasText: /Hoy|Today/ }).first().dispatchEvent("click");
@@ -145,10 +147,13 @@ async function run(vp) {
       const whenVal = await page.locator(".bl-ctrl-select").first().inputValue().catch(() => null);
       const whenBtn = await page.locator(".bl-ctrl-filters-btn.has-filters").count();
       if (whenVal !== "hoy" && !whenBtn) fail(vp.name, "índice", "el cue Hoy no filtra la agenda a hoy");
-      // Volver a la vista general para el resto del flujo.
-      if (whenVal === "hoy") await page.locator(".bl-ctrl-select").first().selectOption("");
-      else { await page.locator(".bl-ctrl-filters-btn").click(); await page.locator(".bl-ctrl-sheet select, [role=dialog] select").first().selectOption("").catch(() => {}); await page.keyboard.press("Escape"); }
+      // Hoy oculta el track: la flecha tiene que estar y devolver la portada sin filtro.
+      if (!(await page.locator(".bl-bass-back").count())) fail(vp.name, "índice", "con el filtro Hoy no hay flecha para volver al track");
+      else await page.locator(".bl-bass-back").click();
       await page.waitForTimeout(500);
+      if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "la flecha desde Hoy no vuelve al track");
+      else if (!(await page.locator(".bl-btrack").isVisible()) || !(await page.locator(".bl-btrack").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight / 2; }))) fail(vp.name, "índice", "volver al track deja la pantalla en otro lado (el track queda fuera de vista)");
+      if (await page.locator(".bl-ctrl-filters-btn.has-filters").count() || (await page.locator(".bl-ctrl-select").first().inputValue().catch(() => "")) === "hoy") fail(vp.name, "índice", "volver al track no limpia el filtro Hoy");
     }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();

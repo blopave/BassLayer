@@ -5757,7 +5757,8 @@ select.bl-venue-input { cursor:pointer; }
 
 /* ── Índice de Bass (sept 2026): la forma de onda del CDJ con las secciones
    como hot cues en su momento real. Un color: el cobre de Bass. ── */
-.bl-btrack { margin:14px 32px 10px; }
+.bl-btrack { margin:14px 32px 10px; min-height:330px; /* alto del svg reservado antes de medir: sin salto ni scroll que se corre */ }
+@media (max-width:768px) { .bl-btrack { min-height:600px; } }
 .bl-btrack svg { display:block; overflow:visible; }
 .btk-bar { stroke:var(--bl-accent-bass); stroke-opacity:.88; stroke-width:1.6; stroke-linecap:round; }
 .btk-bar.is-past { stroke-opacity:.32; }
@@ -5784,6 +5785,7 @@ select.bl-venue-input { cursor:pointer; }
 .bl-bass-back:hover { background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); border-color:var(--bl-accent-bass); }
 /* Pestañas de Bass dentro de una sección (sept 2026): mismo idioma que las de
    Layer — letra de los títulos, 17/16 px, y la activa con el punto del cue. */
+.bl-bass-sections, .bl-btrack { scroll-margin-top:60px; /* ticker sticky del panel + aire, como .bl-layer-bar */ }
 .bl-bass-sections { gap:22px; overflow-x:auto; scrollbar-width:none; }
 .bl-bass-sections::-webkit-scrollbar { display:none; }
 .bl-bass-sections .bl-bass-section-btn { display:inline-flex; align-items:center; gap:8px; border-bottom:0; padding:13px 0 14px; white-space:nowrap; }

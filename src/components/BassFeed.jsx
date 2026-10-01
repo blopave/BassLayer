@@ -394,14 +394,39 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Cues del índice: Noticias y Festivales son pestañas; Hoy, El finde y
   // Agenda entran a Eventos filtrado; De gira lleva a su bloque.
   const toList = () => requestAnimationFrame(() => document.querySelector(".bass-filters")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  const toTop = () => requestAnimationFrame(() => document.querySelector(".bl-bass-sections")?.scrollIntoView({ block: "start" }));
   const onCue = (k) => {
     if (k === "news") setSection("noticias");
     else if (k === "fests") setSection("festivales");
-    else if (k === "today") { setWhen("hoy"); toList(); }
-    else if (k === "weekend") { setWhen("finde"); toList(); }
+    else if (k === "today") { setWhen("hoy"); toTop(); }
+    else if (k === "weekend") { setWhen("finde"); toTop(); }
     else if (k === "tour") document.querySelector(".bl-tour")?.scrollIntoView({ behavior: "smooth", block: "start" });
     else toList();
   };
+
+  // Siempre se vuelve al track (Pablo, sept 2026: "eso no puede suceder").
+  // Fuera de la portada (otra sección, filtro temporal o búsqueda) hay flecha,
+  // y salir de la portada deja una entrada en el historial: el atrás del
+  // navegador o el gesto del celular también vuelven a la frecuencia.
+  const atPortada = section === "eventos" && !when && !search;
+  const scrollToTrack = useRef(false);
+  const resetToTrack = () => {
+    setSection("eventos"); setWhen(""); if (search) onSearch?.("");
+    scrollToTrack.current = true;
+  };
+  const resetRef = useRef(resetToTrack);
+  resetRef.current = resetToTrack;
+  useEffect(() => {
+    if (!atPortada && !window.history.state?.bassTrack) window.history.pushState({ bassTrack: 1 }, "", window.location.href);
+    // Después del commit: el track recién montado ya está en el DOM.
+    if (atPortada && scrollToTrack.current) { scrollToTrack.current = false; document.querySelector(".bl-btrack")?.scrollIntoView({ block: "start" }); }
+  }, [atPortada]);
+  useEffect(() => {
+    const onPop = () => { if (!window.history.state?.bassTrack) resetRef.current(); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  const backToTrack = () => (window.history.state?.bassTrack ? window.history.back() : resetToTrack());
 
   let itemIdx = 0;
 
@@ -411,12 +436,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           secciones deben ir ahí"): en la portada no hay pestañas. Dentro de
           Noticias o Festivales, flecha para volver al track + pestañas, como
           dentro de una sección de Layer. */}
-      {section !== "eventos" && (
+      {!atPortada && (
       <div className="bl-bass-sections">
         <button
           type="button"
           className="bl-layer-back bl-bass-back"
-          onClick={() => { setSection("eventos"); requestAnimationFrame(() => document.querySelector(".bl-btrack")?.scrollIntoView({ block: "start" })); }}
+          onClick={backToTrack}
           aria-label={t("track.back")}
           title={t("track.back")}
         >
@@ -424,7 +449,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </button>
         <button
           className={`bl-bass-section-btn${section === "eventos" ? " active" : ""}`}
-          onClick={() => setSection("eventos")}
+          onClick={backToTrack}
         >
           <span className="bl-bass-section-label">{t("section.events")}</span>
         </button>
