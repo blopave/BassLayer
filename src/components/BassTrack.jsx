@@ -87,7 +87,14 @@ export function BassTrack({ events, todayKey, onCue }) {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return undefined;
-    const measure = () => { const top = el.getBoundingClientRect().top; if (top >= 0 && top < window.innerHeight) setAvail(Math.round(window.innerHeight - top)); };
+    // Alto que queda de pantalla debajo del track, descontando el relleno del
+    // panel (mobile reserva lugar para el botón flotante) y el margen propio.
+    const measure = () => {
+      const top = el.getBoundingClientRect().top, panel = el.closest(".bl-swipe-panel");
+      if (top < 0 || top >= window.innerHeight) return;
+      const pb = panel ? parseFloat(getComputedStyle(panel).paddingBottom) || 0 : 0, mb = parseFloat(getComputedStyle(el).marginBottom) || 0;
+      setAvail(Math.round(window.innerHeight - top - pb - mb));
+    };
     const ro = new ResizeObserver(([e]) => { setW(Math.round(e.contentRect.width)); measure(); });
     ro.observe(el);
     const io = new IntersectionObserver(([e]) => setLive(e.isIntersecting));
@@ -164,7 +171,8 @@ export function BassTrack({ events, todayKey, onCue }) {
       return e;
     };
     const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || "system-ui, sans-serif";
-    const H = mobile ? 600 : Math.round(Math.max(440, Math.min(700, (avail || 720) - 24)));
+    // La portada es solo la onda: ocupa el alto que queda de pantalla (mobile y desktop).
+    const H = mobile ? Math.round(Math.max(400, Math.min(660, avail || 600))) : Math.round(Math.max(440, Math.min(700, avail || 700)));
     const seg = mobile ? w : w / 3;
     // Un solo tamaño para las tres palabras: el que deja a la más larga en ~60 % de su parte.
     const widest = Math.max(...data.map((p) => textWidth(p.name, `800 100px ${family}`)));
@@ -172,7 +180,7 @@ export function BassTrack({ events, todayKey, onCue }) {
     const font = `800 ${size}px ${family}`;
     const parts = data.map((p, j) => {
       const x = mobile ? 0 : j * seg, y = mobile ? (j * H) / 3 : 0;
-      const mid = mobile ? y + 78 : (H - 66) / 2 + 4, amp = mobile ? 58 : mid - 34;
+      const laneH = H / 3, mid = mobile ? y + (laneH - 46) / 2 + 4 : (H - 66) / 2 + 4, amp = mobile ? (laneH - 46) / 2 - 14 : mid - 34;
       const ww = textWidth(p.name, font), wx = x + (seg - ww) / 2;
       // Caja de la palabra (en px CSS): ahí se compone la máscara de letras.
       const box = { x: Math.floor(wx - 6), y: Math.floor(mid - size), w: Math.ceil(ww + 12), h: Math.ceil(2 * size) };

@@ -122,6 +122,9 @@ async function run(vp) {
     if (!cueNames.some((x) => /Agenda|Listings/.test(x)) || cueNames.length < 2 || cueNames.length > 3) fail(vp.name, "índice", `cues del índice: ${cueNames.join(" · ") || "ninguno"} (esperaba Noticias · Agenda · Festivales)`);
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
     if (await page.locator(".bl-ev-open").count()) fail(vp.name, "índice", "la portada de Bass muestra la lista: la agenda es una sección");
+    // La portada es solo la onda (oct 2026): entra en la pantalla, sin pie ni nada debajo.
+    const portadaFits = (i) => page.evaluate((i) => { const el = document.querySelectorAll(".bl-swipe-panel")[i]; return el ? el.scrollHeight - el.clientHeight : 0; }, i);
+    if (vp.viewport.height >= 800) { await page.waitForTimeout(400); const extra = await portadaFits(0); if (extra > 2) fail(vp.name, "portada", `la portada de Bass tiene ${extra}px de más debajo de la onda`); }
     const cues = cueNames.length;
     // Los cues se reparten parejo a lo largo de la onda (tres partes iguales del tema).
     const pads = await page.locator(".bl-btrack .btk-name").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
@@ -354,6 +357,11 @@ async function run(vp) {
     if (!page.url().endsWith("/layer")) fail(vp.name, "layer", `no quedó en /layer (${page.url()})`);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
+    if (vp.viewport.height >= 800) {
+      await page.locator(".blc svg").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => fail(vp.name, "portada", "la curva de Layer no se dibuja"));
+      const extra = await page.evaluate(() => { const el = document.querySelectorAll(".bl-swipe-panel")[1]; return el ? el.scrollHeight - el.clientHeight : 0; });
+      if (extra > 2) fail(vp.name, "portada", `la portada de Layer tiene ${extra}px de más debajo de la curva`);
+    }
 
     // 6b. Portada de Layer = la curva (sept 2026): 8 secciones en la curva, que
     // es el único índice (sin franja ni lista debajo). Desktop: cápsulas que no
@@ -407,9 +415,10 @@ async function run(vp) {
         if (loose) fail(vp.name, "layer", `mobile: ${loose} secciones sin rama de su punto a su nombre`);
         const below = await page.locator(".blc-v .blc-ttl").evaluateAll((ts) => ts.filter((t) => t.getBoundingClientRect().bottom > innerHeight).length);
         if (below) fail(vp.name, "layer", `mobile: ${below} secciones fuera de la primera pantalla`);
-        const fanW = await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0);
-        // Los caminos son aleatorios: el ancho varía; por debajo de la mitad se
-        // perdió la lupa del abanico.
+        // Los caminos son aleatorios y se renuevan: el ancho varía de un momento
+        // a otro. Se toma el mayor de tres; por debajo de la mitad se perdió la lupa.
+        let fanW = 0;
+        for (let k = 0; k < 3; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= vp.viewport.width * 0.5) break; await page.waitForTimeout(700); }
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
       // El futuro como lupa (30-sep): el abanico ocupa ≥17 % del ancho y la

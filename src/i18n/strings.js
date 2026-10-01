@@ -27,7 +27,6 @@ export const STRINGS = {
     "topbar.bass": "Bass",
     "topbar.layer": "Layer",
     "topbar.venues": "venues",
-    "topbar.about": "about_basslayer",
     "topbar.forVenues": "para_venues",
 
     "section.news": "Noticias",
@@ -418,7 +417,6 @@ export const STRINGS = {
     "topbar.bass": "Bass",
     "topbar.layer": "Layer",
     "topbar.venues": "venues",
-    "topbar.about": "about_basslayer",
     "topbar.forVenues": "for_venues",
 
     "section.news": "News",

@@ -490,23 +490,6 @@
   background:linear-gradient(to right, rgba(196,144,112,0.3), transparent);
 }
 
-/* ── World-specific Footer Styles ────── */
-.bl-root[data-section="bass"] .bl-terminal-footer {
-  border-top-color:rgba(196,144,112,0.1);
-}
-.bl-root[data-section="bass"] .bl-terminal-link:hover {
-  color:var(--bl-accent-bass); background:rgba(196,144,112,0.06);
-}
-.bl-root[data-section="layer"] .bl-terminal-footer {
-  border-top-color:rgba(108,184,200,0.08);
-}
-.bl-root[data-section="layer"] .bl-terminal-link {
-  font-size:10px; letter-spacing:2px;
-}
-.bl-root[data-section="layer"] .bl-terminal-link:hover {
-  color:var(--bl-accent-layer); background:rgba(108,184,200,0.05);
-}
-
 /* ── World-specific Mode Toggle ────── */
 .bl-root[data-section="bass"] .bl-mode-toggle {
   border-color:rgba(196,144,112,0.2);
@@ -1952,20 +1935,6 @@
 }
 
 /* ── Terminal Footer ───────────────────── */
-.bl-terminal-footer {
-  display:flex; align-items:center; justify-content:center; gap:24px;
-  padding:32px 16px 48px; margin-top:8px;
-  border-top:1px solid var(--bl-border);
-}
-.bl-terminal-link {
-  font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
-  color:var(--bl-text-ter); text-decoration:none; background:none; border:none;
-  cursor:pointer; padding:6px 10px; border-radius:4px;
-  transition:color .2s, background .2s;
-}
-.bl-terminal-link:hover {
-  color:var(--bl-accent, var(--bl-text)); background:var(--bl-subtle-hover);
-}
 
 /* ── Skeleton Loaders ───────────────────── */
 @keyframes bl-shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
@@ -5518,7 +5487,7 @@ select.bl-venue-input { cursor:pointer; }
    momentos reales, índice sincronizado (franja desktop / lista mobile),
    recorrido con precio y hecho de cada mes, vista previa con dato vivo.
    ══════════════════════════════════════════════════════════════ */
-.blc { position:relative; display:flex; flex-direction:column; height:calc(100dvh - 178px); min-height:560px; }
+.blc { position:relative; display:flex; flex-direction:column; height:calc(100dvh - 178px); min-height:480px; }
 .blc-stage { position:relative; flex:1; min-height:0; touch-action:pan-y; }
 .blc-stage svg { position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; }
 .blc-skel { position:absolute; inset:120px 64px 46px; border-radius:10px; background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
@@ -5626,7 +5595,7 @@ select.bl-venue-input { cursor:pointer; }
      en su banda y una fila tocable por sección con su nombre. El alto del
      gráfico lo calcula LayerCurve.jsx. */
   .blc { height:auto; min-height:0; }
-  .blc-stage { flex:none; min-height:600px; margin:8px 0 24px; touch-action:auto; } /* el alto exacto lo pone LayerCurve */
+  .blc-stage { flex:none; min-height:0; margin:8px 0 8px; touch-action:auto; } /* el alto exacto lo pone LayerCurve (a lo que queda de pantalla) */
   .blc-skel { inset:24px 16px 60px; }
   .bl-layer-bar { margin:10px 16px 0; gap:10px; }
   .bl-layer-back { margin-left:0; }
@@ -5706,7 +5675,7 @@ select.bl-venue-input { cursor:pointer; }
    secciones hechas de onda (cada nombre escrito con las mismas barras, en el
    canvas de BassTrack). El SVG encima lleva la caja real de cada palabra (foco
    y lectura), y su dato debajo de la onda. Un color: el cobre. ── */
-.bl-btrack { margin:14px 32px 12px; min-height:600px; /* alto reservado antes de medir: sin salto ni scroll que se corre */ }
+.bl-btrack { margin:14px 32px 12px; min-height:440px; /* alto reservado antes de medir: sin salto ni scroll que se corre */ }
 .btk-stage { position:relative; }
 .btk-canvas { position:absolute; inset:0; display:block; pointer-events:none; }
 .bl-btrack svg { position:relative; display:block; overflow:visible; }
@@ -5721,7 +5690,7 @@ select.bl-venue-input { cursor:pointer; }
 .btk-cue.is-off .btk-sub { fill:var(--bl-text-ter); }
 .btk-cue:focus-visible .btk-name { fill:none; stroke:var(--bl-text); stroke-width:1; stroke-dasharray:3 3; }
 @media (max-width:768px) {
-  .bl-btrack { margin:10px 16px 6px; }
+  .bl-btrack { margin:10px 16px 6px; min-height:400px; }
   .btk-sub { font-size:11px; }
 }
 

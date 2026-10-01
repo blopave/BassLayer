@@ -1013,9 +1013,6 @@ export default function App() {
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <LineupTicker events={localEvents} loading={eventsLoading} onSelect={openEvent} />
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
-            <footer className="bl-terminal-footer">
-              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
-            </footer>
           </div>
 
           {/* Panel 1: LAYER */}
@@ -1023,9 +1020,6 @@ export default function App() {
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} loading={prices === null} onSelect={setSelectedPrice} />
             {layerSeen.current && <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />}
-            <footer className="bl-terminal-footer">
-              <button className="bl-terminal-link" onClick={() => setShowAbout(true)}>&gt; {t("topbar.about")}</button>
-            </footer>
           </div>
         </div>
       </section>
@@ -1126,7 +1120,7 @@ export default function App() {
       {/* ABOUT MODAL */}
       {showAbout && (
         <div className="bl-about-overlay" onClick={() => setShowAbout(false)}>
-          <div className="bl-about-card" role="dialog" aria-modal="true" aria-label={t("topbar.about")} ref={aboutRef} onClick={(e) => e.stopPropagation()}>
+          <div className="bl-about-card" role="dialog" aria-modal="true" aria-label={t("util.aboutBL")} ref={aboutRef} onClick={(e) => e.stopPropagation()}>
             <button className="bl-modal-close" onClick={() => setShowAbout(false)} aria-label={t("common.close")}>&times;</button>
             <div className="bl-about-logo">
               <span className="bl-about-bass">Bass</span>

@@ -35,7 +35,8 @@ const NODES = [
 ];
 
 // Mobile: margen arriba, abanico (halving → hoy), una fila por sección y pie.
-// Las 8 secciones y el abanico entran en una pantalla de 390 × 844.
+// La portada es solo la curva (Pablo, oct 2026): el alto se ajusta a lo que
+// queda de pantalla (filas entre 46 y 60 px; el abanico toma el resto).
 const VT = 14, VFAN = 214, VROW = 60, VB = 44;
 // Techo de la escala mobile: hoy cae en el tercio izquierdo de la banda de
 // la curva y el abanico se abre a los dos lados desde su punto real.
@@ -98,6 +99,7 @@ export function LayerCurve({ news = [], onEnter }) {
   const d = useLayerData();
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [fit, setFit] = useState(0);          // mobile: alto de pantalla disponible para la curva
   const [sel, setSel] = useState(null);       // sección con vista previa
   // Impulsos (30-sep, Pablo): la curva manda un destello por una rama al
   // azar y el título se enciende al llegar. Mobile cada 1,2–2,4 s; desktop
@@ -117,12 +119,20 @@ export function LayerCurve({ news = [], onEnter }) {
   useEffect(() => {
     const el = stageRef.current;
     if (!el) return;
+    const measure = () => {
+      const top = el.getBoundingClientRect().top, panel = el.closest(".bl-swipe-panel");
+      if (top < 0 || top > window.innerHeight) return;
+      const pb = panel ? parseFloat(getComputedStyle(panel).paddingBottom) || 0 : 0, mb = parseFloat(getComputedStyle(el).marginBottom) || 0;
+      setFit(Math.round(window.innerHeight - top - pb - mb));
+    };
     const ro = new ResizeObserver(([e]) => {
       const { width: w, height: h } = e.contentRect;
-      setSize((p) => (p.w === w && p.h === h ? p : { w, h }));
+      setSize((p) => (p.w === w && Math.abs(p.h - h) < 1 ? p : { w, h }));
+      measure();
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
 
   useEffect(() => {
@@ -183,7 +193,8 @@ export function LayerCurve({ news = [], onEnter }) {
   }, [d, cyc, news, t, locale]);
 
   const geo = useMemo(() => {
-    if (!H.length || !size.w || !size.h) return null;
+    // Mobile no espera al alto del contenedor: el alto lo pone la curva (a lo que queda de pantalla).
+    if (!H.length || !size.w || (size.w > 768 && !size.h)) return null;
     const W = size.w;
     const TODAY = T(H[H.length - 1].t);
     const nextHalving = cyc?.keyDates?.nextHalving ? T(cyc.keyDates.nextHalving.slice(0, 7)) : TODAY + 1.6;
@@ -206,19 +217,21 @@ export function LayerCurve({ news = [], onEnter }) {
       // Tiempo real: el abanico arriba (halving → hoy) y el pasado hacia
       // abajo hasta Hitos. La curva va en una banda a la izquierda; los
       // nombres, en una columna pareja a la derecha (una fila por sección).
-      const T0 = times[0], yToday = VT + VFAN, yBot = yToday + 7 * VROW;
+      const Hfit = Math.max(460, Math.min(VT + VFAN + 7 * VROW + VB, fit || 692));
+      const row = Math.max(46, Math.min(VROW, (VROW * (Hfit - VT - VB)) / (VFAN + 7 * VROW))), fan = Hfit - VT - VB - 7 * row;
+      const T0 = times[0], yToday = VT + fan, yBot = yToday + 7 * row;
       const Hh = yBot + VB, x0 = 14, x1 = Math.round(W * 0.46), lx = Math.round(W * 0.58);
       const Yt = (tt) => (tt >= TODAY ? yToday - ((tt - TODAY) / (nextHalving - TODAY)) * (yToday - VT) : yToday + ((TODAY - tt) / (TODAY - T0)) * (yBot - yToday));
       const lc = Math.log10(V_CEIL) - 2;
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
       const nodes = NODES.map((n, i) => {
-        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + (NODES.length - 1 - i) * VROW, ex = lx - 12;
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + (NODES.length - 1 - i) * row, ex = lx - 12;
         const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.35, cy], [ex - (ex - cx) * 0.35, ly], [ex, ly], lensOf(times[i]), 7);
         return { ...n, tt: times[i], cx, cy, lx, ly, ex, branch };
       });
       const pxDec = (x1 - x0) / lc;
       const past = H.filter((h) => T(h.t) >= T0);
-      return { V: true, W, Hh, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, yBot, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
+      return { V: true, W, Hh, row, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, yBot, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
     }
 
     // Desktop: el pasado en tiempo real (2012 → hoy) y el futuro como LUPA
@@ -248,7 +261,7 @@ export function LayerCurve({ news = [], onEnter }) {
     const DOCK_FROM = 2018.6, dockTop = Math.max(...H.filter((h) => T(h.t) >= DOCK_FROM).map((h) => Y(h.p))) + 34;
     const dock = { x: X(DOCK_FROM), y: dockTop, w: X(TODAY) - X(DOCK_FROM) - 16, h: Hh - BOT - 14 - dockTop };
     return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes, dock: dock.h >= 150 && dock.w >= 460 ? dock : null };
-  }, [H, size, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [H, size, fit, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada
   // en hoy. Sin rótulos de hitos sobre la curva (Pablo, 30-sep): viven en Hitos.
@@ -356,7 +369,7 @@ export function LayerCurve({ news = [], onEnter }) {
             onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
-            <rect className="blc-hit" x="0" y={n.ly - VROW / 2} width={geo.W} height={VROW} />
+            <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
             <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.ex, n.ly]} r={2.4} />
             {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
             {/* Puntos chicos: en 2021 Acciones y Eventos caen a 7 px (fechas reales). */}
