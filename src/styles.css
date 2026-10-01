@@ -5757,7 +5757,7 @@ select.bl-venue-input { cursor:pointer; }
 
 /* ── Índice de Bass (sept 2026): la forma de onda del CDJ con las secciones
    como hot cues en su momento real. Un color: el cobre de Bass. ── */
-.bl-btrack { margin:14px 32px 10px; min-height:330px; /* alto del svg reservado antes de medir: sin salto ni scroll que se corre */ }
+.bl-btrack { margin:14px 32px 10px; min-height:350px; /* alto del svg reservado antes de medir: sin salto ni scroll que se corre */ }
 @media (max-width:768px) { .bl-btrack { min-height:600px; } }
 .bl-btrack svg { display:block; overflow:visible; }
 .btk-bar { stroke:var(--bl-accent-bass); stroke-opacity:.88; stroke-width:1.6; stroke-linecap:round; }
@@ -5819,3 +5819,9 @@ select.bl-venue-input { cursor:pointer; }
   border:2.5px solid var(--bl-accent-bass); box-shadow:0 0 0 5px color-mix(in srgb, var(--bl-accent-bass) 13%, transparent);
 }
 @media (max-width:768px) { .bl-bass-sections .bl-bass-section-label { font-size:16px; } .bl-bass-sections { gap:18px; } }
+
+/* Agenda (mobile): Cuándo a la vista, debajo de los géneros. Pastillas en
+   cobre para que no se confundan con el índice de géneros de arriba. */
+.bl-root[data-section="bass"] .bl-filters.bass-when { position:static; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; padding:14px 16px 2px; gap:8px; }
+.bl-filters.bass-when .bl-filter-chip { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; color:var(--bl-text-sec); border-color:var(--bl-border); padding:0 14px; min-height:40px; }
+.bl-filters.bass-when .bl-filter-chip.active { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); }

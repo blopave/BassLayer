@@ -43,6 +43,7 @@ export function SaveButton({ slug, className = "" }) {
 // La familia la asigna el backend (classifyFamily). Los items son KEYS estables
 // (para estado/URL); el label visible sale de i18n (family.*), EN/ES.
 const FAMILY_FILTER_ITEMS = ["All", "club", "live", "festival", "urbano", "raiz"];
+const WHEN_ITEMS = ["any", "hoy", "finde"];
 
 function EndOfSet() {
   const { t } = useLocale();
@@ -177,9 +178,11 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const [sheetOpen, setSheetOpen] = useState(false);
   // Escape, bloqueo de scroll e inert del fondo: mismo contrato que los modales.
   const sheetRef = useFocusTrap(sheetOpen, () => setSheetOpen(false));
+  const whenLabels = useMemo(() => ({ any: t("filter.anytime"), hoy: t("day.today"), finde: t("filter.thisWeekend") }), [t]);
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
-  const [section, setSection] = useState("eventos"); // "eventos" | "noticias" | "festivales"
+  // "track" (portada: solo el índice) | "eventos" (Agenda) | "noticias" | "festivales"
+  const [section, setSection] = useState(presetWhen ? "eventos" : "track");
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
   const { saved } = useSavedEvents();
   const [savedOnly, setSavedOnly] = useState(false);
@@ -391,27 +394,24 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const activeFilterCount = (when ? 1 : 0) + (regionFilter !== "amba" ? 1 : 0) + (cityFilter !== "Todas" ? 1 : 0);
   const clearFilters = () => { setWhen(""); changeRegion("amba"); };
 
-  // Cues del índice: Noticias y Festivales son pestañas; Hoy, El finde y
-  // Agenda entran a Eventos filtrado; De gira lleva a su bloque.
-  const toList = () => requestAnimationFrame(() => document.querySelector(".bass-filters")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  const toTop = () => requestAnimationFrame(() => document.querySelector(".bl-bass-sections")?.scrollIntoView({ block: "start" }));
-  const onCue = (k) => {
-    if (k === "news") setSection("noticias");
-    else if (k === "fests") setSection("festivales");
-    else if (k === "today") { setWhen("hoy"); toTop(); }
-    else if (k === "weekend") { setWhen("finde"); toTop(); }
-    else if (k === "tour") document.querySelector(".bl-tour")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    else toList();
-  };
+  // Tres cues, tres secciones (Pablo, sept 2026): Noticias en lo que ya sonó,
+  // la Agenda en el cabezal y Festivales en su pico. Hoy, el finde, De gira y
+  // la búsqueda viven dentro de la Agenda.
+  const onCue = (k) => setSection(k === "news" ? "noticias" : k === "fests" ? "festivales" : "eventos");
+  // Lo que filtra la agenda desde afuera (deep link /eventos/hoy, género,
+  // venue, búsqueda) abre la Agenda.
+  useEffect(() => {
+    if (when || search || (filter && filter !== "All")) setSection((s) => (s === "track" ? "eventos" : s));
+  }, [when, search, filter]);
 
   // Siempre se vuelve al track (Pablo, sept 2026: "eso no puede suceder").
   // Fuera de la portada (otra sección, filtro temporal o búsqueda) hay flecha,
   // y salir de la portada deja una entrada en el historial: el atrás del
   // navegador o el gesto del celular también vuelven a la frecuencia.
-  const atPortada = section === "eventos" && !when && !search;
+  const atPortada = section === "track";
   const scrollToTrack = useRef(false);
   const resetToTrack = () => {
-    setSection("eventos"); setWhen(""); if (search) onSearch?.("");
+    setSection("track"); setWhen(""); if (search) onSearch?.("");
     scrollToTrack.current = true;
   };
   const resetRef = useRef(resetToTrack);
@@ -449,9 +449,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </button>
         <button
           className={`bl-bass-section-btn${section === "eventos" ? " active" : ""}`}
-          onClick={backToTrack}
+          onClick={() => setSection("eventos")}
         >
-          <span className="bl-bass-section-label">{t("section.events")}</span>
+          <span className="bl-bass-section-label">{t("track.agenda")}</span>
         </button>
         <button
           className={`bl-bass-section-btn${section === "noticias" ? " active" : ""}`}
@@ -486,18 +486,17 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           onRetry={loadBassNews}
           onSelect={onSelectNews}
         />
+      ) : section === "track" ? (
+        /* Portada: el índice como un track (las secciones son hot cues en su
+           momento real). Mientras cargan los eventos, su alto reservado (CLS). */
+        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={todayInBA()} onCue={onCue} />
       ) : (
         <>
-      {/* Portada editorial: solo sin búsqueda ni filtro temporal — cuando el
-          usuario ya está buscando algo puntual, el hero es ruido. */}
-      {/* El hero del finde aparece con los eventos: reservamos su alto mientras cargan (CLS). */}
-      {/* Portada: el índice como un track (las secciones son hot cues en su
-          momento real). Reemplazó al héroe del finde (sept 2026). */}
-      {!search && !when && (loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} allEvents={events} today={todayInBA()} weekend={weekendBounds()} onCue={onCue} />)}
-      {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan por acá. */}
-      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
 
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
+      {/* Mobile: Cuándo primero y a la vista (hoy y el finde son lo que más se
+          busca); en desktop ya encabeza la barra de contexto. */}
+      {isMobile && <FilterBar items={WHEN_ITEMS} active={when || "any"} onChange={(v) => setWhen(v === "any" ? "" : v)} className="bass-when" labels={whenLabels} />}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
 
       {/* Barra unificada de contexto: Cuándo · Dónde · Buscar (una sola forma) */}
@@ -556,6 +555,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           {searchSeg}
         </div>
       )}
+
+      {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan
+          por acá. Va después de los filtros: en la Agenda, Cuándo es lo primero. */}
+      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
 
       {/* Header editorial del listado. Con savedOnly activo se muestra aunque
           haya 0 resultados: el toggle tiene que seguir visible para salir. */}

@@ -106,7 +106,67 @@ async function run(vp) {
     if (foreign) fail(vp.name, "home", `el ticker de la home muestra eventos de ${foreign[0]}`);
     await page.getByRole("button", { name: /^Bass —/ }).first().click();
 
-    // 2. Feed con eventos
+    // Índice de Bass (sept 2026): la portada es solo la forma de onda con tres
+    // hot cues — Noticias, Agenda, Festivales —; Hoy, el finde, De gira y la
+    // búsqueda viven dentro de la Agenda.
+    await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    const cueNames = await page.locator(".bl-btrack .btk-cue .btk-name").allTextContents();
+    if (!cueNames.some((x) => /Agenda|Listings/.test(x)) || cueNames.length < 2 || cueNames.length > 3) fail(vp.name, "índice", `cues del índice: ${cueNames.join(" · ") || "ninguno"} (esperaba Noticias · Agenda · Festivales)`);
+    if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
+    if (await page.locator(".bl-ev-open").count()) fail(vp.name, "índice", "la portada de Bass muestra la lista: la agenda es una sección");
+    const cues = cueNames.length;
+    // Suena: la onda late (animaciones vivas en las barras) y un cue con foco hace solo de su tramo.
+    if (cues) {
+      await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      const beats = await page.locator(".bl-btrack").evaluate((el) => el.getAnimations({ subtree: true }).filter((x) => x.animationName === "btk-kick-y" || x.animationName === "btk-kick-x").length);
+      if (beats < 50) fail(vp.name, "índice", `la onda no late (${beats} barras animadas)`);
+      await page.locator(".btk-cue").last().focus();
+      await page.waitForTimeout(150);
+      if (!(await page.locator(".btk-bar.is-hot").count())) fail(vp.name, "índice", "el foco en un cue no enciende su tramo de la onda");
+      await page.locator(".btk-cue").last().blur();
+      // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
+      if (vp.isMobile) {
+        const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
+        await page.waitForTimeout(4300);
+        const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
+        if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
+      }
+      if (await page.locator(".btk-cue", { hasText: /Noticias|News/ }).count()) {
+        await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
+        if (!(await page.locator(".bl-bass-section-btn.active", { hasText: /Noticias|News/ }).count())) fail(vp.name, "índice", "el cue Noticias no abre Noticias");
+        if (await page.locator(".bl-btrack").count()) fail(vp.name, "índice", "dentro de Noticias sigue visible el track");
+        // Siempre se vuelve al track: acá con el atrás del navegador (o el gesto del celular).
+        await page.evaluate(() => history.back());
+        await page.waitForTimeout(400);
+        if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "el atrás del navegador desde Noticias no vuelve al track");
+        if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass volvió a mostrar las pestañas");
+        await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      }
+      // Agenda: Cuándo primero. En mobile, las pastillas a la vista; en desktop, la barra.
+      await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click");
+      await page.waitForTimeout(500);
+      if (!(await page.locator(".bl-bass-section-btn.active", { hasText: /Agenda|Listings/ }).count())) fail(vp.name, "índice", "el cue Agenda no abre la Agenda");
+      if (vp.isMobile) {
+        const hoyChip = page.locator(".bass-when .bl-filter-chip", { hasText: /Hoy|Today/ });
+        if (!(await hoyChip.count())) fail(vp.name, "agenda", "en mobile no está Hoy a la vista dentro de la Agenda");
+        else await hoyChip.click();
+      } else await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().selectOption("hoy");
+      await page.waitForTimeout(500);
+      const hoyOn = vp.isMobile ? await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count() : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy";
+      if (!hoyOn) fail(vp.name, "agenda", "Hoy no filtra la agenda");
+      // La flecha devuelve al track, a la vista y sin el filtro.
+      await page.locator(".bl-bass-back").click();
+      await page.waitForTimeout(500);
+      if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "la flecha desde la Agenda no vuelve al track");
+      else if (!(await page.locator(".bl-btrack").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight / 2; }))) fail(vp.name, "índice", "volver al track deja la pantalla en otro lado (el track queda fuera de vista)");
+      await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click");
+      await page.waitForTimeout(500);
+      const stillHoy = vp.isMobile ? await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count() : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy";
+      if (stillHoy) fail(vp.name, "índice", "volver al track no limpia el filtro Hoy");
+    }
+
+    // 2. Feed con eventos (dentro de la Agenda)
     const firstEvent = page.locator(".bl-ev-open").first();
     await firstEvent.waitFor({ state: "attached", timeout: 30_000 });
     const where = await page.locator(".bl-ctrl-where .bl-ctrl-select").first().inputValue({ timeout: 3000 }).catch(() => null);
@@ -123,55 +183,6 @@ async function run(vp) {
       if (!tourModal) fail(vp.name, "de gira", "tocar una gira no abre la ficha del show");
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
-    }
-    // Índice de Bass (sept 2026): la forma de onda con las secciones como hot
-    // cues. Tocar Noticias abre la pestaña; tocar Hoy filtra la agenda a hoy.
-    await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-    const cues = await page.locator(".bl-btrack .btk-cue").count();
-    if (cues < 5) fail(vp.name, "índice", `${cues} cues en el índice de Bass (esperaba ≥5)`);
-    if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
-    // Suena: la onda late (animaciones vivas en las barras) y un cue con foco hace solo de su tramo.
-    if (cues) {
-      await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
-      await page.waitForTimeout(300);
-      const beats = await page.locator(".bl-btrack").evaluate((el) => el.getAnimations({ subtree: true }).filter((x) => x.animationName === "btk-kick-y" || x.animationName === "btk-kick-x").length);
-      if (beats < 50) fail(vp.name, "índice", `la onda no late (${beats} barras animadas)`);
-      await page.locator(".btk-cue").nth(2).focus();
-      await page.waitForTimeout(150);
-      if (!(await page.locator(".btk-bar.is-hot").count())) fail(vp.name, "índice", "el foco en un cue no enciende su tramo de la onda");
-      await page.locator(".btk-cue").nth(2).blur();
-      // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
-      if (vp.isMobile) {
-        const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
-        await page.waitForTimeout(4300);
-        const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
-        if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
-      }
-    }
-    if (cues) {
-      await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
-      const newsOn = await page.locator(".bl-bass-section-btn.active", { hasText: /Noticias|News/ }).count();
-      if (!newsOn) fail(vp.name, "índice", "el cue Noticias no abre Noticias");
-      // El track es el único índice: en la portada no hay pestañas; se vuelve con la flecha.
-      if (await page.locator(".bl-btrack").count()) fail(vp.name, "índice", "dentro de Noticias sigue visible el track");
-      // Siempre se vuelve al track: acá con el atrás del navegador (o el gesto del celular).
-      await page.evaluate(() => history.back());
-      await page.waitForTimeout(400);
-      if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "el atrás del navegador desde Noticias no vuelve al track");
-      if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass volvió a mostrar las pestañas");
-      await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-      await page.locator(".btk-cue", { hasText: /^B|Hoy|Today/ }).filter({ hasText: /Hoy|Today/ }).first().dispatchEvent("click");
-      await page.waitForTimeout(600);
-      const whenVal = await page.locator(".bl-ctrl-select").first().inputValue().catch(() => null);
-      const whenBtn = await page.locator(".bl-ctrl-filters-btn.has-filters").count();
-      if (whenVal !== "hoy" && !whenBtn) fail(vp.name, "índice", "el cue Hoy no filtra la agenda a hoy");
-      // Hoy oculta el track: la flecha tiene que estar y devolver la portada sin filtro.
-      if (!(await page.locator(".bl-bass-back").count())) fail(vp.name, "índice", "con el filtro Hoy no hay flecha para volver al track");
-      else await page.locator(".bl-bass-back").click();
-      await page.waitForTimeout(500);
-      if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "la flecha desde Hoy no vuelve al track");
-      else if (!(await page.locator(".bl-btrack").isVisible()) || !(await page.locator(".bl-btrack").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight / 2; }))) fail(vp.name, "índice", "volver al track deja la pantalla en otro lado (el track queda fuera de vista)");
-      if (await page.locator(".bl-ctrl-filters-btn.has-filters").count() || (await page.locator(".bl-ctrl-select").first().inputValue().catch(() => "")) === "hoy") fail(vp.name, "índice", "volver al track no limpia el filtro Hoy");
     }
     if (where !== null && where !== "amba") fail(vp.name, "agenda", `la agenda arranca en "${where}" y no en Buenos Aires`);
     const count = await page.locator(".bl-ev-open").count();
@@ -247,6 +258,8 @@ async function run(vp) {
 
     // 4b. Mobile: el FAB se esconde al bajar leyendo (en desktop vive en el header)
     if (vp.isMobile) {
+      // Cerrar un evento abierto por link deja la portada (el track): a leer, a la Agenda.
+      if (await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).count()) { await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().dispatchEvent("click"); await page.waitForTimeout(500); }
       const scrollPanel = (y) => page.evaluate((y) => [...document.querySelectorAll(".bl-swipe-panel")].find((e) => e.scrollHeight > e.clientHeight + 10)?.scrollTo(0, y), y);
       await scrollPanel(900);
       await page.waitForTimeout(600);
