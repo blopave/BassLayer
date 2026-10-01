@@ -5795,6 +5795,8 @@ select.bl-venue-input { cursor:pointer; }
 .btk-bar.is-hot { stroke-opacity:1; --solo:1; }
 .btk-cue.is-hot .btk-thread, .btk-cue.is-hot .btk-mark { stroke-opacity:1; }
 .btk-cue.is-hot .btk-name { fill:var(--bl-accent-bass); }
+.btk-mark, .btk-name { transition:stroke-opacity .35s, fill .35s; }
+.btk-thread { transition:stroke-opacity .35s; }
 @media (prefers-reduced-motion: reduce) { .bl-btrack.is-live .btk-bar:not(.is-past), .bl-btrack.is-live .btk-now { animation:none; } }
 @media (max-width:768px) {
   .bl-btrack { margin:10px 16px 4px; }

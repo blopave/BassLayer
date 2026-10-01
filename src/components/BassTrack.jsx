@@ -17,12 +17,15 @@ import { cleanArtists } from "../utils/artists";
 // un riel parejo arriba — el mismo idioma que las Ramas de Layer.
 // Suena (sept 2026, Pablo: "que la música esté"): la onda late a 124 BPM y
 // cada golpe sale del cabezal hacia lo que viene, como el sonido; lo ya
-// reproducido queda quieto. Pasar por un cue hace solo de su tramo.
+// reproducido queda quieto. Pasar por un cue hace solo de su tramo; en
+// mobile (sin hover) el solo recorre los cues solo, como un DJ saltando entre
+// hot cues: uno cada 8 golpes.
 
 const DAYS = 60;                              // lo que viene
 const PAST = 7;                               // lo ya reproducido
 const LETTERS = "ABCDEF";
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
+const CUE_BEATS = 8;                          // mobile: golpes por cue en el loop
 const SPEED = 700;                            // px/s: cómo viaja el golpe desde el cabezal
 
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
@@ -135,11 +138,20 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
     return { V: false, H, x0, x1, xNow, mid, amp, bars, cues, ticks };
   }, [w, mobile, data, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hotR = hot && data.cues.find((c) => c.k === hot)?.r;
+  // Loop de cues en mobile: solo con el track en pantalla y sin "reducir movimiento".
+  const [auto, setAuto] = useState(0);
+  const loop = mobile && live && typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    if (!loop) return undefined;
+    const id = setInterval(() => setAuto((i) => i + 1), BEAT * CUE_BEATS * 1000);
+    return () => clearInterval(id);
+  }, [loop]);
+  const solo = hot || (loop ? data.cues[auto % data.cues.length]?.k : null);
+  const hotR = solo && data.cues.find((c) => c.k === solo)?.r;
   const barClass = (x) => `btk-bar${x < 0 ? " is-past" : ""}${hotR && x >= hotR[0] && x <= hotR[1] ? " is-hot" : ""}`;
   const barStyle = (b) => (b.past ? undefined : { "--d": `${b.d}s`, "--k": b.k });
   const cueProps = (c) => ({
-    className: `btk-cue${hot === c.k ? " is-hot" : ""}`, role: "button", tabIndex: 0,
+    className: `btk-cue${solo === c.k ? " is-hot" : ""}`, role: "button", tabIndex: 0,
     onMouseEnter: () => setHot(c.k), onMouseLeave: () => setHot(null),
     onFocus: () => setHot(c.k), onBlur: () => setHot(null),
     "aria-label": `${c.name}: ${c.sub}`,
@@ -148,7 +160,7 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
   });
 
   return (
-    <section className={`bl-btrack${live ? " is-live" : ""}${hot ? " has-hot" : ""}`} style={{ "--beat": `${BEAT}s` }} aria-label={t("track.aria")} ref={wrapRef}>
+    <section className={`bl-btrack${live ? " is-live" : ""}${solo ? " has-hot" : ""}`} style={{ "--beat": `${BEAT}s` }} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo?.V && (
         <svg className="is-v" viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>

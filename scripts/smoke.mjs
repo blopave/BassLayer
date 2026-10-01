@@ -140,6 +140,13 @@ async function run(vp) {
       await page.waitForTimeout(150);
       if (!(await page.locator(".btk-bar.is-hot").count())) fail(vp.name, "índice", "el foco en un cue no enciende su tramo de la onda");
       await page.locator(".btk-cue").nth(2).blur();
+      // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
+      if (vp.isMobile) {
+        const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
+        await page.waitForTimeout(4300);
+        const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
+        if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
+      }
     }
     if (cues) {
       await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
