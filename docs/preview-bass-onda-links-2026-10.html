@@ -1,0 +1,221 @@
+<meta charset="utf-8">
+<title>Bass · la onda completa y sus links</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{ --bg:#141210; --line:#2b2621; --text:#f3eee9; --sec:#a79c92; --ter:#6d645c; --acc:#C49070; }
+*{box-sizing:border-box} body{margin:0;background:#0b0a09;color:var(--text);font-family:'Geist',system-ui,sans-serif;padding:28px 24px 80px}
+h1{font-size:24px;font-weight:650;margin:0 0 8px;letter-spacing:-.02em} .lead{color:var(--sec);font-size:14.5px;max-width:92ch;margin:0 0 30px;line-height:1.6}
+h2{font-size:19px;font-weight:650;margin:46px 0 6px;letter-spacing:-.015em} h2 em{font-style:normal;color:var(--acc)} .why{color:var(--sec);font-size:14px;max-width:96ch;margin:0 0 16px;line-height:1.6}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:390px;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:var(--bg);flex:none}
+.desk{width:1200px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);flex:none}
+.top{height:58px;display:flex;align-items:center;justify-content:center;gap:120px;border-bottom:1px solid var(--line)} .top b{font:800 26px 'Geist';color:var(--acc);letter-spacing:-.03em} .top span{letter-spacing:.35em;color:var(--ter);font-size:12px}
+.tick{height:40px;border-bottom:1px solid var(--line);font:12px 'Geist Mono';color:var(--ter);display:flex;align-items:center;padding:0 16px;white-space:nowrap;overflow:hidden}
+canvas{display:block}
+.rec{display:inline-block;font:600 10px 'Geist Mono';letter-spacing:.12em;color:#171210;background:var(--acc);padding:3px 7px;border-radius:3px;margin-left:10px;vertical-align:3px}
+.note{color:var(--ter);font:12px 'Geist Mono',monospace;margin-top:40px;max-width:120ch;line-height:1.6}
+</style>
+<h1>Bass: la onda completa y sus links</h1>
+<p class="lead">Pedido de Pablo: la frecuencia no se corta, como la curva de Layer, y los links (sin letras: ya tienen nombre) tienen que ser parte de ella. Tres caminos, los tres con datos reales y la misma onda continua: noticias de las últimas 24 h → fiestas de los próximos 30 días (desde AHORA) → festivales de los próximos 6 meses.</p>
+
+<h2>A · La lupa del CDJ <span class="rec">RECOMENDADA</span></h2>
+<p class="why">El CDJ muestra dos ondas: el <em>overview</em> (el tema entero) y la onda ampliada de lo que suena. Acá la onda completa corre abajo, sin cortes, y cada link es la lupa de su tramo: su nombre y su onda ampliada, unidas al tramo por dos líneas. Es exactamente lo que hacen las ramas de Layer (cada sección = la lupa de su pedazo de curva), traducido al instrumento de Bass: los dos mundos hablan la misma gramática.</p>
+<div class="row"><div class="phone"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca</div><canvas id="Am"></canvas></div><div class="desk"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca · Elio Riso, Festa Bros @ 2GTHR · LEGGUI, Mariano DC @ Under Club</div><canvas id="Ad"></canvas></div></div>
+
+<h2>B · Los links montan la onda</h2>
+<p class="why">Una sola onda, grande, de punta a punta. Cada nombre se apoya sobre el contorno de su tramo, como un jinete sobre la ola: sube o baja según los picos de esa parte, y una línea fina lo ancla al borde de la onda. La onda no se toca; el link se adapta a ella.</p>
+<div class="row"><div class="phone"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca</div><canvas id="Bm"></canvas></div><div class="desk"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca · Elio Riso, Festa Bros @ 2GTHR · LEGGUI, Mariano DC @ Under Club</div><canvas id="Bd"></canvas></div></div>
+
+<h2>C · La palabra hecha de onda</h2>
+<p class="why">La onda completa y, sobre cada tramo, su nombre en grande, hecho con las mismas barras: donde pasa una letra las barras se encienden. El link no está encima de la frecuencia: es la frecuencia. La más original de las tres; la lectura de los nombres depende del tamaño (en mobile, una pista por parte).</p>
+<div class="row"><div class="phone"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca</div><canvas id="Cm"></canvas></div><div class="desk"><div class="top"><b>Bass</b><span>LAYER</span></div><div class="tick">● EN VIVO · Nick Varon @ La Biblioteca · Elio Riso, Festa Bros @ 2GTHR · LEGGUI, Mariano DC @ Under Club</div><canvas id="Cd"></canvas></div></div>
+
+<p class="note">mockup estático · datos reales de /api/bass-news, /api/events (AMBA) y /api/festivals · en el sitio suena (124 BPM, ritmo humano) y al pasar por un link el resto frena y su tramo pasa a preescucha · sin letras A/B/C · la onda nunca se corta</p>
+
+<script>
+const ACC = "#C49070", INK = "#f3eee9", SEC = "#a79c92", TER = "#6d645c";
+const hash = (k) => { const v = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+const grain = (i) => 0.65 * hash(i) + 0.35 * hash(Math.floor(i / 3) + 999);
+function envelope(bins) {
+  const n = bins.length;
+  const sm = bins.map((_, i) => { let s = 0, w = 0; for (let j = Math.max(0, i - 3); j <= Math.min(n - 1, i + 3); j++) { const g = Math.exp(-(((i - j) / 0.9) ** 2)); s += bins[j] * g; w += g; } return s / w; });
+  const max = Math.max(1e-6, ...sm);
+  const norm = sm.map((v, i) => v / Math.max(0.35 * max, ...sm.slice(Math.max(0, i - 7), i + 8)));
+  return (t) => { const p = Math.max(0, Math.min(n - 1, t * n - 0.5)), a = Math.floor(p), b = Math.min(n - 1, a + 1), f = p - a; return norm[a] * (1 - f) + norm[b] * f; };
+}
+const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
+const MON = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+function canvas(id, W, H) {
+  const c = document.getElementById(id), d = Math.min(2, devicePixelRatio || 1);
+  c.width = W * d; c.height = H * d; c.style.width = W + "px"; c.style.height = H + "px";
+  const x = c.getContext("2d"); x.setTransform(d, 0, 0, d, 0, 0); x.lineCap = "round"; return x;
+}
+// Barras de un tramo de onda, horizontal (x0..x1 sobre el eje y=mid) o vertical.
+function bars(ctx, { from, to, axis, amp, energy, step = 3, lw = 1.8, vertical = false, alpha = (u) => 1, seed = 0, hmul = 1 }) {
+  ctx.lineWidth = lw; ctx.strokeStyle = ACC;
+  let i = seed;
+  for (let p = from; p <= to; p += step, i++) {
+    const u = (p - from) / (to - from), e = energy(u), h = (1 + e * amp * (0.35 + 0.65 * grain(i))) * hmul;
+    ctx.globalAlpha = alpha(u);
+    ctx.beginPath();
+    if (vertical) { ctx.moveTo(axis - h, p); ctx.lineTo(axis + h, p); } else { ctx.moveTo(p, axis - h); ctx.lineTo(p, axis + h); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+const txt = (ctx, s, x, y, font, color, align = "left") => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(s, x, y); };
+
+(async function main() {
+  await document.fonts.ready;
+  const [news, evs, fests] = await Promise.all([fetch("/api/bass-news").then((r) => r.json()), fetch("/api/events").then((r) => r.json()), fetch("/api/festivals").then((r) => r.json())]);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const off = (d) => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / 864e5);
+  const evDate = (e) => { const m = MON.indexOf(String(e.month || "").toLowerCase().slice(0, 3)); return m < 0 ? null : new Date(today.getFullYear() + (m < today.getMonth() - 2 ? 1 : 0), m, Number(e.day)); };
+  const nb = Array(24).fill(0); let last = 0;
+  for (const n of news) { const m = minsAgo(n.time); if (m == null) continue; const o = Math.floor(m / 60); if (o < 24) nb[23 - o]++; if (m < 1440) last++; }
+  const ab = Array(30).fill(0); let up = 0, tn = 0;
+  for (const e of evs.filter((e) => e.area === "amba")) { const d = evDate(e); if (!d) continue; const o = off(d); if (o < 0) continue; up++; if (o === 0) tn++; if (o < 30) ab[o] += 1 + Math.min(1, (e.artists?.length || 0) / 4); }
+  const iso = today.toISOString().slice(0, 10);
+  const nx = fests.filter((f) => (f.dates_start || "") >= iso).sort((a, b) => a.dates_start.localeCompare(b.dates_start));
+  const fb = Array(26).fill(0); for (const f of nx) { const wk = Math.floor(off(new Date(f.dates_start + "T12:00:00")) / 7); if (wk < 26) fb[wk] += f.country === "Argentina" ? 2 : 1; }
+  const fe = nx.find((f) => f.country === "Argentina") || nx[0], fd = fe && new Date(fe.dates_start + "T12:00:00");
+  const P = [
+    { name: "Noticias", sub: `${last} notas`, span: "ÚLTIMAS 24 H", env: envelope(nb) },
+    { name: "Agenda", sub: `${tn} hoy · ${up} por venir`, span: "PRÓXIMOS 30 DÍAS", env: envelope(ab) },
+    { name: "Festivales", sub: fe ? `${fe.name.replace(/\s+Buenos Aires$/i, " BA")} · ${fd.getDate()} ${MON[fd.getMonth()]}` : "", span: "PRÓXIMOS 6 MESES", env: envelope(fb) },
+  ];
+  // Energía del tema entero en u ∈ [0,3): continua, con mezcla suave entre partes.
+  const E = (u) => {
+    const s = Math.min(2, Math.floor(u)), f = u - s, at = (i, x) => 0.16 + 0.84 * P[i].env(Math.max(0, Math.min(1, x)));
+    let e = at(s, f); const X = 0.06;
+    if (f < X && s > 0) e = e * (0.5 + f / X / 2) + at(s - 1, 1) * (0.5 - f / X / 2);
+    if (f > 1 - X && s < 2) e = e * (0.5 + (1 - f) / X / 2) + at(s + 1, 0) * (0.5 - (1 - f) / X / 2);
+    return e;
+  };
+  const pastA = (u) => (u < 1 ? 0.42 : 0.9);
+  const nameF = (px) => `650 ${px}px Geist`, monoF = (px, w = 500) => `${w} ${px}px "Geist Mono"`;
+  const label = (ctx, p, x, y, big, align = "left") => {
+    txt(ctx, p.name, x, y, nameF(big), INK, align);
+    txt(ctx, p.sub, x, y + big * 0.62 + 6, monoF(big > 24 ? 12 : 11), SEC, align);
+    ctx.save(); ctx.font = monoF(big > 24 ? 9.5 : 9); ctx.fillStyle = TER; ctx.textAlign = align; ctx.letterSpacing = "1.2px"; ctx.fillText(p.span, x, y + big * 0.62 + 24); ctx.restore();
+  };
+
+  // ── A · Lupa ─────────────────────────────────────────────
+  {
+    const W = 1200, H = 620, ctx = canvas("Ad", W, H);
+    const ox0 = 32, ox1 = W - 32, oy = 548, oamp = 34;           // overview
+    bars(ctx, { from: ox0, to: ox1, axis: oy, amp: oamp, energy: (u) => E(u * 3), step: 2.4, lw: 1.3, alpha: (u) => pastA(u * 3) * 0.8 });
+    const now = ox0 + (ox1 - ox0) / 3;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(now, oy - oamp - 8); ctx.lineTo(now, oy + oamp + 8); ctx.stroke();
+    txt(ctx, "AHORA", now, oy + oamp + 24, monoF(9.5, 700), INK, "center");
+    const zw = 316, gap = (W - 64 - 3 * zw) / 2, zy = 300, zamp = 96;
+    P.forEach((p, j) => {
+      const zx0 = 32 + j * (zw + gap), zx1 = zx0 + zw, rx0 = ox0 + (j * (ox1 - ox0)) / 3, rx1 = ox0 + ((j + 1) * (ox1 - ox0)) / 3;
+      // Tramo marcado en el overview + las dos líneas de la lupa.
+      ctx.strokeStyle = ACC; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(rx0 + 4, oy - oamp - 14); ctx.lineTo(rx1 - 4, oy - oamp - 14); ctx.stroke();
+      ctx.globalAlpha = 0.28; ctx.beginPath();
+      ctx.moveTo(zx0, zy + zamp + 16); ctx.bezierCurveTo(zx0, zy + zamp + 70, rx0 + 4, oy - oamp - 70, rx0 + 4, oy - oamp - 14);
+      ctx.moveTo(zx1, zy + zamp + 16); ctx.bezierCurveTo(zx1, zy + zamp + 70, rx1 - 4, oy - oamp - 70, rx1 - 4, oy - oamp - 14);
+      ctx.stroke(); ctx.globalAlpha = 1;
+      bars(ctx, { from: zx0, to: zx1, axis: zy, amp: zamp, energy: (u) => 0.16 + 0.84 * p.env(u), step: 3.2, lw: 1.9, alpha: () => (j === 0 ? 0.5 : 0.95), seed: j * 400 });
+      if (j === 1) { ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(zx0, zy - zamp - 8); ctx.lineTo(zx0, zy + zamp + 8); ctx.stroke(); }
+      label(ctx, p, zx0, 92, 30);
+    });
+  }
+  {
+    const W = 390, H = 720, ctx = canvas("Am", W, H);
+    const ox = 34, oy0 = 26, oy1 = H - 26, oamp = 15;
+    bars(ctx, { from: oy0, to: oy1, axis: ox, amp: oamp, energy: (u) => E(u * 3), step: 2.2, lw: 1.2, vertical: true, alpha: (u) => pastA(u * 3) * 0.8 });
+    const nowY = oy0 + (oy1 - oy0) / 3;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ox - oamp - 6, nowY); ctx.lineTo(ox + oamp + 6, nowY); ctx.stroke();
+    const rowH = (H - 40) / 3;
+    P.forEach((p, j) => {
+      const ry0 = oy0 + (j * (oy1 - oy0)) / 3, ry1 = oy0 + ((j + 1) * (oy1 - oy0)) / 3;
+      const top = 20 + j * rowH, zy = top + 118, zx0 = 78, zx1 = W - 18, zamp = 40;
+      ctx.strokeStyle = ACC; ctx.globalAlpha = 0.55; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ox + oamp + 8, ry0 + 3); ctx.lineTo(ox + oamp + 8, ry1 - 3); ctx.stroke();
+      ctx.globalAlpha = 0.28; ctx.beginPath();
+      ctx.moveTo(ox + oamp + 8, ry0 + 3); ctx.bezierCurveTo(68, ry0 + 3, 62, zy - zamp - 6, zx0 - 6, zy - zamp - 6);
+      ctx.moveTo(ox + oamp + 8, ry1 - 3); ctx.bezierCurveTo(68, ry1 - 3, 62, zy + zamp + 6, zx0 - 6, zy + zamp + 6);
+      ctx.stroke(); ctx.globalAlpha = 1;
+      label(ctx, p, zx0, top + 30, 22);
+      bars(ctx, { from: zx0, to: zx1, axis: zy, amp: zamp, energy: (u) => 0.16 + 0.84 * p.env(u), step: 2.6, lw: 1.5, alpha: () => (j === 0 ? 0.5 : 0.95), seed: j * 400 });
+      if (j === 1) { ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(zx0, zy - zamp - 6); ctx.lineTo(zx0, zy + zamp + 6); ctx.stroke(); txt(ctx, "AHORA", zx0, zy + zamp + 20, monoF(9, 700), INK, "left"); }
+    });
+  }
+
+  // ── B · Los links montan la onda ─────────────────────────
+  // Alto local de la onda (sin textura) para que el link se apoye en su contorno.
+  const localTop = (from, to, x0, x1, amp, j0) => { let m = 0; for (let x = x0; x <= x1; x += 3) { const u = (x - from) / (to - from); m = Math.max(m, 1 + E(u * 3) * amp); } return m; };
+  {
+    const W = 1200, H = 620, ctx = canvas("Bd", W, H);
+    const x0 = 32, x1 = W - 32, mid = 360, amp = 170;
+    bars(ctx, { from: x0, to: x1, axis: mid, amp, energy: (u) => E(u * 3), step: 3, lw: 1.8, alpha: (u) => pastA(u * 3) });
+    const now = x0 + (x1 - x0) / 3;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(now, mid - amp - 10); ctx.lineTo(now, mid + amp + 10); ctx.stroke();
+    txt(ctx, "AHORA", now, mid + amp + 28, monoF(9.5, 700), INK, "center");
+    P.forEach((p, j) => {
+      const sx = x0 + (j * (x1 - x0)) / 3 + 14, lw = 230;
+      const top = localTop(x0, x1, sx, sx + lw, amp);
+      const by = mid - top - 70;
+      ctx.strokeStyle = ACC; ctx.globalAlpha = 0.6; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx, by + 34); ctx.lineTo(sx, mid - top - 6); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = ACC; ctx.beginPath(); ctx.arc(sx, mid - top - 6, 2.5, 0, 7); ctx.fill();
+      label(ctx, p, sx + 10, by, 28);
+    });
+  }
+  {
+    const W = 390, H = 720, ctx = canvas("Bm", W, H);
+    const y0 = 24, y1 = H - 24, cx = 96, amp = 72;
+    bars(ctx, { from: y0, to: y1, axis: cx, amp, energy: (u) => E(u * 3), step: 2.5, lw: 1.5, vertical: true, alpha: (u) => pastA(u * 3) });
+    const nowY = y0 + (y1 - y0) / 3;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(cx - amp - 8, nowY); ctx.lineTo(cx + amp + 8, nowY); ctx.stroke();
+    txt(ctx, "AHORA", 8, nowY - 6, monoF(9, 700), INK);
+    P.forEach((p, j) => {
+      const sy = y0 + (j * (y1 - y0)) / 3 + 18, edge = localTop(y0, y1, sy - 10, sy + 50, amp);
+      const lx = cx + edge + 18;
+      ctx.strokeStyle = ACC; ctx.globalAlpha = 0.6; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx + edge + 4, sy); ctx.lineTo(lx - 4, sy); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = ACC; ctx.beginPath(); ctx.arc(cx + edge + 4, sy, 2.3, 0, 7); ctx.fill();
+      label(ctx, p, lx, sy + 7, 21);
+    });
+  }
+
+  // ── C · La palabra hecha de onda ─────────────────────────
+  function wordWave(ctx, W, H, { from, to, axis, amp, energy, step, lw, words, vertical = false, alphaFn }) {
+    bars(ctx, { from, to, axis, amp, energy, step, lw, alpha: alphaFn });
+    // Capa encendida: la misma onda, más alta y brillante, recortada a las letras.
+    const off = document.createElement("canvas"), d = Math.min(2, devicePixelRatio || 1);
+    off.width = W * d; off.height = H * d; const o = off.getContext("2d"); o.setTransform(d, 0, 0, d, 0, 0); o.lineCap = "round";
+    o.lineWidth = lw * 1.25; o.strokeStyle = "#f0c9a6";
+    for (let p = from; p <= to; p += step) { o.beginPath(); o.moveTo(p, axis - amp * 1.4); o.lineTo(p, axis + amp * 1.4); o.stroke(); }
+    // Máscara con TODAS las palabras juntas (destination-in palabra por palabra borraría las otras).
+    const mk = document.createElement("canvas"); mk.width = off.width; mk.height = off.height; const m = mk.getContext("2d"); m.setTransform(d, 0, 0, d, 0, 0);
+    for (const w of words) { m.font = w.font; m.textAlign = "left"; m.textBaseline = "middle"; m.fillStyle = "#000"; m.fillText(w.text, w.x, w.y); }
+    o.globalCompositeOperation = "destination-in"; o.setTransform(1, 0, 0, 1, 0, 0); o.drawImage(mk, 0, 0); o.setTransform(d, 0, 0, d, 0, 0);
+    ctx.drawImage(off, 0, 0, W, H);
+    for (const w of words) { ctx.font = w.font; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(196,144,112,.10)"; ctx.fillText(w.text, w.x, w.y); ctx.textBaseline = "alphabetic"; if (w.sub) { txt(ctx, w.sub, w.x + 2, w.y + w.size * 0.62, monoF(w.size > 60 ? 12 : 11), SEC); } }
+  }
+  {
+    const W = 1200, H = 620, ctx = canvas("Cd", W, H);
+    const x0 = 32, x1 = W - 32, mid = 300, amp = 150;
+    // Cada palabra a la medida de su tercio (la más larga manda el tamaño, igual para las tres).
+    const seg = (x1 - x0) / 3; ctx.font = "800 100px Geist";
+    const size = Math.floor(100 * Math.min(...P.map((p) => (seg - 40) / ctx.measureText(p.name).width)));
+    const words = P.map((p, j) => ({ text: p.name, x: x0 + j * seg + 10, y: mid, font: `800 ${size}px Geist`, size, sub: `${p.sub}  ·  ${p.span.toLowerCase()}` }));
+    wordWave(ctx, W, H, { from: x0, to: x1, axis: mid, amp, energy: (u) => E(u * 3), step: 3, lw: 1.8, words, alphaFn: (u) => pastA(u * 3) * 0.75 });
+    const now = x0 + (x1 - x0) / 3;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.moveTo(now - 6, mid - amp - 10); ctx.lineTo(now - 6, mid + amp + 10); ctx.stroke(); ctx.globalAlpha = 1;
+    txt(ctx, "AHORA", now - 6, mid + amp + 28, monoF(9.5, 700), INK, "center");
+  }
+  {
+    const W = 390, H = 720, ctx = canvas("Cm", W, H);
+    const lane = (H - 30) / 3;
+    P.forEach((p, j) => {
+      const mid = 30 + j * lane + lane / 2 - 14, amp = 62;
+      const words = [{ text: p.name, x: 16, y: mid, font: "800 54px Geist", size: 54, sub: `${p.sub}  ·  ${p.span.toLowerCase()}` }];
+      wordWave(ctx, W, H, { from: 16, to: W - 16, axis: mid, amp, energy: (u) => E(j + u * 0.999), step: 2.6, lw: 1.5, words, alphaFn: () => (j === 0 ? 0.42 : 0.8) * 0.8 });
+      if (j === 1) { ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(12, mid - amp - 6); ctx.lineTo(12, mid + amp + 6); ctx.stroke(); }
+    });
+  }
+})();
+</script>

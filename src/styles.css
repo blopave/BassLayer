@@ -5755,34 +5755,29 @@ select.bl-venue-input { cursor:pointer; }
   .blh-list button { grid-template-columns:64px minmax(0,1fr); padding:12px 4px; }
 }
 
-/* ── Índice de Bass (sept 2026): una sola onda, sin cajas; cada sección vive
-   en el break con que arranca su parte, sobre el eje de la onda. Un color: el
-   cobre de Bass. La onda se dibuja en canvas (BassTrack); el SVG encima lleva
-   los links y el cabezal. ── */
+/* ── Índice de Bass (sept–oct 2026): una sola onda que nunca se corta y las
+   secciones hechas de onda (cada nombre escrito con las mismas barras, en el
+   canvas de BassTrack). El SVG encima lleva la caja real de cada palabra (foco
+   y lectura), su dato debajo de la onda y el cabezal. Un color: el cobre. ── */
 .bl-btrack { margin:14px 32px 12px; min-height:600px; /* alto reservado antes de medir: sin salto ni scroll que se corre */ }
 .btk-stage { position:relative; }
 .btk-canvas { position:absolute; inset:0; display:block; pointer-events:none; }
 .bl-btrack svg { position:relative; display:block; overflow:visible; }
 .btk-cue { cursor:pointer; outline:none; }
 .btk-hit { fill:transparent; }
-.btk-pad { fill:var(--bl-accent-bass); transition:fill .35s, opacity .35s; }
-.btk-letter { fill:#171210; font:700 13px var(--font-mono); pointer-events:none; }
-.btk-name { fill:var(--bl-text); font:650 30px var(--font-sans); letter-spacing:-.025em; transition:fill .35s; }
-.btk-sub { fill:var(--bl-text-sec); font:500 11.5px var(--font-mono); letter-spacing:.02em; transition:fill .35s; }
+.btk-name { fill:transparent; }
+.btk-sub { fill:var(--bl-text-sec); font:500 12px var(--font-mono); letter-spacing:.02em; transition:fill .35s; }
 .btk-span { fill:var(--bl-text-ter); font:500 9.5px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; transition:fill .35s; }
-.btk-now { stroke:var(--bl-text); stroke-width:1.5; transition:stroke-opacity .35s; }
+.btk-now { stroke:var(--bl-text); stroke-width:1.5; }
 .btk-nowl { fill:var(--bl-text); font:700 9.5px var(--font-mono); letter-spacing:.1em; }
-/* El link en solo se enciende en cobre; con uno elegido, los otros bajan. */
-.btk-cue.is-hot .btk-name { fill:var(--bl-accent-bass); }
-.btk-cue.is-hot .btk-sub { fill:var(--bl-text); }
-.btk-cue.is-off .btk-name, .btk-cue.is-off .btk-sub { fill:var(--bl-text-ter); }
-.btk-cue.is-off .btk-pad { opacity:.45; }
-.btk-cue.is-off .btk-now { stroke-opacity:.35; }
-.btk-cue:focus-visible .btk-pad { stroke:var(--bl-text); stroke-width:2; }
+/* La sección en solo: su dato se enciende; con una elegida, los otros bajan. */
+.btk-cue.is-hot .btk-sub { fill:var(--bl-accent-bass); }
+.btk-cue.is-hot .btk-span { fill:var(--bl-text-sec); }
+.btk-cue.is-off .btk-sub { fill:var(--bl-text-ter); }
+.btk-cue:focus-visible .btk-name { fill:none; stroke:var(--bl-text); stroke-width:1; stroke-dasharray:3 3; }
 @media (max-width:768px) {
   .bl-btrack { margin:10px 16px 6px; }
-  .btk-name { font-size:21px; }
-  .btk-sub { font-size:10.5px; }
+  .btk-sub { font-size:11px; }
 }
 
 /* Flecha para volver al track (Bass), en cobre. */

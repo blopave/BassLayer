@@ -1,36 +1,38 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { MONTHS_ABBR, getEventDate } from "../i18n/strings";
 import { api, shared } from "../utils/api";
 
-// Portada de Bass (sept 2026, Pablo): el índice como un track. Lo que la curva
-// de análisis técnico es para Layer (el instrumento de su público), la forma
-// de onda lo es para Bass. La portada es solo eso: el tema y sus secciones.
-// Una sola onda, sin cajas: el tema tiene tres partes y cada sección vive en
-// el BREAK con que arranca la suya — la onda se abre en un silencio (fundido
-// de salida y de entrada, como un breakdown) y el link está ahí, sobre el eje
-// de la onda, adentro de la frecuencia:
-//   A Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora (atenuado).
-//   B Agenda     — desde el cabezal (AHORA): las fiestas de los próximos 30 días.
-//   C Festivales — el cierre: los festivales de los próximos 6 meses.
-// Desktop: la onda de punta a punta, a lo alto de la pantalla. Mobile: tres
-// pistas sin cajas, cada una arranca con su break y sigue con su onda.
-// Cada clip se dibuja con sus datos reales, comprimido como un master (sus
-// altos y bajos, ver envelope), sobre un piso de señal. La textura es textura.
+// Portada de Bass (sept–oct 2026, Pablo): el índice como un track. Lo que la
+// curva de análisis técnico es para Layer (el instrumento de su público), la
+// forma de onda lo es para Bass. La portada es solo eso: una onda completa,
+// que nunca se corta, y sus secciones HECHAS DE ONDA — cada nombre está
+// escrito con las mismas barras, encendidas donde pasa una letra:
+//   Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora (atenuado).
+//   Agenda     — desde el cabezal (AHORA): las fiestas de los próximos 30 días.
+//   Festivales — el cierre: los festivales de los próximos 6 meses.
+// Cada nombre va centrado en su parte, con aire: alrededor de la palabra la
+// onda se aquieta (sigue sonando, más baja) para que respire. El dato y el
+// rango van debajo de la onda, nunca sobre las barras.
+// Desktop: la onda de punta a punta, a lo alto de la pantalla. Mobile: una
+// pista por parte (el tema que sigue en la línea de abajo).
+// Cada parte se dibuja con sus datos reales, comprimida como un master (ver
+// envelope), sobre un piso de señal. La textura es textura.
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
 // 1 del compás acentuado), ataque suave, caída larga, viajando desde el
-// cabezal; encima una ondulación continua. Al ponerse sobre un link, el resto
-// del tema FRENA como una bandeja sin motor (desacelera hasta quedar quieto y
-// se apaga) y su clip pasa a PREESCUCHA: un cabezal lo recorre y enciende las
-// barras a su paso. En mobile (sin hover) el loop hace lo mismo por turnos.
+// cabezal; encima una ondulación continua. Al ponerse sobre una sección, el
+// resto del tema FRENA como una bandeja sin motor y se apaga, y su parte pasa
+// a PREESCUCHA: un cabezal la recorre y enciende las barras a su paso. En
+// mobile (sin hover) el loop hace lo mismo por turnos.
 
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
-const CUE_BEATS = 8;                          // mobile: golpes por clip en el loop
-const SCAN_BEATS = 8;                         // preescucha: el cabezal cruza el clip en 2 compases
-const FLOW = 0.45;                            // clips/s: cómo viaja el golpe desde el cabezal
+const CUE_BEATS = 8;                          // mobile: golpes por parte en el loop
+const SCAN_BEATS = 8;                         // preescucha: el cabezal cruza la parte en 2 compases
+const FLOW = 0.45;                            // partes/s: cómo viaja el golpe desde el cabezal
 const NEWS_BINS = 24, NEWS_H = 1;             // Noticias: 24 h en tramos de 1 h (el feed cubre ~1 día)
 const AGENDA_DAYS = 30;                       // Agenda: un tramo por día
 const FEST_WEEKS = 26;                        // Festivales: un tramo por semana
+const WORD_SHARE = 0.6;                       // la palabra ocupa ~60 % de su parte: aire a los costados
 
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
@@ -38,10 +40,11 @@ const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ?
 // lento (cada 3 barras), como el detalle de una forma de onda real.
 const hash = (k) => { const v = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
 const grain = (i) => 0.65 * hash(i) + 0.35 * hash(Math.floor(i / 3) + 999);
+const smooth = (x) => { const c = Math.max(0, Math.min(1, x)); return c * c * (3 - 2 * c); };
 
-// Envolvente continua de un clip: sus tramos suavizados (gaussiana de 0,9
+// Envolvente continua de una parte: sus tramos suavizados (gaussiana de 0,9
 // tramo) y normalizados como un compresor: cada tramo contra el más fuerte de
-// sus ±7 vecinos (piso: 35 % del pico del clip). Así una noche enorme no
+// sus ±7 vecinos (piso: 35 % del pico de la parte). Así una noche enorme no
 // aplasta al resto y cada semana conserva sus altos y bajos.
 function envelope(bins) {
   const n = bins.length;
@@ -60,6 +63,9 @@ function hit(ph) {
   return vel * (f < a ? f / a : Math.exp(-(f - a) * 3.6));
 }
 
+let measurer = null;
+const textWidth = (s, font) => { measurer = measurer || document.createElement("canvas").getContext("2d"); measurer.font = font; return measurer.measureText(s).width; };
+
 export function BassTrack({ events, today, onCue }) {
   const { t, locale } = useLocale();
   const M = MONTHS_ABBR[locale] || MONTHS_ABBR.es;
@@ -69,10 +75,9 @@ export function BassTrack({ events, today, onCue }) {
   const [avail, setAvail] = useState(0);      // desktop: alto de pantalla disponible desde el track
   const [news, setNews] = useState([]);
   const [fests, setFests] = useState([]);
-  const [hot, setHot] = useState(null);       // clip bajo el mouse o con foco
+  const [hot, setHot] = useState(null);       // sección bajo el mouse o con foco
   const [live, setLive] = useState(false);    // en pantalla: suena (fuera, no gasta)
-  const [textW, setTextW] = useState([]);     // ancho real de cada link (medido): el break es a su medida
-  const labelRefs = useRef([]);
+  const [fonts, setFonts] = useState(0);      // las palabras se miden con la fuente real, ya cargada
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return undefined;
@@ -82,6 +87,7 @@ export function BassTrack({ events, today, onCue }) {
     const io = new IntersectionObserver(([e]) => setLive(e.isIntersecting));
     io.observe(el);
     window.addEventListener("resize", measure);
+    document.fonts?.ready.then(() => setFonts((n) => n + 1));
     return () => { ro.disconnect(); io.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   useEffect(() => {
@@ -91,7 +97,7 @@ export function BassTrack({ events, today, onCue }) {
     return () => { on = false; };
   }, []);
 
-  // Los tres clips: sus tramos (datos reales) y su cabecera.
+  // Las tres partes: sus tramos (datos reales), su nombre y su dato.
   const data = useMemo(() => {
     const off = (d) => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / 864e5);
     const day = (d) => `${d.getDate()} ${locale === "es" ? M[d.getMonth()].toLowerCase() : M[d.getMonth()]}`;
@@ -129,50 +135,66 @@ export function BassTrack({ events, today, onCue }) {
     const festSub = fest ? `${fest.name.replace(/\s+Buenos Aires$/i, " BA")} · ${day(new Date(`${fest.dates_start}T12:00:00`))}` : "";
 
     return [
-      { k: "news", letter: "A", env: envelope(newsBins), name: t("section.news"), sub: news.length ? t("track.newsSub", { n: lastDay }) : "", span: t("track.spanNews") },
-      { k: "agenda", letter: "B", env: envelope(agendaBins), name: t("track.agenda"), sub: t("track.agendaSub", { today: todayN, n: upcoming }), span: t("track.spanAgenda") },
-      { k: "fests", letter: "C", env: envelope(festBins), name: t("section.festivals"), sub: festSub, span: t("track.spanFests") },
+      { k: "news", env: envelope(newsBins), name: t("section.news"), sub: news.length ? t("track.newsSub", { n: lastDay }) : "", span: t("track.spanNews") },
+      { k: "agenda", env: envelope(agendaBins), name: t("track.agenda"), sub: t("track.agendaSub", { today: todayN, n: upcoming }), span: t("track.spanAgenda") },
+      { k: "fests", env: envelope(festBins), name: t("section.festivals"), sub: festSub, span: t("track.spanFests") },
     ];
   }, [events, news, fests, today, t, M, locale]);
 
+  // Energía del tema en u ∈ [0, 3): parte = ⌊u⌋, continua, con mezcla suave
+  // entre partes (como en un mix). Piso de señal (0,16) + datos.
+  const energy = (u) => {
+    const s = Math.min(2, Math.floor(u)), f = u - s, at = (i, x) => 0.16 + 0.84 * data[i].env(Math.max(0, Math.min(1, x)));
+    let e = at(s, f);
+    const X = 0.06;
+    if (f < X && s > 0) e = e * (0.5 + f / X / 2) + at(s - 1, 1) * (0.5 - f / X / 2);
+    if (f > 1 - X && s < 2) e = e * (0.5 + (1 - f) / X / 2) + at(s + 1, 0) * (0.5 - (1 - f) / X / 2);
+    return e;
+  };
+
   const mobile = w > 0 && w <= 768;
-  // Geometría: cada parte tiene su break (el hueco donde vive el link, ancho a
-  // la medida del texto) y su onda, que entra y sale con un fundido. Desktop:
-  // las tres partes a lo ancho, sobre un mismo eje; mobile: una pista por parte.
+  // Geometría: la onda (una línea en desktop, una pista por parte en mobile),
+  // la palabra de cada parte centrada en ella y su dato debajo.
   const geo = useMemo(() => {
     if (!w) return null;
-    const H = mobile ? 600 : Math.round(Math.max(420, Math.min(680, (avail || 720) - 24)));
-    const nameCh = mobile ? 12 : 17, subCh = mobile ? 6.6 : 7.2, spanCh = mobile ? 7 : 7.6;   // estimación hasta medir
-    const FADE = mobile ? 18 : 28;
-    const clips = data.map((p, j) => {
-      const x = mobile ? 0 : (j * w) / 3, cw = mobile ? w : w / 3, y = mobile ? (j * H) / 3 : 0, ch = mobile ? H / 3 : H;
-      const mid = mobile ? y + ch / 2 : H / 2 - 10, amp = mobile ? ch / 2 - 24 : H / 2 - 44;
-      const lx = x + (mobile ? 0 : FADE);                            // dónde arranca el link (mismo aire en las tres)
-      const tw = textW[j] || Math.max(36 + p.name.length * nameCh, p.sub.length * subCh, p.span.length * spanCh);
-      const wx0 = lx + tw + (mobile ? 18 : 30), wx1 = x + cw;        // la onda de la parte
-      return { ...p, j, x, cw, y, ch, mid, amp, lx, wx0, wx1 };
+    const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || "system-ui, sans-serif";
+    const H = mobile ? 600 : Math.round(Math.max(440, Math.min(700, (avail || 720) - 24)));
+    const seg = mobile ? w : w / 3;
+    // Un solo tamaño para las tres palabras: el que deja a la más larga en ~60 % de su parte.
+    const widest = Math.max(...data.map((p) => textWidth(p.name, `800 100px ${family}`)));
+    const size = Math.floor(Math.min(mobile ? 46 : 74, (100 * seg * WORD_SHARE) / widest));
+    const font = `800 ${size}px ${family}`;
+    const parts = data.map((p, j) => {
+      const x = mobile ? 0 : j * seg, y = mobile ? (j * H) / 3 : 0;
+      const mid = mobile ? y + 78 : (H - 66) / 2 + 4, amp = mobile ? 58 : mid - 34;
+      const ww = textWidth(p.name, font), wx = x + (seg - ww) / 2;
+      return { ...p, j, x, y, seg, h: mobile ? H / 3 : H, mid, amp, wx, ww };
     });
     const bars = [];
     let i = 0;
-    const step = mobile ? 2.6 : 3;
-    for (const c of clips) {
-      for (let px = c.wx0; px <= c.wx1 - 2; px += step, i++) {
-        const f = (px - c.wx0) / (c.wx1 - c.wx0), e = 0.16 + 0.84 * c.env(f);   // piso de señal + datos
-        // Fundido de entrada después del break y de salida antes del próximo.
-        const fade = Math.min(1, (px - c.wx0) / FADE, (c.wx1 - px) / FADE), tp = fade * fade * (3 - 2 * fade);
-        bars.push({ j: c.j, f, px, e, h: 1 + tp * e * c.amp * (0.35 + 0.65 * grain(i)), tp });
+    const step = mobile ? 2.6 : 3, lw = mobile ? 1.5 : 1.8;
+    const lane = (c, from, to, u0, u1) => {
+      for (let px = from; px <= to; px += step, i++) {
+        const u = Math.min(2.999, u0 + ((px - from) / (to - from)) * (u1 - u0)), e = energy(u);
+        // Aire alrededor de la palabra: la onda se aquieta (nunca se corta).
+        const room = Math.min(smooth((px - (c.wx - 30)) / 30), smooth((c.wx + c.ww + 30 - px) / 30));
+        bars.push({ j: c.j, u, px, e, mid: c.mid, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), quiet: 1 - 0.58 * room, word: room > 0.01 });
+      }
+    };
+    if (mobile) parts.forEach((c) => lane(c, 2, w - 2, c.j, c.j + 0.999));
+    else {
+      // Una sola onda: cada barra toma la palabra de su parte para el aire.
+      for (let px = 2; px <= w - 2; px += step, i++) {
+        const u = Math.min(2.999, ((px - 2) / (w - 4)) * 3), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
+        const room = Math.min(smooth((px - (c.wx - 30)) / 30), smooth((c.wx + c.ww + 30 - px) / 30));
+        bars.push({ j: c.j, u, px, e, mid: c.mid, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), quiet: 1 - 0.58 * room, word: room > 0.01 });
       }
     }
-    return { H, clips, bars, lw: mobile ? 1.5 : 1.8 };
-  }, [w, mobile, avail, data, textW]);
+    const now = mobile ? { x: 1, top: parts[1].mid - parts[1].amp - 4, bot: parts[1].mid + parts[1].amp + 4 } : { x: seg, top: parts[1].mid - parts[1].amp - 8, bot: parts[1].mid + parts[1].amp + 8 };
+    return { H, parts, bars, lw, step, size, font, now };
+  }, [w, mobile, avail, data, fonts]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Medir los links ya dibujados (fuente real) y ajustar el break a su medida.
-  useLayoutEffect(() => {
-    const m = labelRefs.current.map((g) => { try { return Math.ceil(g.getBBox().width); } catch { return 0; } });
-    if (m.length === 3 && m.every((x) => x > 0) && m.some((x, j) => Math.abs(x - (textW[j] || 0)) > 1)) setTextW(m);
-  });
-
-  // Loop de clips en mobile: solo con el track en pantalla y sin "reducir movimiento".
+  // Loop de partes en mobile: solo con el track en pantalla y sin "reducir movimiento".
   const [auto, setAuto] = useState(0);
   const still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const loop = mobile && live && !still;
@@ -185,19 +207,25 @@ export function BassTrack({ events, today, onCue }) {
   const soloIdx = data.findIndex((p) => p.k === solo);
   const soloRef = useRef(-1);
   soloRef.current = soloIdx;
-  // Estado del motor entre cuadros: tiempo propio y velocidad de cada clip
-  // (la bandeja que frena), brillo, y cuándo arrancó la preescucha.
-  const motor = useRef({ time: [0, 0, 0], rate: [1, 1, 1], alpha: [0.42, 0.9, 0.9], scanFrom: 0, scanIdx: -1, last: 0 });
+  const pickedRef = useRef(false);            // solo elegido por el usuario (no el loop): los otros nombres bajan más
+  pickedRef.current = !!hot;
+  // Estado del motor entre cuadros: tiempo propio y velocidad de cada parte
+  // (la bandeja que frena), brillo de la onda y de las palabras, y cuándo
+  // arrancó la preescucha.
+  const motor = useRef({ time: [0, 0, 0], rate: [1, 1, 1], alpha: [0.42, 0.9, 0.9], lit: [0.8, 0.95, 0.95], scanFrom: 0, scanIdx: -1, last: 0 });
 
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv || !geo) return undefined;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = w, H = geo.H;
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    const ctx = cv.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineCap = "round";
+    const mk = (c) => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.lineCap = "round"; return x; };
+    const ctx = mk(cv);
+    // Las palabras como máscara: las barras encendidas solo se ven dentro de las letras.
+    const mask = document.createElement("canvas"), mctx = mk(mask);
+    mctx.font = geo.font; mctx.textBaseline = "middle"; mctx.fillStyle = "#000";
+    for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);
+    const litCv = document.createElement("canvas"), lctx = mk(litCv);
     const css = getComputedStyle(cv);
     const color = css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c";
     const ink = css.getPropertyValue("--bl-text").trim() || "#f1ece4";
@@ -209,42 +237,45 @@ export function BassTrack({ events, today, onCue }) {
       const s = soloRef.current;
       if (s !== S.scanIdx) { S.scanIdx = s; S.scanFrom = now; }
       for (let j = 0; j < 3; j++) {
-        // Freno de bandeja: los clips que no están en solo desaceleran hasta 0.
+        // Freno de bandeja: las partes que no están en solo desaceleran hasta 0.
         const rateT = s < 0 || j === s ? 1 : 0;
         S.rate[j] += (rateT - S.rate[j]) * (still ? 1 : rateT ? 0.08 : 0.045);
         S.time[j] += dt * S.rate[j];
-        const aT = s < 0 ? (j === 0 ? 0.42 : 0.9) : j === s ? 1 : 0.22;
-        S.alpha[j] += (aT - S.alpha[j]) * (still ? 1 : 0.07);
+        const k = still ? 1 : 0.07;
+        S.alpha[j] += ((s < 0 ? (j === 0 ? 0.42 : 0.9) : j === s ? 1 : 0.22) - S.alpha[j]) * k;
+        S.lit[j] += ((s < 0 ? (j === 0 ? 0.8 : 0.95) : j === s ? 1 : pickedRef.current ? 0.32 : 0.62) - S.lit[j]) * k;
       }
       const scan = s >= 0 && !still ? (((now - S.scanFrom) / 1000) / (BEAT * SCAN_BEATS)) % 1 : -1;
       ctx.clearRect(0, 0, W, H);
-      ctx.lineWidth = geo.lw;
-      for (let j = 0; j < 3; j++) {
-        const c = geo.clips[j], tt = still ? 0 : S.time[j], scanning = j === s && scan >= 0;
-        // En preescucha, dos pasadas: lo que ya cruzó el cabezal, encendido; lo que falta, a media luz.
-        for (const lit of scanning ? [true, false] : [null]) {
-          ctx.strokeStyle = color;
-          ctx.globalAlpha = lit === false ? S.alpha[j] * 0.45 : S.alpha[j];
-          ctx.beginPath();
-          for (const b of geo.bars) {
-            if (b.j !== j || (lit === true && b.f > scan) || (lit === false && b.f <= scan)) continue;
-            let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + (j + b.f) * 1.7);
-            const dist = j + b.f - 1;     // en clips, desde el cabezal (comienzo de la Agenda)
-            if (dist >= 0 && !still) m += 0.3 * (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j] * b.tp;
-            if (scanning) m += 0.45 * b.tp * Math.exp(-((((b.f - scan) * (c.wx1 - c.wx0)) / 16) ** 2));
-            const h = Math.min(c.amp + 6, b.h * m);
-            ctx.moveTo(b.px, c.mid - h); ctx.lineTo(b.px, c.mid + h);
-          }
-          ctx.stroke();
-        }
-        if (scanning) {
-          const x = c.wx0 + scan * (c.wx1 - c.wx0);
-          ctx.globalAlpha = 0.9; ctx.strokeStyle = ink; ctx.lineWidth = 1.25;
-          ctx.beginPath(); ctx.moveTo(x, c.mid - c.amp - 4); ctx.lineTo(x, c.mid + c.amp + 4); ctx.stroke();
-          ctx.lineWidth = geo.lw;
+      lctx.globalCompositeOperation = "source-over";
+      lctx.clearRect(0, 0, W, H);
+      ctx.lineWidth = geo.lw; ctx.strokeStyle = color;
+      lctx.lineWidth = geo.lw * 1.55; lctx.strokeStyle = ink;
+      for (const b of geo.bars) {
+        const j = b.j, c = geo.parts[j], tt = still ? 0 : S.time[j], f = b.u - j;
+        let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + b.u * 1.7);
+        const dist = b.u - 1;     // en partes, desde el cabezal (comienzo de la Agenda)
+        const kick = dist >= 0 && !still ? (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j] : 0;
+        m += 0.3 * kick;
+        const scanning = j === s && scan >= 0;
+        if (scanning) m += 0.45 * Math.exp(-((((f - scan) * c.seg) / 16) ** 2));
+        const h = Math.min(c.amp + 6, b.h * m);
+        ctx.globalAlpha = S.alpha[j] * b.quiet * (scanning && f > scan ? 0.5 : 1);
+        ctx.beginPath(); ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h); ctx.stroke();
+        if (b.word) {
+          // La letra: la misma barra, encendida y a lo alto de la palabra; late con el golpe.
+          lctx.globalAlpha = Math.min(1, S.lit[j] * (0.86 + 0.5 * kick));
+          lctx.beginPath(); lctx.moveTo(b.px, b.mid - geo.size); lctx.lineTo(b.px, b.mid + geo.size); lctx.stroke();
         }
       }
-      ctx.globalAlpha = 1;
+      if (s >= 0 && scan >= 0) {
+        const c = geo.parts[s], x = mobile ? 2 + scan * (W - 4) : c.x + scan * c.seg;
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = ink; ctx.lineWidth = 1.25;
+        ctx.beginPath(); ctx.moveTo(x, c.mid - c.amp - 4); ctx.lineTo(x, c.mid + c.amp + 4); ctx.stroke();
+      }
+      lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
+      lctx.setTransform(1, 0, 0, 1, 0, 0); lctx.drawImage(mask, 0, 0); lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalAlpha = 1; ctx.drawImage(litCv, 0, 0, W, H);
       if (!still && live) raf = requestAnimationFrame(frame);
       else S.last = 0;
     };
@@ -252,7 +283,7 @@ export function BassTrack({ events, today, onCue }) {
     return () => cancelAnimationFrame(raf);
   }, [geo, w, live, still, still ? soloIdx : 0]); // eslint-disable-line react-hooks/exhaustive-deps -- quieto: redibuja el solo
 
-  const clipProps = (c) => ({
+  const partProps = (c) => ({
     className: `btk-cue${solo === c.k ? " is-hot" : ""}${hot && hot !== c.k ? " is-off" : ""}`, role: "button", tabIndex: 0,
     onMouseEnter: () => setHot(c.k), onMouseLeave: () => setHot(null),
     onFocus: () => setHot(c.k), onBlur: () => setHot(null),
@@ -268,22 +299,15 @@ export function BassTrack({ events, today, onCue }) {
         <div className="btk-stage" style={{ height: geo.H }}>
           <canvas ref={canvasRef} className="btk-canvas" style={{ width: w, height: geo.H }} data-live={live && !still ? "1" : "0"} aria-hidden="true" />
           <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
-            {geo.clips.map((c) => (
-              <g key={c.k} {...clipProps(c)} data-axis={Math.round(c.mid)}>
-                <rect className="btk-hit" x={c.x} y={c.y} width={c.cw} height={c.ch} />
-                <g ref={(el) => { labelRefs.current[c.j] = el; }}>
-                  <rect className="btk-pad" x={c.lx} y={c.mid - 33} width="24" height="24" rx="3" />
-                  <text className="btk-letter" x={c.lx + 12} y={c.mid - 16.5} textAnchor="middle">{c.letter}</text>
-                  <text className="btk-name" x={c.lx + 34} y={c.mid - 12}>{c.name}</text>
-                  <text className="btk-sub" x={c.lx} y={c.mid + 14}>{c.sub}</text>
-                  <text className="btk-span" x={c.lx} y={c.mid + 31}>{c.span}</text>
-                </g>
-                {c.k === "agenda" && (
-                  <>
-                    <line className="btk-now" x1={c.wx0 - 3} x2={c.wx0 - 3} y1={c.mid - c.amp - 6} y2={c.mid + c.amp + 6} />
-                    <text className="btk-nowl" x={c.wx0 - 3} y={c.mid + c.amp + 22} textAnchor="middle">{t("track.now")}</text>
-                  </>
-                )}
+            <line className="btk-now" x1={geo.now.x} x2={geo.now.x} y1={geo.now.top} y2={geo.now.bot} />
+            <text className="btk-nowl" x={geo.now.x} y={geo.now.top - 8} textAnchor={mobile ? "start" : "middle"}>{t("track.now")}</text>
+            {geo.parts.map((c) => (
+              <g key={c.k} {...partProps(c)} data-axis={Math.round(c.mid)}>
+                <rect className="btk-hit" x={c.x} y={c.y} width={c.seg} height={c.h} />
+                {/* La palabra se ve en el canvas (hecha de barras); acá, su caja real para el foco y la lectura. */}
+                <text className="btk-name" x={c.wx} y={c.mid} dominantBaseline="central" style={{ font: geo.font }} aria-hidden="true">{c.name}</text>
+                <text className="btk-sub" x={c.wx} y={c.mid + c.amp + (mobile ? 24 : 30)}>{c.sub}</text>
+                <text className="btk-span" x={c.wx} y={c.mid + c.amp + (mobile ? 40 : 48)}>{c.span}</text>
               </g>
             ))}
           </svg>

@@ -116,7 +116,7 @@ async function run(vp) {
     if (await page.locator(".bl-ev-open").count()) fail(vp.name, "índice", "la portada de Bass muestra la lista: la agenda es una sección");
     const cues = cueNames.length;
     // Los cues se reparten parejo a lo largo de la onda (tres partes iguales del tema).
-    const pads = await page.locator(".bl-btrack .btk-pad").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top]; }));
+    const pads = await page.locator(".bl-btrack .btk-name").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }));
     if (pads.length === 3) {
       const axis = vp.isMobile ? 1 : 0, g1 = pads[1][axis] - pads[0][axis], g2 = pads[2][axis] - pads[1][axis];
       if (Math.abs(g1 - g2) > 3 || g1 < 60) fail(vp.name, "índice", `los cues no están repartidos parejo en la onda (${Math.round(g1)} vs ${Math.round(g2)} px)`);
@@ -140,6 +140,17 @@ async function run(vp) {
         return !g.dataset.axis || !(Math.abs(n.top + n.height / 2 - (svg.top + Number(g.dataset.axis))) <= 40);
       }).length);
       if (offAxis) fail(vp.name, "índice", `${offAxis} link(s) fuera del eje de la onda`);
+      // La onda nunca se corta: debajo de cada palabra el canvas tiene barras (la palabra es de onda).
+      const gaps = await page.locator(".bl-btrack").evaluate((el) => {
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
+        return [...el.querySelectorAll(".btk-name")].filter((n) => {
+          const r = n.getBoundingClientRect(), x = Math.round((r.left + r.width * 0.37 - cr.left) * k), y0 = Math.round((r.top - cr.top) * k), hgt = Math.max(1, Math.round(r.height * k));
+          const px = cx.getImageData(Math.max(0, x - 6), Math.max(0, y0), 12, hgt).data;
+          for (let i = 3; i < px.length; i += 4) if (px[i] > 20) return false;
+          return true;
+        }).length;
+      });
+      if (gaps) fail(vp.name, "índice", `la onda se corta en ${gaps} link(s): la palabra tiene que estar hecha de onda`);
       const overlap = await page.locator(".bl-btrack").evaluate((el) => {
         const now = el.querySelector(".btk-now")?.getBoundingClientRect();
         return [...el.querySelectorAll(".btk-sub, .btk-name")].some((t) => { const r = t.getBoundingClientRect(); return now && r.right > now.left && r.left < now.right && r.bottom > now.top && r.top < now.bottom; });
