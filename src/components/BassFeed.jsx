@@ -409,6 +409,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // y salir de la portada deja una entrada en el historial: el atrás del
   // navegador o el gesto del celular también vuelven a la frecuencia.
   const atPortada = section === "track";
+  const trackToday = useMemo(() => todayInBA(), []); // fija: la onda no se recalcula en cada render
   const scrollToTrack = useRef(false);
   const resetToTrack = () => {
     setSection("track"); setWhen(""); if (search) onSearch?.("");
@@ -489,7 +490,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       ) : section === "track" ? (
         /* Portada: el índice como un track (las secciones son hot cues en su
            momento real). Mientras cargan los eventos, su alto reservado (CLS). */
-        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={todayInBA()} onCue={onCue} />
+        loading ? <div className="bl-hero bl-hero-skel" aria-hidden="true" /> : <BassTrack events={regionEvents} today={trackToday} onCue={onCue} onSelect={onSelect} onSelectNews={onSelectNews} onSelectFestival={onSelectFestival} />
       ) : (
         <>
 

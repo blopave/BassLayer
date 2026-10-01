@@ -125,11 +125,20 @@ async function run(vp) {
     if (cues) {
       await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
       await page.waitForTimeout(300);
-      const beats = await page.locator(".bl-btrack").evaluate((el) => el.getAnimations({ subtree: true }).filter((x) => x.animationName === "btk-kick-y" || x.animationName === "btk-kick-x").length);
-      if (beats < 50) fail(vp.name, "índice", `la onda no late (${beats} barras animadas)`);
+      // La onda se dibuja en canvas cuadro a cuadro: dos cuadros separados tienen que diferir.
+      const frameA = await page.locator(".btk-canvas").evaluate((c) => c.toDataURL()).catch(() => "");
+      await page.waitForTimeout(250);
+      const frameB = await page.locator(".btk-canvas").evaluate((c) => c.toDataURL()).catch(() => "");
+      if (!frameA || frameA === frameB) fail(vp.name, "índice", "la onda no suena (el canvas no se mueve)");
       await page.locator(".btk-cue").last().focus();
       await page.waitForTimeout(150);
-      if (!(await page.locator(".btk-bar.is-hot").count())) fail(vp.name, "índice", "el foco en un cue no enciende su tramo de la onda");
+      if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
+      // Desktop: el display "Sonando" muestra la parte elegida, con contenido real.
+      if (!vp.isMobile) {
+        const deckName = await page.locator(".btk-deck-name").textContent().catch(() => "");
+        const deckItems = await page.locator(".btk-deck-item").count();
+        if (!/Festival/.test(deckName || "") || !deckItems) fail(vp.name, "índice", `el display Sonando no sigue al cue (${deckName}, ${deckItems} ítems)`);
+      }
       await page.locator(".btk-cue").last().blur();
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
       if (vp.isMobile) {
