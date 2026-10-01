@@ -5757,33 +5757,33 @@ select.bl-venue-input { cursor:pointer; }
 
 /* ── Índice de Bass (sept 2026): la forma de onda del CDJ con las secciones
    como hot cues en su momento real. Un color: el cobre de Bass. ── */
-.bl-btrack { margin:14px 32px 10px; min-height:350px; /* alto del svg reservado antes de medir: sin salto ni scroll que se corre */ }
+.bl-btrack { margin:14px 32px 10px; min-height:360px; /* alto del svg reservado antes de medir: sin salto ni scroll que se corre */ }
 @media (max-width:768px) { .bl-btrack { min-height:600px; } }
 .bl-btrack svg { display:block; overflow:visible; }
 .btk-bar { stroke:var(--bl-accent-bass); stroke-opacity:.88; stroke-width:1.6; stroke-linecap:round; }
-.btk-bar.is-past { stroke-opacity:.32; }
+.btk-bar.is-past { stroke-opacity:.42; }
 .btk-now { stroke:var(--bl-text); stroke-width:1.5; }
 .btk-nowl { fill:var(--bl-text); font:600 9.5px var(--font-mono); letter-spacing:.08em; }
 .btk-cue { cursor:pointer; outline:none; }
 .btk-hit { fill:transparent; }
-.btk-thread { fill:none; stroke:var(--bl-accent-bass); stroke-opacity:.5; stroke-width:1; pointer-events:none; transition:stroke-opacity .2s; }
 .btk-mark { stroke:var(--bl-accent-bass); stroke-opacity:.5; stroke-width:1; stroke-dasharray:2 3; pointer-events:none; }
 .btk-pad { fill:var(--bl-accent-bass); }
 .btk-letter { fill:#171210; font:700 12px var(--font-mono); pointer-events:none; }
 .btk-name { fill:var(--bl-text); font:650 18px var(--font-sans); letter-spacing:-.012em; transition:fill .15s; }
 .btk-sub { fill:var(--bl-text-sec); font:500 10.5px var(--font-mono); letter-spacing:.02em; }
+.btk-span { fill:var(--bl-text-ter); font:500 9.5px var(--font-mono); letter-spacing:.1em; text-transform:uppercase; }
 .btk-tick { fill:var(--bl-text-ter); font:500 10px var(--font-mono); }
 .btk-cue:focus-visible .btk-pad { stroke:var(--bl-text); stroke-width:2; }
-@media (hover:hover) { .btk-cue:hover .btk-name { fill:var(--bl-accent-bass); } .btk-cue:hover .btk-thread { stroke-opacity:.9; } }
+@media (hover:hover) { .btk-cue:hover .btk-name { fill:var(--bl-accent-bass); } .btk-cue:hover .btk-mark { stroke-opacity:.9; } }
 /* Suena: cada barra futura golpea a 124 BPM con su retardo (--d, el golpe
-   viaja desde el cabezal) y su fuerza (--k). El eje del golpe es la línea
-   media de la onda (62,5 % del alto de cada barra: arriba h, abajo 0,6 h). */
+   viaja desde el cabezal) y su fuerza (--k). La onda es simétrica: el golpe
+   crece desde la línea media. */
 .btk-bar { transition:stroke-opacity .25s; }
 .bl-btrack.is-live .btk-bar:not(.is-past) {
-  transform-box:fill-box; transform-origin:50% 62.5%;
+  transform-box:fill-box; transform-origin:50% 50%;
   animation:btk-kick-y var(--beat) cubic-bezier(.2,.7,.3,1) var(--d, 0s) infinite;
 }
-.bl-btrack.is-live .is-v .btk-bar:not(.is-past) { transform-origin:37.5% 50%; animation-name:btk-kick-x; }
+.bl-btrack.is-live .is-v .btk-bar:not(.is-past) { animation-name:btk-kick-x; }
 @keyframes btk-kick-y { 0%, 100% { transform:scaleY(1); } 14% { transform:scaleY(calc(1 + var(--k) * (.3 + var(--solo, 0) * .35))); } 50% { transform:scaleY(calc(1 - var(--k) * .06)); } }
 @keyframes btk-kick-x { 0%, 100% { transform:scaleX(1); } 14% { transform:scaleX(calc(1 + var(--k) * (.3 + var(--solo, 0) * .35))); } 50% { transform:scaleX(calc(1 - var(--k) * .06)); } }
 .bl-btrack.is-live .btk-now { animation:btk-head var(--beat) ease-out infinite; }
@@ -5793,10 +5793,9 @@ select.bl-venue-input { cursor:pointer; }
 .bl-btrack.has-hot .btk-bar:not(.is-hot) { stroke-opacity:.3; }
 .bl-btrack.has-hot .btk-bar.is-past:not(.is-hot) { stroke-opacity:.16; }
 .btk-bar.is-hot { stroke-opacity:1; --solo:1; }
-.btk-cue.is-hot .btk-thread, .btk-cue.is-hot .btk-mark { stroke-opacity:1; }
+.btk-cue.is-hot .btk-mark { stroke-opacity:1; }
 .btk-cue.is-hot .btk-name { fill:var(--bl-accent-bass); }
 .btk-mark, .btk-name { transition:stroke-opacity .35s, fill .35s; }
-.btk-thread { transition:stroke-opacity .35s; }
 @media (prefers-reduced-motion: reduce) { .bl-btrack.is-live .btk-bar:not(.is-past), .bl-btrack.is-live .btk-now { animation:none; } }
 @media (max-width:768px) {
   .bl-btrack { margin:10px 16px 4px; }

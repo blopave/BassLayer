@@ -115,6 +115,12 @@ async function run(vp) {
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
     if (await page.locator(".bl-ev-open").count()) fail(vp.name, "índice", "la portada de Bass muestra la lista: la agenda es una sección");
     const cues = cueNames.length;
+    // Los cues se reparten parejo a lo largo de la onda (tres partes iguales del tema).
+    const pads = await page.locator(".bl-btrack .btk-pad").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top]; }));
+    if (pads.length === 3) {
+      const axis = vp.isMobile ? 1 : 0, g1 = pads[1][axis] - pads[0][axis], g2 = pads[2][axis] - pads[1][axis];
+      if (Math.abs(g1 - g2) > 3 || g1 < 60) fail(vp.name, "índice", `los cues no están repartidos parejo en la onda (${Math.round(g1)} vs ${Math.round(g2)} px)`);
+    }
     // Suena: la onda late (animaciones vivas en las barras) y un cue con foco hace solo de su tramo.
     if (cues) {
       await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
