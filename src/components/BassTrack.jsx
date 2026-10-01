@@ -9,11 +9,12 @@ import { useIsMobile } from "../utils/constants";
 // forma de onda lo es para Bass. La portada es solo eso: una onda completa,
 // que nunca se corta, y sus secciones HECHAS DE ONDA — cada nombre está
 // escrito con las mismas barras, encendidas donde pasa una letra:
-//   Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora (atenuado).
+//   Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora.
 //   Agenda     — desde ahora: las fiestas de los próximos 30 días.
 //   Festivales — el cierre: los festivales de los próximos 6 meses.
-// Cada nombre va centrado en su parte, con aire: alrededor de la palabra la
-// onda se aquieta (sigue sonando, más baja) para que respire. El dato y el
+// Cada nombre va centrado en su parte y vive ADENTRO de la onda: un lecho
+// parejo lo contiene con aire arriba, abajo y a los costados. En reposo la
+// onda es de un solo color en las tres partes (oct 2026, Pablo). El dato y el
 // rango van debajo de la onda, nunca sobre las barras.
 // Desktop: la onda de punta a punta, a lo alto de la pantalla. Mobile: una
 // pista por parte (el tema que sigue en la línea de abajo).
@@ -22,18 +23,20 @@ import { useIsMobile } from "../utils/constants";
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
 // 1 del compás acentuado), ataque suave, caída larga, viajando desde ahora
 // (el comienzo de la Agenda); encima una ondulación continua. Al ponerse sobre una sección, el
-// resto del tema FRENA como una bandeja sin motor y se apaga, y su parte pasa
-// a PREESCUCHA: un cabezal la recorre y enciende las barras a su paso. En
+// resto del tema FRENA como una bandeja sin motor y la palabra elegida SE
+// MATERIALIZA: sus barras se engrosan hasta que la letra queda sólida (la
+// onda nunca cambia de color). En
 // mobile (sin hover) el loop hace lo mismo por turnos.
 
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
-const CUE_BEATS = 8;                          // mobile: golpes por parte en el loop
-const SCAN_BEATS = 8;                         // preescucha: el cabezal cruza la parte en 2 compases
+const CUE_BEATS = 16;                         // mobile: golpes por parte en el loop (≈7,7 s: fluye, no apura)
 const FLOW = 0.45;                            // partes/s: cómo viaja el golpe desde ahora
 const NEWS_BINS = 24;                         // Noticias: 24 h en tramos de 1 h (el feed cubre ~1 día)
 const AGENDA_DAYS = 30;                       // Agenda: un tramo por día
 const FEST_WEEKS = 26;                        // Festivales: un tramo por semana
-const WORD_SHARE = 0.6;                       // la palabra ocupa ~60 % de su parte: aire a los costados
+const BED = 0.95;                              // media altura del lecho de la palabra, en tamaños de letra (la letra mide ±0,36)
+const PAD = 0.9;                               // aire a cada lado de la palabra dentro del lecho, en tamaños de letra
+const WORD_SHARE = 0.46;                      // la palabra ocupa ~46 % de su parte: aire a los costados
 
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
@@ -57,11 +60,12 @@ function envelope(bins) {
 
 // Un golpe tocado: ataque de 50 ms y caída exponencial; fuerza humana (0,72–1)
 // y el 1 de cada compás acentuado.
-function hit(ph) {
+// `soft` (mobile, a medio tiempo): ataque de ~150 ms y caída larga — empuja, no golpea.
+function hit(ph, soft = false) {
   const n = Math.floor(ph), f = ph - n;
   const vel = (0.72 + 0.28 * hash(n * 7.13)) * ((((n % 4) + 4) % 4) === 0 ? 1.18 : 1);
-  const a = 0.05 / BEAT;
-  return vel * (f < a ? f / a : Math.exp(-(f - a) * 3.6));
+  const a = soft ? 0.16 : 0.05 / BEAT;
+  return vel * (f < a ? f / a : Math.exp(-(f - a) * (soft ? 2.2 : 3.6)));
 }
 
 let measurer = null;
@@ -74,7 +78,7 @@ export function BassTrack({ events, todayKey, onCue }) {
   const { t, locale } = useLocale();
   const M = MONTHS_ABBR[locale] || MONTHS_ABBR.es;
   const today = useMemo(() => { const [y, m, d] = todayKey.split("-").map(Number); return new Date(y, m - 1, d); }, [todayKey]);
-  const isMobile = useIsMobile();             // sin hover (mobile o táctil): el loop hace la preescucha
+  const isMobile = useIsMobile();             // sin hover (mobile o táctil): el loop elige la parte por turnos
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const [w, setW] = useState(0);
@@ -157,7 +161,7 @@ export function BassTrack({ events, todayKey, onCue }) {
   // Geometría: la onda (una línea en desktop, una pista por parte en mobile),
   // la palabra de cada parte centrada en ella y su dato debajo. Todo lo que no
   // cambia entre cuadros se calcula acá una vez; las barras quedan agrupadas
-  // por parte y por brillo para dibujar cada grupo de un solo trazo.
+  // por parte para dibujar cada una de un solo trazo.
   const geo = useMemo(() => {
     if (!w) return null;
     // Energía del tema en u ∈ [0, 3): parte = ⌊u⌋, continua, con mezcla suave
@@ -176,7 +180,7 @@ export function BassTrack({ events, todayKey, onCue }) {
     const seg = mobile ? w : w / 3;
     // Un solo tamaño para las tres palabras: el que deja a la más larga en ~60 % de su parte.
     const widest = Math.max(...data.map((p) => textWidth(p.name, `800 100px ${family}`)));
-    const size = Math.floor(Math.min(mobile ? 46 : 74, (100 * seg * WORD_SHARE) / widest));
+    const size = Math.floor(Math.min(mobile ? 38 : 64, (100 * seg * WORD_SHARE) / widest));
     const font = `800 ${size}px ${family}`;
     const parts = data.map((p, j) => {
       const x = mobile ? 0 : j * seg, y = mobile ? (j * H) / 3 : 0;
@@ -186,26 +190,37 @@ export function BassTrack({ events, todayKey, onCue }) {
       const box = { x: Math.floor(wx - 6), y: Math.floor(mid - size), w: Math.ceil(ww + 12), h: Math.ceil(2 * size) };
       return { ...p, j, x, y, seg, h: mobile ? H / 3 : H, mid, amp, wx, ww, box };
     });
-    const groups = new Map(), words = [[], [], []];
+    const bars = [[], [], []], words = [[], [], []];
+    const pad = size * PAD, ramp = size * 1.5;
     let i = 0;
-    const step = mobile ? 2.6 : 3;
+    // Barras en píxeles enteros del dispositivo: sin moiré en movimiento.
+    const dprG = Math.min(2, window.devicePixelRatio || 1), step = mobile ? Math.round(2.6 * dprG) / dprG : 3;
     // Una pista: de `from` a `to` recorre el tema de u0 a u1 (desktop: las tres partes; mobile: una).
     const lane = (from, to, u0, u1) => {
       for (let px = from; px <= to; px += step, i++) {
         const u = Math.min(2.999, u0 + ((px - from) / (to - from)) * (u1 - u0)), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
-        // Aire alrededor de la palabra: la onda se aquieta (nunca se corta).
-        const room = Math.min(smooth((px - (c.wx - 30)) / 30), smooth((c.wx + c.ww + 30 - px) / 30));
+        // La palabra vive ADENTRO de la frecuencia (oct 2026, Pablo: cómoda, con
+        // espacio, no comprimida): alrededor de cada nombre la onda tiene un
+        // lecho que lo contiene — media altura = media letra + aire
+        // (BED × tamaño) — y se extiende PAD a cada lado antes de volver a los
+        // datos en una rampa larga. Nunca baja de la palabra ni la aprieta.
+        const room = Math.min(smooth((px - (c.wx - pad - ramp)) / ramp), smooth((c.wx + c.ww + pad + ramp - px) / ramp));
         const dist = u - 1;       // en partes, desde ahora (comienzo de la Agenda)
-        const b = { j: c.j, f: u - c.j, u, px, mid: c.mid, cap: c.amp + 6, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0, m: 1 };
-        const q = Math.round((1 - 0.58 * room) * 8) / 8, key = c.j * 10 + q;
-        if (!groups.has(key)) groups.set(key, { j: c.j, q, bars: [] });
-        groups.get(key).bars.push(b);
-        if (room > 0.01) words[c.j].push(b);
+        // El aire es ALTURA, no brillo (oct 2026, Pablo: la onda de un solo
+        // color): junto a la palabra las barras bajan, todas con la misma luz.
+        // El lecho es un PISO, no una meseta: la onda nunca baja de lo que la
+        // palabra necesita, pero conserva sus picos y su textura. Su forma es
+        // una lente suave (más alta en el centro de la palabra).
+        const lens = 0.86 + 0.14 * Math.cos(Math.max(-1, Math.min(1, (px - (c.wx + c.ww / 2)) / (c.ww / 2 + pad))) * Math.PI / 2);
+        const data = 1 + e * c.amp * (0.35 + 0.65 * grain(i)), bed = Math.min(c.amp, size * BED) * lens * (0.92 + 0.16 * grain(i));
+        const b = { u, px, mid: c.mid, cap: c.amp + 6, h: data + Math.max(0, bed - data) * room, room, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 };
+        bars[c.j].push(b);
+        if (px >= c.box.x && px <= c.box.x + c.box.w) words[c.j].push(b);   // las letras: solo las barras de su caja
       }
     };
     if (mobile) parts.forEach((c) => lane(2, w - 2, c.j, c.j + 0.999));
     else lane(2, w - 2, 0, 3);
-    return { H, parts, groups: [...groups.values()], words, lw: mobile ? 1.5 : 1.8, size, font };
+    return { H, parts, bars, words, lw: mobile ? 1.5 : 1.8, size, font, step };
   }, [w, mobile, avail, data, fonts]);
 
   // Loop de partes sin hover: solo con el track en pantalla y sin "reducir movimiento".
@@ -224,9 +239,9 @@ export function BassTrack({ events, todayKey, onCue }) {
   const pickedRef = useRef(false);            // solo elegido por el usuario (no el loop): los otros nombres bajan más
   pickedRef.current = !!hot;
   // Estado del motor entre cuadros: tiempo propio y velocidad de cada parte
-  // (la bandeja que frena), brillo de la onda y de las palabras, y cuándo
-  // arrancó la preescucha.
-  const motor = useRef({ time: [0, 0, 0], rate: [1, 1, 1], alpha: [0.42, 0.9, 0.9], lit: [0.8, 0.95, 0.95], scanFrom: 0, scanIdx: -1, last: 0 });
+  // (la bandeja que frena), brillo de las palabras y cuánto está
+  // materializada cada una.
+  const motor = useRef({ time: [0, 0, 0], rate: [1, 1, 1], lit: [0.95, 0.95, 0.95], last: 0, hv: [0, 0, 0] });
 
   // Recursos del dibujo: se arman una vez por geometría (no en cada entrada o
   // salida de pantalla): tamaño del canvas, la máscara de letras y el lienzo
@@ -250,61 +265,58 @@ export function BassTrack({ events, todayKey, onCue }) {
     if (!G || !geo) return undefined;
     const { dpr, ctx, mask, litCv, lctx, color, ink } = G;
     const W = w, H = geo.H, S = motor.current;
+    // Perfil de movimiento. Mobile a medio tiempo (oct 2026): un golpe cada dos,
+    // suave, y una ondulación lenta que recorre la pista como agua (antes
+    // temblaba: tensión). osc = [amplitud, velocidad, frecuencia espacial] × 3.
+    const F = mobile
+      ? { osc: [[0.05, 0.95, 0.012], [0.03, 1.5, 0.021], [0.03, 0.3]], beat: BEAT * 2, kick: 0.18, lit: 2.2, hv: 2.4 }
+      : { osc: [[0.07, 2.1, 0.019], [0.045, 3.4, 0.031], [0.04, 0.55]], beat: BEAT, kick: 0.3, lit: 4.3, hv: 5 };
     let raf = 0;
     const frame = (now) => {
       const dt = S.last ? Math.min(0.05, (now - S.last) / 1000) : 0;
       S.last = now;
       const s = soloRef.current;
-      if (s !== S.scanIdx) { S.scanIdx = s; S.scanFrom = now; }
+      // Suavizados por TIEMPO, no por cuadro (oct 2026): con un porcentaje fijo
+      // por cuadro, en celulares de 120 Hz todo iba al doble de velocidad.
+      const ease = (rate) => (still ? 1 : 1 - Math.exp(-rate * dt));
       for (let j = 0; j < 3; j++) {
-        // Freno de bandeja: las partes que no están en solo desaceleran hasta 0.
-        const rateT = s < 0 || j === s ? 1 : 0;
-        S.rate[j] += (rateT - S.rate[j]) * (still ? 1 : rateT ? 0.08 : 0.045);
+        S.hv[j] += ((j === s ? 1 : 0) - S.hv[j]) * ease(F.hv);     // cuánto está elegida cada palabra (0 → 1)
+        // Freno de bandeja: las partes que no están en solo desaceleran hasta 0
+        // (solo si la elige la persona; el loop de mobile no frena: fluye).
+        const rateT = s < 0 || j === s || !pickedRef.current ? 1 : 0;
+        S.rate[j] += (rateT - S.rate[j]) * ease(rateT ? 5 : 2.8);
         S.time[j] += dt * S.rate[j];
-        const k = still ? 1 : 0.07;
-        S.alpha[j] += ((s < 0 ? (j === 0 ? 0.42 : 0.9) : j === s ? 1 : 0.22) - S.alpha[j]) * k;
-        S.lit[j] += ((s < 0 ? (j === 0 ? 0.8 : 0.95) : j === s ? 1 : pickedRef.current ? 0.32 : 0.62) - S.lit[j]) * k;
+        S.lit[j] += ((s < 0 ? 0.95 : j === s ? 1 : pickedRef.current ? 0.32 : 0.95) - S.lit[j]) * ease(F.lit);
       }
-      const scan = s >= 0 && !still ? (((now - S.scanFrom) / 1000) / (BEAT * SCAN_BEATS)) % 1 : -1;
       ctx.clearRect(0, 0, W, H);
-      ctx.lineWidth = geo.lw; ctx.strokeStyle = color;
-      // La onda, un trazo por grupo (parte × brillo); en preescucha, lo que
-      // ya cruzó el cabezal encendido y lo que falta a media luz.
-      for (const g of geo.groups) {
-        const j = g.j, seg = geo.parts[j].seg, tt = still ? 0 : S.time[j], scanning = j === s && scan >= 0;
-        for (const lit of scanning ? [true, false] : [null]) {
-          ctx.globalAlpha = S.alpha[j] * g.q * (lit === false ? 0.5 : 1);
-          ctx.beginPath();
-          for (const b of g.bars) {
-            if ((lit === true && b.f > scan) || (lit === false && b.f <= scan)) continue;
-            let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + b.u * 1.7);
-            b.kick = b.gain && !still ? b.gain * hit((tt - b.dist / FLOW) / BEAT) * S.rate[j] : 0;
-            m += 0.3 * b.kick;
-            if (scanning) m += 0.45 * Math.exp(-((((b.f - scan) * seg) / 16) ** 2));
-            const h = Math.min(b.cap, b.h * m);
-            ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h);
-          }
-          ctx.stroke();
+      ctx.lineWidth = geo.lw; ctx.globalAlpha = 0.9; ctx.strokeStyle = color;
+      geo.bars.forEach((list, j) => {
+        const tt = still ? 0 : S.time[j], [o1, o2, o3] = F.osc;
+        ctx.beginPath();
+        for (const b of list) {
+          let m = 1 + o1[0] * Math.sin(tt * o1[1] - b.px * o1[2]) + o2[0] * Math.sin(tt * o2[1] + b.px * o2[2]) + o3[0] * Math.sin(tt * o3[1] + b.u * 1.7);
+          const kick = b.gain && !still ? b.gain * hit((tt - b.dist / FLOW) / F.beat, mobile) * S.rate[j] : 0;
+          m += F.kick * kick;
+          m = 1 + (m - 1) * (1 - 0.6 * b.room);   // en el lecho la onda respira más quieta: la palabra no tiembla
+          const h = Math.max(1, Math.min(b.cap, b.h * m));
+          ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h);
         }
-      }
-      if (s >= 0 && scan >= 0) {
-        const c = geo.parts[s], x = mobile ? 2 + scan * (W - 4) : c.x + scan * c.seg;
-        ctx.globalAlpha = 0.9; ctx.strokeStyle = ink; ctx.lineWidth = 1.25;
-        ctx.beginPath(); ctx.moveTo(x, c.mid - c.amp - 4); ctx.lineTo(x, c.mid + c.amp + 4); ctx.stroke();
-      }
-      // Las letras: las mismas barras, encendidas a lo alto de la palabra y
-      // recortadas a sus glifos; laten con el golpe. Solo dentro de cada caja.
-      lctx.lineWidth = geo.lw * 1.55; lctx.strokeStyle = ink;
+        ctx.stroke();
+      });
+      // Las letras: las mismas barras, recortadas a sus glifos. "Se materializa"
+      // (oct 2026, Pablo): en reposo son barras finas — la palabra es onda —;
+      // al elegirla se engrosan de izquierda a derecha hasta que la letra queda
+      // sólida, y al soltarla vuelve a ser onda.
+      lctx.fillStyle = ink;
       for (const c of geo.parts) {
-        const { x, y, w: bw, h: bh } = c.box, ws = geo.words[c.j];
-        let kick = 0;
-        for (const b of ws) kick += b.kick || 0;
+        const { x, y, w: bw, h: bh } = c.box, p = S.hv[c.j];
         lctx.globalCompositeOperation = "source-over";
         lctx.clearRect(x, y, bw, bh);
-        lctx.globalAlpha = Math.min(1, S.lit[c.j] * (0.86 + 0.5 * (ws.length ? kick / ws.length : 0)));
-        lctx.beginPath();
-        for (const b of ws) { lctx.moveTo(b.px, b.mid - geo.size); lctx.lineTo(b.px, b.mid + geo.size); }
-        lctx.stroke();
+        lctx.globalAlpha = S.lit[c.j] * 0.92;
+        for (const b of geo.words[c.j]) {
+          const q = p < 0.001 ? 0 : smooth((p * 1.35 - (b.px - c.wx) / c.ww) / 0.35), bwid = geo.lw + (geo.step + 0.6 - geo.lw) * q;
+          lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
+        }
         lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
         lctx.drawImage(mask, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
         ctx.globalAlpha = 1;
@@ -319,7 +331,9 @@ export function BassTrack({ events, todayKey, onCue }) {
 
   const partProps = (c) => ({
     className: `btk-cue${solo === c.k ? " is-hot" : ""}${hot && hot !== c.k ? " is-off" : ""}`, role: "button", tabIndex: 0,
-    onMouseEnter: () => setHot(c.k), onMouseLeave: () => setHot(null),
+    // En táctil el navegador emula un hover después de cada toque y quedaba pegado:
+    // apagaba los otros nombres. Ahí manda el loop; el hover es solo de mouse.
+    onMouseEnter: () => !isMobile && setHot(c.k), onMouseLeave: () => setHot(null),
     onFocus: () => setHot(c.k), onBlur: () => setHot(null),
     "aria-label": c.sub ? `${c.name}: ${c.sub}` : c.name,
     onClick: () => onCue(c.k),

@@ -44,6 +44,15 @@ const IGNORED_CONSOLE = /cloudflareinsights|beacon\.min\.js|Failed to load resou
 const problems = [];
 const fail = (vp, step, detail) => problems.push(`[${vp}] ${step}: ${detail}`);
 
+// Costuras de color: mayor salto de luminancia (Rec. 709) entre píxeles vecinos
+// a lo largo de una fila o columna de la pantalla, muestreando cada `stride`.
+async function seamJump(page, clip, stride = 1) {
+  const { data, info } = await sharp(await page.screenshot({ clip })).raw().toBuffer({ resolveWithObject: true });
+  const n = Math.max(info.width, info.height), lum = [];
+  for (let t = 0; t < n; t += stride) { const i = (info.width > 1 ? t : t * info.width) * info.channels; lum.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]); }
+  return Math.max(0, ...lum.slice(1).map((v, i) => Math.abs(v - lum[i])));
+}
+
 // Imágenes visibles dentro de `root` que terminaron de cargar sin píxeles.
 // Una imagen rota con fallback (onError) ya no está en el DOM, así que esto
 // solo agarra las que el usuario ve como ícono roto / caja vacía.
@@ -118,6 +127,8 @@ async function run(vp) {
     // hot cues — Noticias, Agenda, Festivales —; Hoy, el finde, De gira y la
     // búsqueda viven dentro de la Agenda.
     await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    // En táctil, el toque que entra a Bass no deja un hover pegado que apague los otros nombres (oct 2026).
+    if (vp.isMobile) { await page.waitForTimeout(300); if (await page.locator(".btk-cue.is-off").count()) fail(vp.name, "índice", "en táctil quedó un hover pegado: los otros nombres se apagan"); }
     const cueNames = await page.locator(".bl-btrack .btk-cue .btk-name").allTextContents();
     if (!cueNames.some((x) => /Agenda|Listings/.test(x)) || cueNames.length < 2 || cueNames.length > 3) fail(vp.name, "índice", `cues del índice: ${cueNames.join(" · ") || "ninguno"} (esperaba Noticias · Agenda · Festivales)`);
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
@@ -137,15 +148,52 @@ async function run(vp) {
       await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
       await page.waitForTimeout(300);
       // La onda se dibuja en canvas cuadro a cuadro: dos cuadros separados tienen que diferir.
-      // Una franja chica a la altura del comienzo de la Agenda (no la imagen entera).
-      const strip = () => page.locator(".btk-canvas").evaluate((c) => { const y = Math.round(c.height / (c.width > c.height ? 2 : 3)), d = c.getContext("2d").getImageData(Math.round(c.width / 3), y - 60, 200, 120).data; let h = 0; for (let i = 3; i < d.length; i += 16) h = (h * 31 + d[i]) | 0; return String(h); }).catch(() => "");
+      // Una franja alrededor del eje de cada pista (una franja fija podía caer entre dos pistas de mobile, sin barras).
+      const strip = () => page.locator(".bl-btrack").evaluate((el) => {
+        const c = el.querySelector(".btk-canvas"), k = c.width / c.getBoundingClientRect().width, cx = c.getContext("2d");
+        let h = 0, n = 0;
+        for (const g of el.querySelectorAll(".btk-cue")) { const d = cx.getImageData(0, Math.max(0, Math.round((Number(g.dataset.axis) - 60) * k)), c.width, Math.round(120 * k)).data; for (let i = 3; i < d.length; i += 64) { h = (h * 31 + d[i]) | 0; n += d[i] > 0; } }
+        return n ? String(h) : "";
+      }).catch(() => "");
       const frameA = await strip();
       await page.waitForTimeout(250);
       const frameB = await strip();
       if (!frameA || frameA === frameB) fail(vp.name, "índice", "la onda no suena (el canvas no se mueve)");
+      // Un solo color (oct 2026, Pablo): sobre el eje de cada parte, todas las
+      // barras tienen la misma intensidad — en reposo y en solo ("mute de
+      // canal": el resto baja de altura, no de color). Fuera de las palabras.
+      const evenInk = () => page.locator(".bl-btrack").evaluate((el) => {
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
+        const words = [...el.querySelectorAll(".btk-name")].map((n) => n.getBoundingClientRect());
+        const peaks = [];
+        for (const g of el.querySelectorAll(".btk-cue")) {
+          const y = Math.round(Number(g.dataset.axis) * k), row = cx.getImageData(0, y, cv.width, 1).data, win = Math.round(6 * k);
+          for (let x0 = Math.round(8 * k); x0 + win < cv.width - 8 * k; x0 += win) {
+            const vx = cr.left + x0 / k;
+            if (words.some((w) => vx > w.left - 4 && vx < w.right + 4 && Math.abs(cr.top + y / k - (w.top + w.height / 2)) < w.height)) continue;
+            let m = 0; for (let x = x0; x < x0 + win; x++) m = Math.max(m, row[x * 4 + 3]);
+            peaks.push(m);
+          }
+        }
+        return peaks.length ? [Math.min(...peaks), Math.max(...peaks)] : null;
+      });
+      const isEven = (r) => r && r[1] - r[0] <= 14;
+      if (!vp.isMobile) { await page.mouse.move(2, vp.viewport.height - 2); await page.waitForTimeout(900); const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `la onda en reposo no es de un solo color (alfa de barras ${r?.join("–")})`); }
+      // "Se materializa" (oct 2026): la palabra elegida pasa de barras finas a
+      // letra sólida — la tinta dentro de su caja tiene que crecer claramente.
+      const inkOf = (i) => page.locator(".bl-btrack").evaluate((el, i) => {
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, r = el.querySelectorAll(".btk-name")[i].getBoundingClientRect();
+        const d = cv.getContext("2d").getImageData(Math.round((r.left - cr.left) * k), Math.round((r.top - cr.top) * k), Math.round(r.width * k), Math.round(r.height * k)).data;
+        let n = 0; for (let q = 0; q < d.length; q += 4) if (d[q] > 200 && d[q + 1] > 190 && d[q + 2] > 180) n++; return n;
+      }, i);
+      const lastIdx = (await page.locator(".btk-cue").count()) - 1;
+      const inkRest = vp.isMobile ? null : await inkOf(lastIdx);
       await page.locator(".btk-cue").last().focus();
       await page.waitForTimeout(150);
       if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
+      await page.waitForTimeout(1200);
+      { const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `en solo la onda cambia de color (alfa de barras ${r?.join("–")})`); }
+      if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (!(inkOn > inkRest * 1.35)) fail(vp.name, "índice", `la palabra elegida no se materializa (tinta ${inkRest} → ${inkOn})`); }
       // La portada es solo la onda y sus links, sin cajas: cada link vive sobre el
       // eje de la onda (en el break de su parte) y no pisa la onda ni el cabezal.
       const offAxis = await page.locator(".bl-btrack .btk-cue").evaluateAll((gs) => gs.filter((g) => {
@@ -164,6 +212,26 @@ async function run(vp) {
         }).length;
       });
       if (gaps) fail(vp.name, "índice", `la onda se corta en ${gaps} link(s): la palabra tiene que estar hecha de onda`);
+      // La palabra cómoda ADENTRO de la onda (oct 2026, Pablo): a los dos costados
+      // de cada nombre la onda tiene que ser al menos 1,8 veces más alta que la
+      // mitad de la letra (aire arriba y abajo), nunca más baja ni pareja con ella.
+      const tight = await page.locator(".bl-btrack").evaluate((el) => {
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
+        const meas = document.createElement("canvas").getContext("2d");
+        return [...el.querySelectorAll(".btk-cue")].flatMap((g) => {
+          const t = g.querySelector(".btk-name"), r = t.getBoundingClientRect(), mid = Number(g.dataset.axis);
+          meas.font = getComputedStyle(t).font;
+          const m = meas.measureText(t.textContent), inkHalf = (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) / 2;
+          const half = (vx) => {
+            const x = Math.round(vx * k), y0 = Math.max(0, Math.round((mid - 4 * inkHalf) * k)), y1 = Math.round(mid * k), col = cx.getImageData(x - 3, y0, 7, y1 - y0).data;
+            for (let y = 0; y < y1 - y0; y++) for (let q = 0; q < 7; q++) if (col[(y * 7 + q) * 4 + 3] > 40) return mid - (y0 + y) / k;
+            return 0;
+          };
+          const sides = [half(r.left - cr.left - 8), half(r.right - cr.left + 8)];
+          return sides.some((h) => h < inkHalf * 1.8) ? [`${t.textContent} (onda ±${Math.round(Math.min(...sides))} px, letra ±${Math.round(inkHalf)} px)`] : [];
+        });
+      });
+      if (tight.length) fail(vp.name, "diseño", `la palabra no entra cómoda en la onda: ${tight.join(", ")}`);
       const overlap = await page.locator(".bl-btrack").evaluate((el) => {
         const box = (e) => e.getBoundingClientRect(), hit = (a, b) => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
         const names = [...el.querySelectorAll(".btk-name")].map(box), subs = [...el.querySelectorAll(".btk-sub, .btk-span")].map(box);
@@ -171,10 +239,10 @@ async function run(vp) {
       });
       if (overlap) fail(vp.name, "índice", "un nombre pisa a otro o a su dato");
       await page.locator(".btk-cue").last().blur();
-      // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
+      // Mobile (sin hover): el solo recorre los cues solo, uno cada 16 golpes (≈7,7 s: fluye).
       if (vp.isMobile) {
         const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
-        await page.waitForFunction((f) => document.querySelector(".btk-cue.is-hot .btk-name")?.textContent !== f, first, { timeout: 5000 }).catch(() => {});
+        await page.waitForFunction((f) => document.querySelector(".btk-cue.is-hot .btk-name")?.textContent !== f, first, { timeout: 10000 }).catch(() => {});
         const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
         if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
       }
@@ -385,9 +453,15 @@ async function run(vp) {
         await page.mouse.move(2, 2);
       }
       // ¿Para dónde va? (sept 2026): el futuro son caminos simulados, no una línea.
-      // Todas las secciones viven en el pasado de la curva: hoy (Noticias) es la
-      // última y el abanico se abre sin secciones adentro.
-      if (!(await page.locator(".blc-node").last().evaluate((el) => el.classList.contains("is-today")).catch(() => false))) fail(vp.name, "layer", "hay secciones después de hoy, adentro del abanico");
+      // Orden de uso (oct 2026): Noticias primero. Todas las secciones viven en
+      // el pasado de la curva y hoy queda libre — late solo y de ahí se abre el
+      // abanico, sin ramas ni puntos de sección encima.
+      const first = await page.locator(".blc-node").first().locator(".blc-rn, .blc-ttl").textContent().catch(() => "");
+      if (!/Noticias|News/.test(first)) fail(vp.name, "layer", `la primera sección es "${first}", no Noticias`);
+      const nowBox = await page.locator(".blc-now .blc-dot").boundingBox().catch(() => null);
+      const dots = await page.locator(".blc-node .blc-dot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map(({ x, y, width: w, height: h }) => ({ x: x + w / 2, y: y + h / 2 })));
+      const past = vp.viewport.width > 768 ? (p) => p.x < nowBox.x - 10 : (p) => p.y > nowBox.y + nowBox.height + 10;
+      if (!nowBox || !dots.every(past)) fail(vp.name, "layer", "hay secciones sobre hoy o adentro del abanico");
       const walks = await page.locator(".blc-fan .blc-walk").count();
       if (walks < 20) fail(vp.name, "layer", `el futuro tiene ${walks} caminos simulados (esperaba ≥20)`);
       if (await page.locator(".blc-proj").count()) fail(vp.name, "layer", "volvió la línea punteada del futuro");
@@ -439,10 +513,7 @@ async function run(vp) {
           const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, k = r.width / vb.width;
           return { x0: r.left + 90 * k, x1: r.right - 90 * k, y: Math.min(innerHeight - 2, r.top + (vb.height - 66) * k) };
         });
-        const shot = await page.screenshot({ clip: { x: row.x0, y: row.y, width: row.x1 - row.x0, height: 1 } });
-        const { data, info } = await sharp(shot).raw().toBuffer({ resolveWithObject: true });
-        const lum = []; for (let x = 0; x < info.width; x += 8) { const i = x * info.channels; lum.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]); }
-        const jump = Math.max(...lum.slice(1).map((v, i) => Math.abs(v - lum[i])));
+        const jump = await seamJump(page, { x: row.x0, y: row.y, width: row.x1 - row.x0, height: 1 }, 8);
         if (jump > 2.2) fail(vp.name, "diseño", `costura en el fondo del gráfico (salto de ${jump.toFixed(1)} niveles entre vecinos)`);
         const lab = await page.locator(".blc-fut-l").first().boundingBox();
         const clip = await page.locator(".blc-fan clipPath rect").first().boundingBox();
@@ -454,14 +525,31 @@ async function run(vp) {
         const litD = await page.waitForSelector(".blc-node.is-lit", { timeout: 14000 }).then(() => true).catch(() => false);
         if (!litD) fail(vp.name, "layer", "desktop: la curva no enciende ningún título");
       }
-      // Ficha debajo de la curva (desktop, 30-sep): al pasar por una sección
-      // se abre en el espacio libre de abajo, no encima de la curva.
-      if (vp.viewport.width > 768 && vp.viewport.height >= 800) {
+      // Ficha ADENTRO de la curva (desktop, oct 2026): al pasar por una sección
+      // se abre en el hueco entre la línea y el eje, sin caja, con el interior
+      // de la curva iluminado — en todas las alturas de desktop (compacta o
+      // mínima si el hueco es bajo), nunca flotando encima de la curva.
+      if (vp.viewport.width > 768) {
         await pill(/ETFs/).hover();
         await page.waitForTimeout(400);
         const dockBox = await page.locator(".blc-pv.is-dock").boundingBox().catch(() => null);
         const dotBox = await page.locator(".blc-node").filter({ hasText: /ETFs/ }).first().locator(".blc-dot").boundingBox().catch(() => null);
-        if (!dockBox || !dotBox || dockBox.y < dotBox.y + dotBox.height) fail(vp.name, "layer", "desktop: la ficha de la sección no se abre debajo de la curva");
+        if (!dockBox || !dotBox || dockBox.y < dotBox.y + dotBox.height) fail(vp.name, "layer", "desktop: la ficha de la sección no se abre adentro de la curva");
+        const boxed = await page.locator(".blc-pv.is-dock .pv-in").evaluate((el) => { const s = getComputedStyle(el); return parseFloat(s.borderTopWidth) > 0 || s.backgroundColor !== "rgba(0, 0, 0, 0)"; }).catch(() => true);
+        if (boxed) fail(vp.name, "layer", "desktop: la ficha volvió a ser una caja (borde o fondo propio)");
+        if (!(await page.locator(".blc-inner").count())) fail(vp.name, "layer", "desktop: no se ilumina el interior de la curva que aloja la ficha");
+        // La luz bajo la ficha se funde (oct 2026): una columna de píxeles desde
+        // la ficha hasta el eje no puede tener saltos — ni bandas ni líneas de grilla.
+        const pvBox = await page.locator(".blc-pv.is-dock").boundingBox().catch(() => null);
+        const axisY = await page.locator(".blc-grid text").last().boundingBox().then((b) => b.y - 12).catch(() => null);
+        if (pvBox && axisY && axisY - (pvBox.y + pvBox.height) > 30) {
+          const colX = Math.round(pvBox.x + pvBox.width * 0.3), y0 = Math.round(pvBox.y + pvBox.height + 6);
+          const jump = await seamJump(page, { x: colX, y: y0, width: 1, height: Math.round(axisY - y0) });
+          // Un degradé suave en 8 bits da escalones de 1–3 niveles; una línea o un borde, 6+.
+          if (jump > 4) fail(vp.name, "diseño", `la luz bajo la ficha no se funde (salto de ${jump.toFixed(1)} niveles)`);
+        }
+        const go = await page.locator(".blc-pv.is-dock .go").boundingBox().catch(() => null);
+        if (!go || go.y + go.height > vp.viewport.height) fail(vp.name, "layer", "desktop: el botón Entrar de la ficha queda fuera de pantalla");
         await page.mouse.move(5, 5);
         await page.waitForTimeout(400);
       }

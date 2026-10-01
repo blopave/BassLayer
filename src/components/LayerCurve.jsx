@@ -1,38 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { FutureFan } from "./FutureFan";
-import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, monthLabel, useLayerData } from "../utils/layer";
+import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, useLayerData } from "../utils/layer";
 
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
-// navegación. Cada sección vive en un momento real de la curva (la curva es
-// el único índice, sept 2026). Un solo hover: el de las secciones.
+// navegación. Cada sección vive en un punto de la curva, en orden de uso (la
+// curva es el único índice, sept 2026). Un solo hover: el de las secciones.
 // "Ramas" (30-sep, tras la auditoría y referentes: Tufte, Minard, Beck): cada
 // sección sale de su punto con una RAMA que es una lupa de la curva — el
-// precio real de BTC alrededor de ese momento (±9 meses; hoy, los últimos 7
-// días hora por hora) — con el mismo trazo que la curva principal, y termina
+// precio real de BTC alrededor de ese punto (±9 meses) — con el mismo trazo que la curva principal, y termina
 // en su nombre. Como las ramas llevan cada nombre a su lugar, el eje de
 // tiempo es REAL (sin tramos comprimidos) y los nombres quedan parejos: en
 // mobile, una columna con las 8 secciones y el abanico en una sola pantalla;
 // en desktop, un riel de títulos arriba. Todo en un color (Pablo: el rojo/
 // verde por sección rompía la estética de Layer).
 
-// Dónde vive cada sección. Todas en un momento REAL de la curva, en orden
-// cronológico; hoy (Noticias) es la última y de ahí se abre el abanico del
-// futuro ("el pasado se navega, el futuro se pregunta"). Anclas verificadas
-// con 2+ fuentes: Eventos = Bitcoin 2021 en Miami, donde El Salvador anunció
-// la ley bitcoin (CBS, NPR, CNBC, CoinDesk); Predicciones = elección de
-// EE.UU. 2024, Polymarket supera US$3.000 M en un mercado (The Block, Yahoo
-// Finance).
-const NODES = [
-  { key: "historia", at: "2013-11" },
-  { key: "finanzas", at: "2020-03" },
-  { key: "acciones", at: "2021-02" },
-  { key: "eventos", at: "2021-06" },
-  { key: "etfs", at: "2024-01" },
-  { key: "predicciones", at: "2024-11" },
-  { key: "ciclos", at: "peak" },
-  { key: "noticias", at: "today" },
-];
+// Orden de las secciones = orden de USO (Pablo, oct 2026): lo primero al
+// entrar es ponerse al día. Ya no se atan a momentos históricos: se reparten
+// parejas a lo largo del pasado de la curva y hoy queda libre — su punto
+// late solo y de ahí se abre el abanico, sin ramas ni títulos encima.
+const NODES = ["noticias", "finanzas", "acciones", "etfs", "ciclos", "predicciones", "eventos", "historia"].map((key) => ({ key }));
+// Tramo de la curva donde se reparten los puntos (años): desde el comienzo
+// hasta un poco antes de hoy, para dejarle aire al abanico.
+const SPREAD_FROM = 2012.9, SPREAD_GAP = 0.7;
 
 // Mobile: margen arriba, abanico (halving → hoy), una fila por sección y pie.
 // La portada es solo la curva (Pablo, oct 2026): el alto se ajusta a lo que
@@ -76,6 +66,12 @@ const FAN_ZOOM = 4;
 const FAN_ZOOM_V = 7;
 // Desktop: parte del ancho para el futuro (hoy → halving), en su propia escala.
 const FUT_SHARE = 0.24;
+// Luz del interior de la curva bajo la ficha: se apaga con curva suave
+// (1 − t²)², en paradas finas, para que no se lean bandas ni bordes.
+const INNER_GLOW = Array.from({ length: 11 }, (_, i) => [i / 10, +(0.17 * (1 - (i / 10) ** 2) ** 2).toFixed(4)]);
+// Máscara de la grilla bajo la ficha: oculta hasta el 55 % del radio y
+// vuelve con smoothstep hasta el borde.
+const GRID_HIDE = Array.from({ length: 11 }, (_, i) => { const t = Math.max(0, (i / 10 - 0.55) / 0.45); return [i / 10, +(1 - t * t * (3 - 2 * t)).toFixed(4)]; });
 // Lo que tarda un impulso en recorrer una rama (mobile); igual que en el CSS.
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
@@ -91,6 +87,16 @@ function Branch({ d, pulse, end: [x, y], r }) {
       {pulse ? <path key={pulse} className="blc-pulse" d={d} pathLength="100" /> : null}
       <circle className="blc-end" cx={x} cy={y} r={r} />
     </>
+  );
+}
+
+// Hoy: no es una sección; late solo y de ahí nace el abanico. Radios: latido, halo, punto, centro.
+function Now({ x, y, r: [live, halo, dot, core] }) {
+  return (
+    <g className="blc-now" aria-hidden="true">
+      <circle className="blc-live" cx={x} cy={y} r={live} /><circle className="blc-halo" cx={x} cy={y} r={halo} />
+      <circle className="blc-dot" cx={x} cy={y} r={dot} /><circle className="blc-core" cx={x} cy={y} r={core} />
+    </g>
   );
 }
 
@@ -199,9 +205,8 @@ export function LayerCurve({ news = [], onEnter }) {
     const TODAY = T(H[H.length - 1].t);
     const nextHalving = cyc?.keyDates?.nextHalving ? T(cyc.keyDates.nextHalving.slice(0, 7)) : TODAY + 1.6;
     const END = nextHalving + 0.1;
-    const peakT = cyc?.keyDates?.peak ? T(cyc.keyDates.peak.slice(0, 7)) : TODAY - 1;
-    const at = { today: TODAY, peak: peakT };
-    const times = NODES.map((n) => at[n.at] ?? T(n.at));
+    // Puntos parejos entre SPREAD_FROM y hoy − gap (desktop: de izquierda a derecha).
+    const spread = (gap) => NODES.map((_, i) => SPREAD_FROM + (i * (TODAY - gap - SPREAD_FROM)) / (NODES.length - 1));
     const last = H[H.length - 1].p;
     const priceAt = (tt) => { if (tt >= TODAY) return last; let b = H[0]; for (const h of H) if (Math.abs(T(h.t) - tt) < Math.abs(T(b.t) - tt)) b = h; return b.p; };
     const draw = (pts) => ({
@@ -219,13 +224,15 @@ export function LayerCurve({ news = [], onEnter }) {
       // nombres, en una columna pareja a la derecha (una fila por sección).
       const Hfit = Math.max(460, Math.min(VT + VFAN + 7 * VROW + VB, fit || 692));
       const row = Math.max(46, Math.min(VROW, (VROW * (Hfit - VT - VB)) / (VFAN + 7 * VROW))), fan = Hfit - VT - VB - 7 * row;
-      const T0 = times[0], yToday = VT + fan, yBot = yToday + 7 * row;
+      // Mobile: de arriba (cerca de hoy) hacia abajo, en el mismo orden de uso.
+      const times = spread(1.2).reverse();
+      const T0 = SPREAD_FROM, yToday = VT + fan, yBot = yToday + 7 * row;
       const Hh = yBot + VB, x0 = 14, x1 = Math.round(W * 0.46), lx = Math.round(W * 0.58);
       const Yt = (tt) => (tt >= TODAY ? yToday - ((tt - TODAY) / (nextHalving - TODAY)) * (yToday - VT) : yToday + ((TODAY - tt) / (TODAY - T0)) * (yBot - yToday));
       const lc = Math.log10(V_CEIL) - 2;
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
       const nodes = NODES.map((n, i) => {
-        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + (NODES.length - 1 - i) * row, ex = lx - 12;
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + i * row, ex = lx - 12;
         const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.35, cy], [ex - (ex - cx) * 0.35, ly], [ex, ly], lensOf(times[i]), 7);
         return { ...n, tt: times[i], cx, cy, lx, ly, ex, branch };
       });
@@ -243,10 +250,10 @@ export function LayerCurve({ news = [], onEnter }) {
     const span = W - L - R, xNow = L + span * (1 - FUT_SHARE);
     const X = (tt) => (tt <= TODAY ? L + ((tt - 2012) / (TODAY - 2012)) * (xNow - L) : xNow + ((tt - TODAY) / (END - TODAY)) * (W - R - xNow));
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
-    // El riel pasa un poco sobre la zona del futuro (los caminos empiezan
-    // debajo del riel): así entran los 8 títulos también en 1000 px.
-    const railEnd = xNow + (W - R - xNow) * 0.45;
-    const gapx = (railEnd - L - 110) / (NODES.length - 1), fs = gapx < 100 ? 14 : gapx < 125 ? 15 : 17;
+    // El riel termina en hoy: el cielo del futuro queda libre para el abanico.
+    // En pantallas angostas entra lo justo sobre el futuro (títulos a ≥96 px).
+    const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 100 ? 14 : gapx < 125 ? 15 : 17;
+    const times = spread(SPREAD_GAP);
     const nodes = NODES.map((n, i) => {
       const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), kx = L + i * gapx, ey = RAIL + 46;
       // Controles: sube casi vertical desde el punto y entra vertical al riel;
@@ -256,11 +263,23 @@ export function LayerCurve({ news = [], onEnter }) {
       return { ...n, tt, cx, cy, kx, ey, fs, branch };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
-    // Ficha de la sección (30-sep, Pablo): vive en el espacio libre debajo de
-    // la curva (2018.6 → hoy), no flotando encima. Sin lugar, vuelve a flotar.
-    const DOCK_FROM = 2018.6, dockTop = Math.max(...H.filter((h) => T(h.t) >= DOCK_FROM).map((h) => Y(h.p))) + 34;
-    const dock = { x: X(DOCK_FROM), y: dockTop, w: X(TODAY) - X(DOCK_FROM) - 16, h: Hh - BOT - 14 - dockTop };
-    return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(H.map((h) => [X(T(h.t)), Y(h.p)])), xt: X(TODAY), yt: Y(last), nodes, dock: dock.h >= 150 && dock.w >= 460 ? dock : null };
+    // Ficha de la sección (oct 2026, Pablo): vive ADENTRO de la curva, en el
+    // hueco más grande entre la línea y el eje, sin caja: el interior de la
+    // curva se ilumina y es el fondo. Sin lugar suficiente, vuelve a flotar.
+    const floor = Hh - BOT - 10, pts = H.map((h) => [X(T(h.t)), Y(h.p)]);
+    let dock = null;
+    for (let a = 0; a < pts.length; a++) {
+      let top = 0;
+      for (let b = a; b < pts.length; b++) {
+        top = Math.max(top, pts[b][1]);
+        const w = pts[b][0] - pts[a][0] - 36, h = floor - top - 26;
+        if (w >= 340 && h >= 76 && (!dock || w * Math.min(h, 340) > dock.w * Math.min(dock.h, 340))) dock = { a, b, x: pts[a][0] + 18, y: top + 26, w: Math.min(w, 560), h };
+      }
+    }
+    // Hueco bajo: compacta (laptops de 800 px: qué es, el dato y "Entrar") o
+    // mínima (pantallas de ~650 px: nombre y "Entrar").
+    if (dock) { dock.x += (pts[dock.b][0] - pts[dock.a][0] - 36 - dock.w) / 2; dock.fit = dock.h < 170 ? "mini" : dock.h < 300 ? "compact" : ""; }
+    return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(pts), xt: X(TODAY), yt: Y(last), nodes, dock };
   }, [H, size, fit, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada
@@ -289,24 +308,25 @@ export function LayerCurve({ news = [], onEnter }) {
   }, [geo]);
 
   const name = (k) => t(SECTION_LABEL[k]);
-  // Fechas de las secciones ancladas a hitos: salen de los datos, no de strings.
-  const dateOf = { ciclos: cyc?.keyDates?.peak };
-  const tk = (k, f) => {
-    // El "cuándo" de una sección anclada a un mes sale del dato, no de un texto.
-    const at = NODES.find((n) => n.key === k)?.at;
-    if (f === "when" && /^\d{4}-\d{2}$/.test(at || "") && k !== "historia") return monthLabel(at, locale);
-    return t(`curve.${k}.${f}`, { date: dateOf[k] ? monthLabel(dateOf[k], locale) : "—" });
-  };
-
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
 
-  // Vista previa (hover de desktop): qué hay en la sección, su dato vivo y
-  // por qué vive en ese punto de la curva.
+  // Vista previa (hover de desktop): qué hay en la sección y su dato vivo.
   const selNodeP = sel != null && geo ? geo.nodes[sel] : null;
   const dock = geo?.dock;
+  // Luz del interior de la curva bajo la ficha: una elipse centrada en ella
+  // que se apaga antes de hoy (ahí termina el área: quedaría un corte vertical).
+  const glow = selNodeP && dock && !geo.V ? (() => {
+    const cx = dock.x + dock.w / 2, cy = dock.y + Math.min(dock.h, 300) * 0.35;
+    const rx = Math.min(dock.w * 0.8, geo.xt - cx - 6), ry = Math.max(80, geo.Hh - geo.BOT - cy);
+    // La grilla se esconde en toda la ficha y reaparece suave en sus bordes.
+    const my = dock.y + dock.h / 2, mrx = dock.w * 0.72 + 60, mry = Math.max(160, dock.h * 0.8 + 60);
+    const tfm = (x, y, k) => `translate(${x} ${y}) scale(1 ${k}) translate(${-x} ${-y})`;
+    // Con poco alto para apagarse, la luz es más tenue: si no, se leen escalones.
+    return { cx, cy, rx, ry, k: Math.min(1, ry / 220), tf: tfm(cx, cy, ry / rx), my, mrx, mtf: tfm(cx, my, mry / mrx) };
+  })() : null;
   const preview = selNodeP && (
     <div
-      className={`blc-pv${dock ? " is-dock" : ""}`}
+      className={`blc-pv${dock ? " is-dock" : ""}${dock?.fit ? ` is-compact is-${dock.fit}` : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
       style={dock
@@ -317,7 +337,6 @@ export function LayerCurve({ news = [], onEnter }) {
     >
       <div className="pv-in" key={selNodeP.key}>
       <div className="pv-a">
-        <div className="k">{tk(selNodeP.key, "when")}</div>
         <h3>{name(selNodeP.key)}</h3>
         <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
       </div>
@@ -330,7 +349,6 @@ export function LayerCurve({ news = [], onEnter }) {
         </div>
       </div>
       <div className="pv-c">
-        <p className="why">{tk(selNodeP.key, "why")}</p>
         <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
       </div>
       </div>
@@ -356,13 +374,14 @@ export function LayerCurve({ news = [], onEnter }) {
       <g mask="url(#blc-fvm)"><g mask="url(#blc-fhm)"><FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} /></g></g>
       <text className="blc-fut-l" x={geo.W - 14} y={VT + 4} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM_V })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
+      <Now x={geo.xt} y={geo.yt} r={[6, 9, 4.5, 1.7]} />
       {geo.nodes.map((n, i) => {
         const label = name(n.key);
         return (
           <g
             key={n.key}
-            className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
-            style={{ animationDelay: `${2.1 + (NODES.length - 1 - i) * 0.1}s` }}
+            className={`blc-node${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
+            style={{ animationDelay: `${2.1 + i * 0.1}s` }}
             tabIndex={0}
             role="button"
             aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
@@ -371,8 +390,6 @@ export function LayerCurve({ news = [], onEnter }) {
           >
             <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
             <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.ex, n.ly]} r={2.4} />
-            {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="6" />}
-            {/* Puntos chicos: en 2021 Acciones y Eventos caen a 7 px (fechas reales). */}
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="9" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="4.5" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="1.7" />
@@ -412,8 +429,23 @@ export function LayerCurve({ news = [], onEnter }) {
               <mask id="blc-am" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-amg)" /></mask>
             </defs>
             <g className="blc-grid">
+              {/* Bajo la luz de la ficha las líneas de la grilla se disuelven. */}
+              {glow && (
+                <defs>
+                  <radialGradient id="blc-ing" gradientUnits="userSpaceOnUse" cx={glow.cx} cy={glow.cy} r={glow.rx} gradientTransform={glow.tf}>
+                    {INNER_GLOW.map(([o, v]) => <stop key={o} offset={o} stopColor="#6CB8C8" stopOpacity={v} />)}
+                  </radialGradient>
+                  <radialGradient id="blc-gmg" gradientUnits="userSpaceOnUse" cx={glow.cx} cy={glow.my} r={glow.mrx} gradientTransform={glow.mtf}>
+                    {GRID_HIDE.map(([o, v]) => <stop key={o} offset={o} stopColor="#000" stopOpacity={v} />)}
+                  </radialGradient>
+                  <mask id="blc-gm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" /><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-gmg)" /></mask>
+                </defs>
+              )}
+              <g mask={glow ? "url(#blc-gm)" : undefined}>
+                {[10, 1000, 100000].map((p) => <line key={p} x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} />)}
+              </g>
               {[10, 1000, 100000].map((p) => (
-                <g key={p}><line x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} /><text x={geo.L} y={geo.Y(p) - 6}>{fmtUsd(p, locale)}</text></g>
+                <g key={p}><text x={geo.L - 8} y={geo.Y(p) + 3} textAnchor="end">{fmtUsd(p, locale)}</text></g>
               ))}
               {[2012, 2014, 2016, 2018, 2020, 2022, 2024, 2026, 2027, 2028].filter((y) => y <= geo.nextHalving).map((y) => (
                 <text key={y} x={geo.X(y)} y={geo.Hh - geo.BOT + 22} textAnchor="middle">{y}</text>
@@ -432,17 +464,27 @@ export function LayerCurve({ news = [], onEnter }) {
             </g>
             {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
             <text className="blc-fut-l" x={geo.W - geo.R} y={geo.RAIL + 40} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
-            {/* La ficha cuelga de su punto: una plomada al espacio de abajo. */}
+            {/* Con la ficha abierta se ilumina el interior de la curva que la
+                aloja: una luz elíptica centrada en la ficha que se apaga con
+                curva suave (sin bordes ni bandas) y que solo corta la curva. */}
+            {glow && (
+              <g className="blc-inner" key="inner">
+                <defs><clipPath id="blc-inc"><path d={`${geo.path}L${geo.xt},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} /></clipPath></defs>
+                <rect clipPath="url(#blc-inc)" opacity={glow.k} x={glow.cx - glow.rx} y={glow.cy - glow.ry} width={glow.rx * 2} height={glow.ry * 2} fill="url(#blc-ing)" />
+              </g>
+            )}
+            {/* La ficha cuelga de su punto: una plomada al interior de la curva. */}
             {selNodeP && dock && (
               <path className="blc-plumb" d={`M${selNodeP.cx},${selNodeP.cy + 10}L${Math.min(Math.max(selNodeP.cx, dock.x + 18), dock.x + dock.w - 18)},${dock.y}`} />
             )}
+            <Now x={geo.xt} y={geo.yt} r={[8, 17, 7.5, 2.6]} />
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
               const label = name(n.key);
               return (
                 <g
                   key={n.key}
-                  className={`blc-node${n.at === "today" ? " is-today" : ""}${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
+                  className={`blc-node${sel === i ? " is-on" : ""}${lit === i ? " is-lit" : ""}`}
                   style={{ animationDelay: `${2.1 + i * 0.12}s` }}
                   tabIndex={0}
                   role="button"
@@ -454,7 +496,6 @@ export function LayerCurve({ news = [], onEnter }) {
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
                   <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.kx + 6, n.ey]} r={2.6} />
-                  {n.at === "today" && <circle className="blc-live" cx={n.cx} cy={n.cy} r="8" />}
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
                   <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.6" />

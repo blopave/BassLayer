@@ -5525,7 +5525,8 @@ select.bl-venue-input { cursor:pointer; }
 .blc-rv * { color:inherit !important; } /* un color: el dato no se tiñe de rojo/verde */
 .blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); transition:fill .15s; } /* el hover responde ya; el impulso se apaga lento */
 .blc-node:hover .blc-dot, .blc-node.is-on .blc-dot { fill:var(--bl-accent-layer); }
-.blc-node.is-today .blc-dot { stroke:var(--bl-text); } .blc-node.is-today .blc-core { fill:var(--bl-text); }
+.blc-now { pointer-events:none; opacity:0; animation:blc-fade .5s 2.1s forwards; }
+.blc-now .blc-dot { stroke:var(--bl-text); } .blc-now .blc-core { fill:var(--bl-text); }
 .blc-node:focus-visible .blc-rn { text-decoration:underline; }
 /* Ficha de sección: la caja (posición y entrada) y la tarjeta (.pv-in).
    La caja entra una vez; al pasar a otra sección solo cambia el contenido,
@@ -5539,22 +5540,34 @@ select.bl-venue-input { cursor:pointer; }
   animation:blc-pv-in .18s ease-out;
 }
 @keyframes blc-pv-in { from { opacity:0; } }
-/* Anclada debajo de la curva (30-sep): tres columnas — qué es, el dato vivo,
-   por qué vive ahí y "Entrar" — sin sombra de tarjeta flotante. */
+/* Adentro de la curva (oct 2026, Pablo): sin caja — ni borde, ni fondo, ni
+   blur. El fondo es el interior de la curva iluminado (.blc-inner en el SVG).
+   Dos columnas: qué es | el dato vivo; abajo, "Entrar". */
 .blc-pv.is-dock { animation:blc-dock .28s var(--ease-out-expo); }
 @keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
 .blc-pv.is-dock .pv-in {
-  display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(max-content,.9fr); gap:28px; align-items:start;
-  padding:20px 24px; overflow:hidden; box-shadow:none;
-  background:color-mix(in srgb, var(--bl-bg) 72%, transparent);
-  border-color:color-mix(in srgb, var(--bl-accent-layer) 26%, var(--bl-border));
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:32px; row-gap:18px; align-items:start;
+  padding:0; overflow:hidden; border:0; border-radius:0; background:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
 }
+.blc-pv.is-dock .pv-c { grid-column:1 / -1; display:flex; align-items:center; justify-content:flex-end; gap:20px; padding-top:14px; border-top:1px solid color-mix(in srgb, var(--bl-accent-layer) 22%, transparent); }
 .blc-pv.is-dock h3 { font-size:27px; } /* escala de la portada: 11 · 13 · 17 · 21 · 27 */
+.blc-pv.is-dock .desc { margin:0; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+.blc-pv.is-dock .big { font-size:21px; line-height:1.25; }
 .blc-pv.is-dock .rows { margin-top:10px; }
-.blc-pv.is-dock .why { margin-top:0; font-size:12.5px; line-height:1.5; }
-.blc-pv.is-dock .go { width:auto; margin-top:14px; white-space:nowrap; letter-spacing:.08em; }
+.blc-pv.is-dock .r.t span:first-child { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.blc-pv.is-dock .go { flex:none; width:auto; margin:0; white-space:nowrap; letter-spacing:.08em; }
 .blc-pv.is-dock .big .up, .blc-pv.is-dock .big .down, .blc-pv.is-dock .r .up, .blc-pv.is-dock .r .down { color:inherit; } /* un color */
+/* Compacta: el dato al lado del nombre y "Entrar" debajo, sin filas. */
+.blc-pv.is-compact .pv-in { row-gap:12px; }
+.blc-pv.is-compact .desc { -webkit-line-clamp:2; }
+.blc-pv.is-compact .rows { display:none; }
+.blc-pv.is-compact .pv-c { padding-top:12px; }
+/* Mínima: una sola fila — nombre a la izquierda, "Entrar" a la derecha. */
+.blc-pv.is-mini .pv-in { grid-template-columns:minmax(0,1fr) auto; align-items:end; }
+.blc-pv.is-mini .desc, .blc-pv.is-mini .pv-b { display:none; }
+.blc-pv.is-mini h3 { margin-bottom:0; font-size:21px; }
+.blc-pv.is-mini .pv-c { grid-column:auto; padding-top:0; border-top:0; }
+.blc-inner { pointer-events:none; animation:blc-pv-in .28s ease-out; }
 .blc-plumb { fill:none; stroke:var(--bl-accent-layer); stroke-width:1; stroke-dasharray:2 4; opacity:.55; pointer-events:none; }
 /* Impulsos (mobile): un destello recorre la rama y enciende el título. */
 .blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
@@ -5562,10 +5575,8 @@ select.bl-venue-input { cursor:pointer; }
 @keyframes blc-pulse { to { stroke-dashoffset:-100; } }
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
 .blc-node.is-lit .blc-end { fill:#fff; }
-.blc-pv .k { font:500 10px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-accent-layer); }
 .blc-pv h3 { margin:6px 0 2px; font-size:26px; letter-spacing:-.025em; color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 14px; font-size:13.5px; line-height:1.5; color:var(--bl-text-sec); }
-.blc-pv .why { margin:12px 0 0; font-size:11.5px; line-height:1.4; color:var(--bl-text-ter); }
 .blc-pv .big { font:600 28px var(--font-mono); letter-spacing:-.03em; color:var(--bl-text); }
 .blc-pv .big .up, .blc-pv .r .up { color:var(--bl-up); } .blc-pv .big .down, .blc-pv .r .down { color:var(--bl-down); }
 .blc-pv .rows { margin-top:12px; border-top:1px solid var(--bl-border-sub); }
@@ -5588,7 +5599,7 @@ select.bl-venue-input { cursor:pointer; }
 .bl-layer-back svg { transition:transform var(--duration-fast); }
 .bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
-  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-fan { animation:none; opacity:1; } .blc-live, .blc-walk.is-new { animation:none; }
+  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-now, .blc-fan { animation:none; opacity:1; } .blc-live, .blc-walk.is-new { animation:none; }
 }
 @media (max-width:768px) {
   /* Mobile = curva vertical ("Ramas", 30-sep): el abanico arriba, la curva
