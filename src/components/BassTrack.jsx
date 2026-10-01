@@ -22,7 +22,8 @@ import { BlThumb } from "./BlThumb";
 // Desktop: la onda ocupa la pantalla y abajo va el display del equipo,
 // "Sonando": lo que hay en la parte activa (por defecto la Agenda; pasar por
 // un cue la cambia), alineado a la grilla de las tres partes. Mobile: vertical,
-// y el solo recorre las partes en loop, una cada 8 golpes.
+// el solo recorre las partes en loop (una cada 8 golpes) y el display de abajo
+// lo sigue; tocar el display pausa el loop 10 s para leer o elegir tranquilo.
 
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
 const CUE_BEATS = 8;                          // mobile: golpes por cue en el loop
@@ -184,9 +185,10 @@ export function BassTrack({ events, today, onCue, onSelect, onSelectNews, onSele
   const [auto, setAuto] = useState(0);
   const still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const loop = mobile && live && !still;
+  const holdUntil = useRef(0);                // mobile: tocar el display pausa el loop
   useEffect(() => {
     if (!loop) return undefined;
-    const id = setInterval(() => setAuto((n) => n + 1), BEAT * CUE_BEATS * 1000);
+    const id = setInterval(() => setAuto((n) => (Date.now() < holdUntil.current ? n : n + 1)), BEAT * CUE_BEATS * 1000);
     return () => clearInterval(id);
   }, [loop]);
   const solo = hot || (loop ? data.parts[auto % data.parts.length].k : null);
@@ -247,8 +249,9 @@ export function BassTrack({ events, today, onCue, onSelect, onSelectNews, onSele
     onClick: () => onCue(c.k),
     onKeyDown: (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onCue(c.k)),
   });
-  // El display muestra la última parte elegida (de entrada, la Agenda: lo que suena ahora).
-  const deck = data.parts.find((p) => p.k === deckK) || data.parts[1];
+  // El display muestra la última parte elegida (de entrada, la Agenda: lo que
+  // suena ahora); en mobile, la que suena en el loop.
+  const deck = data.parts.find((p) => p.k === (mobile ? solo || "agenda" : deckK)) || data.parts[1];
 
   return (
     <section className={`bl-btrack${live ? " is-live" : ""}${geo && !geo.V ? " is-deck" : ""}`} data-solo={solo || ""} aria-label={t("track.aria")} ref={wrapRef}>
@@ -291,8 +294,8 @@ export function BassTrack({ events, today, onCue, onSelect, onSelectNews, onSele
           )}
         </div>
       )}
-      {geo && !geo.V && (
-        <div className="btk-deck" style={{ "--seg": `${geo.seg}px` }}>
+      {geo && (
+        <div className="btk-deck" style={geo.V ? undefined : { "--seg": `${geo.seg}px` }} onPointerDown={() => { holdUntil.current = Date.now() + 10000; }}>
           <div className="btk-deck-head">
             <span className="btk-deck-k"><i aria-hidden="true" />{t("track.playing")} · 124 BPM</span>
             <span className="btk-deck-name"><b>{deck.letter}</b>{deck.name}</span>
@@ -302,7 +305,7 @@ export function BassTrack({ events, today, onCue, onSelect, onSelectNews, onSele
           <ul className="btk-deck-list" key={deck.k}>
             {deck.items.map((it) => (
               <li key={it.key}>
-                <button type="button" className="btk-deck-item" onClick={it.open} onMouseEnter={() => setHot(deck.k)} onMouseLeave={() => setHot(null)}>
+                <button type="button" className="btk-deck-item" onClick={it.open} onMouseEnter={() => !mobile && setHot(deck.k)} onMouseLeave={() => !mobile && setHot(null)}>
                   <BlThumb image={it.image} artistImage={it.artistImage} artistImageName={it.artistImageName} poster={it.poster} />
                   <span className="btk-deck-txt"><span className="btk-deck-title">{it.title}</span><span className="btk-deck-meta">{it.meta}</span></span>
                 </button>

@@ -5807,6 +5807,19 @@ select.bl-venue-input { cursor:pointer; }
 @media (max-width:768px) {
   .bl-btrack { margin:10px 16px 4px; }
   .btk-name { font-size:21px; }
+  /* Mobile: el display va debajo de la onda, en una columna, y sigue al loop. */
+  .btk-deck { grid-template-columns:1fr; gap:16px; margin:6px 0 0; padding:18px 0 22px; min-height:0; }
+  .btk-deck-head { display:grid; grid-template-columns:1fr auto; align-items:end; gap:6px 12px; padding-right:0; }
+  .btk-deck-k { grid-column:1 / -1; }
+  .btk-deck-name { font-size:26px; gap:10px; }
+  .btk-deck-name b { width:24px; height:24px; font-size:12px; }
+  .btk-deck-sub { grid-column:1; }
+  .btk-deck-all { grid-column:2; grid-row:2 / span 2; margin:0; align-self:end; min-height:44px; }
+  .btk-deck-list { grid-template-columns:1fr; gap:12px; }
+  .btk-deck-list li:nth-child(4) { display:none; }
+  .btk-deck-item { min-height:44px; align-items:center; }
+  .btk-deck-item .bl-thumb { width:56px; height:72px; }
+  .btk-deck-title { font-size:15px; -webkit-line-clamp:2; }
 }
 
 /* Flecha para volver al track (Bass), en cobre. */

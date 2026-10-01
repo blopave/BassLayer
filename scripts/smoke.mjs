@@ -146,6 +146,9 @@ async function run(vp) {
         await page.waitForTimeout(4300);
         const next = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);
         if (!first || !next || first === next) fail(vp.name, "índice", `en mobile el loop de cues no avanza (${first} → ${next})`);
+        // El display de abajo sigue al loop: muestra la parte que suena.
+        const deckNow = await page.locator(".btk-deck-name").textContent().catch(() => "");
+        if (!next || !(deckNow || "").includes(next)) fail(vp.name, "índice", `en mobile el display no sigue al loop (suena ${next}, muestra ${deckNow})`);
       }
       if (await page.locator(".btk-cue", { hasText: /Noticias|News/ }).count()) {
         await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
