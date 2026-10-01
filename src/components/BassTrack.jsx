@@ -15,10 +15,15 @@ import { cleanArtists } from "../utils/artists";
 // y la Agenda al final. La onda no es audio: su altura es cuánto pasa.
 // Mobile: vertical (el tiempo baja), cues en columna; desktop: horizontal con
 // un riel parejo arriba — el mismo idioma que las Ramas de Layer.
+// Suena (sept 2026, Pablo: "que la música esté"): la onda late a 124 BPM y
+// cada golpe sale del cabezal hacia lo que viene, como el sonido; lo ya
+// reproducido queda quieto. Pasar por un cue hace solo de su tramo.
 
 const DAYS = 60;                              // lo que viene
 const PAST = 7;                               // lo ya reproducido
 const LETTERS = "ABCDEF";
+const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
+const SPEED = 700;                            // px/s: cómo viaja el golpe desde el cabezal
 
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
@@ -31,12 +36,16 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
   const [w, setW] = useState(0);
   const [news, setNews] = useState([]);
   const [fests, setFests] = useState([]);
+  const [hot, setHot] = useState(null);       // cue bajo el mouse o con foco
+  const [live, setLive] = useState(false);    // en pantalla: late (fuera, no gasta)
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return undefined;
     const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)));
     ro.observe(el);
-    return () => ro.disconnect();
+    const io = new IntersectionObserver(([e]) => setLive(e.isIntersecting));
+    io.observe(el);
+    return () => { ro.disconnect(); io.disconnect(); };
   }, []);
   useEffect(() => {
     let on = true;
@@ -70,23 +79,23 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
       if (x < 1440) lastDay++;
     }
     const cues = [];
-    if (news.length) cues.push({ k: "news", at: -1, name: t("section.news"), sub: t("track.newsSub", { n: lastDay }) });
-    cues.push({ k: "today", at: 0, name: t("day.today"), sub: t("track.todaySub", { n: todayN }) });
+    if (news.length) cues.push({ k: "news", at: -1, r: [-2, 0], name: t("section.news"), sub: t("track.newsSub", { n: lastDay }) });
+    cues.push({ k: "today", at: 0, r: [-0.1, 1.3], name: t("day.today"), sub: t("track.todaySub", { n: todayN }) });
     const fri = Math.max(0, off(weekend.friday)), sun = off(weekend.monday) - 1;
     const sunD = new Date(weekend.monday); sunD.setDate(sunD.getDate() - 1);
     const friD = new Date(today); friD.setDate(friD.getDate() + fri);
-    cues.push({ k: "weekend", at: Math.min(fri + 0.5, sun), name: t("track.weekend"), sub: `${day(friD)} – ${day(sunD)}` });
+    cues.push({ k: "weekend", at: Math.min(fri + 0.5, sun), r: [fri, sun + 1.3], name: t("track.weekend"), sub: `${day(friD)} – ${day(sunD)}` });
     const tours = computeTours(allEvents, { dateOf: getEventDate, clean: cleanArtists });
     const tour = tours.find((x) => off(x.date) > sun) || tours[0];
-    if (tour && off(tour.date) < DAYS) cues.push({ k: "tour", at: off(tour.date), name: t("tour.title"), sub: `${tour.on[0]} · ${day(tour.date)}` });
+    if (tour && off(tour.date) < DAYS) cues.push({ k: "tour", at: off(tour.date), r: [off(tour.date) - 0.3, off(tour.date) + 1.5], name: t("tour.title"), sub: `${tour.on[0]} · ${day(tour.date)}` });
     const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const next = fests.filter((f) => (f.dates_start || "") >= todayISO).sort((a, b) => a.dates_start.localeCompare(b.dates_start));
     const fest = next.find((f) => f.country === "Argentina") || next[0];
     if (fest) {
       const fd = new Date(`${fest.dates_start}T12:00:00`);
-      cues.push({ k: "fests", at: Math.min(DAYS - 3, off(fd)), name: t("section.festivals"), sub: `${fest.name.replace(/\s+Buenos Aires$/i, " BA")} · ${day(fd)}` });
+      cues.push({ k: "fests", at: Math.min(DAYS - 3, off(fd)), r: [Math.min(DAYS - 3, off(fd)) - 0.3, Math.min(DAYS - 3, off(fd)) + 2.5], name: t("section.festivals"), sub: `${fest.name.replace(/\s+Buenos Aires$/i, " BA")} · ${day(fd)}` });
     }
-    cues.push({ k: "agenda", at: DAYS - 1, name: t("track.agenda"), sub: t("track.agendaSub", { n: upcoming }) });
+    cues.push({ k: "agenda", at: DAYS - 1, r: [DAYS - 7, DAYS], name: t("track.agenda"), sub: t("track.agendaSub", { n: upcoming }) });
     cues.sort((a, b) => a.at - b.at).forEach((c, i) => { c.letter = LETTERS[i]; });
     return { perDay, past, cues };
   }, [events, allEvents, news, fests, today, weekend, t, M, locale]);
@@ -99,6 +108,10 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
     return Math.min(1, s / 1.6) ** 0.65;
   };
 
+  // El golpe: sale del cabezal (retardo por distancia, módulo un beat) y pierde
+  // fuerza al alejarse; los días con más fiestas pegan más.
+  const kick = (dist, e, span) => ({ d: ((Math.max(0, dist) / SPEED) % BEAT).toFixed(3), k: ((0.35 + 0.65 * e) * Math.exp(-Math.max(0, dist) / (span * 0.55))).toFixed(2) });
+
   const mobile = w > 0 && w <= 768;
   const geo = useMemo(() => {
     if (!w) return null;
@@ -107,7 +120,7 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
       const H = 600, top = 24, yNow = 96, bot = H - 30, cx = Math.round(w * 0.26), amp = Math.round(w * 0.14), lx = Math.round(w * 0.49);
       const Y = (x) => (x < 0 ? top + ((x + PAST) / PAST) * (yNow - top) : yNow + (x / DAYS) * (bot - yNow));
       const bars = [];
-      for (let y = top; y <= bot; y += 2.5) { const x = y < yNow ? -PAST + ((y - top) / (yNow - top)) * PAST : ((y - yNow) / (bot - yNow)) * DAYS; bars.push({ y, h: 1 + energy(x) * amp, past: x < 0 }); }
+      for (let y = top; y <= bot; y += 2.5) { const x = y < yNow ? -PAST + ((y - top) / (yNow - top)) * PAST : ((y - yNow) / (bot - yNow)) * DAYS; bars.push({ y, x, h: 1 + energy(x) * amp, past: x < 0, ...kick(y - yNow, energy(x), bot - yNow) }); }
       const gap = (bot - 40 - top) / Math.max(1, data.cues.length - 1);
       const cues = data.cues.map((c, i) => ({ ...c, y: Y(c.at), ly: top + 18 + i * gap }));
       return { V: true, H, cx, amp, lx, yNow, bars, cues, top, bot };
@@ -115,26 +128,31 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
     const H = 330, x0 = 24, x1 = w - 24, xNow = x0 + (x1 - x0) * 0.14, mid = 206, amp = 60;
     const X = (x) => (x < 0 ? x0 + ((x + PAST) / PAST) * (xNow - x0) : xNow + (x / DAYS) * (x1 - xNow));
     const bars = [];
-    for (let px = x0; px <= x1; px += 2.6) { const x = px < xNow ? -PAST + ((px - x0) / (xNow - x0)) * PAST : ((px - xNow) / (x1 - xNow)) * DAYS; bars.push({ x: px, h: 1.2 + energy(x) * amp, past: x < 0 }); }
+    for (let px = x0; px <= x1; px += 2.6) { const x = px < xNow ? -PAST + ((px - x0) / (xNow - x0)) * PAST : ((px - xNow) / (x1 - xNow)) * DAYS; bars.push({ x: px, dx: x, h: 1.2 + energy(x) * amp, past: x < 0, ...kick(px - xNow, energy(x), x1 - xNow) }); }
     const cw = (x1 - x0) / data.cues.length;
     const cues = data.cues.map((c, i) => ({ ...c, x: X(c.at), kx: x0 + i * cw + 4 }));
     const ticks = [7, 14, 21, 28, 35, 42, 49, 56].map((d) => { const dd = new Date(today); dd.setDate(dd.getDate() + d); const m = M[dd.getMonth()]; return { x: X(d), l: `${dd.getDate()} ${locale === "es" ? m.toLowerCase() : m}` }; });
     return { V: false, H, x0, x1, xNow, mid, amp, bars, cues, ticks };
   }, [w, mobile, data, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const hotR = hot && data.cues.find((c) => c.k === hot)?.r;
+  const barClass = (x) => `btk-bar${x < 0 ? " is-past" : ""}${hotR && x >= hotR[0] && x <= hotR[1] ? " is-hot" : ""}`;
+  const barStyle = (b) => (b.past ? undefined : { "--d": `${b.d}s`, "--k": b.k });
   const cueProps = (c) => ({
-    className: "btk-cue", role: "button", tabIndex: 0,
+    className: `btk-cue${hot === c.k ? " is-hot" : ""}`, role: "button", tabIndex: 0,
+    onMouseEnter: () => setHot(c.k), onMouseLeave: () => setHot(null),
+    onFocus: () => setHot(c.k), onBlur: () => setHot(null),
     "aria-label": `${c.name}: ${c.sub}`,
     onClick: () => onCue(c.k),
     onKeyDown: (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onCue(c.k)),
   });
 
   return (
-    <section className="bl-btrack" aria-label={t("track.aria")} ref={wrapRef}>
+    <section className={`bl-btrack${live ? " is-live" : ""}${hot ? " has-hot" : ""}`} style={{ "--beat": `${BEAT}s` }} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo?.V && (
-        <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
-          {geo.bars.map((b) => <line key={b.y} className={`btk-bar${b.past ? " is-past" : ""}`} x1={geo.cx - b.h * 0.6} x2={geo.cx + b.h} y1={b.y} y2={b.y} />)}
+        <svg className="is-v" viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
+          {geo.bars.map((b) => <line key={b.y} className={barClass(b.x)} style={barStyle(b)} x1={geo.cx - b.h * 0.6} x2={geo.cx + b.h} y1={b.y} y2={b.y} />)}
           <line className="btk-now" x1="6" x2={geo.cx + geo.amp + 10} y1={geo.yNow} y2={geo.yNow} />
           <text className="btk-nowl" x="6" y={geo.yNow - 6}>{t("track.now")}</text>
           {geo.cues.map((c) => (
@@ -152,7 +170,7 @@ export function BassTrack({ events, allEvents = events, today, weekend, onCue })
       )}
       {geo && !geo.V && (
         <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
-          {geo.bars.map((b) => <line key={b.x} className={`btk-bar${b.past ? " is-past" : ""}`} x1={b.x} x2={b.x} y1={geo.mid - b.h} y2={geo.mid + b.h * 0.6} />)}
+          {geo.bars.map((b) => <line key={b.x} className={barClass(b.dx)} style={barStyle(b)} x1={b.x} x2={b.x} y1={geo.mid - b.h} y2={geo.mid + b.h * 0.6} />)}
           <line className="btk-now" x1={geo.xNow} x2={geo.xNow} y1={geo.mid - geo.amp - 12} y2={geo.mid + geo.amp * 0.6 + 10} />
           <text className="btk-nowl" x={geo.xNow} y={geo.mid + geo.amp * 0.6 + 24} textAnchor="middle">{t("track.now")}</text>
           {geo.cues.map((c) => {

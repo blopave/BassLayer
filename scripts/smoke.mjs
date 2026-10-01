@@ -130,6 +130,17 @@ async function run(vp) {
     const cues = await page.locator(".bl-btrack .btk-cue").count();
     if (cues < 5) fail(vp.name, "índice", `${cues} cues en el índice de Bass (esperaba ≥5)`);
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
+    // Suena: la onda late (animaciones vivas en las barras) y un cue con foco hace solo de su tramo.
+    if (cues) {
+      await page.locator(".bl-btrack").scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      const beats = await page.locator(".bl-btrack").evaluate((el) => el.getAnimations({ subtree: true }).filter((x) => x.animationName === "btk-kick-y" || x.animationName === "btk-kick-x").length);
+      if (beats < 50) fail(vp.name, "índice", `la onda no late (${beats} barras animadas)`);
+      await page.locator(".btk-cue").nth(2).focus();
+      await page.waitForTimeout(150);
+      if (!(await page.locator(".btk-bar.is-hot").count())) fail(vp.name, "índice", "el foco en un cue no enciende su tramo de la onda");
+      await page.locator(".btk-cue").nth(2).blur();
+    }
     if (cues) {
       await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click");
       const newsOn = await page.locator(".bl-bass-section-btn.active", { hasText: /Noticias|News/ }).count();
