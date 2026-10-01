@@ -490,23 +490,6 @@
   background:linear-gradient(to right, rgba(196,144,112,0.3), transparent);
 }
 
-/* ── World-specific Footer Styles ────── */
-.bl-root[data-section="bass"] .bl-terminal-footer {
-  border-top-color:rgba(196,144,112,0.1);
-}
-.bl-root[data-section="bass"] .bl-terminal-link:hover {
-  color:var(--bl-accent-bass); background:rgba(196,144,112,0.06);
-}
-.bl-root[data-section="layer"] .bl-terminal-footer {
-  border-top-color:rgba(108,184,200,0.08);
-}
-.bl-root[data-section="layer"] .bl-terminal-link {
-  font-size:10px; letter-spacing:2px;
-}
-.bl-root[data-section="layer"] .bl-terminal-link:hover {
-  color:var(--bl-accent-layer); background:rgba(108,184,200,0.05);
-}
-
 /* ── World-specific Mode Toggle ────── */
 .bl-root[data-section="bass"] .bl-mode-toggle {
   border-color:rgba(196,144,112,0.2);
@@ -1952,19 +1935,47 @@
 }
 
 /* ── Terminal Footer ───────────────────── */
-.bl-terminal-footer {
-  display:flex; align-items:center; justify-content:center; gap:24px;
-  padding:32px 16px 48px; margin-top:8px;
-  border-top:1px solid var(--bl-border);
-}
-.bl-terminal-link {
-  font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;
-  color:var(--bl-text-ter); text-decoration:none; background:none; border:none;
-  cursor:pointer; padding:6px 10px; border-radius:4px;
-  transition:color .2s, background .2s;
-}
-.bl-terminal-link:hover {
-  color:var(--bl-accent, var(--bl-text)); background:var(--bl-subtle-hover);
+/* ── Colofón de cada mundo (oct 2026): qué es, de dónde salen sus datos y el
+   cruce al otro mundo (el puente Bass ↔ Layer). Reemplazó al "> about_" de
+   terminal. Cada mundo en su color; el cruce, en el color del otro. ── */
+.bl-wfoot { --wf-acc:var(--bl-accent-bass); --wf-other:var(--bl-accent-layer); margin-top:28px; padding:44px 32px 56px; border-top:1px solid color-mix(in srgb, var(--wf-acc) 14%, transparent); }
+.bl-wfoot.is-layer { --wf-acc:var(--bl-accent-layer); --wf-other:var(--bl-accent-bass); }
+.wf-main { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, 400px); gap:28px 48px; align-items:end; }
+.wf-brand { display:flex; flex-direction:column; gap:10px; min-width:0; }
+.wf-mark { font:800 34px/1 var(--font-bass); letter-spacing:-.035em; color:var(--wf-acc); }
+.is-layer .wf-mark { font-weight:300; font-size:26px; letter-spacing:.32em; text-transform:uppercase; }
+.wf-tag { margin:0; font:500 15px/1.45 var(--font-sans); color:var(--bl-text-sec); text-wrap:balance; }
+.wf-sources { margin-top:6px; font:500 12px/1.7 var(--font-mono); color:var(--bl-text-ter); max-width:60ch; overflow:hidden; }
+/* Separadores que nunca quedan colgando al cortar línea: cada "·" va a la
+   izquierda de su fuente y el del comienzo de cada línea queda fuera del recorte. */
+.wf-sources ul { display:flex; flex-wrap:wrap; list-style:none; margin:0 0 0 -18px; padding:0; }
+.wf-sources li { position:relative; padding-left:18px; white-space:nowrap; }
+.wf-sources li::before { content:"·"; position:absolute; left:6px; }
+.wf-k { display:block; font:600 9.5px var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:4px; }
+.wf-cross { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:18px 20px; text-align:left; cursor:pointer; color:inherit; font:inherit;
+  background:color-mix(in srgb, var(--wf-other) 5%, transparent); border:1px solid color-mix(in srgb, var(--wf-other) 26%, transparent); border-radius:14px; transition:border-color .25s, background .25s; }
+.wf-cross:hover, .wf-cross:focus-visible { border-color:var(--wf-other); background:color-mix(in srgb, var(--wf-other) 9%, transparent); outline:none; }
+.wf-cross-txt { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.wf-cross-name { display:inline-flex; align-items:center; gap:10px; font:800 26px/1.1 var(--font-bass); letter-spacing:-.03em; color:var(--wf-other); }
+.wf-cross.is-to-layer .wf-cross-name { font-weight:300; font-size:20px; letter-spacing:.3em; text-transform:uppercase; }
+.wf-arrow { font:400 18px var(--font-sans); letter-spacing:0; transition:transform .25s; }
+.wf-cross:hover .wf-arrow { transform:translateX(4px); }
+.wf-cross-meta { font:500 11.5px var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wf-viz { flex:none; overflow:visible; }
+.wf-viz path { fill:none; stroke:var(--wf-other); stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
+.wf-viz line { stroke:var(--wf-other); stroke-width:2.2; stroke-linecap:round; }
+.wf-meta { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 20px; margin-top:32px; padding-top:18px; border-top:1px solid var(--bl-border-sub); font:500 10.5px var(--font-mono); letter-spacing:.08em; color:var(--bl-text-ter); }
+.wf-about { padding:10px 0; background:none; border:0; cursor:pointer; font:600 11px var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--bl-text-sec); transition:color .2s; }
+.wf-about:hover, .wf-about:focus-visible { color:var(--wf-acc); outline:none; }
+@media (max-width:768px) {
+  /* Mobile: una columna, y aire abajo para el botón flotante (no tapa nada). */
+  .bl-wfoot { margin-top:20px; padding:36px 16px 112px; }
+  .wf-main { grid-template-columns:1fr; gap:26px; }
+  .wf-mark { font-size:30px; }
+  .is-layer .wf-mark { font-size:22px; }
+  .wf-cross { padding:16px 18px; min-height:76px; }
+  .wf-viz { width:96px; height:36px; }
+  .wf-meta { margin-top:26px; flex-direction:column; align-items:flex-start; gap:2px; }
 }
 
 /* ── Skeleton Loaders ───────────────────── */
