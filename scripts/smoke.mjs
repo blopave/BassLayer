@@ -152,10 +152,11 @@ async function run(vp) {
       });
       if (gaps) fail(vp.name, "índice", `la onda se corta en ${gaps} link(s): la palabra tiene que estar hecha de onda`);
       const overlap = await page.locator(".bl-btrack").evaluate((el) => {
-        const now = el.querySelector(".btk-now")?.getBoundingClientRect();
-        return [...el.querySelectorAll(".btk-sub, .btk-name")].some((t) => { const r = t.getBoundingClientRect(); return now && r.right > now.left && r.left < now.right && r.bottom > now.top && r.top < now.bottom; });
+        const box = (e) => e.getBoundingClientRect(), hit = (a, b) => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+        const names = [...el.querySelectorAll(".btk-name")].map(box), subs = [...el.querySelectorAll(".btk-sub, .btk-span")].map(box);
+        return subs.some((s) => names.some((n) => hit(s, n))) || names.some((a, i) => names.some((b, j) => i !== j && hit(a, b)));
       });
-      if (overlap) fail(vp.name, "índice", "un link pisa el cabezal AHORA");
+      if (overlap) fail(vp.name, "índice", "un nombre pisa a otro o a su dato");
       await page.locator(".btk-cue").last().blur();
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 8 golpes.
       if (vp.isMobile) {

@@ -5758,7 +5758,7 @@ select.bl-venue-input { cursor:pointer; }
 /* ── Índice de Bass (sept–oct 2026): una sola onda que nunca se corta y las
    secciones hechas de onda (cada nombre escrito con las mismas barras, en el
    canvas de BassTrack). El SVG encima lleva la caja real de cada palabra (foco
-   y lectura), su dato debajo de la onda y el cabezal. Un color: el cobre. ── */
+   y lectura), y su dato debajo de la onda. Un color: el cobre. ── */
 .bl-btrack { margin:14px 32px 12px; min-height:600px; /* alto reservado antes de medir: sin salto ni scroll que se corre */ }
 .btk-stage { position:relative; }
 .btk-canvas { position:absolute; inset:0; display:block; pointer-events:none; }
@@ -5768,8 +5768,6 @@ select.bl-venue-input { cursor:pointer; }
 .btk-name { fill:transparent; }
 .btk-sub { fill:var(--bl-text-sec); font:500 12px var(--font-mono); letter-spacing:.02em; transition:fill .35s; }
 .btk-span { fill:var(--bl-text-ter); font:500 9.5px var(--font-mono); letter-spacing:.12em; text-transform:uppercase; transition:fill .35s; }
-.btk-now { stroke:var(--bl-text); stroke-width:1.5; }
-.btk-nowl { fill:var(--bl-text); font:700 9.5px var(--font-mono); letter-spacing:.1em; }
 /* La sección en solo: su dato se enciende; con una elegida, los otros bajan. */
 .btk-cue.is-hot .btk-sub { fill:var(--bl-accent-bass); }
 .btk-cue.is-hot .btk-span { fill:var(--bl-text-sec); }

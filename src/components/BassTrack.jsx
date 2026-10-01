@@ -9,7 +9,7 @@ import { api, shared } from "../utils/api";
 // que nunca se corta, y sus secciones HECHAS DE ONDA — cada nombre está
 // escrito con las mismas barras, encendidas donde pasa una letra:
 //   Noticias   — lo que ya sonó: las notas de las últimas 24 h, por hora (atenuado).
-//   Agenda     — desde el cabezal (AHORA): las fiestas de los próximos 30 días.
+//   Agenda     — desde ahora: las fiestas de los próximos 30 días.
 //   Festivales — el cierre: los festivales de los próximos 6 meses.
 // Cada nombre va centrado en su parte, con aire: alrededor de la palabra la
 // onda se aquieta (sigue sonando, más baja) para que respire. El dato y el
@@ -19,8 +19,8 @@ import { api, shared } from "../utils/api";
 // Cada parte se dibuja con sus datos reales, comprimida como un master (ver
 // envelope), sobre un piso de señal. La textura es textura.
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
-// 1 del compás acentuado), ataque suave, caída larga, viajando desde el
-// cabezal; encima una ondulación continua. Al ponerse sobre una sección, el
+// 1 del compás acentuado), ataque suave, caída larga, viajando desde ahora
+// (el comienzo de la Agenda); encima una ondulación continua. Al ponerse sobre una sección, el
 // resto del tema FRENA como una bandeja sin motor y se apaga, y su parte pasa
 // a PREESCUCHA: un cabezal la recorre y enciende las barras a su paso. En
 // mobile (sin hover) el loop hace lo mismo por turnos.
@@ -28,7 +28,7 @@ import { api, shared } from "../utils/api";
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
 const CUE_BEATS = 8;                          // mobile: golpes por parte en el loop
 const SCAN_BEATS = 8;                         // preescucha: el cabezal cruza la parte en 2 compases
-const FLOW = 0.45;                            // partes/s: cómo viaja el golpe desde el cabezal
+const FLOW = 0.45;                            // partes/s: cómo viaja el golpe desde ahora
 const NEWS_BINS = 24, NEWS_H = 1;             // Noticias: 24 h en tramos de 1 h (el feed cubre ~1 día)
 const AGENDA_DAYS = 30;                       // Agenda: un tramo por día
 const FEST_WEEKS = 26;                        // Festivales: un tramo por semana
@@ -190,8 +190,7 @@ export function BassTrack({ events, today, onCue }) {
         bars.push({ j: c.j, u, px, e, mid: c.mid, h: 1 + e * c.amp * (0.35 + 0.65 * grain(i)), quiet: 1 - 0.58 * room, word: room > 0.01 });
       }
     }
-    const now = mobile ? { x: 1, top: parts[1].mid - parts[1].amp - 4, bot: parts[1].mid + parts[1].amp + 4 } : { x: seg, top: parts[1].mid - parts[1].amp - 8, bot: parts[1].mid + parts[1].amp + 8 };
-    return { H, parts, bars, lw, step, size, font, now };
+    return { H, parts, bars, lw, step, size, font };
   }, [w, mobile, avail, data, fonts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Loop de partes en mobile: solo con el track en pantalla y sin "reducir movimiento".
@@ -254,7 +253,7 @@ export function BassTrack({ events, today, onCue }) {
       for (const b of geo.bars) {
         const j = b.j, c = geo.parts[j], tt = still ? 0 : S.time[j], f = b.u - j;
         let m = 1 + 0.07 * Math.sin(tt * 2.1 - b.px * 0.019) + 0.045 * Math.sin(tt * 3.4 + b.px * 0.031) + 0.04 * Math.sin(tt * 0.55 + b.u * 1.7);
-        const dist = b.u - 1;     // en partes, desde el cabezal (comienzo de la Agenda)
+        const dist = b.u - 1;     // en partes, desde ahora (comienzo de la Agenda)
         const kick = dist >= 0 && !still ? (0.4 + 0.6 * b.e) * Math.exp(-dist / 1.2) * hit((tt - dist / FLOW) / BEAT) * S.rate[j] : 0;
         m += 0.3 * kick;
         const scanning = j === s && scan >= 0;
@@ -299,8 +298,6 @@ export function BassTrack({ events, today, onCue }) {
         <div className="btk-stage" style={{ height: geo.H }}>
           <canvas ref={canvasRef} className="btk-canvas" style={{ width: w, height: geo.H }} data-live={live && !still ? "1" : "0"} aria-hidden="true" />
           <svg viewBox={`0 0 ${w} ${geo.H}`} width={w} height={geo.H} role="img" aria-label={t("track.chartAria")}>
-            <line className="btk-now" x1={geo.now.x} x2={geo.now.x} y1={geo.now.top} y2={geo.now.bot} />
-            <text className="btk-nowl" x={geo.now.x} y={geo.now.top - 8} textAnchor={mobile ? "start" : "middle"}>{t("track.now")}</text>
             {geo.parts.map((c) => (
               <g key={c.k} {...partProps(c)} data-axis={Math.round(c.mid)}>
                 <rect className="btk-hit" x={c.x} y={c.y} width={c.seg} height={c.h} />
