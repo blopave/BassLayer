@@ -2,6 +2,8 @@
 
 Guía de trabajo del proyecto. Léela al arrancar cada sesión.
 
+> **REGLA N.º 1 — IDIOMA: todo lo que se le escribe a Pablo va en ESPAÑOL rioplatense (voseo), siempre.** Respuestas, resúmenes, avisos de una línea (después de una notificación, un reporte de subagente o un deploy), preguntas, mensajes de commit y comentarios de código. En inglés solo quedan nombres técnicos (funciones, clases, comandos, rutas). Antes de enviar cada mensaje, revisar que esté en español de punta a punta. Se rompió más de 4 veces en una misma sesión (oct 2026); no tiene excepciones.
+
 ## Stack
 
 - **React + Vite** (dev en `:3000`), API Express en `:3001`.

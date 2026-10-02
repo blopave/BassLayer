@@ -2442,7 +2442,7 @@ const RA_AREAS = [
 // RA dropped sortOrder/sortField args and moved flyer URLs from `flyerFront` (now always null)
 // to `images[]` with `type: "FLYERFRONT"`. Filter syntax also changed: `areas:{eq:N}` returns 0,
 // must use `areas:{any:[N]}`.
-const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int){eventListings(filters:$filters,pageSize:$pageSize,page:1){data{event{id title date startTime endTime contentUrl images{filename type} venue{name area{name}}artists{name}}}totalResults}}`;
+const RA_QUERY = `query GET_DEFAULT_EVENTS_LISTING($filters:FilterInputDtoInput,$pageSize:Int,$page:Int){eventListings(filters:$filters,pageSize:$pageSize,page:$page){data{event{id title date startTime endTime contentUrl images{filename type} venue{name area{name}}artists{name}}}totalResults}}`;
 
 function pickRAFlyer(images) {
   if (!Array.isArray(images) || images.length === 0) return null;
@@ -2491,18 +2491,28 @@ function formatRAEvent(ev, areaMeta = { region: "AR" }) {
 
 async function fetchRAGraphQL(area) {
   const today = new Date().toISOString().split("T")[0];
-  // Ventana 60 días: diagnóstico mostró que RA tiene ~58 eventos en 60d para
-  // CABA, contra ~30 en 30d. pageSize 100 cubre el total con margen sin paginar.
+  // Ventana de 60 días, de a 100 por página. Argentina ya pasa los 100 (oct
+  // 2026: 106) y con una sola página se perdían los más lejanos: si RA dice que
+  // hay más, se pide la siguiente (hasta 3). Las áreas con tope no lo necesitan.
   const windowEnd = new Date(Date.now() + 60*86400000).toISOString().split("T")[0];
-  try {
+  const page = async (n) => {
     const r = await fetchSafe(RA_GRAPHQL, {
       method: "POST",
       headers: { ...BROWSER_HEADERS, "Content-Type":"application/json", Referer:"https://ra.co/events", Origin:"https://ra.co", Accept:"application/json" },
-      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[area.id]}, listingDate:{gte:today,lte:windowEnd} }, pageSize:100 } }),
+      body: JSON.stringify({ query: RA_QUERY, variables: { filters: { areas:{any:[area.id]}, listingDate:{gte:today,lte:windowEnd} }, pageSize:100, page:n } }),
     }, 12000);
-    if (!r.ok) return [];
-    const json = JSON.parse(await safeText(r));
-    let listings = json?.data?.eventListings?.data || [];
+    if (!r.ok) return null;
+    return JSON.parse(await safeText(r))?.data?.eventListings || null;
+  };
+  try {
+    const first = await page(1);
+    if (!first) return [];
+    let listings = first.data || [];
+    for (let n = 2; !area.cap && n <= 3 && listings.length < (first.totalResults || 0); n++) {
+      const more = (await page(n).catch(() => null))?.data || [];
+      if (!more.length) break;
+      listings = listings.concat(more);
+    }
     if (area.cap) listings = listings.slice(0, area.cap);
     return listings.map(l => formatRAEvent(l.event, area));
   } catch (e) {
