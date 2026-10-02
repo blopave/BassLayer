@@ -108,6 +108,11 @@ async function checkEndpoint({ path, minItems, required }) {
     // (lib/places.js), sin copiarla.
     const fuera = items.filter((it) => it?.area === "amba" && namesOtherCity(`${it.venue || ""} ${it.address || ""}`));
     if (fuera.length) fail(path, "amba", `marcados AMBA pero de otra ciudad: ${fuera.slice(0, 3).map((it) => `${it.name} (${it.venue})`).join(" | ")}`);
+    // Solo escena electrónica (oct 2026, Pablo): de QuéHacemos (cartelera
+    // general) entra solo lo que es club; nada de rock, folklore, jazz, tango,
+    // reggaetón, stand-up ni "festivales" como Burgerpalusa.
+    const fueraDeEscena = items.filter((it) => it?.source === "quehacemos" && it?.family !== "club");
+    if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
   }

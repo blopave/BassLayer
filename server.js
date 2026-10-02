@@ -286,12 +286,24 @@ function tidyEvents(events) {
   return events;
 }
 
+// Bass es la agenda de la ESCENA ELECTRÓNICA (oct 2026, Pablo). RA, Buenos
+// Aliens y los festivales curados son fuentes de escena; QuéHacemos es una
+// cartelera general (rock, folklore, jazz, tango, reggaetón, stand-up y
+// "festivales" como Burgerpalusa): de ahí entra solo lo que clasifica como
+// club. Se filtra al armar la agenda (y al cargar un snapshot viejo) para que
+// home, onda, agenda y SEO cuenten lo mismo.
+function sceneOnly(events) {
+  return events.filter((ev) => ev.source !== "quehacemos" || ev.family === "club");
+}
+
 function loadSnapshots() {
   for (const key of SNAPSHOT_KEYS) {
     try {
       const file = join(SNAPSHOT_DIR, `${key}.json`);
       if (!existsSync(file)) continue;
-      const { ts, data } = JSON.parse(readFileSync(file, "utf-8"));
+      const { ts, data: raw } = JSON.parse(readFileSync(file, "utf-8"));
+      // Un snapshot de antes del filtro de escena también sale filtrado.
+      const data = key === "events" && Array.isArray(raw) ? sceneOnly(raw) : raw;
       if (Array.isArray(data) && data.length) {
         if (key === "events") tidyEvents(data);
         registerImages(data);
@@ -3053,7 +3065,7 @@ async function buildEvents() {
     return d;
   }
 
-  const events = deduped.filter(ev => {
+  let events = deduped.filter(ev => {
     const evDate = getEventFullDate(ev);
     if (!evDate) return true; // keep unknown months
     // Keep events from today onward (allow same-day events)
@@ -3088,6 +3100,7 @@ async function buildEvents() {
     // festival ya están resueltos por fuente/tipo. Se calienta en background.
     if (ev.family !== "club" && ev.family !== "festival") mbEnqueue(mbQueryName(ev));
   }
+  events = sceneOnly(events);
 
   // Fallback de flyer: foto del headliner (Deezer) para eventos sin imagen.
   // Esperamos hasta ARTIST_IMAGE_BUDGET_MS para que el primer response ya

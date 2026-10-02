@@ -42,7 +42,7 @@ export function SaveButton({ slug, className = "" }) {
 // Taxonomía de familias (multi-género) — reemplaza el filtro solo-electrónico.
 // La familia la asigna el backend (classifyFamily). Los items son KEYS estables
 // (para estado/URL); el label visible sale de i18n (family.*), EN/ES.
-const FAMILY_FILTER_ITEMS = ["All", "club", "live", "festival", "urbano", "raiz"];
+const FAMILY_FILTER_ITEMS = ["All", "club", "festival"];   // solo escena electrónica (oct 2026)
 const WHEN_ITEMS = ["any", "hoy", "finde"];
 
 function EndOfSet() {
@@ -155,8 +155,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const { t, locale } = useLocale();
   const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
   const familyLabels = useMemo(() => ({
-    club: t("family.club"), live: t("family.live"), festival: t("family.festival"),
-    urbano: t("family.urbano"), raiz: t("family.raiz"),
+    club: t("family.club"), festival: t("family.festival"),
   }), [t]);
   // Dónde: BassLayer es de Buenos Aires (Pablo, sept 2026). La agenda arranca
   // en el AMBA (CABA + GBA, campo `area` del server) y el resto del país queda
