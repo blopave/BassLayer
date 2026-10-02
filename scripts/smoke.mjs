@@ -117,6 +117,9 @@ async function run(vp) {
     // Superficie porteña (sept 2026): la home cuenta solo CABA + GBA y el
     // ticker no muestra ciudades del exterior; la agenda arranca en Buenos Aires.
     const amba = (await eventsData()).filter((e) => e.area === "amba").length;
+    // Se espera a que lleguen los eventos (el contador arranca en "—"): leerlo
+    // antes frenó un push por azar con "la home cuenta 0" (oct 2026).
+    await page.waitForFunction(() => /\d/.test(document.querySelector(".blf-big em")?.textContent || ""), null, { timeout: 15_000 }).catch(() => {});
     const homeN = Number((await page.locator(".blf-big em").first().textContent().catch(() => "")).replace(/\D/g, "")) || 0;
     if (amba > 0 && homeN !== amba) fail(vp.name, "home", `la home cuenta ${homeN} eventos y en Buenos Aires hay ${amba}`);
     // La ciudad sale del atributo, no del texto ("Café Berlín" es un venue de CABA).

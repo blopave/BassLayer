@@ -319,6 +319,9 @@ function loadSnapshots() {
       if (!existsSync(file)) continue;
       const { ts, data: raw } = JSON.parse(readFileSync(file, "utf-8"));
       // Un snapshot viejo sale igual que una build nueva: solo escena y con fecha válida.
+      // QuéHacemos se reclasifica con las reglas actuales (la familia guardada
+      // puede ser de antes de un arreglo).
+      if (key === "events" && Array.isArray(raw)) for (const ev of raw) if (ev.source === "quehacemos") { ev.genre = ""; ev.family = classifyFamily(ev); ev.genre = FAMILY_GENRE_LABEL[ev.family] || "En vivo"; }
       const data = key === "events" && Array.isArray(raw) ? sceneOnly(raw).filter((ev) => new RegExp(`^(${BA_MONTHS})$`, "i").test(ev.month || "")) : raw;
       if (Array.isArray(data) && data.length) {
         if (key === "events") tidyEvents(data);
@@ -1843,6 +1846,9 @@ const FAMILY_KEYWORDS = [
   ["club",   /\b(techno|deep house|tech house|house|trance|electr[oó]nica|\brave\b|\bafter\b|dj set|b2b|minimal|acid|\bdnb\b|drum\s*&?\s*bass|dubstep)\b/i],
   ["live",   /\b(rock|indie|\bpop\b|punk|metal|hardcore|shoegaze|post[\s-]?punk|grunge|stoner|cantautor|power pop|new wave)\b/i],
 ];
+// Salas de tango y jazz (verificadas): Club Atlético Fernández Fierro (CAFF),
+// Jazz Voyeur, Prez Jazz Club.
+const NOT_CLUB_VENUES = /(?<!\p{L})(CAFF|Fern[aá]ndez Fierro|Jazz Voyeur|Prez Jazz)(?!\p{L})/iu;   // "CAFF" entero: no "Caffè"
 function familyFromKeywords(text) {
   const t = " " + (text || "").toLowerCase() + " ";
   for (const [fam, re] of FAMILY_KEYWORDS) if (re.test(t)) return fam;
@@ -1865,6 +1871,11 @@ function classifyFamily(ev) {
   if (mb && mb.family) return mb.family;
   const kw = familyFromKeywords(`${name} ${(ev.artists || []).join(" ")} ${ev.description || ""}`);
   if (kw) return kw;
+  // QuéHacemos a veces tipea "electronica" un concierto de una sala de tango o
+  // jazz, sin descripción (oct 2026: Yamile Burich + Quena Taborda en el CAFF,
+  // jazz/tango verificado en Planout, Selmer y Konex). En esas salas el tipo de
+  // QH solo no alcanza para ser club.
+  if (ev.source === "quehacemos" && NOT_CLUB_VENUES.test(ev.venue || "")) return "raiz";
   if (ev.event_type && QH_TYPE_FAMILY[ev.event_type]) return QH_TYPE_FAMILY[ev.event_type];
   if (elFam) return elFam;                  // Ambient → exp
   if (ev.source === "venue") return "club"; // venue-submitted históricamente electrónico
