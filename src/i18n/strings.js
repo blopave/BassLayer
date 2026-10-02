@@ -9,7 +9,7 @@ export function eventStamp(ev, t) {
 export const STRINGS = {
   es: {
     "common.close": "Cerrar",
-    "common.share": "Compartir",
+    "common.share": "Compartir", "common.prev": "Anterior", "common.next": "Siguiente",
     "common.calendar": "Calendario",
     "common.cancel": "Cancelar",
     "common.viewMore": "Ver más",
@@ -179,6 +179,7 @@ export const STRINGS = {
 
     "saved.add": "Guardar",
     "saved.remove": "Guardado",
+    "saved.removed": "Quitado de tu agenda", "event.moreArtists": "+{n} más",
     "saved.label": "Guardados",
     "feed.empty.saved": "Nada guardado todavía. Tocá el señalador de un evento y armá tu agenda.",
     "feed.subscribeCal": "Suscribite a la agenda en tu calendario →",
@@ -288,6 +289,8 @@ export const STRINGS = {
     "predict.group.argentina": "Argentina",
     "ticker.aria": "Precios de criptomonedas",
     "lineup.aria": "Line-ups de esta semana",
+    "agenda.daysAria": "Saltar a un día",
+    "agenda.prevWeek": "Semana anterior", "agenda.nextWeek": "Semana siguiente",
     "lineup.live": "Esta semana",   // antes "En vivo": se leía "está pasando ahora" y muestra lo que viene (oct 2026)
     "feed.festivalsLoadError": "No pude cargar los festivales. Tocá para reintentar.",
 
@@ -396,7 +399,7 @@ export const STRINGS = {
   },
   en: {
     "common.close": "Close",
-    "common.share": "Share",
+    "common.share": "Share", "common.prev": "Previous", "common.next": "Next",
     "common.calendar": "Calendar",
     "common.cancel": "Cancel",
     "common.viewMore": "View more",
@@ -566,6 +569,7 @@ export const STRINGS = {
 
     "saved.add": "Save",
     "saved.remove": "Saved",
+    "saved.removed": "Removed from your agenda", "event.moreArtists": "+{n} more",
     "saved.label": "Saved",
     "feed.empty.saved": "Nothing saved yet. Tap the bookmark on an event to build your agenda.",
     "feed.subscribeCal": "Subscribe to the agenda in your calendar →",
@@ -675,6 +679,8 @@ export const STRINGS = {
     "predict.group.argentina": "Argentina",
     "ticker.aria": "Cryptocurrency prices",
     "lineup.aria": "This week's line-ups",
+    "agenda.daysAria": "Jump to a day",
+    "agenda.prevWeek": "Previous week", "agenda.nextWeek": "Next week",
     "lineup.live": "This week",
     "feed.festivalsLoadError": "Couldn't load festivals. Tap to retry.",
 

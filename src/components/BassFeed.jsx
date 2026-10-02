@@ -43,7 +43,93 @@ export function SaveButton({ slug, className = "" }) {
 // La familia la asigna el backend (classifyFamily). Los items son KEYS estables
 // (para estado/URL); el label visible sale de i18n (family.*), EN/ES.
 const FAMILY_FILTER_ITEMS = ["All", "club", "festival"];   // solo escena electrónica (oct 2026)
-const WHEN_ITEMS = ["any", "hoy", "finde"];
+// Agenda (oct 2026, Pablo): "Cuándo" lo resuelve la línea de días (DayRail);
+// "Hoy" / "Este finde" quedan solo para los deep links, con un chip para salir.
+
+// Riel de días: una línea de tiempo con TODOS los días, de hoy a la última
+// fiesta, agrupados por mes. Cada día con fiestas es una barra de la misma onda
+// de la portada (alto = cuántas hay) y se puede tocar; los días sin fiestas son
+// una marca tenue. El nombre del mes queda fijo a la izquierda al desplazar
+// (arrastrar, rueda o dedo), los bordes se desvanecen si hay más, y la línea
+// acompaña al día que se está leyendo.
+function DayRail({ months, active, onPick, t }) {
+  const ref = useRef(null), drag = useRef(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const max = Math.max(1, ...months.flatMap((m) => m.days.map((d) => d.count)));
+  const measure = () => { const el = ref.current; if (el) setEdge({ start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 }); };
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    measure();
+    // Rueda vertical → desplazamiento horizontal (solo si hay para dónde ir).
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || el.scrollWidth <= el.clientWidth) return;
+      const before = el.scrollLeft; el.scrollLeft += e.deltaY;
+      if (el.scrollLeft !== before) e.preventDefault();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("resize", measure);
+    return () => { el.removeEventListener("wheel", onWheel); window.removeEventListener("resize", measure); };
+  }, [months]); // eslint-disable-line react-hooks/exhaustive-deps
+  // El día que se está leyendo queda a la vista en la línea.
+  useEffect(() => {
+    const el = ref.current, b = el?.querySelector(`[data-rail="${active}"]`);
+    if (!el || !b) return;
+    const l = b.offsetLeft - el.offsetLeft, pad = 90;
+    if (l < el.scrollLeft + pad || l + b.offsetWidth > el.scrollLeft + el.clientWidth - pad) el.scrollTo({ left: l - el.clientWidth / 3, behavior: "smooth" });
+  }, [active]);
+  // Arrastrar con el mouse (en táctil ya desplaza el dedo). Si se arrastró, el
+  // soltar no cuenta como toque.
+  const down = (e) => { if (e.pointerType !== "mouse") return; drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false }; };
+  const move = (e) => { const d = drag.current; if (!d) return; const dx = e.clientX - d.x; if (Math.abs(dx) > 4) { d.moved = true; ref.current.scrollLeft = d.left - dx; } };
+  const up = () => { setTimeout(() => { drag.current = null; }, 0); };
+  const pick = (key) => { if (!drag.current?.moved) onPick(key); };
+  // La primera vez en la sesión, la línea se corre un poco y vuelve: avisa que
+  // se mueve sin decirlo con texto.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || el.scrollWidth <= el.clientWidth + 8 || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    let seen = false; try { seen = sessionStorage.getItem("bl-rail-nudge") === "1"; } catch { /* sin storage */ }
+    if (seen) return undefined;
+    // Se marca como vista recién cuando se mueve (si el efecto se cancela antes, no cuenta).
+    const a = setTimeout(() => { try { sessionStorage.setItem("bl-rail-nudge", "1"); } catch { /* sin storage */ } el.scrollTo({ left: el.scrollLeft + 140, behavior: "smooth" }); }, 900);
+    const b = setTimeout(() => el.scrollTo({ left: 0, behavior: "smooth" }), 1700);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, []);
+  // Flechas: una semana para cada lado.
+  const step = (dir) => { const el = ref.current; if (el) el.scrollBy({ left: dir * 7 * 40, behavior: "smooth" }); };
+  return (
+    <div className="bl-day-rail-wrap">
+    <button type="button" className="bl-day-rail-arrow is-prev" onClick={() => step(-1)} disabled={edge.start} aria-label={t("agenda.prevWeek")}>‹</button>
+    <button type="button" className="bl-day-rail-arrow is-next" onClick={() => step(1)} disabled={edge.end} aria-label={t("agenda.nextWeek")}>›</button>
+    <nav ref={ref} className={`bl-day-rail${edge.start ? "" : " fade-l"}${edge.end ? "" : " fade-r"}`} aria-label={t("agenda.daysAria")}
+      onScroll={measure} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}>
+      {months.map((m) => (
+        <div className="bl-rail-seg" key={m.key}>
+          <span className="bl-rail-seg-name">{m.name}</span>
+          <div className="bl-rail-seg-days">
+            {m.days.map((d) => (d.count
+              ? (
+                <button key={d.key} type="button" data-rail={d.key} className={`bl-day-rail-day${active === d.key ? " is-on" : ""}`} onClick={() => pick(d.key)} aria-label={`${d.label} ${d.day}: ${d.count}`} aria-current={active === d.key ? "true" : undefined}>
+                  <span className="bl-day-rail-n">{d.count}</span>
+                  <span className="bl-day-rail-bar" style={{ height: `${6 + 26 * (d.count / max)}px` }} aria-hidden="true" />
+                  <span className="bl-day-rail-l">{d.short}</span>
+                  <span className="bl-day-rail-d">{d.day}</span>
+                </button>
+              ) : (
+                <span key={d.key} className="bl-day-rail-day is-empty" aria-hidden="true">
+                  <span className="bl-day-rail-bar" />
+                  <span className="bl-day-rail-l">{d.short}</span>
+                  <span className="bl-day-rail-d">{d.day}</span>
+                </span>
+              )))}
+          </div>
+        </div>
+      ))}
+    </nav>
+    </div>
+  );
+}
 
 function EndOfSet() {
   const { t } = useLocale();
@@ -96,10 +182,9 @@ function getDayLabel(eventDate, t, dayNames) {
   const diff = Math.round((evDay - today) / 86400000);
   if (diff === 0) return t("day.today");
   if (diff === 1) return t("day.tomorrow");
-  const dayName = dayNames[evDay.getDay()];
-  const dd = String(evDay.getDate()).padStart(2, "0");
-  const mm = String(evDay.getMonth() + 1).padStart(2, "0");
-  return `${dayName} ${dd}/${mm}`;
+  // Solo el nombre del día: la fecha ya la dice el encabezado al lado
+  // (antes salía dos veces, "Domingo 04/10 · 04 Oct", oct 2026).
+  return dayNames[evDay.getDay()];
 }
 
 // Fecha "hoy" en BsAs (America/Argentina/Buenos_Aires, offset fijo -03:00).
@@ -177,7 +262,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const [sheetOpen, setSheetOpen] = useState(false);
   // Escape, bloqueo de scroll e inert del fondo: mismo contrato que los modales.
   const sheetRef = useFocusTrap(sheetOpen, () => setSheetOpen(false));
-  const whenLabels = useMemo(() => ({ any: t("filter.anytime"), hoy: t("day.today"), finde: t("filter.thisWeekend") }), [t]);
+  const whenLabels = useMemo(() => ({ hoy: t("day.today"), finde: t("filter.thisWeekend") }), [t]);
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   // "track" (portada: solo el índice) | "eventos" (Agenda) | "noticias" | "festivales"
@@ -257,12 +342,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Al cambiar de región, reseteamos la ciudad (una ciudad de AR no existe en Mundo)
   const changeRegion = (code) => { setRegionFilter(code); setCityFilter("Todas"); };
 
-  // Segmento "Cuándo" — un solo estado; "explore" abre el weekend-picker.
-  const onWhenChange = (v) => {
-    if (v === "explore") { onOpenPicker && onOpenPicker(); return; }
-    setWhen(v);
-  };
-
   // Contexto (todo menos familia) → conteos por familia → filtrado final.
   // Memoizado: sólo recomputa cuando cambia una entrada real, no en cada render.
   const { filtered, familyCounts } = useMemo(() => {
@@ -281,14 +360,21 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     }
     const counts = { all: ctx.length };
     for (const e of ctx) { const f = e.family || "other"; counts[f] = (counts[f] || 0) + 1; }
-    const list = filter === "All" ? ctx : ctx.filter((e) => (e.family || "") === filter);
+    let list = filter === "All" ? ctx : ctx.filter((e) => (e.family || "") === filter);
+    // Dentro de cada día, por hora como se vive una noche — la
+    // madrugada (antes de las 7) va al final: 22:00 → 23:00 → 23:59 → 02:00.
+    {
+      const night = (e) => { const [h, m] = (e.time || "23:00").split(":").map(Number); return ((h < 7 ? h + 24 : h) * 60) + (m || 0); };
+      const dayOf = (e) => { const d = getEventDate(e); return d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : Infinity; };
+      list = [...list].sort((a, b) => dayOf(a) - dayOf(b) || night(a) - night(b));
+    }
     return { filtered: list, familyCounts: counts };
   }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
 
   // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
     const groups = [];
-    let currentLabel = null;
+    let currentKey = null;
     let currentMonth = null;
     for (const ev of filtered) {
       if (currentMonth !== null && ev.month !== currentMonth) {
@@ -297,14 +383,17 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       currentMonth = ev.month;
       const date = getEventDate(ev);
       const label = getDayLabel(date, t, dayNames);
+      // Se agrupa por fecha, no por el texto: dos domingos seguidos sin nada en
+      // el medio dicen lo mismo y no son el mismo día.
+      const key = date ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : label;
       // Cartel: el primero de cada día o un destacado del backend; el resto
       // sigue en filas compactas. Escala como ritmo, no como decoración.
       let lead = !!ev.featured;
-      if (label !== currentLabel) {
+      if (key !== currentKey) {
         // La fecha numérica viaja con el encabezado: al sacarla de cada fila,
         // este pasa a ser el único lugar donde se dice, y tiene que decirla.
-        groups.push({ type: "header", label, day: ev.day, month: ev.month });
-        currentLabel = label;
+        groups.push({ type: "header", label, key, day: ev.day, month: ev.month });
+        currentKey = key;
         lead = true;
       }
       groups.push({ type: "event", data: ev, lead, date });
@@ -312,6 +401,66 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return groups;
   }, [filtered, t, dayNames]);
 
+
+  // Riel de días: el calendario entero de hoy a la última fiesta
+  // de la lista, por mes, con cuántas hay cada día.
+  const railMonths = useMemo(() => {
+    const counts = new Map(), labels = new Map();
+    let last = null;
+    for (const g of grouped) {
+      if (g.type === "header") { counts.set(g.key, 0); labels.set(g.key, g.label); last = g.key; }
+      else if (g.type === "event" && last) counts.set(last, counts.get(last) + 1);
+    }
+    if (!last) return [];
+    const [ly, lm, ld] = last.split("-").map(Number), end = new Date(ly, lm, ld);
+    const now = new Date(), d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const shortNames = DAYS_LONG[locale] || DAYS_LONG.es, monthsAbbr = MONTHS_ABBR.es;
+    const out = [];
+    for (let i = 0; d <= end && i < 400; i++, d.setDate(d.getDate() + 1)) {
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, mk = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!out.length || out[out.length - 1].key !== mk) out.push({ key: mk, name: monthLongLocale(monthsAbbr[d.getMonth()], locale), days: [] });
+      const label = labels.get(key) || shortNames[d.getDay()];
+      const short = i === 0 ? t("day.today").slice(0, 3).toUpperCase() : i === 1 ? t("day.tomorrow").slice(0, 3).toUpperCase() : shortNames[d.getDay()].slice(0, 3).toUpperCase();
+      out[out.length - 1].days.push({ key, label, short, day: d.getDate(), count: counts.get(key) || 0 });
+    }
+    return out;
+  }, [grouped, locale, t]);
+  const [railActive, setRailActive] = useState(null);
+  // Mientras dura un salto, el día elegido queda marcado (si no, el
+  // observador marca los que pasan por el camino).
+  const railLock = useRef(0);
+  useEffect(() => {
+    if (section !== "eventos") return undefined;
+    const heads = [...document.querySelectorAll(".bl-day-header[data-day]")];
+    if (!heads.length) return undefined;
+    const io = new IntersectionObserver((entries) => {
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (vis && Date.now() > railLock.current) setRailActive(vis.target.dataset.day);
+    }, { rootMargin: `-${Math.round(railBottom())}px 0px -35% 0px` });
+    heads.forEach((h) => io.observe(h));
+    return () => io.disconnect();
+  }, [grouped, section]);
+  // El salto deja el encabezado del día justo debajo del riel fijo (medido: el
+  // riel y el ticker no miden lo mismo en mobile y desktop).
+  const railBottom = () => (document.querySelector(".bl-day-rail")?.getBoundingClientRect().bottom || 120) + 8;
+  const pickDay = (key) => {
+    const h = document.querySelector(`.bl-day-header[data-day="${key}"]`);
+    if (!h) return;
+    setRailActive(key);
+    railLock.current = Date.now() + 1400;
+    let sc = h.parentElement;
+    while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight && /(auto|scroll)/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+    const go = (behavior) => {
+      const delta = h.getBoundingClientRect().top - railBottom();
+      if (Math.abs(delta) < 2) return;
+      if (sc && sc !== document.body) sc.scrollBy({ top: delta, behavior }); else window.scrollBy({ top: delta, behavior });
+    };
+    go("smooth");
+    // Los flyers que terminan de cargar en el camino corren la lista: al
+    // llegar se corrige sin animación.
+    setTimeout(() => go("auto"), 650);
+    setTimeout(() => go("auto"), 1200);
+  };
 
   // Pass `section` as dep so the observer re-attaches when toggling back from
   // noticias → eventos (the events list unmounts and remounts in that flow).
@@ -345,18 +494,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
   // Segmentos de control. Se definen una sola vez y se montan en la barra de
   // desktop o dentro del bottom sheet de mobile — misma lógica, dos envases.
-  const whenSeg = (
-    <label className="bl-ctrl-seg" key="when">
-      <span className="bl-ctrl-k">{t("filter.when")}</span>
-      <select className="bl-ctrl-select" value={when} onChange={(e) => onWhenChange(e.target.value)} aria-label={t("filter.when")}>
-        <option value="">{t("filter.anytime")}</option>
-        <option value="hoy">{t("day.today")}</option>
-        <option value="finde">{t("filter.thisWeekend")}</option>
-        <option value="explore">{t("filter.exploreWeekend")}</option>
-      </select>
-    </label>
-  );
-
   const whereSeg = (availableRegions.length > 1 || cities.length > 2) ? (
     <div className="bl-ctrl-seg" key="where">
       <span className="bl-ctrl-k">{t("filter.where")}</span>
@@ -492,9 +629,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         <>
 
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
-      {/* Mobile: Cuándo primero y a la vista (hoy y el finde son lo que más se
-          busca); en desktop ya encabeza la barra de contexto. */}
-      {isMobile && <FilterBar items={WHEN_ITEMS} active={when || "any"} onChange={(v) => setWhen(v === "any" ? "" : v)} className="bass-when" labels={whenLabels} />}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
 
       {/* Barra unificada de contexto: Cuándo · Dónde · Buscar (una sola forma) */}
@@ -535,7 +669,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   )}
                 </div>
                 <div className="bl-sheet-body">
-                  {whenSeg}
                   {whereSeg}
                 </div>
                 <button type="button" className="bl-sheet-apply" onClick={() => setSheetOpen(false)}>
@@ -548,7 +681,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </>
       ) : (
         <div className="bl-ctrl-bar">
-          {whenSeg}
           {whereSeg}
           {searchSeg}
         </div>
@@ -556,7 +688,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
       {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan
           por acá. Va después de los filtros: en la Agenda, Cuándo es lo primero. */}
-      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} />}
+      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} compact />}
+      {!loading && railMonths.length > 0 && <DayRail months={railMonths} active={railActive || railMonths[0].days.find((d) => d.count)?.key} onPick={pickDay} t={t} />}
 
       {/* Header editorial del listado. Con savedOnly activo se muestra aunque
           haya 0 resultados: el toggle tiene que seguir visible para salir. */}
@@ -564,6 +697,11 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         <div className="bl-feed-head">
           <span className="bl-feed-head-n">{filtered.length}</span>
           <span className="bl-feed-head-ctx">{t("feed.eventsWord")}{cityFilter !== "Todas" ? ` · ${cityFilter}` : ""}</span>
+          {when && (
+            <button type="button" className="bl-when-chip bl-bass-t-label" onClick={() => setWhen("")} aria-label={`${whenLabels[when]} — ${t("filter.clear")}`}>
+              {whenLabels[when]} <span aria-hidden="true">✕</span>
+            </button>
+          )}
           {(saved.length > 0 || savedOnly) && (
             <button
               type="button"
@@ -595,7 +733,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
               }
               if (item.type === "header") {
                 return (
-                  <h2 className="bl-day-header bl-reveal" key={`h-${item.label}`} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
+                  <h2 className="bl-day-header bl-reveal" key={`h-${item.key}`} data-day={item.key} style={{ transitionDelay: `${Math.min(gIdx * 0.02, 0.15)}s` }}>
                     <span className="bl-day-label">{item.label}</span>
                     <span className="bl-day-date">{item.day} {monthAbbrLocale(item.month, locale)}</span>
                     <span className="bl-day-line" aria-hidden="true" />

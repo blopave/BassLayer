@@ -5725,3 +5725,191 @@ select.bl-venue-input { cursor:pointer; }
 .bl-root[data-section="bass"] .bl-filters.bass-when { position:static; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; padding:14px 16px 2px; gap:8px; }
 .bl-filters.bass-when .bl-filter-chip { font-family:var(--font-bass-mono), monospace; font-size:11px; letter-spacing:.1em; color:var(--bl-text-sec); border-color:var(--bl-border); padding:0 14px; min-height:40px; }
 .bl-filters.bass-when .bl-filter-chip.active { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); }
+
+/* Riel de días (oct 2026) = línea de tiempo con todos los días,
+   por mes. Fijo arriba al bajar (debajo del ticker), se desplaza arrastrando,
+   con la rueda o con el dedo; el nombre del mes queda fijo a la izquierda. */
+.bl-day-rail-wrap {
+  position:sticky; top:48px; z-index:897; margin:4px 0 0; padding:0 34px;
+  background:var(--bl-glass-light); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--bl-border-sub);
+}
+.bl-day-rail {
+  display:flex; align-items:stretch; padding:8px 0 6px; overflow-x:auto; scrollbar-width:none; cursor:grab; user-select:none; -webkit-user-select:none;
+}
+/* Flechas a los costados: avisan que la línea sigue y la mueven de a una semana. */
+.bl-day-rail-arrow {
+  position:absolute; top:50%; transform:translateY(-50%); z-index:1; width:28px; height:44px; padding:0; border:1px solid var(--bl-border-sub); border-radius:8px;
+  background:var(--bl-bg); color:var(--bl-accent-bass); font:500 20px/1 var(--font-sans); cursor:pointer; transition:opacity .2s, border-color .2s;
+}
+.bl-day-rail-arrow.is-prev { left:2px; } .bl-day-rail-arrow.is-next { right:2px; }
+.bl-day-rail-arrow:hover:not(:disabled) { border-color:var(--bl-accent-bass); }
+.bl-day-rail-arrow:disabled { opacity:.25; cursor:default; }
+.bl-day-rail-arrow:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:1px; }
+.bl-day-rail:active { cursor:grabbing; }
+.bl-day-rail::-webkit-scrollbar { display:none; }
+/* Hay más para un costado: el borde se desvanece. */
+.bl-day-rail.fade-r { -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 56px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 56px),transparent); }
+.bl-day-rail.fade-l { -webkit-mask-image:linear-gradient(90deg,transparent,#000 40px); mask-image:linear-gradient(90deg,transparent,#000 40px); }
+.bl-day-rail.fade-l.fade-r { -webkit-mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 56px),transparent); mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 56px),transparent); }
+/* Un tramo por mes: el nombre arriba, fijo a la izquierda mientras se ve el mes. */
+.bl-rail-seg { flex:1 0 auto; display:flex; flex-direction:column; gap:6px; padding:0 6px; }
+.bl-rail-seg + .bl-rail-seg { border-left:1px solid color-mix(in srgb, var(--bl-accent-bass) 35%, transparent); }
+.bl-rail-seg-name { position:sticky; left:0; align-self:flex-start; padding:0 6px 0 4px; font:600 10px var(--font-mono); letter-spacing:.18em; text-transform:uppercase; color:var(--bl-accent-bass); }
+.bl-rail-seg-days { display:flex; align-items:flex-end; }
+.bl-day-rail-day {
+  flex:1 0 40px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px;
+  min-width:40px; padding:2px 2px; border:0; border-radius:8px; background:none; cursor:pointer; color:var(--bl-text-ter);
+  transition:color .2s, background .2s;
+}
+.bl-day-rail-n { font:500 10px var(--font-mono); opacity:.7; }
+.bl-day-rail-bar { width:3px; border-radius:2px; background:var(--bl-accent-bass); opacity:.55; transition:opacity .2s, width .2s; }
+.bl-day-rail-l { font:600 10px var(--font-mono); letter-spacing:.1em; }
+.bl-day-rail-d { font:600 15px var(--font-sans); color:var(--bl-text-sec); line-height:1; }
+.bl-day-rail-day:hover { color:var(--bl-text-sec); }
+.bl-day-rail-day:hover .bl-day-rail-bar { opacity:.9; }
+.bl-day-rail-day.is-on { color:var(--bl-accent-bass); }
+.bl-day-rail-day.is-on .bl-day-rail-bar { opacity:1; width:5px; }
+.bl-day-rail-day.is-on .bl-day-rail-d { color:var(--bl-text); }
+.bl-day-rail-day:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:1px; }
+/* Días sin fiestas: marca tenue, no se tocan (el tiempo se lee igual). */
+.bl-day-rail-day.is-empty { cursor:inherit; opacity:.38; }
+.bl-day-rail-day.is-empty .bl-day-rail-bar { height:2px; width:2px; border-radius:50%; background:var(--bl-text-ter); opacity:1; }
+.bl-day-rail-day.is-empty .bl-day-rail-d { font-weight:500; color:var(--bl-text-ter); }
+@media (max-width:768px) {
+  /* En táctil se desliza con el dedo: sin flechas; avisan el borde que se
+     desvanece y la muestra de desplazamiento al entrar. */
+  .bl-day-rail-wrap { top:42px; margin:2px -16px 0; padding:0; }
+  .bl-day-rail { padding:6px 12px 4px; }
+  .bl-day-rail-arrow { display:none; }
+  .bl-day-rail-day { flex-basis:38px; min-width:38px; gap:2px; }
+  .bl-day-rail-n { font-size:9px; }
+  .bl-day-rail-d { font-size:14px; }
+}
+
+/* "De gira" compacto: arriba de la agenda sin taparla — foto chica
+   al costado, tarjetas bajas en una fila que se desplaza. */
+.bl-tour.is-compact .bl-tour-row { grid-auto-columns:minmax(300px, calc((100% - 36px) / 4)); }
+.bl-tour.is-compact .bl-tour-card { grid-template-rows:none; grid-template-columns:76px minmax(0, 1fr); align-items:stretch; }
+.bl-tour.is-compact .bl-tour-card .bl-thumb { aspect-ratio:auto; height:100%; min-height:84px; }
+.bl-tour.is-compact .bl-tour-body { gap:4px; padding:9px 12px; align-content:center; }
+.bl-tour.is-compact .bl-tour-who { font-size:15px; }
+.bl-tour.is-compact .bl-tour-route { flex-wrap:nowrap; overflow:hidden; }
+@media (max-width:768px) { .bl-tour.is-compact .bl-tour-row { grid-auto-columns:82%; } }
+
+/* ══ Ficha de evento sin scroll (oct 2026) ══
+   La ventana toma el alto de su contenido hasta el de la pantalla; si no
+   entra, se achica el afiche del line-up (no aparece scroll). */
+.bl-event-modal.is-v2 .bl-em-scroll { overflow:hidden; display:flex; flex-direction:column; }
+.bl-event-modal.is-v2 .bl-em-scroll > * { flex:none; }
+.bl-event-modal.is-v2 .bl-em-title { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-event-modal.is-v2 .bl-em-desc { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-event-modal.is-v2 .bl-em-scroll > .bl-em-sec:not(.bl-em-loc) { flex:none; min-height:0; display:flex; flex-direction:column; }
+/* Alto natural primero (nada se encoge): si así no entra, la ficha pasa a
+   "ajustada" (is-tight) y recién ahí el afiche toma el resto y achica su letra. */
+.bl-event-modal.is-v2:not(.is-tight) .bl-em-cartel { flex:none; }
+.bl-event-modal.is-v2.is-tight .bl-em-title { -webkit-line-clamp:2; }
+/* Line-up como afiche: renglones de nombres, cada uno se toca. */
+/* Con line-up largo la ventana toma el alto disponible y el afiche llena lo
+   que queda (se mide contra ese espacio fijo, no contra sí mismo). */
+.bl-event-modal.is-v2.has-cartel { height:min(800px, calc(100dvh - 48px)); }
+.bl-event-modal.is-v2.has-cartel .bl-em-body { height:100%; }
+.bl-event-modal.is-v2.has-cartel .bl-em-scroll > .bl-em-sec:not(.bl-em-loc) { flex:1 1 0; }
+.bl-event-modal.is-v2.has-cartel .bl-em-cartel { flex:1 1 0; }
+/* Con line-up largo, el headliner compacto (sin bio: está en su ficha) y
+   "Dónde" con menos aire, para dejarle lugar al afiche. */
+.bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head { padding:12px 14px; }
+.bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head .bl-em-head-av { width:64px; height:64px; }
+.bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head .bl-em-head-bio { display:none; }
+.bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head .bl-em-head-name { font-size:20px; }
+.bl-event-modal.is-v2.has-cartel .bl-em-sec { margin-bottom:16px; }
+.bl-event-modal.is-v2.has-cartel .bl-em-loc-links { margin-top:6px; }
+@media (max-height:720px) { .bl-event-modal.is-v2.has-cartel .bl-em-title { font-size:26px; margin-bottom:14px; } }
+.bl-em-cartel { position:relative; flex:0 1 auto; min-height:1.6em; margin:14px 0 0; overflow:hidden; line-height:1.5; font-weight:600; letter-spacing:-.012em; color:var(--bl-text); text-wrap:balance; }
+.bl-em-cartel-it { white-space:nowrap; padding:0; border:0; background:none; font:inherit; line-height:inherit; color:inherit; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; text-underline-offset:.2em; transition:color .15s, text-decoration-color .15s; }
+.bl-em-cartel-it:hover, .bl-em-cartel-it:focus-visible { color:var(--bl-accent-bass); text-decoration-color:currentColor; outline:none; }
+.bl-em-cartel-w { white-space:nowrap; }   /* el "·" queda pegado al nombre: el renglón corta después */
+.bl-em-cartel i { font-style:normal; color:var(--bl-text-ter); font-weight:400; }
+/* "Dónde" arriba, compacto: lugar y dirección en una línea, links al lado. */
+.bl-event-modal.is-v2 .bl-em-loc { margin-bottom:18px; }
+.bl-event-modal.is-v2 .bl-em-loc .bl-em-label { display:none; }
+.bl-event-modal.is-v2 .bl-em-loc-addr { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-em-cartel-more { padding:0; border:0; background:none; font:inherit; line-height:inherit; font-weight:500; color:var(--bl-accent-bass); white-space:nowrap; cursor:pointer; }
+span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
+/* Line-up completo: sin la tarjeta del headliner, todo el lugar para los nombres. */
+.bl-em-all { flex:1 1 0; }
+.bl-event-modal.is-all .bl-em-loc, .bl-event-modal.is-all .bl-em-desc { display:none; }
+.bl-event-modal.is-all .bl-em-title { -webkit-line-clamp:1; }
+.bl-em-all .bl-em-cartel { flex:1 1 0; margin-top:4px; }
+/* Ficha del artista adentro de la ventana, con vuelta al line-up. */
+.bl-em-artist { display:flex; flex-direction:column; gap:10px; min-height:0; }
+.bl-em-back { align-self:flex-start; padding:4px 0; border:0; background:none; cursor:pointer; font:500 11px var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--bl-accent-bass); }
+.bl-em-back:hover { color:var(--bl-text); }
+/* Acciones en una fila: Entradas + tres botones redondos de ícono, misma altura. */
+.bl-em-act2 { position:relative; flex-direction:row; align-items:center; gap:10px; }
+.bl-em-act2 .bl-em-cta { flex:1; min-width:0; height:52px; border-radius:26px; }
+.bl-em-act2 .bl-cal-menu-wrap { flex:none; }
+.bl-em-ic {
+  position:relative; flex:none; display:grid; place-items:center; width:52px; height:52px; padding:0; border-radius:50%;
+  border:1px solid var(--bl-border); background:transparent; color:var(--bl-150); cursor:pointer;
+  transition:color .2s, border-color .2s, background .2s, transform .2s var(--ease-out-expo);
+}
+.bl-em-ic svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
+.bl-em-ic:hover { color:var(--bl-text); border-color:var(--bl-400); }
+.bl-em-ic:active { transform:scale(.94); }
+.bl-em-ic.on { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); background:color-mix(in srgb, var(--bl-accent-bass) 10%, transparent); }
+.bl-em-ic.on svg { animation:bl-em-pop .32s var(--ease-out-expo); }
+@keyframes bl-em-pop { 0% { transform:scale(.7); } 60% { transform:scale(1.15); } 100% { transform:scale(1); } }
+.bl-em-ic:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
+/* Nombre del botón al pasar el mouse (desktop). */
+@media (hover:hover) {
+  .bl-em-ic[data-tip]::after {
+    content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translate(-50%, 4px); padding:5px 9px; border-radius:6px;
+    background:var(--bl-surface); border:1px solid var(--bl-border); color:var(--bl-text); white-space:nowrap; pointer-events:none;
+    font:500 10px var(--font-mono); letter-spacing:.1em; text-transform:uppercase; opacity:0; transition:opacity .15s, transform .15s;
+  }
+  .bl-em-ic[data-tip]:hover::after { opacity:1; transform:translate(-50%, 0); }
+  .bl-em-ic[aria-expanded="true"]::after { opacity:0; }
+}
+/* Aviso corto ("Guardado") arriba de la fila de acciones. */
+.bl-em-flash { position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); padding:7px 14px; border-radius:20px; background:var(--bl-accent-bass); color:#1A120C; font:600 11px var(--font-mono); letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; animation:bl-em-flash .25s var(--ease-out-expo); pointer-events:none; }
+@keyframes bl-em-flash { from { opacity:0; transform:translate(-50%, 6px); } }
+.bl-cal-menu--up { left:auto; right:0; min-width:190px; }
+@media (max-width:768px) {
+  /* El flyer se adapta: ocupa una parte de la pantalla, no un alto fijo. */
+  .bl-event-modal.is-v2 .bl-em-fly { aspect-ratio:auto; height:clamp(150px, 30vh, 280px); }
+  .bl-event-modal.is-v2.has-cartel { height:94dvh; }
+  .bl-event-modal.is-v2.is-tight .bl-em-fly { height:clamp(110px, 20vh, 200px); }
+  .bl-event-modal.is-v2.has-cartel .bl-em-fly { height:clamp(120px, 22vh, 220px); }
+  .bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head { grid-template-columns:52px minmax(0,1fr); padding:10px 12px; }
+  .bl-event-modal.is-v2.has-cartel .bl-em-sec > .bl-em-head .bl-em-head-av { width:52px; height:52px; margin-bottom:8px; }
+  .bl-em-act2 { gap:8px; }
+  .bl-em-act2 .bl-em-cta { height:50px; letter-spacing:1.5px; }
+  .bl-em-ic { width:50px; height:50px; }
+}
+@media (prefers-reduced-motion:reduce) { .bl-em-ic.on svg, .bl-em-flash { animation:none; } }
+
+/* Filas con desplazamiento (ScrollRow, oct 2026): bordes que se desvanecen
+   donde hay más y flechas redondas en desktop; nunca un corte seco. */
+.bl-srow { position:relative; }
+.bl-srow-track { scrollbar-width:none; }
+.bl-srow-track::-webkit-scrollbar { display:none; }
+.bl-srow.is-scroll .bl-srow-track { cursor:grab; }
+.bl-srow.is-scroll .bl-srow-track:active { cursor:grabbing; }
+.bl-srow.fade-r .bl-srow-track { -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 72px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 72px),transparent); }
+.bl-srow.fade-l .bl-srow-track { -webkit-mask-image:linear-gradient(90deg,transparent,#000 72px); mask-image:linear-gradient(90deg,transparent,#000 72px); }
+.bl-srow.fade-l.fade-r .bl-srow-track { -webkit-mask-image:linear-gradient(90deg,transparent,#000 72px,#000 calc(100% - 72px),transparent); mask-image:linear-gradient(90deg,transparent,#000 72px,#000 calc(100% - 72px),transparent); }
+.bl-srow-arrow {
+  position:absolute; top:50%; z-index:2; display:grid; place-items:center; width:40px; height:40px; padding:0 0 2px; border-radius:50%;
+  border:1px solid var(--bl-border); background:color-mix(in srgb, var(--bl-bg) 88%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  color:var(--bl-accent-bass); font:400 24px/1 var(--font-sans); cursor:pointer; transform:translateY(-50%);
+  transition:opacity .25s, transform .25s var(--ease-out-expo), border-color .2s;
+}
+.bl-srow-arrow.is-prev { left:-14px; } .bl-srow-arrow.is-next { right:-14px; }
+.bl-srow-arrow:hover { border-color:var(--bl-accent-bass); transform:translateY(-50%) scale(1.06); }
+.bl-srow-arrow:disabled { opacity:0; pointer-events:none; }
+@media (hover:none), (max-width:768px) { .bl-srow-arrow { display:none; } }
+
+/* Deep link a "Hoy" / "Este finde": un chip para volver a la agenda completa. */
+.bl-when-chip { display:inline-flex; align-items:center; gap:8px; margin-left:12px; padding:5px 11px; border:1px solid var(--bl-accent-bass); border-radius:999px; background:none; color:var(--bl-accent-bass); cursor:pointer; }
+.bl-when-chip:hover { background:color-mix(in srgb, var(--bl-accent-bass) 12%, transparent); }

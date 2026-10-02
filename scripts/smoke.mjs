@@ -67,10 +67,6 @@ const brokenImages = (root) => root.evaluate((el) =>
 // Portada de Bass: tocar una sección de la onda (el <g> del SVG; el click real
 // lo intercepta el propio SVG que la contiene).
 const clickCue = (page, re) => page.locator(".btk-cue", { hasText: re }).first().dispatchEvent("click");
-// ¿La Agenda está filtrada a hoy? Mobile: pastilla activa; desktop: el select de Cuándo.
-const hoyActive = async (page, vp) => (vp.isMobile
-  ? (await page.locator(".bass-when .bl-filter-chip.active", { hasText: /Hoy|Today/ }).count()) > 0
-  : (await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().inputValue()) === "hoy");
 
 async function checkModalFits(page, vpName) {
   const r = await page.evaluate(() => {
@@ -266,27 +262,41 @@ async function run(vp) {
         if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass volvió a mostrar las pestañas");
         await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
       }
-      // Agenda: Cuándo primero. En mobile, las pastillas a la vista; en desktop, la barra.
+      // Agenda (oct 2026): "Cuándo" es la línea de días. Tocar un día salta a
+      // ese día (su encabezado queda justo debajo de la línea) y lo marca.
       await clickCue(page, /Agenda|Listings/);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(800);
       if (!(await page.locator(".bl-bass-section-btn.active", { hasText: /Agenda|Listings/ }).count())) fail(vp.name, "índice", "el cue Agenda no abre la Agenda");
-      if (vp.isMobile) {
-        const hoyChip = page.locator(".bass-when .bl-filter-chip", { hasText: /Hoy|Today/ });
-        if (!(await hoyChip.count())) fail(vp.name, "agenda", "en mobile no está Hoy a la vista dentro de la Agenda");
-        else await hoyChip.click();
-      } else await page.locator(".bl-ctrl-bar .bl-ctrl-select").first().selectOption("hoy");
-      await page.waitForTimeout(500);
-      const hoyOn = await hoyActive(page, vp);
-      if (!hoyOn) fail(vp.name, "agenda", "Hoy no filtra la agenda");
-      // La flecha devuelve al track, a la vista y sin el filtro.
+      if (await page.locator(".bass-when, .bl-ctrl-bar select[aria-label='Cuándo']").count()) fail(vp.name, "agenda", "volvió el filtro Cuándo: lo resuelve la línea de días");
+      const railDays = page.locator(".bl-day-rail button.bl-day-rail-day");
+      if ((await railDays.count()) < 3) fail(vp.name, "agenda", "falta la línea de días");
+      else {
+        const target = railDays.nth(2), label = await target.getAttribute("aria-label");
+        await target.click();
+        await page.waitForTimeout(1600);
+        const jump = await page.evaluate(() => { const rb = document.querySelector(".bl-day-rail").getBoundingClientRect().bottom; const on = document.querySelector(".bl-day-rail .is-on")?.getAttribute("aria-label"); const near = Math.min(...[...document.querySelectorAll(".bl-day-header[data-day]")].map((h) => Math.abs(h.getBoundingClientRect().top - rb))); return { on, near }; });
+        if (jump.on !== label) fail(vp.name, "agenda", `la línea marca ${jump.on} y se tocó ${label}`);
+        if (!(jump.near < 24)) fail(vp.name, "agenda", `el día elegido no queda debajo de la línea (${Math.round(jump.near)}px)`);
+      }
+      // Dentro de cada día, por hora como se vive la noche (la madrugada al final).
+      const badOrder = await page.evaluate(() => {
+        const mins = (t) => { const [h, m] = (t || "23:00").split(":").map(Number); return ((h < 7 ? h + 24 : h) * 60) + (m || 0); };
+        let bad = 0, prev = -1;
+        for (const el of document.querySelectorAll(".bl-ev-list > *")) {
+          if (el.classList.contains("bl-day-header")) { prev = -1; continue; }
+          const t = el.querySelector(".bl-ev-time-inline")?.textContent.trim(); if (!t) continue;
+          const v = mins(t); if (v < prev) bad++; prev = v;
+        }
+        return bad;
+      });
+      if (badOrder) fail(vp.name, "agenda", `${badOrder} eventos fuera de orden horario dentro de su día`);
+      // La flecha devuelve al track, a la vista.
       await page.locator(".bl-bass-back").click();
       await page.waitForTimeout(500);
       if (!(await page.locator(".bl-btrack").count())) fail(vp.name, "índice", "la flecha desde la Agenda no vuelve al track");
       else if (!(await page.locator(".bl-btrack").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight / 2; }))) fail(vp.name, "índice", "volver al track deja la pantalla en otro lado (el track queda fuera de vista)");
       await clickCue(page, /Agenda|Listings/);
       await page.waitForTimeout(500);
-      const stillHoy = await hoyActive(page, vp);
-      if (stillHoy) fail(vp.name, "índice", "volver al track no limpia el filtro Hoy");
     }
 
     // 2. Feed con eventos (dentro de la Agenda)
@@ -299,6 +309,13 @@ async function run(vp) {
     // ¿Los datos traen giras? La misma función que usa el front (lib/tours.js).
     const toursInData = computeTours(await eventsData(), { dateOf: getEventDate, clean: cleanArtists }).length > 0;
     if (toursInData && !tourCards) fail(vp.name, "de gira", "hay artistas de gira en los datos y el bloque no aparece");
+    // Fila con desplazamiento que se nota (ScrollRow, oct 2026): si las tarjetas
+    // no entran, el borde se desvanece y en desktop está la flecha para avanzar.
+    if (tourCards) {
+      const sr = await page.locator(".bl-tour .bl-srow").first().evaluate((r) => { const tr = r.querySelector(".bl-srow-track"); return { over: tr.scrollWidth > tr.clientWidth + 4, fade: r.classList.contains("fade-r"), arrow: !!r.querySelector(".bl-srow-arrow.is-next") }; }).catch(() => null);
+      if (sr && sr.over && !sr.fade) fail(vp.name, "de gira", "la fila sigue y no se desvanece el borde");
+      if (sr && sr.over && !vp.isMobile && !sr.arrow) fail(vp.name, "de gira", "la fila sigue y no hay flecha para avanzar");
+    }
     if (tourCards) {
       if (!(await page.locator(".bl-tour-card").first().locator(".bl-tour-stop.is-here").count())) fail(vp.name, "de gira", "la tarjeta no marca la parada en Buenos Aires");
       await page.locator(".bl-tour-card").first().click();
@@ -334,12 +351,20 @@ async function run(vp) {
     const box = await dialog.locator(".bl-modal, [class*=bl-em]").first().boundingBox();
     if (box && box.width > vp.viewport.width + 1) fail(vp.name, "modal", `más ancho que la pantalla (${Math.round(box.width)}px)`);
 
-    // Line-up "Cartel": tarjeta del headliner + fichas compactas. Ninguna ficha
-    // se estira (el bug de sept 2026 dejaba cajas de ~230px vacías por artista).
+    // Ficha sin scroll (oct 2026, Pablo): tarjeta del headliner y el resto como
+    // afiche; nada scrollea ni se corta, y las acciones van en una sola fila.
     if ((await dialog.locator(".bl-em-head").count()) !== 1) fail(vp.name, "line-up", "falta la tarjeta del headliner");
-    const chips = await dialog.locator(".bl-em-chip").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
-    const tall = chips.filter((h) => h > 90);
-    if (tall.length) fail(vp.name, "line-up", `${tall.length} fichas miden más de 90px (${tall.join(", ")})`);
+    await page.waitForTimeout(600);
+    const fitInfo = await dialog.evaluate((d) => {
+      const sc = d.querySelector(".bl-em-scroll"), c = d.querySelector(".bl-em-cartel");
+      const scrollers = [...d.querySelectorAll(".bl-event-modal, .bl-event-modal *")].filter((e) => e.scrollHeight > e.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(e).overflowY)).length;
+      const cut = (sc && sc.scrollHeight > sc.clientHeight + 1) || (c && c.scrollHeight > c.clientHeight + 1);
+      const row = [...d.querySelectorAll(".bl-em-act2 .bl-em-cta, .bl-em-act2 .bl-em-ic")].map((e) => Math.round(e.getBoundingClientRect().top));
+      return { scrollers, cut: !!cut, oneRow: row.length === 4 && Math.max(...row) - Math.min(...row) <= 2 };
+    });
+    if (fitInfo.scrollers) fail(vp.name, "modal", "la ficha tiene scroll: el contenido tiene que adaptarse");
+    if (fitInfo.cut) fail(vp.name, "modal", "contenido cortado dentro de la ficha");
+    if (!fitInfo.oneRow) fail(vp.name, "modal", "las acciones (Entradas, Guardar, Calendario, Compartir) no van en una sola fila");
 
     const broken = await brokenImages(dialog);
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);

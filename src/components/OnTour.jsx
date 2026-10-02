@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ScrollRow } from "./ScrollRow";
 import { BlThumb } from "./BlThumb";
 import { useLocale } from "../hooks/useLocale";
 import { DAYS_LONG, MONTHS_ABBR, getEventDate } from "../i18n/strings";
@@ -28,7 +29,14 @@ function Route({ tour, t, M }) {
   );
 }
 
-export function OnTour({ events, onSelect }) {
+// `compact`: tarjetas bajas (foto chica al costado) para ir arriba de la agenda
+// sin taparla: "De gira" a la vista y la primera fiesta en la misma pantalla.
+// Fila con desplazamiento visible (flechas y bordes); "ver las N" la abre en grilla.
+function TourWrap({ all, children }) {
+  return all ? <div className="bl-tour-list">{children}</div> : <ScrollRow className="bl-tour-row">{children}</ScrollRow>;
+}
+
+export function OnTour({ events, onSelect, compact = false }) {
   const { t, locale } = useLocale();
   const tours = useMemo(() => computeTours(events, { dateOf: getEventDate, clean: cleanArtists }), [events]);
   const [all, setAll] = useState(false);
@@ -38,7 +46,7 @@ export function OnTour({ events, onSelect }) {
   const venue = (ev) => cleanVenue(ev.venue);
 
   return (
-    <section className="bl-hero bl-tour" aria-label={t("tour.title")}>
+    <section className={`bl-hero bl-tour${compact ? " is-compact" : ""}`} aria-label={t("tour.title")}>
       <div className="bl-hero-head">
         <h2 className="bl-hero-title bl-bass-t-stamp">{t("tour.title")}</h2>
         <span className="bl-tour-sub">{t("tour.sub")}</span>
@@ -48,7 +56,7 @@ export function OnTour({ events, onSelect }) {
           </button>
         )}
       </div>
-      <div className={all ? "bl-tour-list" : "bl-tour-row"}>
+      <TourWrap all={all}>
         {(all ? tours : tours.slice(0, 8)).map((tour) => {
           const { ev, date } = tour;
           return (
@@ -64,7 +72,7 @@ export function OnTour({ events, onSelect }) {
             </button>
           );
         })}
-      </div>
+      </TourWrap>
     </section>
   );
 }
