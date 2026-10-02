@@ -932,19 +932,18 @@
 .bl-tab-eq-bar:nth-child(3) { animation:bl-eq 0.9s ease-in-out 0.3s infinite alternate; }
 @keyframes bl-eq { 0% { transform:scaleY(0.1875); } 100% { transform:scaleY(1); } }
 
-/* Terminal-style block cursor — bar vertical pegada a la última letra,
-   como si la próxima tecla fuera a escribir el siguiente caracter. */
-/* Underscore cursor estilo terminal clásica — guión bajo titilando al
-   baseline, justo donde aparecería el próximo caracter al tipear. */
+/* Cursor de terminal en BLOQUE, a la altura de las mayúsculas, titilando
+   donde aparecería el próximo caracter (oct 2026: el guión bajo de 3 px se
+   leía como un guión suelto, "LAYER -"). */
 .bl-tab-cursor {
   display:inline-block;
-  width:0.55em;
-  height:3px;
+  width:0.5em;
+  height:0.7em;
   background:var(--bl-accent-layer);
-  margin-left:0.12em;
+  margin-left:0.04em;
   vertical-align:baseline;
   opacity:0;
-  box-shadow:0 0 8px rgba(108,184,200,0.5);
+  box-shadow:0 0 8px rgba(108,184,200,0.45);
 }
 .bl-header-half-layer.is-active .bl-tab-cursor { animation:bl-blink 1s step-end infinite; opacity:1; }
 .bl-header-half-layer:not(.is-active) .bl-tab-cursor { display:none; }
@@ -2099,7 +2098,6 @@
   .bl-header-half-layer.is-active .bl-header-world-name { font-size:18px; letter-spacing:5px; }
   .bl-header-half-layer:not(.is-active) .bl-header-world-name { font-size:10px; letter-spacing:3px; }
   .bl-tab-eq { height:13px; margin-left:4px; }
-  .bl-tab-cursor { width:8px; }
   .bl-price-bar { top:0; }
   .bl-filters { padding:8px 16px; gap:5px; }
   .bl-filters.layer-filters { top:0; }
@@ -2356,7 +2354,7 @@
   font-family:var(--font-display); font-weight:700; color:var(--bl-accent-bass);
   background:linear-gradient(160deg, rgba(196,144,112,.18), rgba(196,144,112,.04)); border:1px solid var(--bl-border);
 }
-.bl-em-av-ph.is-loading { color:transparent; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+.bl-em-av-ph.is-loading { animation:bl-skel-pulse 1.4s ease-in-out infinite; } /* la inicial se ve desde el principio: nunca una caja vacía */
 
 /* ▶ de 30 s: anillo de progreso con conic-gradient mientras suena */
 .bl-em-play { display:inline-flex; align-items:center; gap:9px; background:none; border:0; padding:0; cursor:pointer; color:var(--bl-accent-bass); font:inherit; min-height:36px; }

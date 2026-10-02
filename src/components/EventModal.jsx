@@ -268,7 +268,9 @@ export function EventModal({ event, onClose, onShare }) {
             {artists.length > 0 && (
               <section className="bl-em-sec" aria-label={t("event.lineup")}>
                 <div className="bl-em-label bl-bass-t-label">
-                  {t("event.lineup")} · {artists.length} {artists.length === 1 ? t("event.lineupSingle") : t("event.lineupPlural")}
+                  {/* Con un solo nombre no se cuenta: la fuente a veces trae solo el headliner
+                      y "1 artista" contradecía al flyer (oct 2026). */}
+                  {t("event.lineup")}{artists.length > 1 && <> · {artists.length} {t("event.lineupPlural")}</>}
                 </div>
                 <LineupHead name={artists[0]} info={infos[artists[0]]} player={player} t={t} />
                 {artists.length > 1 && (

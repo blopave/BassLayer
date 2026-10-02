@@ -27,5 +27,7 @@ export function noOrphanSep(name) {
 // ("Grand Hall, La Plata" → "Grand Hall"). Ticker y "De gira".
 export function cleanVenue(v) {
   if (!v) return "";
-  return String(v).replace(/^\s*(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split(",")[0].trim();
+  // Buenos Aliens escribe "fiesta @ lugar" ("2GTHR @ Morocco"): el lugar es lo
+  // que va después del @ (en el ticker quedaba "… @ 2GTHR @ Morocco", oct 2026).
+  return String(v).replace(/^\s*(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split("@").pop().split(",")[0].trim();
 }

@@ -108,6 +108,11 @@ async function checkEndpoint({ path, minItems, required }) {
     // (lib/places.js), sin copiarla.
     const fuera = items.filter((it) => it?.area === "amba" && namesOtherCity(`${it.venue || ""} ${it.address || ""}`));
     if (fuera.length) fail(path, "amba", `marcados AMBA pero de otra ciudad: ${fuera.slice(0, 3).map((it) => `${it.name} (${it.venue})`).join(" | ")}`);
+    // Fecha válida: el mes es un mes (oct 2026: Buenos Aliens escribe "SAB 03 18hs"
+    // sin mes y "18h" quedaba como mes → evento sin fecha, fuera de la onda).
+    const sinFecha = items.filter((it) => !/^(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)$/i.test(it?.month || ""));
+    if (sinFecha.length) fail(path, "fecha", `${sinFecha.length} sin mes válido: ${sinFecha.slice(0, 3).map((it) => `${it.name} (${it.month})`).join(" | ")}`);
+
     // Solo escena electrónica (oct 2026, Pablo): de QuéHacemos (cartelera
     // general) entra solo lo que es club; nada de rock, folklore, jazz, tango,
     // reggaetón, stand-up ni "festivales" como Burgerpalusa.

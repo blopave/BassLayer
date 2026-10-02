@@ -92,3 +92,14 @@ export function floatingOverlaps() {
   }
   return [...new Set(out)];
 }
+
+// Nombres accesibles rotos: un aria-label o title con "[object Object]" (oct
+// 2026: t() devolvía Fragments cuando una variable era número y los lectores
+// de pantalla leían "Noticias: [object Object]").
+export function brokenLabels() {
+  return [...document.querySelectorAll("[aria-label], [title]")]
+    .map((el) => el.getAttribute("aria-label") || el.getAttribute("title") || "")
+    .filter((s) => s.includes("[object"))
+    .slice(0, 3)
+    .map((s) => `nombre accesible roto: "${s.slice(0, 80)}"`);
+}

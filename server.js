@@ -292,6 +292,22 @@ function tidyEvents(events) {
 // "festivales" como Burgerpalusa): de ahí entra solo lo que clasifica como
 // club. Se filtra al armar la agenda (y al cargar un snapshot viejo) para que
 // home, onda, agenda y SEO cuenten lo mismo.
+// Buenos Aliens: meses como los escribe ("SAB 11 ABR").
+const BA_MONTHS = "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC";
+const BA_WEEKDAYS = { DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6 };
+// Mes de una fecha sin mes ("SAB 03"): este mes o el próximo, el primero en el
+// que ese día cae en ese día de la semana y no ya pasó. Null si no coincide.
+function inferBaMonth(weekday, day, now = new Date()) {
+  const want = BA_WEEKDAYS[weekday.toUpperCase()];
+  for (let k = 0; k < 2; k++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + k, day);
+    if (d.getDate() !== day) continue;                                   // 31 en un mes de 30
+    if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) continue; // ya pasó
+    if (d.getDay() === want) { const m = BA_MONTHS.split("|")[d.getMonth()]; return m.charAt(0) + m.slice(1).toLowerCase(); }
+  }
+  return null;
+}
+
 function sceneOnly(events) {
   return events.filter((ev) => ev.source !== "quehacemos" || ev.family === "club");
 }
@@ -302,8 +318,8 @@ function loadSnapshots() {
       const file = join(SNAPSHOT_DIR, `${key}.json`);
       if (!existsSync(file)) continue;
       const { ts, data: raw } = JSON.parse(readFileSync(file, "utf-8"));
-      // Un snapshot de antes del filtro de escena también sale filtrado.
-      const data = key === "events" && Array.isArray(raw) ? sceneOnly(raw) : raw;
+      // Un snapshot viejo sale igual que una build nueva: solo escena y con fecha válida.
+      const data = key === "events" && Array.isArray(raw) ? sceneOnly(raw).filter((ev) => new RegExp(`^(${BA_MONTHS})$`, "i").test(ev.month || "")) : raw;
       if (Array.isArray(data) && data.length) {
         if (key === "events") tidyEvents(data);
         registerImages(data);
@@ -2231,7 +2247,7 @@ async function fetchBuenosAliens() {
       for (let j = 0; j < prevLines.length; j++) {
         // Handle multi-day events: "SAB 11 DOM 12 ABR" → take first day, last month
         const multiDayMatch = prevLines[j].match(
-          /(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+\d{1,2}\s+(\w{3})/i
+          new RegExp(`(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\\s+(\\d{1,2})\\s+(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\\s+\\d{1,2}\\s+(${BA_MONTHS})\\b`, "i")
         );
         if (multiDayMatch) {
           day = multiDayMatch[1].padStart(2, "0");
@@ -2239,12 +2255,22 @@ async function fetchBuenosAliens() {
           dateLineIdx = j;
           continue;
         }
-        // Standard single-day: "SAB 11 ABR"
-        const dateMatch = prevLines[j].match(/(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})\s+(\w{3})/i);
+        // Standard single-day: "SAB 11 ABR". El mes tiene que ser un mes: las
+        // fiestas de día vienen "SAB 03 18hs" (sin mes) y antes "18h" quedaba
+        // como mes → el evento no tenía fecha (oct 2026).
+        const dateMatch = prevLines[j].match(new RegExp(`(?:VIE|SAB|DOM|LUN|MAR|MIE|JUE)\\s+(\\d{1,2})\\s+(${BA_MONTHS})\\b`, "i"));
         if (dateMatch && !DAY_NAMES.test(dateMatch[2])) {
           day = dateMatch[1].padStart(2, "0");
           month = dateMatch[2].charAt(0).toUpperCase() + dateMatch[2].slice(1).toLowerCase();
           dateLineIdx = j;
+          continue;
+        }
+        // Sin mes ("SAB 03 18hs"): la próxima fecha con ese día, SOLO si el día
+        // de la semana coincide (SAB 03 → sábado 3). Si no coincide, se descarta.
+        const bare = prevLines[j].match(/^(VIE|SAB|DOM|LUN|MAR|MIE|JUE)\s+(\d{1,2})(?:\s+\d{1,2}(?::\d{2})?\s*hs?\.?)?\s*$/i);
+        if (bare && !month) {
+          const inferred = inferBaMonth(bare[1], Number(bare[2]));
+          if (inferred) { day = bare[2].padStart(2, "0"); month = inferred; dateLineIdx = j; }
         }
       }
       if (!day || !month) continue;

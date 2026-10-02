@@ -193,7 +193,7 @@ export const STRINGS = {
     "cycles.realized": "precio realizado",
 
     "event.lineup": "Line-up",
-    "event.lineupSingle": "artista",
+   
     "event.lineupPlural": "artistas",
     "event.info": "Información",
     "event.priceFrom": "Desde",
@@ -288,7 +288,7 @@ export const STRINGS = {
     "predict.group.argentina": "Argentina",
     "ticker.aria": "Precios de criptomonedas",
     "lineup.aria": "Line-ups de esta semana",
-    "lineup.live": "En vivo",
+    "lineup.live": "Esta semana",   // antes "En vivo": se leía "está pasando ahora" y muestra lo que viene (oct 2026)
     "feed.festivalsLoadError": "No pude cargar los festivales. Tocá para reintentar.",
 
     "news.summary": "Resumen",
@@ -580,7 +580,7 @@ export const STRINGS = {
     "cycles.realized": "realized price",
 
     "event.lineup": "Line-up",
-    "event.lineupSingle": "artist",
+   
     "event.lineupPlural": "artists",
     "event.info": "Information",
     "event.priceFrom": "From",
@@ -675,7 +675,7 @@ export const STRINGS = {
     "predict.group.argentina": "Argentina",
     "ticker.aria": "Cryptocurrency prices",
     "lineup.aria": "This week's line-ups",
-    "lineup.live": "Live",
+    "lineup.live": "This week",
     "feed.festivalsLoadError": "Couldn't load festivals. Tap to retry.",
 
     "news.summary": "Summary",

@@ -993,8 +993,8 @@ export default function App() {
               aria-current={activePanel === 1 ? "page" : undefined}
             >
               <span className="bl-header-cluster">
-                <span className="bl-header-world-name">Layer</span>
-                <span className="bl-tab-cursor" aria-hidden="true" />
+                {/* El cursor va dentro del nombre: hereda su tamaño y se apoya en la línea de base. */}
+                <span className="bl-header-world-name">Layer<span className="bl-tab-cursor" aria-hidden="true" /></span>
               </span>
             </button>
             <div className={`bl-scroll-progress ${activePanel === 0 ? "progress-bass" : "progress-layer"}`} style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />

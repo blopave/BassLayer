@@ -2,7 +2,7 @@ import { storage } from "../utils/storage";
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { STRINGS } from "../i18n/strings";
 
-// Interpola placeholders {name} en un template. Si todas las vars son strings,
+// Interpola placeholders {name} en un template. Si todas las vars son strings o números,
 // devuelve un string; si alguna es un React node, devuelve un array de
 // Fragments con keys para que React no warne. Mantenemos la API compatible
 // con t(key) sin vars (devuelve el template como antes).
@@ -13,7 +13,9 @@ function interpolate(template, vars) {
     const m = part.match(/^\{([a-zA-Z][a-zA-Z0-9]*)\}$/);
     return m && vars[m[1]] != null ? vars[m[1]] : part;
   });
-  if (filled.every((p) => typeof p === "string")) return filled.join("");
+  // Los números también son texto: si no, "{n} notas" con n = 38 volvía como
+  // array de Fragments y en un aria-label se leía "[object Object]" (oct 2026).
+  if (filled.every((p) => typeof p === "string" || typeof p === "number")) return filled.join("");
   return filled.map((p, i) => <Fragment key={i}>{p}</Fragment>);
 }
 

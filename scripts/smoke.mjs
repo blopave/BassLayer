@@ -17,7 +17,7 @@ import { cleanArtists } from "../src/utils/artists.js";
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import sharp from "sharp";
-import { lowContrast, homeCollisions, posterOverflow, floatingOverlaps } from "./lib/ui-checks.mjs";
+import { lowContrast, homeCollisions, posterOverflow, floatingOverlaps, brokenLabels } from "./lib/ui-checks.mjs";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3000";
 // /api/events una sola vez por corrida (lo usan el conteo de la home y De gira).
@@ -113,6 +113,7 @@ async function run(vp) {
     await page.waitForTimeout(1200); // entrada del home (fade de los mundos)
     await expectNone("home", homeCollisions);
     await expectNone("home", lowContrast);
+    await expectNone("home", brokenLabels);
     // Superficie porteña (sept 2026): la home cuenta solo CABA + GBA y el
     // ticker no muestra ciudades del exterior; la agenda arranca en Buenos Aires.
     const amba = (await eventsData()).filter((e) => e.area === "amba").length;
@@ -129,6 +130,14 @@ async function run(vp) {
     await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
     // En táctil, el toque que entra a Bass no deja un hover pegado que apague los otros nombres (oct 2026).
     if (vp.isMobile) { await page.waitForTimeout(300); if (await page.locator(".btk-cue.is-off").count()) fail(vp.name, "índice", "en táctil quedó un hover pegado: los otros nombres se apagan"); }
+    await page.waitForTimeout(600);   // los datos de cada parte llegan después de pintar
+    await expectNone("índice", brokenLabels);
+    // Ticker: "artistas @ lugar", nunca "… @ fiesta @ lugar" (Buenos Aliens escribe "2GTHR @ Morocco").
+    const dobleArroba = await page.locator(".bl-lineup-venue").evaluateAll((els) => els.map((e) => e.textContent).filter((t) => t.includes("@")));
+    if (dobleArroba.length) fail(vp.name, "ticker", `venue con @ en el ticker: ${dobleArroba[0]}`);
+    // Un solo número (oct 2026): la Agenda de la onda cuenta lo mismo que la home.
+    const porVenir = Number(((await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().locator(".btk-sub").textContent().catch(() => "")).match(/(\d+)\D*$/) || [])[1]);
+    if (amba > 0 && porVenir !== amba) fail(vp.name, "índice", `la onda dice ${porVenir} por venir y en Buenos Aires hay ${amba}`);
     const cueNames = await page.locator(".bl-btrack .btk-cue .btk-name").allTextContents();
     if (!cueNames.some((x) => /Agenda|Listings/.test(x)) || cueNames.length < 2 || cueNames.length > 3) fail(vp.name, "índice", `cues del índice: ${cueNames.join(" · ") || "ninguno"} (esperaba Noticias · Agenda · Festivales)`);
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
@@ -360,6 +369,14 @@ async function run(vp) {
     if (reloadedTitle && reloadedTitle !== modalTitle) fail(vp.name, "deep-link", `recargar abre "${reloadedTitle}" en vez de "${modalTitle}"`);
     await page.waitForTimeout(500);
 
+    await expectNone("modal", brokenLabels);
+    // Line-up honesto (oct 2026): nunca "1 artista" (la fuente a veces trae solo
+    // el headliner y contradecía al flyer) y la foto del artista nunca es una caja
+    // vacía: la inicial se ve también mientras carga.
+    const lineupLabel = await page.locator(".bl-em-sec .bl-em-label").first().textContent().catch(() => "");
+    if (/·\s*1\s/.test(lineupLabel)) fail(vp.name, "modal", `el line-up dice "${lineupLabel.trim()}"`);
+    const hiddenInitial = await page.locator(".bl-em-av-ph").evaluateAll((els) => els.some((e) => { const c = getComputedStyle(e).color; return c === "transparent" || /rgba\([^)]*,\s*0\)/.test(c); }));
+    if (hiddenInitial) fail(vp.name, "modal", "la foto del artista es una caja vacía (inicial invisible)");
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-modal.png` });
 
     // 4. Cerrar con Escape → vuelve el feed y se libera el scroll
@@ -404,6 +421,20 @@ async function run(vp) {
       }
     }
 
+    // 5b'. Un evento con un solo nombre en el line-up: no dice "1 artista" (oct 2026).
+    const single = await page.evaluate(() => fetch("/api/events").then((r) => r.json()).then((d) => (Array.isArray(d) ? d : d.events || []).find((e) => e.area === "amba" && e.artists?.length === 1)));
+    if (single) {
+      const idx1 = await page.locator(".bl-ev-name").evaluateAll((els, name) => els.findIndex((e) => e.textContent.replace(/\u00A0/g, " ") === name), single.name);
+      if (idx1 >= 0) {
+        await page.locator(".bl-ev-open").nth(idx1).click();
+        await dialog.waitFor({ state: "visible", timeout: 10_000 });
+        const label1 = await page.locator(".bl-em-sec .bl-em-label").first().textContent().catch(() => "");
+        if (/·\s*1\s/.test(label1)) fail(vp.name, "modal", `el line-up dice "${label1.trim()}"`);
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+      }
+    }
+
     // 5c. Link a un evento que ya no existe: aviso y vuelta a la agenda
     await page.goto(BASE + "/eventos/evento-que-no-existe-1-ene", { waitUntil: "domcontentloaded" });
     const toastOk = await page.locator(".bl-toast.show").waitFor({ state: "visible", timeout: 30_000 }).then(() => true).catch(() => false);
@@ -423,6 +454,10 @@ async function run(vp) {
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
     if (!page.url().endsWith("/layer")) fail(vp.name, "layer", `no quedó en /layer (${page.url()})`);
+    await expectNone("layer", brokenLabels);
+    // El cursor de "Layer█" es un bloque a la altura de las letras, no un guión suelto (oct 2026).
+    const cur = await page.evaluate(() => { const c = document.querySelector(".bl-header-half-layer.is-active .bl-tab-cursor"), n = c?.closest(".bl-header-world-name"); return c && n ? c.getBoundingClientRect().height / parseFloat(getComputedStyle(n).fontSize) : null; });
+    if (cur == null || cur < 0.5) fail(vp.name, "header", `el cursor de Layer se lee como un guión (alto ${cur?.toFixed(2)} letra)`);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
     if (vp.viewport.height >= 800) {
