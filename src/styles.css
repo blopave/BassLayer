@@ -5886,3 +5886,60 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 @keyframes bl-welcome-in { from { opacity:0; transform:translate(-50%, 10px); } }
 @media (max-width:768px) { .bl-welcome-line { white-space:normal; width:calc(100% - 48px); text-align:center; font-size:13.5px; bottom:96px; } }
 @media (prefers-reduced-motion:reduce) { .bl-welcome-line { animation:none; } }
+
+/* ══ Interiores de Bass (oct 2026, Pablo: "B+ · Afiche"): la agenda es una
+   pared de flyers — el flyer es el diseño del show — y las noticias, una
+   revista. Los eventos sin flyer llevan un afiche de la casa (cobre, textura
+   de onda y el nombre grande); la hora va sobre el flyer; en mobile el primero
+   de cada día va a todo el ancho. Solo la agenda (.bl-ev-wall): Festivales
+   sigue con su lista. ══ */
+.bl-ev-wall { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:22px 18px; }
+.bl-ev-wall > .bl-day-header, .bl-ev-wall > .bl-month-divider, .bl-ev-wall > :not(.bl-ev-item) { grid-column:1 / -1; }
+.bl-root .bl-ev-wall .bl-ev-item { display:flex; flex-direction:column; gap:10px; padding:0; border:0; border-radius:0; background:none; }
+.bl-root .bl-ev-wall .bl-ev-item:hover { transform:translateY(-3px); background:none; }
+.bl-root .bl-ev-wall .bl-ev-item[data-featured="true"], .bl-root[data-section="bass"] .bl-ev-wall .bl-ev-item[data-featured="true"] { border-left:0; padding-left:0; }
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb { flex:none !important; width:100% !important; height:auto !important; aspect-ratio:4/5; border-radius:10px; box-shadow:0 18px 40px rgba(0,0,0,.35); }
+.bl-root .bl-ev-wall .bl-ev-item .bl-ev-time-block, .bl-root .bl-ev-wall .bl-ev-item [class*="countdown"], .bl-root .bl-ev-wall .bl-ev-lineup { display:none; }
+.bl-root .bl-ev-wall .bl-ev-name { font-size:16px; -webkit-line-clamp:2; }
+.bl-root .bl-ev-wall .bl-ev-lead .bl-ev-name { font-size:16px; }
+.bl-root .bl-ev-wall .bl-ev-venue-line { font-size:13px; color:var(--bl-text-sec); }
+.bl-root .bl-ev-wall .bl-ev-time-inline { display:inline !important; }
+.bl-root .bl-ev-wall .bl-ev-item > .bl-save-btn { position:absolute; top:10px; right:10px; z-index:3; background:color-mix(in srgb, var(--bl-bg) 70%, transparent); border-radius:50%; backdrop-filter:blur(6px); }
+.bl-root .bl-bass-news-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:26px 20px; }
+.bl-root .bl-bass-news-item { display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:0; border:0; border-radius:0; background:none; }
+.bl-root .bl-bass-news-item .bl-thumb { flex:none !important; width:100% !important; height:auto !important; aspect-ratio:16/10; border-radius:10px; }
+.bl-root .bl-bass-news-title { font-size:17px; line-height:1.3; }
+@media (max-width:768px) {
+  .bl-ev-wall { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px 12px; }
+  .bl-root .bl-ev-wall .bl-ev-item, .bl-root .bl-ev-wall .bl-ev-body { min-width:0; }
+  .bl-root .bl-ev-wall .bl-ev-venue-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bl-root .bl-ev-wall .bl-ev-name { font-size:14px; }
+  .bl-root .bl-bass-news-list { grid-template-columns:1fr; }
+}
+
+/* 1 · Sin flyer: afiche de la casa — cobre, textura de onda y el nombre grande. */
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster {
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--poster-tint, #C49070) 26%, transparent) 0 1.5px, transparent 1.5px 5px),
+    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--poster-tint, #C49070) 30%, transparent) 0%, transparent 65%),
+    linear-gradient(180deg, color-mix(in srgb, var(--poster-tint, #C49070) 14%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
+  -webkit-mask-image:none;
+}
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster { container-type:inline-size; }
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster { font-size:clamp(15px, 12cqi, 34px); padding:9cqi 8cqi; align-items:flex-end; background:linear-gradient(0deg, color-mix(in srgb, var(--bl-bg) 85%, transparent) 0%, transparent 55%); }
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster-rule { display:none; }
+/* 2 · La hora sobre el flyer, arriba a la izquierda; abajo, nombre y lugar. */
+.bl-root .bl-ev-wall .bl-ev-item::before {
+  content:attr(data-time); position:absolute; top:10px; left:10px; z-index:3; padding:4px 8px; border-radius:6px;
+  background:color-mix(in srgb, var(--bl-bg) 78%, transparent); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  font:600 12px var(--font-mono); letter-spacing:.04em; color:var(--bl-accent-bass); pointer-events:none;
+}
+.bl-root .bl-ev-wall .bl-ev-item[data-time=""]::before { display:none; }
+.bl-root .bl-ev-wall .bl-ev-item .bl-ev-time-inline { display:none !important; }
+/* 3 · Mobile: el primero de cada día a todo el ancho, el resto en dos columnas. */
+@media (max-width:768px) {
+  .bl-root .bl-ev-wall .bl-ev-lead { grid-column:1 / -1; }
+  .bl-root .bl-ev-wall .bl-ev-lead .bl-thumb { aspect-ratio:4/3; }
+  .bl-root .bl-ev-wall .bl-ev-lead .bl-ev-name { font-size:19px; }
+  .bl-root .bl-ev-wall .bl-ev-item::before { top:8px; left:8px; font-size:11px; }
+}

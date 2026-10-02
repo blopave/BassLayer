@@ -285,6 +285,23 @@ async function run(vp) {
         if (jump.on !== label) fail(vp.name, "agenda", `la línea marca ${jump.on} y se tocó ${label}`);
         if (!(jump.near < 24)) fail(vp.name, "agenda", `el día elegido no queda debajo de la línea (${Math.round(jump.near)}px)`);
       }
+      // Agenda como pared de afiches (oct 2026, Pablo: "B+"): varias columnas en
+      // desktop y dos en mobile; los eventos sin flyer llevan afiche de la casa
+      // con el nombre; la hora va sobre el flyer.
+      const wall = await page.evaluate(() => {
+        const w = document.querySelector(".bl-ev-wall"); if (!w) return null;
+        const cols = getComputedStyle(w).gridTemplateColumns.split(" ").length;
+        const posters = [...w.querySelectorAll(".bl-ev-item .bl-thumb-poster")];
+        const emptyPoster = posters.filter((p) => !p.querySelector(".bl-poster-word")?.textContent.trim()).length;
+        const badge = [...w.querySelectorAll('.bl-ev-item:not([data-time=""])')].slice(0, 6).every((it) => getComputedStyle(it, "::before").content.replace(/"/g, "").trim().length > 0);
+        return { cols, emptyPoster, badge };
+      });
+      if (!wall) fail(vp.name, "agenda", "la agenda no es la pared de afiches");
+      else {
+        if (vp.isMobile ? wall.cols !== 2 : wall.cols < 3) fail(vp.name, "agenda", `la pared tiene ${wall.cols} columnas`);
+        if (wall.emptyPoster) fail(vp.name, "agenda", `${wall.emptyPoster} eventos sin flyer sin nombre en su afiche`);
+        if (!wall.badge) fail(vp.name, "agenda", "la hora no aparece sobre el flyer");
+      }
       // Dentro de cada día, por hora como se vive la noche (la madrugada al final).
       const badOrder = await page.evaluate(() => {
         const mins = (t) => { const [h, m] = (t || "23:00").split(":").map(Number); return ((h < 7 ? h + 24 : h) * 60) + (m || 0); };

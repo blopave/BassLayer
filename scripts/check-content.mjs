@@ -122,6 +122,16 @@ async function checkEndpoint({ path, minItems, required }) {
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
   }
 
+  // Noticias de Bass (oct 2026): cada nota dice su idioma y, si se tradujo,
+  // los nombres propios del original siguen en la traducción (no se traducen).
+  if (path === "/api/bass-news") {
+    const sinIdioma = items.filter((it) => !it?.lang);
+    if (sinIdioma.length) fail(path, "idioma", `${sinIdioma.length} sin idioma`);
+    const KEEP = ["The Warehouse Project", "Boiler Room", "Berghain", "Awakenings", "Dekmantel", "Creamfields", "Tomorrowland", "Pacha"];
+    const rotos = items.filter((it) => it?.titleEs && KEEP.some((k) => it.title.includes(k) && !it.titleEs.includes(k)));
+    if (rotos.length) fail(path, "nombres", `se tradujo un nombre propio: ${rotos.slice(0, 2).map((it) => it.titleEs).join(" | ")}`);
+  }
+
   // Noticias de Layer (oct 2026): cada nota dice su idioma (para traducir y
   // marcar los titulares en inglés) y una historia aparece una sola vez.
   if (path === "/api/news") {

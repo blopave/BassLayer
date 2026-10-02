@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
@@ -292,6 +292,7 @@ function tidyEvents(events) {
 // "festivales" como Burgerpalusa): de ahí entra solo lo que clasifica como
 // club. Se filtra al armar la agenda (y al cargar un snapshot viejo) para que
 // home, onda, agenda y SEO cuenten lo mismo.
+const TITLE_TR_V = 3;   // sube cuando cambia cómo se traducen los titulares: el snapshot viejo se rearma
 // Buenos Aliens: meses como los escribe ("SAB 11 ABR").
 const BA_MONTHS = "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC";
 const BA_WEEKDAYS = { DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6 };
@@ -326,7 +327,10 @@ function loadSnapshots() {
       if (Array.isArray(data) && data.length) {
         if (key === "events") tidyEvents(data);
         registerImages(data);
-        cache[key] = { ...cache[key], data, ts: ts || 0 };
+        // Noticias de Bass guardadas antes de que tuvieran idioma: se sirven igual
+        // pero se rearman en el primer pedido (así llegan traducidas).
+        const stale = key === "bassNews" && data.some((n) => !n.lang || (n.titleEs && n.trV !== TITLE_TR_V));
+        cache[key] = { ...cache[key], data, ts: stale ? 0 : ts || 0 };
         const age = Math.round((Date.now() - (ts || 0)) / 60000);
         console.log(`[cache] ${key}: snapshot cargado (${data.length} items, ${age} min)`);
       }
@@ -1137,7 +1141,7 @@ app.get("/api/news", async (req, res) => {
     // Titulares en inglés: traducidos como en Finanzas (marcados en el cliente,
     // con el original a un toque). Cacheado por texto; sin cupo, el original.
     await eachLimit(news.filter((n) => n.lang === "en"), 4, async (n) => {
-      const es = await translateText(n.title, "en", "es");
+      const es = await translateTitle(n.title, "en", "es");
       if (es) n.titleEs = es;
     });
     // Cache negativo: si TODOS los feeds fallaron, allSettled no lanza y news
@@ -1283,7 +1287,7 @@ app.get("/api/finance-news", async (req, res) => {
     // Titulares en inglés: traducidos (marcados en el cliente, con el original
     // a un toque). Cacheado por texto; sin cupo, queda el original.
     await eachLimit(news.filter((n) => n.lang === "en"), 4, async (n) => {
-      const es = await translateText(n.title, "en", "es");
+      const es = await translateTitle(n.title, "en", "es");
       if (es) n.titleEs = es;
     });
     if (news.length) { registerImages(news); setCache("financeNews", news); }
@@ -1472,7 +1476,7 @@ const BASS_NEWS_FEEDS = [
   // `freshOnNoDate` se usa para fuentes cuyo RSS no expone pubDate; sin él el
   // filtro de 7 días los descartaría. Asume que items al tope del feed son
   // recientes (válido para publicaciones que rotan a diario).
-  { url: "https://mixmaglatam.com/rss.xml",         source: "Mixmag Latam",     slug: "mixmaglatam",   region: "LatAm" },
+  { url: "https://mixmaglatam.com/rss.xml",         source: "Mixmag Latam",     slug: "mixmaglatam",   region: "LatAm", lang: "es" },
   { url: "https://djmag.com/rss",                   source: "DJ Mag",           slug: "djmag",         region: "Intl"  },
   { url: "https://mixmag.net/rss.xml",              source: "Mixmag",           slug: "mixmaguk",      region: "Intl", freshOnNoDate: true },
   { url: "https://crackmagazine.net/feed/",         source: "Crack",            slug: "crack",         region: "Intl"  },
@@ -1483,8 +1487,8 @@ const BASS_NEWS_FEEDS = [
   { url: "https://inverted-audio.com/feed/",        source: "Inverted Audio",   slug: "invertedaudio", region: "Intl"  },
   { url: "https://www.theransomnote.com/feed/",     source: "Ransom Note",      slug: "ransomnote",    region: "Intl"  },
   { url: "https://www.decodedmagazine.com/feed/",   source: "Decoded",          slug: "decodedmag",    region: "Intl"  },
-  { url: "https://www.tsugi.fr/feed/",              source: "Tsugi",            slug: "tsugi",         region: "Intl"  },
-  { url: "https://www.groove.de/feed/",             source: "Groove",           slug: "groove",        region: "Intl"  },
+  { url: "https://www.tsugi.fr/feed/",              source: "Tsugi",            slug: "tsugi",         region: "Intl", lang: "fr" },
+  { url: "https://www.groove.de/feed/",             source: "Groove",           slug: "groove",        region: "Intl", lang: "de" },
 ];
 
 // Items publicados hace más de N días no aparecen en el feed.
@@ -1633,6 +1637,7 @@ async function fetchBassNewsRSSFeed(feed) {
         source: feed.source,
         source_slug: feed.slug,
         region: feed.region || "Intl",
+        lang: feed.lang || "en",
         url,
       };
     });
@@ -1778,7 +1783,13 @@ async function buildBassNews() {
 
   const news = quotaApplied
     .slice(0, 40)
-    .map(({ _mins, _pubDate, ...rest }) => rest);
+    .map(({ _mins, _pubDate, ...rest }) => ({ lang: "es", ...rest }));   // Buenos Aliens (sin feed) es castellano
+  // Titulares que no están en castellano (inglés, francés, alemán): traducidos
+  // como en Layer, marcados en el cliente con el original a un toque.
+  await eachLimit(news.filter((n) => n.lang !== "es"), 4, async (n) => {
+    const es = await translateTitle(n.title, n.lang, "es");
+    if (es) { n.titleEs = es; n.trV = TITLE_TR_V; }
+  });
   // No cachear vacío como hit válido (taparía el último cache bueno); si el
   // scrape volvió vacío, servimos el último bueno disponible.
   registerImages(news);
@@ -3519,6 +3530,14 @@ async function eachLimit(items, n, fn) {
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await fn(items[i++]); }));
 }
 
+// Titulares: los nombres propios (eventos, clubes, artistas, marcas) no se
+// traducen — se apartan antes y se reponen después (oct 2026, Pablo).
+async function translateTitle(text, from, to) {
+  const { masked, names } = protectNames(text);
+  const out = await translateText(masked, from, to);
+  return out ? restoreNames(out, names) : null;
+}
+
 async function translateText(text, from, to) {
   if (!text || from === to) return null;
   const key = `${from}>${to}:${crypto.createHash("md5").update(text).digest("hex")}`;
@@ -3550,6 +3569,7 @@ function tidyEs(es, original) {
   return String(es)
     .replace(/\b(\d{1,3}(?:,\d{3})+)(\.\d+)?\b/g, (_, int, dec) => int.replace(/,/g, ".") + (dec ? "," + dec.slice(1) : ""))
     .replace(/(US)?\$\s+(?=\d)/g, (m, us) => (us ? "US$" : "$"))
+    .replace(/#\s+(?=\w)/g, "#")                                  // "# WinkTheNightBack" → "#WinkTheNightBack"
     .replace(/\b[A-ZÁÉÍÓÚÑ]{4,}\b/g, (w) => (caps.has(w) ? w : w.toLowerCase()));
 }
 
@@ -4415,7 +4435,7 @@ app.get("/api/prediction-markets", async (req, res) => {
     // Títulos: traductor (una vez por texto, cacheado en disco) + arreglos
     // locales; etiquetas: glosario. Sin cupo de traducción, va el original.
     await eachLimit(events, 4, async (ev) => {
-      const es = await translateText(ev.title, "en", "es");
+      const es = await translateTitle(ev.title, "en", "es");
       if (es) ev.titleEs = predTitleEs(es);
       ev.title = ellipsize(ev.title);
       for (const o of ev.outcomes) if (!o.binary) o.labelEs = predLabelEs(o.label);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 import { createPortal } from "react-dom";
 import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
@@ -720,7 +721,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
         : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
-        : <div className="bl-ev-list" role="region" aria-label={t("section.events")} ref={listRef}>
+        : <div className="bl-ev-list bl-ev-wall" role="region" aria-label={t("section.events")} ref={listRef}>
             {grouped.map((item, gIdx) => {
               if (item.type === "month") {
                 return (
@@ -749,6 +750,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   className={`bl-ev-item bl-reveal ${isLead ? "bl-ev-lead" : "bl-ev-row"}`}
                   key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`}
                   data-genre={ev.genre}
+                  data-time={ev.time || ""}
                   data-featured={ev.featured ? "true" : undefined}
                   onClick={() => onSelect(ev)}
                   style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
@@ -836,6 +838,8 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
 }
 
 function BassNewsItem({ item, idx, onSelect }) {
+  const { locale } = useLocale();
+  const tr = useTranslatedTitle(item, locale === "es");   // titulares en inglés/francés/alemán: traducidos y marcados
   const [imgFailed, setImgFailed] = useState(false);
   const showPill = !!(item.tag && item.image && !imgFailed);
   return (
@@ -845,13 +849,14 @@ function BassNewsItem({ item, idx, onSelect }) {
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(item))}
       tabIndex={0}
       role="button"
-      aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
+      aria-label={`${tr.title}${item.tag ? ` — ${item.tag}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
       <BlThumb image={item.image} poster={{ text: item.source || item.tag || item.title, family: "news" }} onImgFail={() => setImgFailed(true)} />
       <div className="bl-bass-news-body">
-        <h3 className="bl-bass-news-title bl-bass-t-heading">{item.title}</h3>
+        <h3 className="bl-bass-news-title bl-bass-t-heading" lang={tr.lang}>{tr.title}</h3>
         {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}
+        <TranslateToggle tr={tr} className="bl-finance-tr" />
       </div>
     </article>
   );
