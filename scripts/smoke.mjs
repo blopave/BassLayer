@@ -525,9 +525,10 @@ async function run(vp) {
         const below = await page.locator(".blc-v .blc-ttl").evaluateAll((ts) => ts.filter((t) => t.getBoundingClientRect().bottom > innerHeight).length);
         if (below) fail(vp.name, "layer", `mobile: ${below} secciones fuera de la primera pantalla`);
         // Los caminos son aleatorios y se renuevan: el ancho varía de un momento
-        // a otro. Se toma el mayor de tres; por debajo de la mitad se perdió la lupa.
+        // a otro. Se toma el mayor de hasta ocho (≈5 s; con tres frenó un push por
+        // azar, oct 2026); por debajo de la mitad se perdió la lupa.
         let fanW = 0;
-        for (let k = 0; k < 3; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= vp.viewport.width * 0.5) break; await page.waitForTimeout(700); }
+        for (let k = 0; k < 8; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= vp.viewport.width * 0.5) break; await page.waitForTimeout(700); }
         if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
       }
       // El futuro como lupa (30-sep): el abanico ocupa ≥17 % del ancho y la
