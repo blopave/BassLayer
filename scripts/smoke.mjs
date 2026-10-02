@@ -623,7 +623,7 @@ async function run(vp) {
       await pill(/Hitos|Milestones/).click();
       await page.locator(".blh-ev").first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
       const evs = await page.locator(".blh-ev").count(), rows = await page.locator(".blh-list li").count();
-      if (!(await page.locator(".bl-timeline-toggle, .bl-timeline").count())) fail(vp.name, "historia", "Crypto BA Timeline no está en Historia");
+      if (!(await page.locator(".bl-timeline-toggle, .bl-timeline").count())) fail(vp.name, "historia", "Cripto BA Timeline no está en Historia");
       if (evs < 20 || evs !== rows) fail(vp.name, "historia", `${evs} hechos en la curva y ${rows} en la lista`);
       else {
         await page.locator(".blh-list button").nth(3).click();

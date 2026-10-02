@@ -3396,7 +3396,7 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
 }
 
 /* ═══════════════════════════════════════════
-   Crypto BA Timeline
+   Cripto BA Timeline
    ═══════════════════════════════════════════ */
 
 /* Toggle button (collapsed) */
@@ -3437,7 +3437,7 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
   text-transform:uppercase;
   color:var(--bl-text-ter);
 }
-/* Mobile: el título no se parte ("Crypto BA / Timeline"); la bajada cede
+/* Mobile: el título no se parte ("Cripto BA / Timeline"); la bajada cede
    espacio y se recorta con puntos suspensivos si no entra. */
 .bl-timeline-toggle-label { white-space:nowrap; }
 .bl-timeline-toggle-sub { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:12px; }

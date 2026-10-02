@@ -168,6 +168,19 @@ async function checkEndpoint({ path, minItems, required }) {
 
 await Promise.all(ENDPOINTS.map(checkEndpoint));
 
+// Voz de los textos en español (oct 2026, Pablo): voseo en todo ("Tocá", no
+// "Toca") y "cripto", no "crypto".
+{
+  const { STRINGS } = await import("../src/i18n/strings.js");
+  const es = Object.entries(STRINGS.es).filter(([, v]) => typeof v === "string");
+  const TU = /^(Toca|Pasa|Elige|Busca|Mira|Descubre|Explora|Haz|Suscríbete|Únete|Agrega|Guarda|Comparte|Abre|Desliza|Prueba|Vuelve|Entra|Filtra|Escribe|Selecciona)\b|\b(puedes|quieres|tienes|eres|necesitas)\b/;
+  const tuteo = es.filter(([, v]) => TU.test(v)).map(([k]) => k);
+  const crypto = es.filter(([, v]) => /\bcrypto\b/i.test(v.replace(/\{\w+\}/g, ""))).map(([k]) => k);   // {crypto} es una variable, no texto
+  stats.push({ path: "textos (es)", count: es.length });
+  if (tuteo.length) fail("textos (es)", "voseo", `en tú: ${tuteo.slice(0, 5).join(", ")}`);
+  if (crypto.length) fail("textos (es)", "cripto", `dice "crypto": ${crypto.slice(0, 5).join(", ")}`);
+}
+
 if (JSON_OUT) {
   console.log(JSON.stringify({ base: BASE, ok: problems.length === 0, stats, problems }, null, 2));
 } else {
