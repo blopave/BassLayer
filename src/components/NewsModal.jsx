@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
+import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 import { imgUrl } from "../utils/img";
 
 // Limpia el resumen para que no repita el título (común en RSS) y descarta
@@ -24,8 +25,9 @@ function cleanSummary(desc, title) {
 }
 
 export function NewsModal({ item, onClose }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const trapRef = useFocusTrap(!!item, onClose);
+  const tr = useTranslatedTitle(item || {}, locale === "es");   // noticias de Layer en inglés: titular traducido
   const [imageFailed, setImageFailed] = useState(false);
   const [imageDirect, setImageDirect] = useState(false); // el proxy falló → URL original
 
@@ -45,7 +47,7 @@ export function NewsModal({ item, onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
-      aria-label={item.title}
+      aria-label={tr.title}
       ref={trapRef}
     >
       <div className="bl-modal bl-news-modal">
@@ -79,7 +81,8 @@ export function NewsModal({ item, onClose }) {
             {item.time && <span className="bl-news-modal-time">{item.time}</span>}
           </div>
 
-          <h2 className="bl-news-modal-title">{item.title}</h2>
+          <h2 className="bl-news-modal-title" lang={tr.lang}>{tr.title}</h2>
+          <TranslateToggle tr={tr} className="bl-finance-tr" />
 
           <div className="bl-news-modal-section">
             <div className="bl-news-modal-label">{t("news.summary")}</div>

@@ -3,7 +3,7 @@ import { useLocale } from "../hooks/useLocale";
 
 // Título traducido por máquina (sept 2026): en castellano se muestra la
 // traducción, marcada, con el original a un toque — mismo criterio que las
-// bios de artistas. Lo usan Predicciones y Finanzas.
+// bios de artistas. Lo usan Predicciones, Finanzas y Noticias de Layer.
 export function useTranslatedTitle(item, es) {
   const [original, setOriginal] = useState(false);
   const translated = !!(es && item.titleEs);

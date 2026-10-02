@@ -13,6 +13,7 @@ import { lazyNamed } from "../utils/lazy";
 import { BlThumb } from "./BlThumb";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
+import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 
 // El dashboard de ciclos (charts SVG + data horneada) solo carga al abrir su
 // sección — es el módulo más pesado de Layer y la mayoría no llega hasta ahí.
@@ -25,6 +26,8 @@ const SECTIONS = [
 ];
 
 function LayerNewsItem({ item, idx, onSelect }) {
+  const { locale } = useLocale();
+  const tr = useTranslatedTitle(item, locale === "es");   // titular en inglés: traducido y marcado (oct 2026)
   const [imgFailed, setImgFailed] = useState(false);
   const showPill = !!(item.tag && item.image && !imgFailed);
   return (
@@ -34,13 +37,14 @@ function LayerNewsItem({ item, idx, onSelect }) {
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(item))}
       tabIndex={0}
       role="button"
-      aria-label={`${item.title}${item.tag ? ` — ${item.tag}` : ""}`}
+      aria-label={`${tr.title}${item.tag ? ` — ${item.tag}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
       <BlThumb image={item.image} onImgFail={() => setImgFailed(true)} />
       <div className="bl-layer-news-body">
-        <h3 className="bl-layer-news-title">{item.title}</h3>
+        <h3 className="bl-layer-news-title" lang={tr.lang}>{tr.title}</h3>
         {showPill && <span className="bl-layer-news-tag-pill">{item.tag}</span>}
+        <TranslateToggle tr={tr} className="bl-finance-tr" />
       </div>
     </article>
   );

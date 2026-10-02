@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory } from "../lib/content-rules.js";
 import { namesOtherCity } from "../lib/places.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
@@ -120,6 +120,17 @@ async function checkEndpoint({ path, minItems, required }) {
     if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
+  }
+
+  // Noticias de Layer (oct 2026): cada nota dice su idioma (para traducir y
+  // marcar los titulares en inglés) y una historia aparece una sola vez.
+  if (path === "/api/news") {
+    const sinIdioma = items.filter((it) => it?.lang !== "es" && it?.lang !== "en");
+    if (sinIdioma.length) fail(path, "idioma", `${sinIdioma.length} sin idioma: ${sinIdioma.slice(0, 2).map((it) => it.source).join(", ")}`);
+    const W = items.map((it) => storyWords(it?.titleEs || it?.title));
+    const repes = [];
+    for (let i = 0; i < W.length; i++) for (let j = i + 1; j < W.length; j++) if (sameStory(W[i], W[j])) repes.push(`${items[i].source} = ${items[j].source}`);
+    if (repes.length) fail(path, "repetida", `misma historia dos veces: ${repes.slice(0, 3).join(" | ")}`);
   }
 
   // Predicciones: un evento por tarjeta, en los temas de Layer, hasta 4 por

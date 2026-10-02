@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
@@ -708,22 +708,22 @@ app.get("/api/prices", async (req, res) => {
 
 const RSS_FEEDS = [
   // English
-  { url: "https://www.coindesk.com/arc/outboundfeeds/rss/", source: "CoinDesk" },
-  { url: "https://cointelegraph.com/rss", source: "Cointelegraph" },
-  { url: "https://decrypt.co/feed", source: "Decrypt" },
-  { url: "https://thedefiant.io/feed", source: "The Defiant" },
-  { url: "https://blockworks.co/feed", source: "Blockworks" },
-  { url: "https://bitcoinmagazine.com/feed", source: "Bitcoin Mag" },
-  { url: "https://cryptoslate.com/feed/", source: "CryptoSlate" },
-  { url: "https://cryptobriefing.com/feed/", source: "CryptoBriefing" },
-  { url: "https://u.today/rss", source: "U.Today" },
-  { url: "https://dailyhodl.com/feed/", source: "Daily Hodl" },
+  { url: "https://www.coindesk.com/arc/outboundfeeds/rss/", source: "CoinDesk", lang: "en" },
+  { url: "https://cointelegraph.com/rss", source: "Cointelegraph", lang: "en" },
+  { url: "https://decrypt.co/feed", source: "Decrypt", lang: "en" },
+  { url: "https://thedefiant.io/feed", source: "The Defiant", lang: "en" },
+  { url: "https://blockworks.co/feed", source: "Blockworks", lang: "en" },
+  { url: "https://bitcoinmagazine.com/feed", source: "Bitcoin Mag", lang: "en" },
+  { url: "https://cryptoslate.com/feed/", source: "CryptoSlate", lang: "en" },
+  { url: "https://cryptobriefing.com/feed/", source: "CryptoBriefing", lang: "en" },
+  { url: "https://u.today/rss", source: "U.Today", lang: "en" },
+  { url: "https://dailyhodl.com/feed/", source: "Daily Hodl", lang: "en" },
   // Español / Latam
-  { url: "https://diariobitcoin.com/feed/", source: "DiarioBitcoin" },
-  { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia" },
-  { url: "https://news.bit2me.com/feed/", source: "Bit2Me" },
-  { url: "https://es.beincrypto.com/feed/", source: "BeInCrypto" },
-  { url: "https://observatorioblockchain.com/feed/", source: "Observatorio Blockchain" },
+  { url: "https://diariobitcoin.com/feed/", source: "DiarioBitcoin", lang: "es" },
+  { url: "https://criptotendencia.com/feed/", source: "CriptoTendencia", lang: "es" },
+  { url: "https://news.bit2me.com/feed/", source: "Bit2Me", lang: "es" },
+  { url: "https://es.beincrypto.com/feed/", source: "BeInCrypto", lang: "es" },
+  { url: "https://observatorioblockchain.com/feed/", source: "Observatorio Blockchain", lang: "es" },
   // Removidos (audit 2026-06-16 / re-verificado 2026-07-29):
   //   The Block        → HTTP 403 (bloquea nuestro User-Agent)
   //   Unchained        → timeout consistente (>15s en fetchSafe)
@@ -1098,6 +1098,7 @@ async function fetchRSSFeed(feed) {
         categories,
         image: image ? sanitizeUrl(image) : null,
         source: feed.source,
+        lang: feed.lang,
         url,
       };
     });
@@ -1114,7 +1115,7 @@ app.get("/api/news", async (req, res) => {
   // resolver deep links históricos aunque el item ya no clasifique como
   // crypto/finanzas. El filtro de contenido + tag corre por request.
   const applyFilter = (arr) => {
-    let out = arr.filter((n) => isCryptoOrFinance(n.title, n.description, n.categories));
+    let out = sameStoryOnce(arr.filter((n) => isCryptoOrFinance(n.title, n.description, n.categories)));
     if (tagFilter && tagFilter !== "ALL") out = out.filter((n) => n.tag === tagFilter);
     return out;
   };
@@ -1130,6 +1131,12 @@ app.get("/api/news", async (req, res) => {
       .sort((a, b) => a._mins - b._mins)
       .slice(0, 50)
       .map(({ _mins, ...rest }) => rest);
+    // Titulares en inglés: traducidos como en Finanzas (marcados en el cliente,
+    // con el original a un toque). Cacheado por texto; sin cupo, el original.
+    await eachLimit(news.filter((n) => n.lang === "en"), 4, async (n) => {
+      const es = await translateText(n.title, "en", "es");
+      if (es) n.titleEs = es;
+    });
     // Cache negativo: si TODOS los feeds fallaron, allSettled no lanza y news
     // queda []. No lo guardamos como hit válido (taparía 5 min los datos buenos);
     // servimos el último cache bueno si existe.
@@ -3504,7 +3511,7 @@ async function eachLimit(items, n, fn) {
 async function translateText(text, from, to) {
   if (!text || from === to) return null;
   const key = `${from}>${to}:${crypto.createHash("md5").update(text).digest("hex")}`;
-  if (translations[key]) return translations[key];
+  if (translations[key]) return to === "es" ? tidyEs(translations[key], text) : translations[key];
   if (Date.now() < translateQuotaUntil) return null;
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 480))}&langpair=${from}|${to === "es" ? "es-AR" : to}`;
@@ -3518,8 +3525,21 @@ async function translateText(text, from, to) {
     }
     translations[key] = decodeHtmlEntities(out);
     saveTranslationsSoon();
-    return translations[key];
+    return to === "es" ? tidyEs(translations[key], text) : translations[key];
   } catch { return null; }
+}
+
+// Prolijidad de la traducción al castellano (oct 2026): el traductor deja los
+// números en formato inglés ("$ 80,000,000") y a veces grita una palabra
+// ("$ 440 MILLONES"). Números a formato local, el "$" pegado y las palabras en
+// mayúsculas que no venían así en el original, en minúscula (las siglas del
+// original, como USD o ETF, quedan).
+function tidyEs(es, original) {
+  const caps = new Set(String(original).match(/\b[A-Z]{2,}\b/g) || []);
+  return String(es)
+    .replace(/\b(\d{1,3}(?:,\d{3})+)(\.\d+)?\b/g, (_, int, dec) => int.replace(/,/g, ".") + (dec ? "," + dec.slice(1) : ""))
+    .replace(/(US)?\$\s+(?=\d)/g, (m, us) => (us ? "US$" : "$"))
+    .replace(/\b[A-ZÁÉÍÓÚÑ]{4,}\b/g, (w) => (caps.has(w) ? w : w.toLowerCase()));
 }
 
 async function fetchArtistInfo(name, locale = "es", family = "") {
