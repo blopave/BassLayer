@@ -99,9 +99,9 @@ async function run(vp) {
 
   await step("home-onboarding", async () => {
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
-    await page.locator(".bl-onboarding-btn").waitFor({ timeout: 15_000 });
+    await page.locator(".bl-welcome-line").waitFor({ timeout: 15_000 });
   });
-  await step("home", async () => { await page.locator(".bl-onboarding-btn").click(); await page.waitForTimeout(1500); });
+  await step("home", async () => { await page.waitForTimeout(900); await page.mouse.wheel(0, 40); await page.waitForTimeout(1500); });
   if (!vp.isMobile) await step("home-hover-layer", async () => { await page.getByRole("button", { name: /^Layer —/ }).first().hover(); });
 
   await step("bass-feed", async () => {

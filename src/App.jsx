@@ -900,7 +900,19 @@ export default function App() {
   // Escape cierra, fondo inert, scroll bloqueado.
   const finishOnboarding = useCallback(() => { storage.set("bl-onboarded", "1"); setShowOnboarding(false); }, []);
   const aboutRef = useFocusTrap(showAbout, () => setShowAbout(false));
-  const onboardingRef = useFocusTrap(showOnboarding, finishOnboarding);
+  // Bienvenida (oct 2026, Pablo): una sola línea sobre la home, sin tapar
+  // nada — la tesis de BassLayer. Se va sola con el primer gesto (o a los 9 s)
+  // y no vuelve a aparecer.
+  useEffect(() => {
+    if (!showOnboarding) return undefined;
+    let armed = false;
+    const arm = setTimeout(() => { armed = true; }, 700);
+    const auto = setTimeout(finishOnboarding, 9000);
+    const go = () => { if (armed) finishOnboarding(); };
+    const evs = ["pointerdown", "wheel", "keydown", "touchstart"];
+    evs.forEach((e) => window.addEventListener(e, go, { passive: true }));
+    return () => { clearTimeout(arm); clearTimeout(auto); evs.forEach((e) => window.removeEventListener(e, go)); };
+  }, [showOnboarding, finishOnboarding]);
 
   // Al cambiar de mundo en secciones, la URL y el <title> siguen al panel:
   // /layer con su meta propia, / con la del home. Solo cuando la URL es una
@@ -1049,29 +1061,10 @@ export default function App() {
         />
       )}
 
-      {/* ONBOARDING */}
+      {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
       {showOnboarding && (
-        <div className="bl-onboarding" onClick={finishOnboarding}>
-          <div className="bl-onboarding-card" role="dialog" aria-modal="true" aria-label={t("onboarding.welcome")} ref={onboardingRef} onClick={(e) => e.stopPropagation()}>
-            <div className="bl-onboarding-title">{t("onboarding.welcome")}</div>
-            <div className="bl-onboarding-tips">
-              <div className="bl-onboarding-tip">
-                <span className="bl-onboarding-num">1</span>
-                {isMobile ? t("onboarding.tip.mobile") : t("onboarding.tip.desktop")}
-              </div>
-              <div className="bl-onboarding-tip">
-                <span className="bl-onboarding-num">2</span>
-                {t("onboarding.tip.bass")}
-              </div>
-              <div className="bl-onboarding-tip">
-                <span className="bl-onboarding-num">3</span>
-                {t("onboarding.tip.layer")}
-              </div>
-            </div>
-            <button className="bl-onboarding-btn" onClick={finishOnboarding}>
-              {t("onboarding.cta")}
-            </button>
-          </div>
+        <div className="bl-welcome-line" role="status">
+          <span>{t("welcome.line")}</span>
         </div>
       )}
 

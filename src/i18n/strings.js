@@ -384,12 +384,7 @@ export const STRINGS = {
     "util.day": "Modo diurno",
     "util.night": "Modo nocturno",
 
-    "onboarding.welcome": "Bienvenido a BassLayer",
-    "onboarding.tip.mobile": "Tocá Bass o Layer para explorar",
-    "onboarding.tip.desktop": "Pasá el mouse sobre Bass o Layer para explorar",
-    "onboarding.tip.bass": "Bass = eventos de música electrónica en Buenos Aires",
-    "onboarding.tip.layer": "Layer = cripto, precios en vivo y noticias",
-    "onboarding.cta": "Entendido",
+    "welcome.line": "Buenos Aires, en dos frecuencias: la noche y el mercado.",
 
     "about.desc": "Tu radar en tiempo real para la escena de {electronic} y el mundo {crypto} en Buenos Aires.",
     "about.descElectronic": "música electrónica",
@@ -774,12 +769,7 @@ export const STRINGS = {
     "util.day": "Day mode",
     "util.night": "Night mode",
 
-    "onboarding.welcome": "Welcome to BassLayer",
-    "onboarding.tip.mobile": "Tap Bass or Layer to explore",
-    "onboarding.tip.desktop": "Hover over Bass or Layer to explore",
-    "onboarding.tip.bass": "Bass = electronic music events in Buenos Aires",
-    "onboarding.tip.layer": "Layer = crypto, live prices and news",
-    "onboarding.cta": "Got it",
+    "welcome.line": "Buenos Aires, on two frequencies: the night and the market.",
 
     "about.desc": "Your real-time radar for the {electronic} scene and the world of {crypto} in Buenos Aires.",
     "about.descElectronic": "electronic music",

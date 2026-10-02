@@ -96,16 +96,20 @@ async function run(vp) {
   };
 
   try {
-    // 1. Home → onboarding de primera visita → Bass
+    // 1. Home → bienvenida de primera visita → Bass
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
     // Los paneles ocultos (mundo inactivo) son inert a propósito: lo que se
     // chequea es que abrir+cerrar un diálogo deje la cuenta igual que antes.
     const inertCount = () => page.locator("[inert]").count();
-    const onboardingBtn = page.locator(".bl-onboarding-btn");
-    await onboardingBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await onboardingBtn.click();
-    await page.locator(".bl-onboarding").waitFor({ state: "detached", timeout: 5_000 });
-    if ((await page.evaluate(() => document.body.style.overflow)) === "hidden") fail(vp.name, "onboarding", "al cerrarlo el scroll sigue bloqueado");
+    // Bienvenida (oct 2026): una línea sobre la home que no tapa nada ni bloquea
+    // el scroll, y se va sola con el primer gesto. No es un cartel.
+    const welcome = page.locator(".bl-welcome-line");
+    await welcome.waitFor({ state: "visible", timeout: 15_000 }).catch(() => fail(vp.name, "bienvenida", "no aparece la línea de bienvenida en la primera visita"));
+    if (await page.locator('.bl-onboarding, [role="dialog"][aria-modal="true"]').count()) fail(vp.name, "bienvenida", "la bienvenida volvió a ser un cartel que tapa la home");
+    if ((await page.evaluate(() => document.body.style.overflow)) === "hidden") fail(vp.name, "bienvenida", "la bienvenida bloquea el scroll");
+    await page.waitForTimeout(900);
+    await page.mouse.wheel(0, 40);
+    await welcome.waitFor({ state: "detached", timeout: 5_000 }).catch(() => fail(vp.name, "bienvenida", "la línea no se va con el primer gesto"));
     await page.waitForTimeout(1200); // entrada del home (fade de los mundos)
     await expectNone("home", homeCollisions);
     await expectNone("home", lowContrast);
