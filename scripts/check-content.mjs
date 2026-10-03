@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence } from "../lib/content-rules.js";
 import { namesOtherCity } from "../lib/places.js";
 import { readFileSync } from "node:fs";
 
@@ -117,7 +117,9 @@ async function checkEndpoint({ path, minItems, required }) {
     // Solo escena electrónica (oct 2026, Pablo): de QuéHacemos (cartelera
     // general) entra solo lo que es club; nada de rock, folklore, jazz, tango,
     // reggaetón, stand-up ni "festivales" como Burgerpalusa.
-    const fueraDeEscena = items.filter((it) => it?.source === "quehacemos" && it?.family !== "club");
+    // Y con evidencia propia (oct 2026): la plantilla "Evento de música
+    // electrónica" de la fuente no alcanza.
+    const fueraDeEscena = items.filter((it) => it?.source === "quehacemos" && (it?.family !== "club" || !hasElectronicEvidence(it)));
     if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
@@ -222,6 +224,20 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   stats.push({ path: "escalas (css)", count: sueltos.length });
   if (sueltos.length) fail("escalas (css)", "fuera de escala", `${sueltos.length}: ${[...new Set(sueltos)].slice(0, 5).join(" | ")}`);
   if (bajo.length) fail("escalas (css)", "piso", `tamaños bajo 10 px: ${bajo.map(([k]) => k).join(", ")}`);
+}
+
+// Evidencia de escena (oct 2026): casos reales que la plantilla de la fuente
+// hacía pasar como electrónica, y uno que sí lo es.
+{
+  const casos = [
+    [{ name: "Chapterhouse", description: "Evento de música electrónica: Chapterhouse. En Club TRI, Mar del Plata." }, false],
+    [{ name: "Los Totora", description: "Waketon: sol, wakeboard y música con Los Totora." }, false],
+    [{ name: "Olympo Sunset 03-10 | Dramer", description: "BA SUNSET 17 a 23HS Junto a Ivo Rubio Luna Picon" }, false],
+    [{ name: "PIZZA RAVE 90 & 2000", description: "el auténtico sonido House + Techno de los 80s" }, true],
+  ];
+  const mal = casos.filter(([ev, ok]) => hasElectronicEvidence(ev) !== ok).map(([ev]) => ev.name);
+  stats.push({ path: "evidencia de escena", count: casos.length });
+  if (mal.length) fail("evidencia de escena", "regla", `mal clasificados: ${mal.join(" | ")}`);
 }
 
 // La noche (oct 2026): la fiesta del viernes 2/10 sigue a las 21:30 y a las

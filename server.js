@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
@@ -309,8 +309,10 @@ function inferBaMonth(weekday, day, now = new Date()) {
   return null;
 }
 
+// De QuéHacemos solo la escena: lo que la fuente clasifica como club Y que
+// lo dice con sus palabras (ver hasElectronicEvidence).
 function sceneOnly(events) {
-  return events.filter((ev) => ev.source !== "quehacemos" || ev.family === "club");
+  return events.filter((ev) => ev.source !== "quehacemos" || (ev.family === "club" && hasElectronicEvidence(ev)));
 }
 
 function loadSnapshots() {
