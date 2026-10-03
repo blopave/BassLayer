@@ -256,7 +256,7 @@ export function LayerCurve({ news = [], onEnter }) {
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
     // El riel termina en hoy: el cielo del futuro queda libre para el abanico.
     // En pantallas angostas entra lo justo sobre el futuro (títulos a ≥96 px).
-    const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 100 ? 14 : gapx < 125 ? 15 : 17;
+    const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 100 ? 14 : gapx < 125 ? 16 : 18; // de la escala (--fs-*)
     const times = spread(SPREAD_GAP);
     // Banderas (oct 2026, Pablo: D + 4): todas las ramas miden lo mismo; cada
     // nombre queda a igual distancia de su punto y sube con la curva, usando

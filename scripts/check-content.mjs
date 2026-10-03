@@ -17,6 +17,7 @@
 
 import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast } from "../lib/content-rules.js";
 import { namesOtherCity } from "../lib/places.js";
+import { readFileSync } from "node:fs";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
 const JSON_OUT = process.argv.includes("--json");
@@ -200,6 +201,23 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   stats.push({ path: "textos (es)", count: es.length });
   if (tuteo.length) fail("textos (es)", "voseo", `en tú: ${tuteo.slice(0, 5).join(", ")}`);
   if (crypto.length) fail("textos (es)", "cripto", `dice "crypto": ${crypto.slice(0, 5).join(", ")}`);
+}
+
+// Escalas (oct 2026, Pablo: "A · Fiel"): en styles.css todo tamaño de letra
+// (salvo títulos de 40 px o más), tracking y radio sale de las variables
+// --fs-*, --tr-* y --r-*. Un valor suelto es un paso afuera del sistema.
+{
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const sueltos = [
+    ...[...css.matchAll(/font-size:\s*([\d.]+)px/g)].filter((m) => +m[1] < 40).map((m) => m[0]),
+    ...[...css.matchAll(/font:\s*(?:italic\s+)?\d{3}\s+([\d.]+)px/g)].filter((m) => +m[1] < 40).map((m) => m[0]),
+    ...[...css.matchAll(/letter-spacing:\s*-?[\d.]*[1-9][\d.]*(px|em)/g)].map((m) => m[0]),
+    ...[...css.matchAll(/border-radius:\s*([\d.]+)px\s*[;}]/g)].filter((m) => +m[1] > 0 && +m[1] < 100).map((m) => m[0]),
+  ];
+  const bajo = Object.entries({ ...[...css.matchAll(/--fs-(\d+):\s*([\d.]+)px/g)].reduce((o, m) => ({ ...o, [m[1]]: +m[2] }), {}) }).filter(([, v]) => v < 10);
+  stats.push({ path: "escalas (css)", count: sueltos.length });
+  if (sueltos.length) fail("escalas (css)", "fuera de escala", `${sueltos.length}: ${[...new Set(sueltos)].slice(0, 5).join(" | ")}`);
+  if (bajo.length) fail("escalas (css)", "piso", `tamaños bajo 10 px: ${bajo.map(([k]) => k).join(", ")}`);
 }
 
 // La noche (oct 2026): la fiesta del viernes 2/10 sigue a las 21:30 y a las
