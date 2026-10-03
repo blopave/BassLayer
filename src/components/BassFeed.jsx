@@ -198,8 +198,12 @@ const BA_YMD_FORMAT = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Argentina/Buenos_Aires",
   year: "numeric", month: "2-digit", day: "2-digit",
 });
+// La noche (oct 2026): hasta las 7 de la mañana la fiesta de anoche sigue
+// siendo "hoy" — igual que el corte de pasados del server.
+const NIGHT_END_H = 7;
+const nightNow = () => new Date(Date.now() - NIGHT_END_H * 36e5);
 function todayInBA() {
-  const parts = BA_YMD_FORMAT.formatToParts(new Date())
+  const parts = BA_YMD_FORMAT.formatToParts(nightNow())
     .reduce((acc, p) => (acc[p.type] = p.value, acc), {});
   return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
 }
@@ -625,7 +629,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       ) : section === "track" ? (
         /* Portada: la onda con las secciones hechas de onda (BassTrack). Mientras
            cargan los eventos se dibuja igual y reserva su alto (CLS). */
-        <BassTrack events={regionEvents} todayKey={BA_YMD_FORMAT.format(new Date())} onCue={setSection} />
+        <BassTrack events={regionEvents} todayKey={BA_YMD_FORMAT.format(nightNow())} onCue={setSection} />
       ) : (
         <>
 

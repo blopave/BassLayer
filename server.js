@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
@@ -3130,13 +3130,7 @@ async function buildEvents() {
     return d;
   }
 
-  let events = deduped.filter(ev => {
-    const evDate = getEventFullDate(ev);
-    if (!evDate) return true; // keep unknown months
-    // Keep events from today onward (allow same-day events)
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return evDate >= today;
-  });
+  let events = notPast(deduped);
 
   // Mark featured events
   events.forEach(markFeatured);
@@ -3201,7 +3195,8 @@ app.get("/api/events", async (req, res) => {
   let events;
   try { events = await swr("events", buildEvents); }
   catch { return res.status(502).json({ error: "Events unavailable" }); }
-  res.json(applyFilter(events));
+  // Al servir también: la caché puede venir de antes del corte de la noche.
+  res.json(applyFilter(notPast(events)));
 });
 
 // ─────────────────────────────────────────────

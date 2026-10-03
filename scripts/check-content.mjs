@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast } from "../lib/content-rules.js";
 import { namesOtherCity } from "../lib/places.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
@@ -200,6 +200,18 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   stats.push({ path: "textos (es)", count: es.length });
   if (tuteo.length) fail("textos (es)", "voseo", `en tú: ${tuteo.slice(0, 5).join(", ")}`);
   if (crypto.length) fail("textos (es)", "cripto", `dice "crypto": ${crypto.slice(0, 5).join(", ")}`);
+}
+
+// La noche (oct 2026): la fiesta del viernes 2/10 sigue a las 21:30 y a las
+// 00:30 de BA (en UTC ya es sábado) y se va recién a las 8 del sábado.
+{
+  const viernes = [{ day: "02", month: "Oct" }], noche = [];
+  for (const [iso, queda] of [["2026-10-03T00:30:00Z", true], ["2026-10-03T03:30:00Z", true], ["2026-10-03T11:00:00Z", false], ["2026-10-02T12:00:00Z", true]]) {
+    if (notPast(viernes, Date.parse(iso)).length !== (queda ? 1 : 0)) noche.push(`${iso} → ${queda ? "la borra" : "la deja"}`);
+  }
+  if (notPast([{ day: "02", month: "Ene" }], Date.parse("2026-12-31T15:00:00Z")).length !== 1) noche.push("cruce de año: borra enero");
+  stats.push({ path: "noche de BA", count: 5 });
+  if (noche.length) fail("noche de BA", "corte", noche.join(" | "));
 }
 
 if (JSON_OUT) {
