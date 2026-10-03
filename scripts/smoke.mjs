@@ -178,6 +178,13 @@ async function run(vp) {
         const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
         const words = [...el.querySelectorAll(".btk-name")].map((n) => n.getBoundingClientRect());
         const peaks = [];
+        // Mobile (oct 2026, "T"): la onda es vertical y sus barras horizontales;
+        // la intensidad se mide sobre el eje, de arriba hacia abajo.
+        if (el.dataset.orient === "v") {
+          const x = Math.round(cv.width / 2), col = cx.getImageData(x, 0, 1, cv.height).data, win = Math.round(6 * k);
+          for (let y0 = Math.round(8 * k); y0 + win < cv.height - 8 * k; y0 += win) { let m = 0; for (let y = y0; y < y0 + win; y++) m = Math.max(m, col[y * 4 + 3]); peaks.push(m); }
+          return peaks.length ? [Math.min(...peaks), Math.max(...peaks)] : null;
+        }
         for (const g of el.querySelectorAll(".btk-cue")) {
           const y = Math.round(Number(g.dataset.axis) * k), row = cx.getImageData(0, y, cv.width, 1).data, win = Math.round(6 * k);
           for (let x0 = Math.round(8 * k); x0 + win < cv.width - 8 * k; x0 += win) {
@@ -206,15 +213,32 @@ async function run(vp) {
       await page.waitForTimeout(1200);
       { const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `en solo la onda cambia de color (alfa de barras ${r?.join("–")})`); }
       if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (!(inkOn > inkRest * 1.35)) fail(vp.name, "índice", `la palabra elegida no se materializa (tinta ${inkRest} → ${inkOn})`); }
+      const vert = (await page.locator(".bl-btrack").getAttribute("data-orient")) === "v";
+      if (vp.viewport.width <= 768 && !vert) fail(vp.name, "índice", "mobile: la onda de Bass no es una sola frecuencia vertical (como el tronco de Layer)");
+      if (vert) {
+        // Mobile (oct 2026, Pablo: "T"): una sola frecuencia vertical y angosta —
+        // la forma la dan los datos, no las palabras—, con los nombres a los
+        // costados, alternados como las ramas de Layer, sin pisar la onda.
+        const side = await page.locator(".bl-btrack").evaluate((el) => {
+          const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
+          let wMax = 0;
+          for (let y = 0; y < cv.height; y += 4) { const row = cx.getImageData(0, y, cv.width, 1).data; let a = cv.width, b = 0; for (let x = 0; x < cv.width; x++) if (row[x * 4 + 3] > 40) { a = Math.min(a, x); b = x; } if (b > a) wMax = Math.max(wMax, (b - a) / k); }
+          const mid = cr.left + cr.width / 2;
+          const names = [...el.querySelectorAll(".btk-name")].map((n) => n.getBoundingClientRect());
+          return { wMax, width: cr.width, sides: names.map((r) => (r.right <= mid ? "i" : r.left >= mid ? "d" : "x")) };
+        });
+        if (side.wMax > side.width * 0.45) fail(vp.name, "índice", `mobile: la onda es demasiado ancha (${Math.round(side.wMax)} px de ${Math.round(side.width)})`);
+        if (side.sides.includes("x") || side.sides.some((s, i) => i && s === side.sides[i - 1])) fail(vp.name, "índice", `mobile: los nombres no van alternados a los costados de la onda (${side.sides.join("")})`);
+      }
       // La portada es solo la onda y sus links, sin cajas: cada link vive sobre el
       // eje de la onda (en el break de su parte) y no pisa la onda ni el cabezal.
-      const offAxis = await page.locator(".bl-btrack .btk-cue").evaluateAll((gs) => gs.filter((g) => {
+      const offAxis = vert ? 0 : await page.locator(".bl-btrack .btk-cue").evaluateAll((gs) => gs.filter((g) => {
         const svg = g.ownerSVGElement.getBoundingClientRect(), n = g.querySelector(".btk-name").getBoundingClientRect();
         return !g.dataset.axis || !(Math.abs(n.top + n.height / 2 - (svg.top + Number(g.dataset.axis))) <= 40);
       }).length);
       if (offAxis) fail(vp.name, "índice", `${offAxis} link(s) fuera del eje de la onda`);
       // La onda nunca se corta: debajo de cada palabra el canvas tiene barras (la palabra es de onda).
-      const gaps = await page.locator(".bl-btrack").evaluate((el) => {
+      const gaps = vert ? 0 : await page.locator(".bl-btrack").evaluate((el) => {
         const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
         return [...el.querySelectorAll(".btk-name")].filter((n) => {
           const r = n.getBoundingClientRect(), x = Math.round((r.left + r.width * 0.37 - cr.left) * k), y0 = Math.round((r.top - cr.top) * k), hgt = Math.max(1, Math.round(r.height * k));
@@ -227,7 +251,7 @@ async function run(vp) {
       // La palabra cómoda ADENTRO de la onda (oct 2026, Pablo): a los dos costados
       // de cada nombre la onda tiene que ser al menos 1,8 veces más alta que la
       // mitad de la letra (aire arriba y abajo), nunca más baja ni pareja con ella.
-      const tight = await page.locator(".bl-btrack").evaluate((el) => {
+      const tight = vert ? [] : await page.locator(".bl-btrack").evaluate((el) => {
         const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
         const meas = document.createElement("canvas").getContext("2d");
         return [...el.querySelectorAll(".btk-cue")].flatMap((g) => {
@@ -251,6 +275,21 @@ async function run(vp) {
       });
       if (overlap) fail(vp.name, "índice", "un nombre pisa a otro o a su dato");
       await page.locator(".btk-cue").last().blur();
+      // Puente "Una sola línea" (oct 2026): el botón Layer del encabezado cruza
+      // con la línea —la onda se vuelve la curva— y aterriza en Layer; de vuelta, igual.
+      {
+        await page.locator(".bl-header-half-layer").dispatchEvent("click");
+        await page.waitForTimeout(350);
+        const mid = await page.evaluate(() => Number(getComputedStyle(document.querySelector(".bl-worldline") || document.body).opacity));
+        if (!(await page.locator(".bl-worldline").count()) || !(mid > 0.5)) fail(vp.name, "puente", "el cambio a Layer no cruza con la línea (la onda que se vuelve curva)");
+        await page.waitForTimeout(1900);
+        const landed = await page.evaluate(() => ({ layer: !!document.querySelector(".bl-header-half-layer.is-active"), line: Number(getComputedStyle(document.querySelector(".bl-worldline") || document.body).opacity), curve: !!document.querySelector(".bl-swipe-wrap.morph-landed") }));
+        if (!landed.layer || landed.line > 0.05 || !landed.curve) fail(vp.name, "puente", `la línea no aterriza en Layer (${JSON.stringify(landed)})`);
+        await page.locator(".bl-header-half-bass").dispatchEvent("click");
+        await page.waitForTimeout(2200);
+        if (!(await page.locator(".bl-header-half-bass.is-active").count())) fail(vp.name, "puente", "de vuelta, la línea no aterriza en Bass");
+        await page.locator(".bl-btrack svg").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      }
       // Mobile (sin hover): el solo recorre los cues solo, uno cada 16 golpes (≈7,7 s: fluye).
       if (vp.isMobile) {
         const first = await page.locator(".btk-cue.is-hot .btk-name").textContent().catch(() => null);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { FutureFan } from "./FutureFan";
+import { registerShape } from "../utils/worldShapes";
 import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, useLayerData } from "../utils/layer";
 
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
@@ -316,6 +317,16 @@ export function LayerCurve({ news = [], onEnter }) {
       fade: { x1: geo.xt, y1: 0, x2: xEnd, y2: 0 },
     };
   }, [geo]);
+
+  // La curva tal como va a estar en pantalla, para la transición entre mundos
+  // (de 2012 a hoy; en mobile, de arriba hacia abajo como se lee).
+  useEffect(() => registerShape("layer", () => {
+    const path = stageRef.current?.querySelector(".blc-curve"), m = path?.getScreenCTM();
+    const L = path?.getTotalLength();
+    if (!L || !m) return null;
+    const pts = Array.from({ length: 240 }, (_, i) => { const p = path.getPointAtLength((L * i) / 239), q = new DOMPoint(p.x, p.y).matrixTransform(m); return [q.x, q.y, 0]; });
+    return pts[0][1] > pts[pts.length - 1][1] + 40 ? pts.reverse() : pts;
+  }), []);
 
   const name = (k) => t(SECTION_LABEL[k]);
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };

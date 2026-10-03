@@ -21,6 +21,7 @@ import { LayerFeed } from "./components/LayerFeed";
 import HomeFusion from "./components/HomeFusion";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
+import { WorldLine } from "./components/WorldLine";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -776,6 +777,26 @@ export default function App() {
     if (containerRef.current) containerRef.current.classList.remove("dragging");
   }, []);
 
+  // Puente "Una sola línea" (oct 2026, Pablo): el cambio de mundo desde el
+  // encabezado es una transición de elemento compartido — la onda de Bass se
+  // vuelve la curva de Layer y al revés (ver WorldLine). Deslizar con el dedo
+  // sigue siendo el gesto directo, sin transición.
+  const worldLineRef = useRef(null);
+  const [morph, setMorph] = useState(""); // "" | "out" (apagando) ; "landed" queda puesto
+  const goWorld = useCallback((panel) => {
+    const wl = worldLineRef.current;
+    if (!wl || panel === activePanel || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { swipeTo(panel); return; }
+    wl.run(activePanel === 0 ? "bass" : "layer", panel === 0 ? "bass" : "layer", {
+      hide: () => setMorph("out"),
+      swap: () => {
+        containerRef.current?.classList.add("no-slide");
+        flushSync(() => swipeTo(panel));
+        requestAnimationFrame(() => requestAnimationFrame(() => containerRef.current?.classList.remove("no-slide")));
+      },
+      reveal: () => setMorph("landed"),
+    });
+  }, [activePanel, swipeTo]);
+
   // Touch handlers for swipe
   const onTouchStart = useCallback((e) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -975,15 +996,14 @@ export default function App() {
       </div>
 
       {/* SECTIONS */}
-      <section className={`bl-swipe-wrap${view === "sections" ? " active" : ""}`} aria-label="Contenido principal">
-        {/* Firma visual del cruce (P3.6): línea 2px bajo el header que barre
-            del tinte del mundo saliente al del nuevo cuando cambia el panel. */}
-        <div className={`bl-cross-signature${wiping ? " active wiping-" + wiping : ""}`} aria-hidden="true" />
+      <section className={`bl-swipe-wrap${view === "sections" ? " active" : ""}${morph ? " morph-" + morph : ""}`} aria-label="Contenido principal">
+        {/* El cruce entre mundos: la onda se vuelve la curva (y al revés). */}
+        <WorldLine ref={worldLineRef} />
         <nav className={`bl-header${wiping ? " is-wiping wiping-" + wiping : ""}`} aria-label="Navegaci&oacute;n principal">
           <div className="bl-header-duo" role="tablist">
             <button
               className={`bl-header-half bl-header-half-bass${activePanel === 0 ? " is-active" : ""}`}
-              onClick={() => swipeTo(0)}
+              onClick={() => goWorld(0)}
               role="tab"
               aria-selected={activePanel === 0}
               aria-current={activePanel === 0 ? "page" : undefined}
@@ -999,7 +1019,7 @@ export default function App() {
             </button>
             <button
               className={`bl-header-half bl-header-half-layer${activePanel === 1 ? " is-active" : ""}`}
-              onClick={() => swipeTo(1)}
+              onClick={() => goWorld(1)}
               role="tab"
               aria-selected={activePanel === 1}
               aria-current={activePanel === 1 ? "page" : undefined}

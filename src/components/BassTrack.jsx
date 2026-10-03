@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { registerShape } from "../utils/worldShapes";
 import { useLocale } from "../hooks/useLocale";
 import { MONTHS_ABBR, getEventDate } from "../i18n/strings";
 import { api, shared } from "../utils/api";
@@ -17,7 +18,7 @@ import { useIsMobile } from "../utils/constants";
 // onda es de un solo color en las tres partes (oct 2026, Pablo). El dato y el
 // rango van debajo de la onda, nunca sobre las barras.
 // Desktop: la onda de punta a punta, a lo alto de la pantalla. Mobile: una
-// pista por parte (el tema que sigue en la línea de abajo).
+// sola frecuencia vertical y angosta con los nombres a los costados (ver geo).
 // Cada parte se dibuja con sus datos reales, comprimida como un master (ver
 // envelope), sobre un piso de señal. La textura es textura.
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
@@ -158,8 +159,8 @@ export function BassTrack({ events, todayKey, onCue }) {
   }, [events, news, fests, today, todayKey, t, M, locale]);
 
   const mobile = w > 0 && w <= 768;
-  // Geometría: la onda (una línea en desktop, una pista por parte en mobile),
-  // la palabra de cada parte centrada en ella y su dato debajo. Todo lo que no
+  // Geometría: la onda (horizontal en desktop, vertical en mobile), el nombre
+  // de cada parte y su dato. Todo lo que no
   // cambia entre cuadros se calcula acá una vez; las barras quedan agrupadas
   // por parte para dibujar cada una de un solo trazo.
   const geo = useMemo(() => {
@@ -175,52 +176,72 @@ export function BassTrack({ events, todayKey, onCue }) {
       return e;
     };
     const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || "system-ui, sans-serif";
-    // La portada es solo la onda: ocupa el alto que queda de pantalla (mobile y desktop).
-    const H = mobile ? Math.round(Math.max(400, Math.min(660, avail || 600))) : Math.round(Math.max(440, Math.min(700, avail || 700)));
-    const seg = mobile ? w : w / 3;
-    // Un solo tamaño para las tres palabras: el que deja a la más larga en ~60 % de su parte.
     const widest = Math.max(...data.map((p) => textWidth(p.name, `800 100px ${family}`)));
-    const size = Math.floor(Math.min(mobile ? 38 : 64, (100 * seg * WORD_SHARE) / widest));
+    // Barras en píxeles enteros del dispositivo: sin moiré en movimiento.
+    const dprG = Math.min(2, window.devicePixelRatio || 1);
+    if (mobile) {
+      // Mobile (oct 2026, Pablo: "T"): una sola frecuencia VERTICAL, angosta,
+      // como el tronco de Layer — la forma la dan los datos, no las palabras.
+      // Baja por el centro y sus barras se abren a los costados; los nombres
+      // se alternan a los dos lados, como las ramas de Layer, con un filete
+      // que los une a su punto, y su dato debajo (cada pedazo en su renglón).
+      const H = Math.round(Math.max(400, Math.min(660, avail || 600))), segH = H / 3;
+      const cx = Math.round(w / 2), amp = 38;
+      // El nombre más largo entra en su costado.
+      const size = Math.floor(Math.min(30, (100 * (w / 2 - amp - 26)) / widest)), font = `800 ${size}px ${family}`;
+      const parts = data.map((p, j) => {
+        const y0 = j * segH, ww = textWidth(p.name, font), wy = Math.round(y0 + segH * 0.46);
+        const left = j % 2 === 1, anchor = left ? "end" : "start", lx = left ? cx - amp - 14 : cx + amp + 14;
+        const tick = left ? [lx + 8, wy, cx - amp + 4, wy] : [cx + amp - 4, wy, lx - 8, wy];
+        const lines = (p.sub || "").split(" · ").length;
+        const subAt = { x: lx, y: wy + size * 0.5 + 18 }, spanAt = { x: lx, y: wy + size * 0.5 + 18 + lines * 15 + 2 };
+        return { ...p, j, x: 0, y: y0, seg: w, h: segH, mid: wy, amp, ww, cx, lx, anchor, tick, subAt, spanAt };
+      });
+      const bars = [[], [], []], step = Math.round(2.6 * dprG) / dprG;
+      let i = 0;
+      for (let py = 2; py <= H - 2; py += step, i++) {
+        const u = Math.min(2.999, (py / H) * 3), c = parts[Math.min(2, Math.floor(u))], e = energy(u), dist = u - 1;
+        bars[c.j].push({ u, px: py, mid: cx, cap: amp + 4, h: 1 + e * amp * (0.35 + 0.65 * grain(i)), room: 0, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 });
+      }
+      return { H, parts, bars, words: [[], [], []], lw: 1.5, size, font, step, vert: true };
+    }
+    // Desktop: la onda de punta a punta, a lo alto de la pantalla, y cada
+    // palabra ADENTRO de su parte.
+    const H = Math.round(Math.max(440, Math.min(700, avail || 700))), seg = w / 3;
+    // Un solo tamaño para las tres palabras: el que deja a la más larga en ~46 % de su parte.
+    const size = Math.floor(Math.min(64, (100 * seg * WORD_SHARE) / widest));
     const font = `800 ${size}px ${family}`;
     const parts = data.map((p, j) => {
-      const x = mobile ? 0 : j * seg, y = mobile ? (j * H) / 3 : 0;
-      const laneH = H / 3, mid = mobile ? y + (laneH - 46) / 2 + 4 : (H - 66) / 2 + 4, amp = mobile ? (laneH - 46) / 2 - 14 : mid - 34;
+      const x = j * seg, mid = (H - 66) / 2 + 4, amp = mid - 34;
       const ww = textWidth(p.name, font), wx = x + (seg - ww) / 2;
       // Caja de la palabra (en px CSS): ahí se compone la máscara de letras.
       const box = { x: Math.floor(wx - 6), y: Math.floor(mid - size), w: Math.ceil(ww + 12), h: Math.ceil(2 * size) };
-      return { ...p, j, x, y, seg, h: mobile ? H / 3 : H, mid, amp, wx, ww, box };
+      return { ...p, j, x, y: 0, seg, h: H, mid, amp, wx, ww, box };
     });
     const bars = [[], [], []], words = [[], [], []];
-    const pad = size * PAD, ramp = size * 1.5;
+    const pad = size * PAD, ramp = size * 1.5, step = 3;
     let i = 0;
-    // Barras en píxeles enteros del dispositivo: sin moiré en movimiento.
-    const dprG = Math.min(2, window.devicePixelRatio || 1), step = mobile ? Math.round(2.6 * dprG) / dprG : 3;
-    // Una pista: de `from` a `to` recorre el tema de u0 a u1 (desktop: las tres partes; mobile: una).
-    const lane = (from, to, u0, u1) => {
-      for (let px = from; px <= to; px += step, i++) {
-        const u = Math.min(2.999, u0 + ((px - from) / (to - from)) * (u1 - u0)), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
-        // La palabra vive ADENTRO de la frecuencia (oct 2026, Pablo: cómoda, con
-        // espacio, no comprimida): alrededor de cada nombre la onda tiene un
-        // lecho que lo contiene — media altura = media letra + aire
-        // (BED × tamaño) — y se extiende PAD a cada lado antes de volver a los
-        // datos en una rampa larga. Nunca baja de la palabra ni la aprieta.
-        const room = Math.min(smooth((px - (c.wx - pad - ramp)) / ramp), smooth((c.wx + c.ww + pad + ramp - px) / ramp));
-        const dist = u - 1;       // en partes, desde ahora (comienzo de la Agenda)
-        // El aire es ALTURA, no brillo (oct 2026, Pablo: la onda de un solo
-        // color): junto a la palabra las barras bajan, todas con la misma luz.
-        // El lecho es un PISO, no una meseta: la onda nunca baja de lo que la
-        // palabra necesita, pero conserva sus picos y su textura. Su forma es
-        // una lente suave (más alta en el centro de la palabra).
-        const lens = 0.86 + 0.14 * Math.cos(Math.max(-1, Math.min(1, (px - (c.wx + c.ww / 2)) / (c.ww / 2 + pad))) * Math.PI / 2);
-        const data = 1 + e * c.amp * (0.35 + 0.65 * grain(i)), bed = Math.min(c.amp, size * BED) * lens * (0.92 + 0.16 * grain(i));
-        const b = { u, px, mid: c.mid, cap: c.amp + 6, h: data + Math.max(0, bed - data) * room, room, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 };
-        bars[c.j].push(b);
-        if (px >= c.box.x && px <= c.box.x + c.box.w) words[c.j].push(b);   // las letras: solo las barras de su caja
-      }
-    };
-    if (mobile) parts.forEach((c) => lane(2, w - 2, c.j, c.j + 0.999));
-    else lane(2, w - 2, 0, 3);
-    return { H, parts, bars, words, lw: mobile ? 1.5 : 1.8, size, font, step };
+    for (let px = 2; px <= w - 2; px += step, i++) {
+      const u = Math.min(2.999, ((px - 2) / (w - 4)) * 3), c = parts[Math.min(2, Math.floor(u))], e = energy(u);
+      // La palabra vive ADENTRO de la frecuencia (oct 2026, Pablo: cómoda, con
+      // espacio, no comprimida): alrededor de cada nombre la onda tiene un
+      // lecho que lo contiene — media altura = media letra + aire
+      // (BED × tamaño) — y se extiende PAD a cada lado antes de volver a los
+      // datos en una rampa larga. Nunca baja de la palabra ni la aprieta.
+      const room = Math.min(smooth((px - (c.wx - pad - ramp)) / ramp), smooth((c.wx + c.ww + pad + ramp - px) / ramp));
+      const dist = u - 1;       // en partes, desde ahora (comienzo de la Agenda)
+      // El aire es ALTURA, no brillo (oct 2026, Pablo: la onda de un solo
+      // color): junto a la palabra las barras bajan, todas con la misma luz.
+      // El lecho es un PISO, no una meseta: la onda nunca baja de lo que la
+      // palabra necesita, pero conserva sus picos y su textura. Su forma es
+      // una lente suave (más alta en el centro de la palabra).
+      const lens = 0.86 + 0.14 * Math.cos(Math.max(-1, Math.min(1, (px - (c.wx + c.ww / 2)) / (c.ww / 2 + pad))) * Math.PI / 2);
+      const dat = 1 + e * c.amp * (0.35 + 0.65 * grain(i)), bed = Math.min(c.amp, size * BED) * lens * (0.92 + 0.16 * grain(i));
+      const b = { u, px, mid: c.mid, cap: c.amp + 6, h: dat + Math.max(0, bed - dat) * room, room, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 };
+      bars[c.j].push(b);
+      if (px >= c.box.x && px <= c.box.x + c.box.w) words[c.j].push(b);   // las letras: solo las barras de su caja
+    }
+    return { H, parts, bars, words, lw: 1.8, size, font, step };
   }, [w, mobile, avail, data, fonts]);
 
   // Loop de partes sin hover: solo con el track en pantalla y sin "reducir movimiento".
@@ -254,7 +275,7 @@ export function BassTrack({ events, todayKey, onCue }) {
     const mk = (c) => { c.width = Math.round(w * dpr); c.height = Math.round(geo.H * dpr); const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.lineCap = "round"; return x; };
     const ctx = mk(cv), mask = document.createElement("canvas"), mctx = mk(mask), litCv = document.createElement("canvas"), lctx = mk(litCv);
     mctx.font = geo.font; mctx.textBaseline = "middle"; mctx.fillStyle = "#000";
-    for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);
+    if (!geo.vert) for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);   // mobile: los nombres van afuera de la onda
     const css = getComputedStyle(cv);
     gfx.current = { dpr, ctx, mask, litCv, lctx, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c", ink: css.getPropertyValue("--bl-text").trim() || "#f1ece4" };
   }, [geo, w]);
@@ -299,7 +320,9 @@ export function BassTrack({ events, todayKey, onCue }) {
           m += F.kick * kick;
           m = 1 + (m - 1) * (1 - 0.6 * b.room);   // en el lecho la onda respira más quieta: la palabra no tiembla
           const h = Math.max(1, Math.min(b.cap, b.h * m));
-          ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h);
+          b.cur = h;   // el alto de este cuadro: la transición entre mundos parte de acá
+          if (geo.vert) { ctx.moveTo(b.mid - h, b.px); ctx.lineTo(b.mid + h, b.px); }
+          else { ctx.moveTo(b.px, b.mid - h); ctx.lineTo(b.px, b.mid + h); }
         }
         ctx.stroke();
       });
@@ -308,7 +331,7 @@ export function BassTrack({ events, todayKey, onCue }) {
       // al elegirla se engrosan de izquierda a derecha hasta que la letra queda
       // sólida, y al soltarla vuelve a ser onda.
       lctx.fillStyle = ink;
-      for (const c of geo.parts) {
+      for (const c of geo.vert ? [] : geo.parts) {
         const { x, y, w: bw, h: bh } = c.box, p = S.hv[c.j];
         lctx.globalCompositeOperation = "source-over";
         lctx.clearRect(x, y, bw, bh);
@@ -329,6 +352,17 @@ export function BassTrack({ events, todayKey, onCue }) {
     return () => cancelAnimationFrame(raf);
   }, [geo, w, live, still, still ? soloIdx : 0]); // eslint-disable-line react-hooks/exhaustive-deps -- quieto: redibuja el solo
 
+  // La onda tal como se ve ahora, para la transición entre mundos.
+  useEffect(() => {
+    if (!geo) return undefined;
+    return registerShape("bass", () => {
+      const r = canvasRef.current?.getBoundingClientRect();
+      if (!r?.width) return null;
+      // [x, y, medio alto, barra horizontal]
+      return geo.bars.flatMap((list) => list.map((b) => (geo.vert ? [r.left + b.mid, r.top + b.px, b.cur ?? b.h, 1] : [r.left + b.px, r.top + b.mid, b.cur ?? b.h, 0])));
+    });
+  }, [geo]);
+
   const partProps = (c) => ({
     className: `btk-cue${solo === c.k ? " is-hot" : ""}${hot && hot !== c.k ? " is-off" : ""}`, role: "button", tabIndex: 0,
     // En táctil el navegador emula un hover después de cada toque y quedaba pegado:
@@ -341,7 +375,7 @@ export function BassTrack({ events, todayKey, onCue }) {
   });
 
   return (
-    <section className="bl-btrack" data-solo={solo || ""} aria-label={t("track.aria")} ref={wrapRef}>
+    <section className="bl-btrack" data-solo={solo || ""} data-orient={geo?.vert ? "v" : "h"} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo && (
         <div className="btk-stage" style={{ height: geo.H }}>
@@ -350,10 +384,24 @@ export function BassTrack({ events, todayKey, onCue }) {
             {geo.parts.map((c) => (
               <g key={c.k} {...partProps(c)} data-axis={Math.round(c.mid)}>
                 <rect className="btk-hit" x={c.x} y={c.y} width={c.seg} height={c.h} />
-                {/* La palabra se ve en el canvas (hecha de barras); acá, su caja real para el foco y la lectura. */}
-                <text className="btk-name" x={c.wx} y={c.mid} dominantBaseline="central" style={{ font: geo.font }} aria-hidden="true">{c.name}</text>
-                <text className="btk-sub" x={c.wx} y={c.mid + c.amp + (mobile ? 24 : 30)}>{c.sub}</text>
-                <text className="btk-span" x={c.wx} y={c.mid + c.amp + (mobile ? 40 : 48)}>{c.span}</text>
+                {geo.vert ? (
+                  // Mobile: el nombre al costado, unido a su punto de la onda por un filete; el dato en renglones.
+                  <>
+                    <line className="btk-tick" x1={c.tick[0]} y1={c.tick[1]} x2={c.tick[2]} y2={c.tick[3]} />
+                    <text className="btk-name is-out" x={c.lx} y={c.mid} textAnchor={c.anchor} dominantBaseline="central" style={{ font: geo.font }} aria-hidden="true">{c.name}</text>
+                    <text className="btk-sub" x={c.subAt.x} y={c.subAt.y} textAnchor={c.anchor}>
+                      {(c.sub || "").split(" · ").map((l, k) => <tspan key={k} x={c.subAt.x} dy={k ? 15 : 0}>{l}</tspan>)}
+                    </text>
+                    <text className="btk-span" x={c.spanAt.x} y={c.spanAt.y} textAnchor={c.anchor}>{c.span}</text>
+                  </>
+                ) : (
+                  // Desktop: la palabra se ve en el canvas (hecha de barras); acá, su caja real para el foco y la lectura.
+                  <>
+                    <text className="btk-name" x={c.wx} y={c.mid} dominantBaseline="central" style={{ font: geo.font }} aria-hidden="true">{c.name}</text>
+                    <text className="btk-sub" x={c.wx} y={c.mid + c.amp + 30}>{c.sub}</text>
+                    <text className="btk-span" x={c.wx} y={c.mid + c.amp + 48}>{c.span}</text>
+                  </>
+                )}
               </g>
             ))}
           </svg>

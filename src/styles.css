@@ -1018,43 +1018,6 @@
   .bl-header.is-wiping .bl-header-half::before { animation:none; }
 }
 
-/* ── Cross-panel signature (P3.6) ─────────
-   Línea de 2px justo bajo el header que barre del tinte del mundo saliente
-   al del entrante cuando el user cambia panel. Solo transform/opacity — sin
-   layout thrash. Respeta prefers-reduced-motion. */
-.bl-cross-signature {
-  position:absolute; left:0; right:0; top:120px; height:2px;
-  pointer-events:none; z-index:60;
-  opacity:0;
-  transform:scaleX(0);
-  transform-origin:left center;
-  background:linear-gradient(90deg, var(--bl-accent-bass) 0%, var(--bl-accent-layer) 100%);
-}
-.bl-cross-signature.active.wiping-layer {
-  transform-origin:left center;
-  animation:bl-cross-sig-l 320ms var(--ease-out-expo);
-}
-.bl-cross-signature.active.wiping-bass {
-  transform-origin:right center;
-  background:linear-gradient(90deg, var(--bl-accent-layer) 0%, var(--bl-accent-bass) 100%);
-  animation:bl-cross-sig-r 320ms var(--ease-out-expo);
-}
-@keyframes bl-cross-sig-l {
-  0%   { opacity:0.9; transform:scaleX(0); }
-  60%  { opacity:0.9; transform:scaleX(1); }
-  100% { opacity:0;   transform:scaleX(1); }
-}
-@keyframes bl-cross-sig-r {
-  0%   { opacity:0.9; transform:scaleX(0); }
-  60%  { opacity:0.9; transform:scaleX(1); }
-  100% { opacity:0;   transform:scaleX(1); }
-}
-@media (max-width:768px) {
-  .bl-cross-signature { top:72px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bl-cross-signature.active { animation:none; opacity:0; }
-}
 
 /* ── Swipe Dots ─────────────────────────── */
 .bl-swipe-dots { display:flex; gap:8px; align-items:center; }
@@ -5971,3 +5934,21 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-em-cta { height:var(--btn-h-lg); }
 .bl-layer-empty-btn, .bl-cirl-add-btn { min-height:var(--btn-h-sm); padding:0 16px; }
 .bl-em-ic { width:var(--btn-h-lg); height:var(--btn-h-lg); padding:0; border-radius:50%; }
+
+/* Puente "Una sola línea" (oct 2026): la capa de la transición entre mundos. */
+.bl-worldline { position:fixed; inset:0; width:100vw; height:100vh; pointer-events:none; z-index:59; opacity:0; }
+/* La transición: el mundo que se va se apaga bajo la copia de su forma; el
+   que llega aparece alrededor de la línea cuando aterriza. */
+.bl-swipe-container { transition:transform .5s var(--ease-out-expo), opacity .4s ease-out; }
+.bl-swipe-container.no-slide { transition:opacity .4s ease-out; }
+.bl-swipe-wrap.morph-out .bl-swipe-container { opacity:0; transition:opacity .16s ease-in; }
+/* Llegó por la línea: la curva ya está en su lugar (sin dibujarse de nuevo) y
+   lo demás entra enseguida. */
+.bl-swipe-wrap.morph-landed .blc-curve { animation:none; stroke-dashoffset:0 !important; }
+.bl-swipe-wrap.morph-landed :is(.blc-node, .blc-now, .blc-fan, .blc-area) { animation-delay:.15s !important; }
+/* Mobile (oct 2026, "T"): los nombres van a los costados de la onda angosta. */
+.btk-name.is-out { fill:var(--bl-text); transition:fill .35s; }
+.btk-cue.is-off .btk-name.is-out { fill:var(--bl-text-ter); }
+.btk-cue.is-hot .btk-name.is-out { fill:var(--bl-accent-bass); }
+.btk-tick { stroke:var(--bl-text-ter); stroke-width:1; opacity:.6; transition:stroke .35s, opacity .35s; }
+.btk-cue.is-hot .btk-tick { stroke:var(--bl-accent-bass); opacity:1; }
