@@ -20,6 +20,7 @@ import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
+import { SALAS, SALAS_INGESTED, NOT_MUSIC, NOT_MUSIC_TITLES } from "./lib/salas.js";
 import { slugify } from "./lib/slug.js";
 import { marked } from "marked";
 import matter from "gray-matter";
@@ -82,7 +83,10 @@ app.use(cors({
     : ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
 }));
 
-app.use(express.json({ limit: "10kb" }));
+// JSON de 10 kB para todo, salvo la carga de la cartelera del Movistar Arena
+// (GitHub Actions, ~25 kB): esa ruta trae su propio parser.
+const jsonSmall = express.json({ limit: "10kb" });
+app.use((req, res, next) => (req.path === "/api/salas/ingest" ? next() : jsonSmall(req, res, next)));
 
 // Rate limiter — sliding window, per IP, bounded map size
 const RATE_LIMIT_WINDOW = 60_000;
@@ -213,6 +217,7 @@ const cache = {
   financeNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — noticias financieras generales (RSS macro/mercados)
   markets:     { data: null, ts: 0, ttl: 15 * 60_000 },  // 15min — quotes ETFs + acciones (Twelve Data / Finnhub)
   events:      { data: null, ts: 0, ttl: 60 * 60_000 },
+  salas:       { data: null, ts: 0, ttl: 6 * 60 * 60_000 }, // 6h — carteleras oficiales de las salas
   bassNews:    { data: null, ts: 0, ttl: 30 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
@@ -238,7 +243,7 @@ function setCache(key, data) {
 // sirve ya y se refresca en background, con una sola build en vuelo. El
 // último dato bueno se persiste en data/cache/<key>.json para que un
 // reinicio arranque servido y no en frío.
-const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices"]);
+const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices", "salas"]);
 const SNAPSHOT_DIR = join(__dirname, "data", "cache");
 const swrInflight = new Map();
 
@@ -2195,6 +2200,7 @@ function mapQHEvent(e) {
   };
 }
 
+let qhRaw = { ts: 0, list: [] };   // último lote crudo de QuéHacemos (todas las categorías)
 async function fetchQueHacemos() {
   try {
     const pad = (n) => String(n).padStart(2, "0");
@@ -2223,6 +2229,7 @@ async function fetchQueHacemos() {
       if (cursor > dateTo) break;
     }
 
+    qhRaw = { ts: Date.now(), list: [...byId.values()] };   // crudo: también lo usa el cruce de las salas
     const mapped = [];
     let skippedNonMusical = 0;
     const nonMusicTitles = qhNonMusicTitles(byId.values());
@@ -3181,6 +3188,83 @@ async function buildEvents() {
   registerImages(events);
   return events;
 }
+
+// ─────────────────────────────────────────────
+//  Salas (oct 2026, Pablo): la cartelera completa de salas emblemáticas, de
+//  cualquier estilo. Fuente: la cartelera OFICIAL de cada sala (lib/salas.js;
+//  Movistar Arena llega por /api/salas/ingest desde GitHub Actions). QuéHacemos
+//  se usa como cruce: confirma el show y su tipo (si lo tiene como teatro,
+//  stand up o familia, no es música). No se mezcla con la agenda electrónica:
+//  se busca y se elige por sala.
+// ─────────────────────────────────────────────
+const SALAS_INGEST_FILE = join(SNAPSHOT_DIR, "salas-ingest.json");
+const SALAS_INGEST_MAX_AGE = 36 * 60 * 60_000;   // una lectura de Movistar vale 36 h (corre cada 6)
+let salasIngest = {};
+try { if (existsSync(SALAS_INGEST_FILE)) salasIngest = JSON.parse(readFileSync(SALAS_INGEST_FILE, "utf8")) || {}; } catch { salasIngest = {}; }
+const QH_NOT_MUSIC_TYPES = new Set(["teatro", "stand up", "familia", "charla", "cine", "arte", "expo", "deporte", "gastronomia"]);
+const salaNorm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+async function buildSalas() {
+  const get = (url, opts = {}) => fetchSafe(url, opts, 20000);
+  const now = Date.now(), [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(now - 7 * 36e5)).split("-").map(Number);
+  const today = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  if (!qhRaw.list.length || now - qhRaw.ts > 6 * 60 * 60_000) await fetchQueHacemos().catch(() => {});
+  const qhAt = (sala, date) => qhRaw.list.filter((e) => sala.qh.test(e.venue_name || e.venue || "") && /buenos aires|caba|palermo/i.test(e.city || "") && String(e.date || "").slice(0, 10) === date);
+  const read = await Promise.all(SALAS.map(async (sala) => {
+    try { return { sala, shows: await sala.read(get) }; }
+    catch (e) { console.error(`[salas] ${sala.name}:`, e.message); return { sala, shows: [], error: true }; }
+  }));
+  for (const sala of SALAS_INGESTED) {
+    const ing = salasIngest[sala.slug];
+    read.push({ sala, shows: ing && now - Date.parse(ing.scrapedAt) < SALAS_INGEST_MAX_AGE ? ing.shows : [], error: !ing });
+  }
+  const shows = [], salas = [];
+  for (const { sala, shows: list, error } of read) {
+    let n = 0;
+    for (const s of list) {
+      if (!s.date || s.date < today || !s.title) continue;
+      if (NOT_MUSIC.test(s.title) || NOT_MUSIC_TITLES.test(s.title) || NOT_A_SHOW_TITLE.test(s.title)) continue;
+      // Cruce con QuéHacemos el mismo día en la misma sala.
+      const words = salaNorm(s.title).split(" ").filter((w) => w.length > 3);
+      const qh = qhAt(sala, s.date).find((e) => { const t = salaNorm(e.title); return words.some((w) => t.includes(w)); });
+      if (qh && QH_NOT_MUSIC_TYPES.has(qh.event_type)) continue;
+      shows.push({ id: crypto.createHash("sha1").update(`${sala.slug}|${s.date}|${s.time}|${s.title}`).digest("hex").slice(0, 12), sala: sala.slug, salaName: sala.name, address: sala.address, date: s.date, time: s.time || "", title: s.title, room: s.room && s.room !== sala.name ? s.room : "", url: s.url || "", image: s.image || "", qh: !!qh });
+      n++;
+    }
+    salas.push({ slug: sala.slug, name: sala.name, address: sala.address, count: n, ok: !error });
+  }
+  shows.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  // Si todas las carteleras fallan (red caída), no se pisa el último dato bueno.
+  if (!shows.length && cache.salas.data?.shows?.length) return cache.salas.data;
+  return { updated: new Date(now).toISOString(), salas, shows };
+}
+
+app.get("/api/salas", async (req, res) => {
+  let data;
+  try { data = await swr("salas", buildSalas); }
+  catch { return res.status(502).json({ error: "Salas unavailable" }); }
+  res.json(data);
+});
+
+// Carga de una cartelera leída afuera (Movistar Arena, GitHub Actions). Protegida
+// con SALAS_INGEST_TOKEN; valida forma, sala y dominio de cada link.
+app.post("/api/salas/ingest", express.json({ limit: "300kb" }), (req, res) => {
+  const token = process.env.SALAS_INGEST_TOKEN || "";
+  const got = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(503).json({ error: "ingest disabled" });
+  const a = Buffer.from(got), b = Buffer.from(token);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ error: "unauthorized" });
+  const { venue, scrapedAt, shows } = req.body || {};
+  const sala = SALAS_INGESTED.find((s) => s.slug === venue);
+  if (!sala || !Array.isArray(shows) || shows.length > 400 || isNaN(Date.parse(scrapedAt))) return res.status(400).json({ error: "bad payload" });
+  const clean = shows.filter((s) => s && /^\d{4}-\d{2}-\d{2}$/.test(s.date) && /^(\d{2}:\d{2})?$/.test(s.time || "") && typeof s.title === "string" && s.title.length <= 200 && String(s.url || "").startsWith(sala.urlPrefix) && (!s.image || /^https:\/\//.test(s.image)))
+    .map((s) => ({ date: s.date, time: s.time || "", title: s.title.trim(), url: s.url, image: s.image || "" }));
+  if (!clean.length) return res.status(400).json({ error: "no valid shows" });
+  salasIngest[sala.slug] = { scrapedAt, shows: clean };
+  try { writeFileSync(SALAS_INGEST_FILE, JSON.stringify(salasIngest)); } catch {}
+  cache.salas.ts = 0;   // la próxima consulta rearma con lo nuevo
+  res.json({ ok: true, venue: sala.slug, shows: clean.length });
+});
 
 app.get("/api/events", async (req, res) => {
   const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
