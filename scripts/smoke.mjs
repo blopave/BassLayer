@@ -389,6 +389,22 @@ async function run(vp) {
     if (fitInfo.scrollers) fail(vp.name, "modal", "la ficha tiene scroll: el contenido tiene que adaptarse");
     if (fitInfo.cut) fail(vp.name, "modal", "contenido cortado dentro de la ficha");
     if (!fitInfo.oneRow) fail(vp.name, "modal", "las acciones (Entradas, Guardar, Calendario, Compartir) no van en una sola fila");
+    // Botón base (oct 2026, Pablo: "B · Píldora"): Entradas es una píldora de
+    // un solo renglón y los íconos, círculos de su misma altura.
+    const btn = await dialog.evaluate((d) => {
+      const c = d.querySelector(".bl-em-act2 .bl-em-cta"), t = c?.querySelector(".bl-em-cta-t");
+      const ics = [...d.querySelectorAll(".bl-em-act2 .bl-em-ic")].map((e) => e.getBoundingClientRect());
+      if (!c || !t) return null;
+      const r = c.getBoundingClientRect(), rad = parseFloat(getComputedStyle(c).borderTopLeftRadius);
+      const lines = Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight || "11"));
+      return { pill: rad >= r.height / 2 - 1, oneLine: t.getClientRects().length === 1 && lines <= 1, round: ics.every((b) => Math.abs(b.width - b.height) < 1 && Math.abs(b.height - r.height) < 1) };
+    });
+    if (!btn) fail(vp.name, "modal", "falta el botón de entradas");
+    else {
+      if (!btn.pill) fail(vp.name, "modal", "el botón de entradas no es una píldora (botón base)");
+      if (!btn.oneLine) fail(vp.name, "modal", "el texto del botón de entradas se parte en dos renglones");
+      if (!btn.round) fail(vp.name, "modal", "los íconos de la ficha no son círculos de la altura del botón");
+    }
 
     const broken = await brokenImages(dialog);
     if (broken.length) fail(vp.name, "imágenes", `${broken.length} rotas en el modal: ${broken.join(" | ")}`);

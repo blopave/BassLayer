@@ -214,6 +214,10 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     ...[...css.matchAll(/letter-spacing:\s*-?[\d.]*[1-9][\d.]*(px|em)/g)].map((m) => m[0]),
     ...[...css.matchAll(/border-radius:\s*([\d.]+)px\s*[;}]/g)].filter((m) => +m[1] > 0 && +m[1] < 100).map((m) => m[0]),
   ];
+  // Grilla de 4 (etapa 2): padding/margin/gap en múltiplos de 4 (0–2 px valen: filetes y ajustes ópticos).
+  for (const m of css.matchAll(/(?:padding|margin|gap|row-gap|column-gap|inset)[a-z-]*\s*:([^;}]*)/g)) {
+    for (const n of m[1].replace(/(calc|clamp|min|max)\([^)]*\)/g, "").matchAll(/(-?[\d.]+)px/g)) { const v = Math.abs(+n[1]); if (v > 2 && v % 4) sueltos.push(m[0].trim()); }
+  }
   const bajo = Object.entries({ ...[...css.matchAll(/--fs-(\d+):\s*([\d.]+)px/g)].reduce((o, m) => ({ ...o, [m[1]]: +m[2] }), {}) }).filter(([, v]) => v < 10);
   stats.push({ path: "escalas (css)", count: sueltos.length });
   if (sueltos.length) fail("escalas (css)", "fuera de escala", `${sueltos.length}: ${[...new Set(sueltos)].slice(0, 5).join(" | ")}`);

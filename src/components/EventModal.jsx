@@ -333,7 +333,8 @@ export function EventModal({ event, onClose, onShare }) {
           <div className="bl-em-act bl-em-act2">
               {flash && <div className="bl-em-flash" role="status">{flash}</div>}
               <a className="bl-em-cta" href={ticketUrl()} target="_blank" rel="noopener noreferrer">
-                {hasDirectLink ? (hostLabel ? `${t("event.ticketsOn")} ${hostLabel}` : t("event.tickets")) : t("event.searchTickets")}
+                {/* Un renglón siempre: "en Passline" solo si entra (container query). */}
+                {hasDirectLink ? <span className="bl-em-cta-t">{t("event.tickets")}{hostLabel && <span className="bl-em-cta-host"> {t("event.onHost", { host: hostLabel })}</span>}</span> : <span className="bl-em-cta-t">{t("event.searchTickets")}</span>}
                 <small aria-hidden="true">&#x2197;</small>
               </a>
               <button type="button" className={`bl-em-ic${savedOn ? " on" : ""}`} aria-pressed={savedOn} aria-label={savedOn ? t("saved.remove") : t("saved.add")} data-tip={savedOn ? t("saved.remove") : t("saved.add")}
