@@ -554,6 +554,38 @@ async function run(vp) {
     if (!festHeads.length) fail(vp.name, "festivales", "sin bloques Buenos Aires / mundo");
     else if (festHeads.length > 1 && !/buenos aires/i.test(festHeads[0])) fail(vp.name, "festivales", `el primer bloque es "${festHeads[0]}", no Buenos Aires`);
 
+    // 5e. Salas (oct 2026, Pablo): una pestaña propia con las salas y la
+    // cartelera completa de cada una; la sala también aparece en el buscador.
+    {
+      const tab = page.locator(".bl-bass-section-btn", { hasText: /^Salas$|^Venues$/ });
+      if (!(await tab.count())) fail(vp.name, "salas", "falta la pestaña Salas");
+      const bar = await page.locator(".bl-bass-sections").first().evaluate((b) => b.scrollWidth - b.clientWidth).catch(() => 0);
+      if (bar > 1) fail(vp.name, "salas", `las pestañas no entran: se pasan ${bar}px del ancho`);
+      else {
+        await tab.first().click();
+        await page.locator(".bl-sala-card").first().waitFor({ state: "visible", timeout: 60_000 }).catch(() => {});
+        const cards = await page.locator(".bl-sala-card").count();
+        if (cards < 8) fail(vp.name, "salas", `la pestaña muestra ${cards} salas (esperaba al menos 8)`);
+        if (cards) {
+          await page.locator(".bl-sala-card").first().click();
+          await page.locator(".bl-sala-show").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+          const sala = await page.evaluate(() => ({ name: document.querySelector(".bl-sala-name")?.textContent, shows: document.querySelectorAll(".bl-sala-show").length, top: document.querySelector(".bl-sala-name")?.getBoundingClientRect().top, left: Math.min(...[...document.querySelectorAll(".bl-sala-name, .bl-sala-show")].map((e) => e.getBoundingClientRect().left)) - (document.querySelector(".bl-sala")?.closest(".bl-swipe-panel")?.getBoundingClientRect().left || 0) }));
+          if (!(sala.left >= 12)) fail(vp.name, "salas", `la cartelera de la sala va pegada al borde (${Math.round(sala.left)}px de margen)`);
+          if (!sala.name || sala.shows < 1) fail(vp.name, "salas", "la sala no muestra su cartelera");
+          if (!(sala.top >= 0 && sala.top < vp.viewport.height)) fail(vp.name, "salas", "la sala no abre desde arriba (el nombre queda fuera de pantalla)");
+          await page.locator(".bl-sala-back").click();
+          if ((await page.locator(".bl-sala-card").count()) < 8) fail(vp.name, "salas", "volver desde una sala no vuelve a la lista de salas");
+        }
+        // Desde el buscador de la Agenda.
+        await page.locator(".bl-bass-section-btn", { hasText: /Agenda|Listings/ }).first().click();
+        await page.locator(".bl-ctrl-search").first().fill("niceto");
+        await page.locator(".bl-sala-hit").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+        if (!(await page.locator(".bl-sala-hit", { hasText: /Niceto/ }).count())) fail(vp.name, "salas", "buscar \"niceto\" en la Agenda no ofrece la sala");
+        if (await page.locator(".bl-sala-hit ~ .bl-ev-list .bl-empty").count()) fail(vp.name, "salas", "con la sala como resultado, igual dice que no hay coincidencias");
+        await page.locator(".bl-ctrl-search").first().fill("");
+      }
+    }
+
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});

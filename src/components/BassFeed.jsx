@@ -5,6 +5,7 @@ import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
+import { useSalas, SalaGrid, SalaHits, SalaCartelera, salaMatches } from "./Salas";
 import { BassTrack } from "./BassTrack";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
@@ -272,6 +273,18 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const esteFinde = when === "finde";
   // "track" (portada: solo el índice) | "eventos" (Agenda) | "noticias" | "festivales"
   const [section, setSection] = useState(presetWhen ? "eventos" : "track");
+  // Salas (oct 2026, Pablo): una pestaña propia con la cartelera completa de
+  // cada sala, de todos los estilos; la Agenda sigue siendo electrónica. La
+  // sala también aparece como resultado del buscador. Cuál está abierta y
+  // desde dónde se llegó (para volver).
+  const salasData = useSalas();
+  const [sala, setSala] = useState(null);
+  const [salaFrom, setSalaFrom] = useState("eventos");
+  const openSala = (slug) => {
+    setSalaFrom(section); setSala(slug); setSection("sala");
+    // La sala abre desde arriba: el panel conserva el scroll de la agenda.
+    requestAnimationFrame(() => document.querySelector(".bl-sala")?.closest(".bl-swipe-panel")?.scrollTo({ top: 0 }));
+  };
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
   const { saved } = useSavedEvents();
   const [savedOnly, setSavedOnly] = useState(false);
@@ -605,10 +618,17 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         >
           <span className="bl-bass-section-label">{t("section.festivals")}</span>
         </button>
+        <button className={`bl-bass-section-btn${section === "salas" || section === "sala" ? " active" : ""}`} onClick={() => setSection("salas")}>
+          <span className="bl-bass-section-label">{t("salas.title")}</span>
+        </button>
       </div>
       )}
 
-      {section === "festivales" ? (
+      {section === "sala" ? (
+        <SalaCartelera data={salasData} slug={sala} onBack={() => setSection(salaFrom)} backLabel={salaFrom === "salas" ? t("salas.title") : t("track.agenda")} />
+      ) : section === "salas" ? (
+        <SalaGrid data={salasData} onPick={openSala} />
+      ) : section === "festivales" ? (
         <FestivalsList
           festivals={festivals}
           loading={festivalsLoading}
@@ -693,6 +713,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
       {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan
           por acá. Va después de los filtros: en la Agenda, Cuándo es lo primero. */}
+      {search && <SalaHits hits={salaMatches(salasData?.salas, search)} onPick={openSala} />}
       {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} compact />}
       {!loading && railMonths.length > 0 && <DayRail months={railMonths} active={railActive || railMonths[0].days.find((d) => d.count)?.key} onPick={pickDay} t={t} />}
 
@@ -724,7 +745,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       )}
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
-        : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
+        : filtered.length === 0 ? (salaMatches(salasData?.salas, search).length ? null : <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>)
         : <div className="bl-ev-list bl-ev-wall" role="region" aria-label={t("section.events")} ref={listRef}>
             {grouped.map((item, gIdx) => {
               if (item.type === "month") {

@@ -3204,6 +3204,16 @@ try { if (existsSync(SALAS_INGEST_FILE)) salasIngest = JSON.parse(readFileSync(S
 const QH_NOT_MUSIC_TYPES = new Set(["teatro", "stand up", "familia", "charla", "cine", "arte", "expo", "deporte", "gastronomia"]);
 const salaNorm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
+// Saca del título la sala en la que ya se está (y su sala interna): "en Niceto
+// Club", "en Humboldt | Niceto Club", "@ Café Berlín", "en CC Matienzo".
+const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function salaTitle(title, sala, room) {
+  const names = [sala.name, room, sala.name.replace(/^(club cultural|ciudad cultural|teatro)\s+/i, ""), sala.name.replace(/^club cultural/i, "CC")].filter(Boolean);
+  const alt = [...new Set(names)].map((n) => escRe(n).replace(/\s+/g, "\\s+")).join("|");
+  const t = title.replace(new RegExp(`\\s+(?:en|@)\\s+(?:(?:${alt})\\s*\\|\\s*)*(?:${alt})(?=\\s*(?:\\(|$|[-–|·]))`, "i"), "").replace(/\s{2,}/g, " ").trim();
+  return t.length >= 2 ? t : title;
+}
+
 async function buildSalas() {
   const get = (url, opts = {}) => fetchSafe(url, opts, 20000);
   const now = Date.now(), [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(now - 7 * 36e5)).split("-").map(Number);
@@ -3228,7 +3238,9 @@ async function buildSalas() {
       const words = salaNorm(s.title).split(" ").filter((w) => w.length > 3);
       const qh = qhAt(sala, s.date).find((e) => { const t = salaNorm(e.title); return words.some((w) => t.includes(w)); });
       if (qh && QH_NOT_MUSIC_TYPES.has(qh.event_type)) continue;
-      shows.push({ id: crypto.createHash("sha1").update(`${sala.slug}|${s.date}|${s.time}|${s.title}`).digest("hex").slice(0, 12), sala: sala.slug, salaName: sala.name, address: sala.address, date: s.date, time: s.time || "", title: s.title, room: s.room && s.room !== sala.name ? s.room : "", url: s.url || "", image: s.image || "", qh: !!qh });
+      // Dentro de la sala no hace falta repetirla: "AMBKOR en Niceto Club (+16 años)" → "AMBKOR (+16 años)".
+      const title = salaTitle(s.title, sala, s.room);
+      shows.push({ id: crypto.createHash("sha1").update(`${sala.slug}|${s.date}|${s.time}|${s.title}`).digest("hex").slice(0, 12), sala: sala.slug, salaName: sala.name, address: sala.address, date: s.date, time: s.time || "", title, room: s.room && s.room !== sala.name ? s.room : "", url: s.url || "", image: s.image || "", qh: !!qh });
       n++;
     }
     salas.push({ slug: sala.slug, name: sala.name, address: sala.address, count: n, ok: !error });
