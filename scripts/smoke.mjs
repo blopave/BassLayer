@@ -553,32 +553,54 @@ async function run(vp) {
       const clash = pills.some((a, i) => pills.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
       if (clash) fail(vp.name, "layer", "hay títulos del riel pisados entre sí");
       if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "un título del riel se sale de la pantalla");
-      if (vp.viewport.width > 768 && (await page.locator(".blc-branch").count()) !== 8) fail(vp.name, "layer", "desktop: faltan ramas entre la curva y el riel");
+      if (vp.viewport.width > 768 && (await page.locator(".blc-branch:not(.blc-rule)").count()) !== 8) fail(vp.name, "layer", "desktop: faltan ramas entre la curva y el riel");
+      // Banderas (oct 2026, Pablo: D + 4): en desktop cada nombre queda a la
+      // misma distancia de su punto (ramas de igual largo, no un riel parejo)
+      // y toda rama termina en una regla que sube por el costado del nombre.
+      const flags = await page.locator(".blc-node").evaluateAll((gs) => gs.map((g) => {
+        const d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-rn, .blc-ttl").getBoundingClientRect(), r = g.querySelector(".blc-rule")?.getBoundingClientRect();
+        const side = r && (r.right <= t.left + 1 ? t.left - r.right : r.left >= t.right - 1 ? r.left - t.right : 99);   // la regla va del lado del tronco
+        return { drop: (d.top + d.bottom) / 2 - t.top, rule: !!r && side < 18 && r.top <= t.bottom && r.bottom >= t.top };
+      }));
+      if (flags.some((f) => !f.rule)) fail(vp.name, "layer", "hay ramas que no terminan en la regla de su nombre");
+      if (vp.viewport.width > 768) {
+        const drops = flags.map((f) => f.drop);
+        if (Math.max(...drops) - Math.min(...drops) > 4) fail(vp.name, "layer", `desktop: los nombres no están a igual distancia de su punto (${Math.round(Math.min(...drops))}–${Math.round(Math.max(...drops))} px)`);
+      }
       if (vp.viewport.width <= 768) {
         const hits = await page.locator(".blc-hit").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
-        // Ramas (30-sep): cada sección sale de su punto con una rama que
-        // termina en su nombre, y las 8 entran en la primera pantalla.
+        // Botánico (oct 2026): cada sección sale de su punto con una rama que
+        // SUBE hasta su nombre, los nombres se alternan a los dos lados del
+        // tronco, y las 8 entran en la primera pantalla.
         const loose = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.filter((g) => {
           const b = g.querySelector(".blc-branch"), d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-ttl").getBoundingClientRect();
           if (!b) return true;
           const m = b.getScreenCTM(), a = b.getPointAtLength(0), z = b.getPointAtLength(b.getTotalLength());
           const A = new DOMPoint(a.x, a.y).matrixTransform(m), Z = new DOMPoint(z.x, z.y).matrixTransform(m);
           const fromDot = Math.hypot(A.x - (d.left + d.right) / 2, A.y - (d.top + d.bottom) / 2) < 6;
-          const toTitle = t.left - Z.x >= 0 && t.left - Z.x < 26 && Math.abs(Z.y - (t.top + t.bottom) / 2) < 14;
-          return !fromDot || !toTitle || t.right > innerWidth;
+          const gap = Z.x <= t.left ? t.left - Z.x : Z.x - t.right;
+          const toTitle = gap >= 0 && gap < 26 && Math.abs(Z.y - (t.top + t.bottom) / 2) < 14 && Z.y < A.y;
+          return !fromDot || !toTitle || t.left < 0 || t.right > innerWidth;
         }).length);
         if (loose) fail(vp.name, "layer", `mobile: ${loose} secciones sin rama de su punto a su nombre`);
+        const sides = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.map((g) => g.querySelector(".blc-ttl").getBoundingClientRect().left < g.querySelector(".blc-dot").getBoundingClientRect().left));
+        if (!sides.some(Boolean) || sides.every(Boolean) || sides.some((l, i) => i && l === sides[i - 1])) fail(vp.name, "layer", "mobile: los nombres no se alternan a los dos lados del tronco");
+        // G+: el tronco no flota — bajo 2012 sigue hasta el pie de la curva.
+        const foot = await page.locator(".blc-v .blc-curve").evaluate((c) => { const L = c.getTotalLength(), a = c.getPointAtLength(0), z = c.getPointAtLength(L); return Math.max(a.y, z.y) - Number(c.ownerSVGElement.viewBox.baseVal.height); });
+        if (foot < -2) fail(vp.name, "layer", `mobile: el tronco termina ${Math.round(-foot)}px antes del pie (flota)`);
         const below = await page.locator(".blc-v .blc-ttl").evaluateAll((ts) => ts.filter((t) => t.getBoundingClientRect().bottom > innerHeight).length);
         if (below) fail(vp.name, "layer", `mobile: ${below} secciones fuera de la primera pantalla`);
         // Los caminos son aleatorios y se renuevan: el ancho varía de un momento
         // a otro. Se toma el mayor de hasta ocho (≈5 s; con tres frenó un push por
-        // azar, oct 2026); por debajo de la mitad se perdió la lupa.
+        // azar, oct 2026). Con el Botánico (oct 2026) la copa sale del tronco al
+        // centro, de ancho fijo (no crece con la pantalla): con menos de 100 px
+        // se perdió la lupa.
         let fanW = 0;
-        for (let k = 0; k < 8; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= vp.viewport.width * 0.5) break; await page.waitForTimeout(700); }
-        if (fanW < vp.viewport.width * 0.5) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥50% del ancho)`);
+        for (let k = 0; k < 8; k++) { fanW = Math.max(fanW, await page.locator(".blc-v .blc-fan").evaluate((g) => g.getBoundingClientRect().width).catch(() => 0)); if (fanW >= 100) break; await page.waitForTimeout(700); }
+        if (fanW < 100) fail(vp.name, "layer", `mobile: el abanico ocupa ${Math.round(fanW)}px (esperaba ≥100px)`);
       }
       // El futuro como lupa (30-sep): el abanico ocupa ≥17 % del ancho y la
       // curva va sin rótulos de hitos (HALVING, FONDO, PICO viven en Hitos).
@@ -590,7 +612,7 @@ async function run(vp) {
       // Chequeo de diseño (30-sep, Pablo: estándar premium). Una fila de
       // píxeles del fondo del gráfico, cerca del eje: un salto brusco entre
       // vecinos es una costura o un borde duro (franja del futuro, relleno que
-      // arranca de golpe). Y el rótulo de escala fuera de la zona de caminos.
+      // arranca de golpe). Y sin rótulo de escala (oct 2026, Pablo: ruido).
       if (vp.viewport.width > 768) {
         await page.mouse.move(2, 2);
         const row = await page.locator(".blc-stage svg").first().evaluate((svg) => {
@@ -600,10 +622,8 @@ async function run(vp) {
         });
         const jump = await seamJump(page, { x: row.x0, y: row.y, width: row.x1 - row.x0, height: 1 }, 8);
         if (jump > 2.2) fail(vp.name, "diseño", `costura en el fondo del gráfico (salto de ${jump.toFixed(1)} niveles entre vecinos)`);
-        const lab = await page.locator(".blc-fut-l").first().boundingBox();
-        const clip = await page.locator(".blc-fan clipPath rect").first().boundingBox();
-        if (lab && clip && lab.y + lab.height > clip.y) fail(vp.name, "diseño", "el rótulo de escala queda sobre los caminos del abanico");
       }
+      if (await page.locator(".blc-stage").first().getByText(/escala ×|scale ×/).count()) fail(vp.name, "diseño", "volvió el rótulo de escala del abanico");
       // Impulsos también en desktop (más espaciados; con el mouse fuera de la curva).
       if (vp.viewport.width > 768) {
         await page.mouse.move(2, 2);

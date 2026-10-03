@@ -57,12 +57,12 @@ function branchPath([x0, y0], c1, c2, [x1, y1], offs, amp) {
 }
 
 // Lupa del futuro: de hoy en adelante la escala del precio se amplía ×4
-// (rotulado en pantalla) para que los caminos posibles se abran de verdad; a
+// (sin rótulo desde oct 2026, Pablo: ruido) para que los caminos posibles se abran de verdad; a
 // la escala de 12 años (×10.000) su rango real, ±3× en dos años, se vería
 // como una sola línea.
 const FAN_ZOOM = 4;
 // En mobile la banda de la curva es angosta (la columna de nombres va al
-// lado): la lupa del abanico es mayor para que se abra; va rotulada igual.
+// lado): la lupa del abanico es mayor para que se abra.
 const FAN_ZOOM_V = 7;
 // Desktop: parte del ancho para el futuro (hoy → halving), en su propia escala.
 const FUT_SHARE = 0.24;
@@ -79,13 +79,13 @@ const BEAT = 1200;
 
 // Una rama (mobile y desktop): brillo, trazo, el impulso cuando lo hay (su
 // número reinicia la animación) y el remate junto al nombre.
-function Branch({ d, pulse, end: [x, y], r }) {
+function Branch({ d, pulse, rule }) {
   return (
     <>
       <path className="blc-branch-glow" d={d} />
       <path className="blc-branch" d={d} />
       {pulse ? <path key={pulse} className="blc-pulse" d={d} pathLength="100" /> : null}
-      <circle className="blc-end" cx={x} cy={y} r={r} />
+      <path className="blc-branch blc-rule" d={rule} />
     </>
   );
 }
@@ -219,32 +219,36 @@ export function LayerCurve({ news = [], onEnter }) {
     const lensOf = (tt) => lens(H, tt, TODAY, spark);
 
     if (mobile) {
-      // Tiempo real: el abanico arriba (halving → hoy) y el pasado hacia
-      // abajo hasta Hitos. La curva va en una banda a la izquierda; los
-      // nombres, en una columna pareja a la derecha (una fila por sección).
+      // Botánico (oct 2026, Pablo: "G+"): la curva es un tronco al centro, el
+      // abanico del futuro es la copa (arriba, halving → hoy) y el pasado baja
+      // hasta 2012. Los nombres se alternan a los dos lados, en columnas contra
+      // el tronco, y cada rama SUBE hacia su nombre, como en una lámina de
+      // botánica. Abajo, la historia anterior a 2012 sigue el tronco hasta el
+      // pie y se funde: la curva viene de algún lado, no flota.
       const Hfit = Math.max(460, Math.min(VT + VFAN + 7 * VROW + VB, fit || 692));
       const row = Math.max(46, Math.min(VROW, (VROW * (Hfit - VT - VB)) / (VFAN + 7 * VROW))), fan = Hfit - VT - VB - 7 * row;
-      // Mobile: de arriba (cerca de hoy) hacia abajo, en el mismo orden de uso.
+      // De arriba (cerca de hoy) hacia abajo, en el mismo orden de uso.
       const times = spread(1.2).reverse();
-      const T0 = SPREAD_FROM, yToday = VT + fan, yBot = yToday + 7 * row;
-      const Hh = yBot + VB, x0 = 14, x1 = Math.round(W * 0.46), lx = Math.round(W * 0.58);
+      const T0 = SPREAD_FROM, yToday = VT + fan, yBot = yToday + 7 * row, Hh = yBot + VB;
       const Yt = (tt) => (tt >= TODAY ? yToday - ((tt - TODAY) / (nextHalving - TODAY)) * (yToday - VT) : yToday + ((TODAY - tt) / (TODAY - T0)) * (yBot - yToday));
-      const lc = Math.log10(V_CEIL) - 2;
+      const lc = Math.log10(V_CEIL) - 2, x0 = Math.round(W / 2 - 34), x1 = Math.round(W / 2 + 46);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
+      const step = Yt(times[1]) - Yt(times[0]), rise = step * 0.42;
       const nodes = NODES.map((n, i) => {
-        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), ly = yToday + i * row, ex = lx - 12;
-        const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.35, cy], [ex - (ex - cx) * 0.35, ly], [ex, ly], lensOf(times[i]), 7);
-        return { ...n, tt: times[i], cx, cy, lx, ly, ex, branch };
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), left = i % 2 === 1, ex = left ? x0 - 22 : x1 + 22, ly = cy - rise;
+        const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.25, cy - rise * 0.15], [ex - (ex - cx) * 0.25, ly], [ex, ly], lensOf(times[i]), 3);
+        return { ...n, tt: times[i], cx, cy, lx: left ? ex - 10 : ex + 10, anchor: left ? "end" : "start", ly, branch, rule: `M${ex},${ly - 11}V${ly + 9}` };
       });
-      const pxDec = (x1 - x0) / lc;
-      const past = H.filter((h) => T(h.t) >= T0);
-      return { V: true, W, Hh, row, x0, Xp, Yt, pxDec, last, nextHalving, TODAY, yBot, ...draw(past.map((h) => [Xp(h.p), Yt(T(h.t))])), xt: Xp(last), yt: yToday, nodes };
+      // El tronco arranca en el pie y sube por toda la serie (desde 2012-01) hasta hoy.
+      const trunk = H.map((h) => [Xp(h.p), Yt(T(h.t))]);
+      trunk.unshift([trunk[0][0], Hh]);
+      return { V: true, W, Hh, row: Math.max(44, step), x0, Xp, Yt, pxDec: (x1 - x0) / lc, last, nextHalving, TODAY, yBot, ...draw(trunk), xt: Xp(last), yt: yToday, nodes };
     }
 
     // Desktop: el pasado en tiempo real (2012 → hoy) y el futuro como LUPA
     // (Pablo, 30-sep: que el abanico gane lugar): de hoy al halving ocupa el
-    // FUT_SHARE del ancho, en su propia escala, marcada por el rótulo de
-    // escala y los años del eje — como la lupa ×4 del precio (sin franja de
+    // FUT_SHARE del ancho, en su propia escala, marcada por los años
+    // del eje — como la lupa ×4 del precio (sin franja de
     // fondo: dejaba una costura de dos tonos en hoy). Riel de títulos arriba.
     const Hh = size.h, L = 64, R = 60, TOP = 170, BOT = 46, RAIL = 26;
     const span = W - L - R, xNow = L + span * (1 - FUT_SHARE);
@@ -254,13 +258,19 @@ export function LayerCurve({ news = [], onEnter }) {
     // En pantallas angostas entra lo justo sobre el futuro (títulos a ≥96 px).
     const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 100 ? 14 : gapx < 125 ? 15 : 17;
     const times = spread(SPREAD_GAP);
+    // Banderas (oct 2026, Pablo: D + 4): todas las ramas miden lo mismo; cada
+    // nombre queda a igual distancia de su punto y sube con la curva, usando
+    // el cielo libre. El más alto toca el riel. La rama termina en una regla
+    // que sube por el costado del nombre y su dato, como una cartela.
+    const cys = times.map((tt) => Y(priceAt(tt))), lo = Math.min(...cys);
     const nodes = NODES.map((n, i) => {
-      const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), kx = L + i * gapx, ey = RAIL + 46;
+      const tt = times[i], cx = X(tt), cy = cys[i], kx = L + 10 + i * gapx, ly = cy - lo + RAIL;
+      const ex = kx - 10, ey = ly + 44;
       // Controles: sube casi vertical desde el punto y entra vertical al riel;
       // el primer control ya se inclina hacia su título, así las ramas del
       // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
-      const branch = branchPath([cx, cy], [cx + (kx + 6 - cx) * 0.18, cy - (cy - ey) * 0.5], [kx + 6, ey + (cy - ey) * 0.38], [kx + 6, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
-      return { ...n, tt, cx, cy, kx, ey, fs, branch };
+      const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
+      return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, rule: `M${ex},${ey}V${ly - 3}` };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
     // Ficha de la sección (oct 2026, Pablo): vive ADENTRO de la curva, en el
@@ -294,7 +304,7 @@ export function LayerCurve({ news = [], onEnter }) {
       return {
         until,
         toPoint: (tt, p) => [geo.xt + Math.log10(p / geo.last) * geo.pxDec * FAN_ZOOM_V, geo.Yt(tt)],
-        clip: { x: 8, y: yEnd + 14, w: geo.W - 16, h: geo.yt - yEnd - 14 }, // debajo del rótulo de escala
+        clip: { x: 8, y: yEnd + 14, w: geo.W - 16, h: geo.yt - yEnd - 14 }, // con aire arriba
         fade: { x1: 0, y1: geo.yt, x2: 0, y2: yEnd },
       };
     }
@@ -360,7 +370,12 @@ export function LayerCurve({ news = [], onEnter }) {
   const vertical = geo?.V && (
     <svg className="blc-v" viewBox={`0 0 ${geo.W} ${geo.Hh}`} role="img" aria-label={t("curve.chartAria")}>
       <defs>
-        <linearGradient id="blc-cgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.yBot} x2="0" y2={geo.yt}><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
+        {/* El tronco se enciende hacia hoy y, bajo 2012, se funde en el pie. */}
+        <linearGradient id="blc-cgv" gradientUnits="userSpaceOnUse" x1="0" y1={geo.Hh} x2="0" y2={geo.yt}>
+          <stop offset="0" stopColor="#2f5a63" stopOpacity="0" />
+          <stop offset={(geo.Hh - geo.yBot) / (geo.Hh - geo.yt)} stopColor="#2f5a63" />
+          <stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" />
+        </linearGradient>
       </defs>
       {/* Los caminos se desvanecen arriba y contra los bordes: sin cortes rectos. */}
       <defs>
@@ -372,7 +387,6 @@ export function LayerCurve({ news = [], onEnter }) {
         <mask id="blc-fhm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-fhg)" /></mask>
       </defs>
       <g mask="url(#blc-fvm)"><g mask="url(#blc-fhm)"><FutureFan id="blc-fanv" H={H} label={t("curve.fanAria")} {...fan} /></g></g>
-      <text className="blc-fut-l" x={geo.W - 14} y={VT + 4} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM_V })}</text>
       <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
       <Now x={geo.xt} y={geo.yt} r={[6, 9, 4.5, 1.7]} />
       {geo.nodes.map((n, i) => {
@@ -389,11 +403,11 @@ export function LayerCurve({ news = [], onEnter }) {
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
             <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
-            <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.ex, n.ly]} r={2.4} />
+            <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="9" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="4.5" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="1.7" />
-            <text className="blc-ttl" x={n.lx} y={n.ly + 7}>{label}</text>
+            <text className="blc-ttl" x={n.lx} y={n.ly + 7} textAnchor={n.anchor}>{label}</text>
           </g>
         );
       })}
@@ -430,18 +444,23 @@ export function LayerCurve({ news = [], onEnter }) {
             </defs>
             <g className="blc-grid">
               {/* Bajo la luz de la ficha las líneas de la grilla se disuelven. */}
-              {glow && (
-                <defs>
+              <defs>
+                {glow && (<>
                   <radialGradient id="blc-ing" gradientUnits="userSpaceOnUse" cx={glow.cx} cy={glow.cy} r={glow.rx} gradientTransform={glow.tf}>
                     {INNER_GLOW.map(([o, v]) => <stop key={o} offset={o} stopColor="#6CB8C8" stopOpacity={v} />)}
                   </radialGradient>
                   <radialGradient id="blc-gmg" gradientUnits="userSpaceOnUse" cx={glow.cx} cy={glow.my} r={glow.mrx} gradientTransform={glow.mtf}>
                     {GRID_HIDE.map(([o, v]) => <stop key={o} offset={o} stopColor="#000" stopOpacity={v} />)}
                   </radialGradient>
-                  <mask id="blc-gm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" /><rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-gmg)" /></mask>
-                </defs>
-              )}
-              <g mask={glow ? "url(#blc-gm)" : undefined}>
+                </>)}
+                {/* Las líneas de la grilla no cruzan los nombres (que ahora bajan al gráfico). */}
+                <mask id="blc-gm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}>
+                  <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" />
+                  {glow && <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-gmg)" />}
+                  {geo.nodes.map((n) => <rect key={n.key} x={n.ex - 8} y={n.ly - 10} width={geo.gapx - 4} height="62" rx="8" fill="#000" />)}
+                </mask>
+              </defs>
+              <g mask="url(#blc-gm)">
                 {[10, 1000, 100000].map((p) => <line key={p} x1={geo.L} x2={geo.W - geo.R} y1={geo.Y(p)} y2={geo.Y(p)} />)}
               </g>
               {[10, 1000, 100000].map((p) => (
@@ -462,8 +481,6 @@ export function LayerCurve({ news = [], onEnter }) {
               <path className="blc-area" mask="url(#blc-am)" d={`${geo.path}L${geo.pts[geo.pts.length - 1][0]},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} />
               <path className="blc-curve" d={geo.path} style={{ strokeDasharray: geo.len, strokeDashoffset: geo.len }} />
             </g>
-            {/* El abanico en lenguaje de gráfico: a qué escala va el futuro. */}
-            <text className="blc-fut-l" x={geo.W - geo.R} y={geo.RAIL + 40} textAnchor="end">{t("curve.fanZoom", { n: FAN_ZOOM })}</text>
             {/* Con la ficha abierta se ilumina el interior de la curva que la
                 aloja: una luz elíptica centrada en la ficha que se apaga con
                 curva suave (sin bordes ni bandas) y que solo corta la curva. */}
@@ -495,14 +512,14 @@ export function LayerCurve({ news = [], onEnter }) {
                   onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
-                  <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} end={[n.kx + 6, n.ey]} r={2.6} />
+                  <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
                   <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.6" />
                   {/* Riel: nombre + dato vivo, en un color (el dato en gris). */}
-                  <rect className="blc-rail-hit" x={n.kx - 4} y={geo.RAIL - 6} width={geo.gapx - 8} height="58" />
-                  <text className="blc-rn" x={n.kx} y={geo.RAIL + 12} style={{ fontSize: n.fs }}>{label}</text>
-                  <foreignObject x={n.kx} y={geo.RAIL + 18} width={geo.gapx - 10} height="18"><div className="blc-rv">{c.v ?? " "}</div></foreignObject>
+                  <rect className="blc-rail-hit" x={n.kx - 4} y={n.ly - 6} width={geo.gapx - 8} height="58" />
+                  <text className="blc-rn" x={n.kx} y={n.ly + 12} style={{ fontSize: n.fs }}>{label}</text>
+                  <foreignObject x={n.kx} y={n.ly + 18} width={geo.gapx - 10} height="18"><div className="blc-rv">{c.v ?? " "}</div></foreignObject>
                   <circle cx={n.cx} cy={n.cy} r="20" fill="transparent" />
                 </g>
               );
