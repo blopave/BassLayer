@@ -22,6 +22,7 @@ import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, prot
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { SALAS, SALAS_INGESTED, NOT_MUSIC, NOT_MUSIC_TITLES } from "./lib/salas.js";
 import { slugify } from "./lib/slug.js";
+import { findePicks, eventEpoch } from "./lib/finde.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
@@ -3301,6 +3302,45 @@ app.get("/api/events", async (req, res) => {
   catch { return res.status(502).json({ error: "Events unavailable" }); }
   // Al servir también: la caché puede venir de antes del corte de la noche.
   res.json(applyFilter(notPast(events)));
+});
+
+// ─────────────────────────────────────────────
+//  GET /finde.ics — "El finde en tu calendario" (oct 2026): un calendario
+//  suscribible (webcal) con los elegidos de viernes a domingo (lib/finde.js).
+//  La persona se suscribe una vez y su calendario lo vuelve a pedir solo: la
+//  vuelta semanal a BassLayer sin cuentas. Horas en UTC (Z) para no depender
+//  de VTIMEZONE; UID estable por evento para que las apps no dupliquen.
+// ─────────────────────────────────────────────
+const icsText = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+const icsUtc = (t) => new Date(t).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+// RFC 5545: líneas de hasta 75 octetos, la continuación empieza con espacio.
+const icsFold = (line) => { const out = []; let cur = ""; for (const ch of line) { if (Buffer.byteLength(cur + ch) > 73) { out.push(cur); cur = " "; } cur += ch; } out.push(cur); return out.join("\r\n"); };
+
+app.get("/finde.ics", async (req, res) => {
+  let events;
+  try { events = await swr("events", buildEvents); }
+  catch { return res.status(502).type("text/plain").send("Eventos no disponibles"); }
+  const now = Date.now();
+  const picks = findePicks(notPast(events), now);
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//BassLayer//El finde//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:BassLayer · El finde", "X-WR-CALDESC:Los elegidos de viernes a domingo en Buenos Aires. Se renueva solo cada semana.",
+    "X-WR-TIMEZONE:America/Argentina/Buenos_Aires", "REFRESH-INTERVAL;VALUE=DURATION:PT12H", "X-PUBLISHED-TTL:PT12H",
+  ];
+  for (const ev of picks) {
+    const start = eventEpoch(ev, now);
+    const slug = [slugify(ev.name), slugify(`${ev.day || ""}-${ev.month || ""}`)].filter(Boolean).join("-");
+    const url = `https://basslayer.io/eventos/${slug}`;
+    const lineup = (ev.artists || []).slice(0, 8).join(", ");
+    lines.push(
+      "BEGIN:VEVENT", `UID:${slug}@basslayer.io`, `DTSTAMP:${icsUtc(now)}`, `DTSTART:${icsUtc(start)}`, `DTEND:${icsUtc(start + 5 * 36e5)}`,
+      `SUMMARY:${icsText(ev.name)}`, `LOCATION:${icsText(ev.address && ev.venue && ev.address.includes(ev.venue) ? ev.address : [ev.venue, ev.address].filter(Boolean).join(", "))}`,
+      `DESCRIPTION:${icsText([lineup && `Line-up: ${lineup}`, url].filter(Boolean).join("\n"))}`, `URL:${url}`, "END:VEVENT",
+    );
+  }
+  lines.push("END:VCALENDAR");
+  res.set("Cache-Control", "public, max-age=1800");
+  res.type("text/calendar; charset=utf-8").send(lines.map(icsFold).join("\r\n") + "\r\n");
 });
 
 // ─────────────────────────────────────────────

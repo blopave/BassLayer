@@ -19,6 +19,7 @@ import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, n
 import { namesOtherCity } from "../lib/places.js";
 import { NOT_MUSIC, NOT_MUSIC_TITLES } from "../lib/salas.js";
 import { readFileSync } from "node:fs";
+import { weekendWindow } from "../lib/finde.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
 const JSON_OUT = process.argv.includes("--json");
@@ -208,6 +209,33 @@ async function checkEndpoint({ path, minItems, required }) {
 }
 
 await Promise.all(ENDPOINTS.map(checkEndpoint));
+
+// El finde en tu calendario (oct 2026): /finde.ics es un calendario válido con
+// los elegidos (la persona se suscribe y su app lo vuelve a pedir sola), y el
+// finde se calcula en hora de BA pase lo que pase con la zona del server.
+{
+  const path = "/finde.ics";
+  try {
+    const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const body = await res.text();
+    const n = (body.match(/BEGIN:VEVENT/g) || []).length;
+    stats.push({ path, count: n });
+    if (!res.ok || !/text\/calendar/.test(res.headers.get("content-type") || "")) fail(path, "http", `HTTP ${res.status} ${res.headers.get("content-type")}`);
+    else if (!body.startsWith("BEGIN:VCALENDAR") || !body.includes("END:VCALENDAR")) fail(path, "formato", "no es un calendario");
+    else if (body.split("\r\n").some((l) => Buffer.byteLength(l) > 75)) fail(path, "formato", "líneas de más de 75 octetos (RFC 5545)");
+    else if (!n) fail(path, "vacio", "el finde no tiene ningún elegido");
+  } catch (e) { fail(path, "fetch", e.message); }
+  const casos = [
+    ["2026-10-07T15:00:00-03:00", "2026-10-09"],   // miércoles → el viernes que viene
+    ["2026-10-03T03:00:00-03:00", "2026-10-02"],   // la noche del viernes sigue siendo ese finde
+    ["2026-10-04T10:00:00-03:00", "2026-10-02"],   // domingo a la mañana: todavía este
+    ["2026-10-04T13:00:00-03:00", "2026-10-09"],   // domingo al mediodía: ya el próximo
+    ["2026-10-05T05:00:00-03:00", "2026-10-02"],   // la noche del domingo termina a las 7
+  ];
+  const malos = casos.filter(([now, fri]) => new Date(weekendWindow(Date.parse(now)).fri).toISOString() !== `${fri}T03:00:00.000Z`);
+  stats.push({ path: "finde (BA)", count: casos.length });
+  if (malos.length) fail("finde (BA)", "ventana", malos.map(([n]) => n).join(", "));
+}
 
 // Voz de los textos en español (oct 2026, Pablo): voseo en todo ("Tocá", no
 // "Toca") y "cripto", no "crypto".

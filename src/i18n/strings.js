@@ -177,7 +177,10 @@ export const STRINGS = {
     "feed.newsWord": "notas",
     "feed.festivalsWord": "festivales",
     "salas.word": "salas",
-    "salas.next": "Próximo",
+    "finde.title": "El finde en tu calendario",
+    "finde.picks": "{n} elegidos",
+    "finde.copy": "de viernes a domingo. Te suscribís una vez y tu calendario se renueva solo cada semana.",
+    "finde.subscribe": "Suscribirme",
 
 
     "saved.add": "Guardar",
@@ -569,7 +572,10 @@ export const STRINGS = {
     "feed.newsWord": "stories",
     "feed.festivalsWord": "festivals",
     "salas.word": "venues",
-    "salas.next": "Next",
+    "finde.title": "The weekend in your calendar",
+    "finde.picks": "{n} picks",
+    "finde.copy": "from Friday to Sunday. Subscribe once and your calendar refreshes itself every week.",
+    "finde.subscribe": "Subscribe",
 
 
     "saved.add": "Save",

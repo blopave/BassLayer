@@ -5840,7 +5840,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
    abierto), tres alturas (36 · 44 · 52) y una forma: píldora; los de ícono,
    círculos del alto de su fila. Cada botón conserva solo lo suyo (color,
    fondo, borde); forma, alto, relleno y letra salen de acá. */
-.bl-em-cta, .bl-modal-btn, .bl-venue-btn, .bl-ctrl-filters-btn, .bl-layer-empty-btn, .bl-cirl-add-btn {
+.bl-em-cta, .bl-modal-btn, .bl-venue-btn, .bl-ctrl-filters-btn, .bl-layer-empty-btn, .bl-cirl-add-btn, .bl-finde-btn {
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   min-height:var(--btn-h); padding:0 20px; border-radius:var(--btn-r);
   font-family:var(--font-mono); font-size:var(--fs-11); font-weight:600; letter-spacing:var(--tr-16); text-transform:uppercase; line-height:1;
@@ -5917,4 +5917,24 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 }
 @media (max-width:768px) {
   .bl-root .bl-bass-news-list { padding-top:16px; }
+}
+
+/* El finde en tu calendario (oct 2026): una línea entre la apertura y el
+   primer día — los elegidos en miniatura, una frase y un botón. */
+.bl-finde { margin:8px 32px 0; }
+.bl-finde .bl-day-header { padding-top:16px; }
+.bl-finde-row { display:flex; align-items:center; gap:20px; padding:4px 0 16px; border-bottom:1px solid var(--bl-border-sub); }
+.bl-finde-thumbs { display:flex; flex:none; }
+.bl-finde-thumb { width:48px; height:60px; padding:0; margin-left:-12px; border:2px solid var(--bl-bg); border-radius:var(--r-8); overflow:hidden; background:none; cursor:pointer; box-shadow:0 8px 20px rgba(0,0,0,.35); transition:transform var(--duration-fast); }
+.bl-finde-thumb:first-child { margin-left:0; }
+.bl-finde-thumb:hover { transform:translateY(-2px); }
+.bl-root .bl-finde-thumb .bl-thumb { width:100% !important; height:100% !important; flex:none !important; border-radius:0; }
+.bl-finde-thumb .bl-poster { font-size:var(--fs-10); }
+.bl-finde-copy { flex:1; min-width:0; margin:0; font:400 var(--fs-14)/1.4 var(--font-sans); color:var(--bl-text-sec); }
+.bl-finde-copy b { color:var(--bl-text); font-weight:600; }
+.bl-finde-btn { flex:none; min-height:var(--btn-h-sm); padding:0 16px; border:1px solid var(--bl-accent-bass); background:var(--bl-accent-bass); color:var(--bl-bg); text-decoration:none; cursor:pointer; white-space:nowrap; }
+@media (max-width:768px) {
+  .bl-finde { margin:8px 16px 0; }
+  .bl-finde-row { flex-wrap:wrap; gap:12px 16px; }
+  .bl-finde-btn { width:100%; }
 }

@@ -606,6 +606,19 @@ async function run(vp) {
       }
     }
 
+    // 5f. El finde en tu calendario (oct 2026): si el calendario suscribible
+    // tiene elegidos, la Agenda los muestra con el botón para suscribirse.
+    {
+      const ics = await page.request.get(BASE + "/finde.ics").then((r) => r.text()).catch(() => "");
+      if ((ics.match(/BEGIN:VEVENT/g) || []).length) {
+        await page.locator(".bl-finde").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+        const f = await page.evaluate(() => ({ thumbs: document.querySelectorAll(".bl-finde-thumb").length, href: document.querySelector(".bl-finde-btn")?.getAttribute("href") || "", fits: (() => { const r = document.querySelector(".bl-finde-row"); return r ? r.scrollWidth <= r.clientWidth + 1 : false; })() }));
+        if (!f.thumbs) fail(vp.name, "finde", "la Agenda no muestra los elegidos del finde");
+        else if (!/finde\.ics/.test(decodeURIComponent(f.href))) fail(vp.name, "finde", `el botón no suscribe al calendario (${f.href})`);
+        else if (!f.fits) fail(vp.name, "finde", "la franja del finde se pasa del ancho");
+      }
+    }
+
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});

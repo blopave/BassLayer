@@ -11,6 +11,7 @@ export default defineConfig({
       "/api": "http://localhost:3001",
       "/og": "http://localhost:3001",
       "/img": "http://localhost:3001",
+      "/finde.ics": "http://localhost:3001",
     },
   },
   build: {
