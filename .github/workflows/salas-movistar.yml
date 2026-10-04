@@ -1,10 +1,11 @@
-# Cartelera del Movistar Arena (oct 2026): su web solo se lee con un navegador,
-# así que la lectura corre acá y no en el servidor. Cada 6 h, y después de cada
+# Carteleras que solo se leen con un navegador (oct 2026): Movistar Arena y las
+# salas que venden por Passline (Palermo Groove, C Art Media). La lectura corre
+# acá y no en el servidor. Cada 6 h, y después de cada
 # push a main (un redeploy de Railway puede borrar la copia en disco), abre la
 # web con Playwright y le manda los shows al sitio por POST /api/salas/ingest.
 # Necesita el secreto SALAS_INGEST_TOKEN (el mismo valor que la variable de
 # entorno SALAS_INGEST_TOKEN del servicio en Railway).
-name: Cartelera Movistar Arena
+name: Carteleras con navegador
 
 on:
   schedule:
@@ -28,7 +29,12 @@ jobs:
       - name: Esperar el deploy (solo después de un push)
         if: github.event_name == 'push'
         run: sleep 300
-      - name: Leer y enviar la cartelera
+      - name: Movistar Arena
         run: node scripts/scrape-movistar.mjs --post > /dev/null
+        env:
+          SALAS_INGEST_TOKEN: ${{ secrets.SALAS_INGEST_TOKEN }}
+      - name: Salas de Passline (Groove, C Art Media)
+        if: always()
+        run: node scripts/scrape-passline.mjs --post > /dev/null
         env:
           SALAS_INGEST_TOKEN: ${{ secrets.SALAS_INGEST_TOKEN }}

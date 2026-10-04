@@ -3208,9 +3208,15 @@ const salaNorm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f
 // Club", "en Humboldt | Niceto Club", "@ Café Berlín", "en CC Matienzo".
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function salaTitle(title, sala, room) {
-  const names = [sala.name, room, sala.name.replace(/^(club cultural|ciudad cultural|teatro)\s+/i, ""), sala.name.replace(/^club cultural/i, "CC")].filter(Boolean);
+  const names = [sala.name, room, sala.name.replace(/^(club cultural|ciudad cultural|teatro)\s+/i, ""), sala.name.replace(/^club cultural/i, "CC"), ...(sala.aliases || [])].filter(Boolean);
   const alt = [...new Set(names)].map((n) => escRe(n).replace(/\s+/g, "\\s+")).join("|");
-  const t = title.replace(new RegExp(`\\s+(?:en|@)\\s+(?:(?:${alt})\\s*\\|\\s*)*(?:${alt})(?=\\s*(?:\\(|$|[-–|·]))`, "i"), "").replace(/\s{2,}/g, " ").trim();
+  const t = title
+    // "@ 25.10.2026" o "10/10" pegado al final (Passline)
+    .replace(/\s*@?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/, "")
+    // "en (el) Groove", "@ C ART MEDIA", "@ Groove, Palermo"
+    .replace(new RegExp(`\\s+(?:en(?:\\s+el)?|@)\\s+(?:(?:${alt})\\s*\\|\\s*)*(?:${alt})(?:,\\s*[A-ZÁÉÍÓÚ][\\wáéíóú]+)?(?=\\s*(?:\\(|$|[-–|·@]))`, "i"), "")
+    .replace(/\s*@?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/, "")
+    .replace(/\s{2,}/g, " ").trim();
   return t.length >= 2 ? t : title;
 }
 
