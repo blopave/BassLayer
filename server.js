@@ -2625,12 +2625,16 @@ function deduplicateEvents(events) {
   };
 
   // La ciudad entra en la key: dos venues homónimos en ciudades distintas
-  // (multi-área RA) no son el mismo evento.
+  // (multi-área RA) no son el mismo evento. Gana la primera que llega, salvo
+  // que su venue esté sin confirmar ("TBA - …") y la otra no (oct 2026: se
+  // veía "TBA - Area Costanera, Quilmes" en vez de "Área Costanera").
+  const tba = (ev) => /^(tba|tbd|tbc)\s*[-:|–—]/i.test(ev.venue || "");
   const byVenue = new Map();
   for (const ev of events) {
     const key = `${ev.day}-${ev.month}-${ev.city || ""}-${normVenue(ev.venue)}`;
     const existing = byVenue.get(key);
     if (!existing) byVenue.set(key, ev);
+    else if (tba(existing) && !tba(ev)) { mergeFields(ev, existing); byVenue.set(key, ev); }
     else mergeFields(existing, ev);
   }
 

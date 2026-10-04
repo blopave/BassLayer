@@ -16,7 +16,7 @@
 //   npm run check:content -- --json              # salida para CI
 
 import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence } from "../lib/content-rules.js";
-import { namesOtherCity } from "../lib/places.js";
+import { namesOtherCity, detectCity } from "../lib/places.js";
 import { NOT_MUSIC, NOT_MUSIC_TITLES } from "../lib/salas.js";
 import { readFileSync } from "node:fs";
 import { weekendWindow } from "../lib/finde.js";
@@ -119,6 +119,16 @@ async function checkEndpoint({ path, minItems, required }) {
   // de la fuente que venga (sept 2026: QuéHacemos los tipea como "recital" y
   // RA listó "Techno Yoga").
   if (path === "/api/events") {
+    // Mismo show dos veces (oct 2026: Victoria Whynot de RA y de QuéHacemos):
+    // mismo día y hora y el nombre arranca igual.
+    const head = (n) => String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, " ").trim().split(/\s+/).slice(0, 2).join(" ");
+    const vistos = new Map(), dobles = [];
+    for (const it of items) {
+      if (it?.area !== "amba" || !it.time) continue;
+      const k = `${it.day}-${it.month}-${it.time}-${head(it.name)}`;
+      if (vistos.has(k)) dobles.push(`${it.name} (${it.day} ${it.month})`); else vistos.set(k, it);
+    }
+    if (dobles.length) fail(path, "duplicado", dobles.slice(0, 3).join(" | "));
     const noShows = items.filter((it) => NOT_A_SHOW_TITLE.test(it?.name || ""));
     if (noShows.length) fail(path, "no-musical", noShows.slice(0, 3).map((it) => it.name).join(" | "));
 
@@ -209,6 +219,21 @@ async function checkEndpoint({ path, minItems, required }) {
 }
 
 await Promise.all(ENDPOINTS.map(checkEndpoint));
+
+// Ciudades (oct 2026): RA escribe "Venue, Localidad, Buenos Aires" y la
+// localidad del GBA tiene que ganarle a "Buenos Aires" (si no, el show cae en
+// CABA y se duplica con el de otra fuente); las calles homónimas de CABA no.
+{
+  const casos = [
+    [["TBA - Area Costanera, Quilmes", "TBA - Area Costanera, Quilmes, Buenos Aires"], "Quilmes"],
+    [["Tribu", "Calle 5, Lanus, Buenos Aires"], "Lanús"],
+    [["Club X", "Av. Avellaneda 1200, CABA"], "CABA"],
+    [["Crobar", "Marcelino Freyre s/n, Paseo de La Infanta, Palermo, Ciudad de Buenos Aires"], "CABA"],
+  ];
+  const malos = casos.filter(([[v, a], c]) => detectCity(v, a) !== c).map(([[v]]) => v);
+  stats.push({ path: "ciudades (GBA)", count: casos.length });
+  if (malos.length) fail("ciudades (GBA)", "ciudad", malos.join(", "));
+}
 
 // El finde en tu calendario (oct 2026): /finde.ics es un calendario válido con
 // los elegidos (la persona se suscribe y su app lo vuelve a pedir sola), y el
