@@ -545,14 +545,33 @@ async function run(vp) {
     if (!toastOk) fail(vp.name, "deep-link", "un evento inexistente no muestra aviso");
     if (new URL(page.url()).pathname !== "/") fail(vp.name, "deep-link", `la URL rota queda en la barra (${new URL(page.url()).pathname})`);
 
-    // 5d. Festivales: Buenos Aires arriba, el mundo abajo (sept 2026).
+    // 5d. Interiores unificados (oct 2026, Pablo): Noticias, Festivales y
+    // Salas hablan el idioma de la Agenda — número de apertura, filtros de
+    // texto, pared de afiches y afiche de la casa cuando no hay imagen.
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: /^Bass —/ }).first().click().catch(() => {});
-    await page.locator(".btk-cue", { hasText: /Festival/ }).first().dispatchEvent("click").catch(() => {});
-    await page.locator(".bl-fest-k").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
-    const festHeads = await page.locator(".bl-fest-k").allTextContents();
-    if (!festHeads.length) fail(vp.name, "festivales", "sin bloques Buenos Aires / mundo");
-    else if (festHeads.length > 1 && !/buenos aires/i.test(festHeads[0])) fail(vp.name, "festivales", `el primer bloque es "${festHeads[0]}", no Buenos Aires`);
+    await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click").catch(() => {});
+    await page.locator(".bl-bass-news-item").first().waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    if (await page.locator(".bl-bass-news-item").count()) {
+      if (!(await page.locator(".bl-feed-head").count())) fail(vp.name, "noticias", "falta el número de apertura (como en la Agenda)");
+      // Una nota sin foto no puede quedar como caja oscura con un rótulo chiquito.
+      const tiny = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => parseFloat(getComputedStyle(p).fontSize) < 15).length);
+      if (tiny) fail(vp.name, "noticias", `${tiny} notas sin foto se ven como cajas vacías (sin afiche de la casa)`);
+    }
+    await page.locator(".bl-bass-section-btn", { hasText: /^Festivales$|^Festivals$/ }).first().click().catch(() => {});
+    await page.locator(".bl-fest-wall").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+    {
+      const fest = await page.evaluate(() => ({
+        heads: [...document.querySelectorAll(".bl-fest-wall .bl-day-header")].map((h) => h.textContent),
+        posters: [...document.querySelectorAll(".bl-fest-wall .bl-ev-item .bl-thumb")].filter((t) => t.getBoundingClientRect().height > t.getBoundingClientRect().width).length,
+        chips: document.querySelectorAll(".bl-filters.bass-filters .bl-filter-chip").length,
+        head: !!document.querySelector(".bl-feed-head"),
+      }));
+      if (!fest.heads.length) fail(vp.name, "festivales", "sin pared de afiches ni bloques Buenos Aires / mundo");
+      else if (fest.heads.length > 1 && !/buenos aires/i.test(fest.heads[0])) fail(vp.name, "festivales", `el primer bloque es "${fest.heads[0]}", no Buenos Aires`);
+      if (fest.heads.length && !fest.posters) fail(vp.name, "festivales", "los festivales no van como afiches");
+      if (fest.heads.length && (!fest.chips || !fest.head)) fail(vp.name, "festivales", "faltan los filtros de texto o el número de apertura de la Agenda");
+    }
 
     // 5e. Salas (oct 2026, Pablo): una pestaña propia con las salas y la
     // cartelera completa de cada una; la sala también aparece en el buscador.
@@ -563,18 +582,19 @@ async function run(vp) {
       if (bar > 1) fail(vp.name, "salas", `las pestañas no entran: se pasan ${bar}px del ancho`);
       else {
         await tab.first().click();
-        await page.locator(".bl-sala-card").first().waitFor({ state: "visible", timeout: 60_000 }).catch(() => {});
-        const cards = await page.locator(".bl-sala-card").count();
-        if (cards < 8) fail(vp.name, "salas", `la pestaña muestra ${cards} salas (esperaba al menos 8)`);
+        await page.locator(".bl-sala-poster").first().waitFor({ state: "visible", timeout: 60_000 }).catch(() => {});
+        const cards = await page.locator(".bl-sala-poster").count();
+        if (cards < 8) fail(vp.name, "salas", `la pestaña muestra ${cards} salas como afiche (esperaba al menos 8)`);
+        if (cards && !(await page.locator(".bl-sala-poster .bl-thumb-img").count())) fail(vp.name, "salas", "ninguna sala tiene portada con el flyer de un show");
         if (cards) {
-          await page.locator(".bl-sala-card").first().click();
+          await page.locator(".bl-sala-poster").first().click();
           await page.locator(".bl-sala-show").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
           const sala = await page.evaluate(() => ({ name: document.querySelector(".bl-sala-name")?.textContent, shows: document.querySelectorAll(".bl-sala-show").length, top: document.querySelector(".bl-sala-name")?.getBoundingClientRect().top, left: Math.min(...[...document.querySelectorAll(".bl-sala-name, .bl-sala-show")].map((e) => e.getBoundingClientRect().left)) - (document.querySelector(".bl-sala")?.closest(".bl-swipe-panel")?.getBoundingClientRect().left || 0) }));
           if (!(sala.left >= 12)) fail(vp.name, "salas", `la cartelera de la sala va pegada al borde (${Math.round(sala.left)}px de margen)`);
           if (!sala.name || sala.shows < 1) fail(vp.name, "salas", "la sala no muestra su cartelera");
           if (!(sala.top >= 0 && sala.top < vp.viewport.height)) fail(vp.name, "salas", "la sala no abre desde arriba (el nombre queda fuera de pantalla)");
           await page.locator(".bl-sala-back").click();
-          if ((await page.locator(".bl-sala-card").count()) < 8) fail(vp.name, "salas", "volver desde una sala no vuelve a la lista de salas");
+          if ((await page.locator(".bl-sala-poster").count()) < 8) fail(vp.name, "salas", "volver desde una sala no vuelve a la lista de salas");
         }
         // Desde el buscador de la Agenda.
         await page.locator(".bl-bass-section-btn", { hasText: /Agenda|Listings/ }).first().click();

@@ -1263,39 +1263,6 @@
   border-radius:var(--r-8);
   align-self:stretch;
 }
-.bl-ev-item-festival .bl-thumb {
-  flex:0 0 72px; width:72px; height:72px;
-  border-radius:var(--r-12);
-  align-self:center;
-}
-
-/* Badge de fecha — sólo festivales. La agenda de eventos ya viene agrupada por
-   día, así que ahí la fecha vive en el encabezado; el listado de festivales es
-   plano y sí la necesita en cada fila. */
-.bl-ev-item-festival .bl-ev-date {
-  flex:0 0 56px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:4px;
-  padding-right:20px;
-  border-right:1px solid var(--bl-border-sub);
-}
-.bl-ev-item-festival .bl-ev-date-d {
-  font-family:var(--font-bass-mono), monospace;
-  font-weight:600; font-style:normal;
-  font-size:var(--fs-28); letter-spacing:var(--tr-n03);
-  color:var(--bl-title);
-  line-height:1;
-  font-feature-settings:"tnum" 1;
-}
-.bl-ev-item-festival .bl-ev-date-m {
-  font-family:var(--font-bass-mono), monospace;
-  font-weight:400; font-size:var(--fs-10);
-  letter-spacing:var(--tr-16); text-transform:uppercase;
-  color:var(--bl-text-sec);
-}
-/* Los festivales conservan el título en el tamaño anterior: su lista es un
-   índice de referencia, no la agenda del finde. */
-.bl-ev-item-festival .bl-ev-name { font-size:var(--fs-16); font-weight:600; letter-spacing:var(--tr-n015); line-height:1.3; }
 /* ── Hero EL FINDE — el momento dashboard de Bass ──
    Espejo cálido del status de mercado de Layer: lectura curada arriba,
    la agenda completa abajo. */
@@ -1312,10 +1279,8 @@
 .bl-hero-title { color:var(--bl-accent-bass); margin:0; }
 .bl-hero-title::before { content:"— "; color:var(--bl-text-ter); }
 /* Festivales y eventos cripto: Buenos Aires arriba, el mundo abajo (sept 2026). */
-.bl-fest-group + .bl-fest-group { margin-top:20px; }
-.bl-fest-k, .bl-cirl-k { display:flex; align-items:center; gap:12px; margin:8px 0 12px; color:var(--bl-text-sec); }
-.bl-fest-k::after, .bl-cirl-k::after { content:""; flex:1; height:1px; background:var(--bl-border-sub); }
-.bl-fest-k.is-here { color:var(--bl-accent-bass); }
+.bl-cirl-k { display:flex; align-items:center; gap:12px; margin:8px 0 12px; color:var(--bl-text-sec); }
+.bl-cirl-k::after { content:""; flex:1; height:1px; background:var(--bl-border-sub); }
 .bl-cirl-k { font:500 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; }
 .bl-cirl-k.is-here { color:var(--bl-accent-layer); }
 .bl-cirl-group + .bl-cirl-group { margin-top:16px; }
@@ -2120,12 +2085,6 @@
   .bl-ev-row .bl-poster { font-size:var(--fs-11); }
   .bl-ev-time-block { display:none; }
   .bl-ev-time-mobile { display:inline; }
-  /* Festivales: las tres columnas no entran en 390px — el póster ya vive
-     en el detalle, acá sale; el bloque de fecha se angosta. */
-  .bl-ev-item-festival .bl-thumb { display:none; }
-  .bl-ev-item-festival .bl-ev-date { flex-basis:44px; padding-right:12px; }
-  .bl-ev-item-festival .bl-ev-date-d { font-size:var(--fs-22); }
-  .bl-ev-item-festival .bl-ev-name { font-size:var(--fs-16); }
   .bl-ev-venue-inline { font-size:var(--fs-11); letter-spacing:0; }
   .bl-ev-time-inline { font-size:var(--fs-11); letter-spacing:var(--tr-04); }
   .bl-ev-genre-badge { font-size:var(--fs-11); padding:2px 8px; border-radius:var(--r-12); }
@@ -3645,8 +3604,7 @@ a.bl-trend-preview-title:hover { color:var(--bl-text); }
      mínimo táctil de 44. Se agranda el área de toque sin tocar el cuerpo de la
      tipografía, así el índice editorial de Bass conserva su aspecto. */
   .bl-filter-chip,
-  .bl-filters.bass-filters .bl-filter-chip,
-  .bl-festival-region-chip {
+  .bl-filters.bass-filters .bl-filter-chip {
     min-height:44px;
     display:inline-flex;
     align-items:center;
@@ -4528,7 +4486,6 @@ select.bl-venue-input { cursor:pointer; }
 }
 /* Escala por contenedor: los anchos del thumb ya los fija cada contexto */
 .bl-ev-item[data-featured="true"] .bl-poster { font-size:var(--fs-16); }
-.bl-ev-item-festival .bl-poster,
 .bl-bass-news-item .bl-poster { font-size:var(--fs-11); }
 
 /* ── Foto de artista como afiche — fallback cuando no hay flyer ──
@@ -4764,38 +4721,7 @@ select.bl-venue-input { cursor:pointer; }
    Bass — Festivales: grid + cards + modal
    ═══════════════════════════════════════════ */
 
-.bl-festival-filters {
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  padding:12px 32px 8px;
-}
-.bl-festival-region-chip {
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-16);
-  text-transform:uppercase;
-  padding:4px 12px;
-  border:1px solid var(--bl-border);
-  border-radius:var(--r-20);
-  background:transparent;
-  color:var(--bl-text-sec);
-  cursor:pointer;
-  white-space:nowrap;
-  transition:all .25s var(--ease-out-expo);
-}
-.bl-festival-region-chip:hover {
-  border-color:var(--bl-accent-bass);
-  color:var(--bl-accent-bass);
-}
-.bl-festival-region-chip.active {
-  background:rgba(196,144,112,0.10);
-  border-color:var(--bl-accent-bass);
-  color:var(--bl-accent-bass);
-}
-
-/* Festivales reusan el layout de fila de Eventos (.bl-ev-list / .bl-ev-item).
-   Aquí solo agregamos un mini-tag "EN CURSO" inline para el estado live. */
+/* Festivales: mini-tag "EN CURSO" para el estado live. */
 .bl-festival-live-dot {
   font-family:var(--font-mono);
   font-size:var(--fs-10); font-weight:700;
@@ -4806,14 +4732,6 @@ select.bl-venue-input { cursor:pointer; }
   border:1px solid var(--bl-accent-bass);
   border-radius:var(--r-4);
   box-shadow:0 0 8px rgba(196,144,112,0.25);
-}
-.bl-festival-broken-dot {
-  display:inline-block;
-  margin-left:8px;
-  color:#c97070;
-  font-size:var(--fs-11);
-  vertical-align:middle;
-  cursor:help;
 }
 .bl-festival-modal-link-warn {
   font-family:var(--font-mono);
@@ -4826,10 +4744,6 @@ select.bl-venue-input { cursor:pointer; }
   border-radius:var(--r-4);
   background:rgba(201,112,112,0.06);
   line-height:1.4;
-}
-
-@media (max-width:768px) {
-  .bl-festival-filters { padding:8px 16px 4px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -5954,14 +5868,6 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .btk-cue.is-hot .btk-tick { stroke:var(--bl-accent-bass); opacity:1; }
 
 /* ── Salas (oct 2026): la cartelera completa de salas emblemáticas ─────── */
-.bl-sala-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; padding:24px 32px 40px; }   /* mismo margen que la Agenda */
-.bl-sala-card { display:flex; flex-direction:column; gap:4px; text-align:left; padding:16px; border:1px solid var(--bl-border); border-radius:var(--r-12); background:var(--bl-subtle); color:var(--bl-text); cursor:pointer; transition:border-color var(--duration-fast), transform var(--duration-fast); }
-.bl-sala-card:hover, .bl-sala-card:focus-visible { border-color:var(--bl-accent-bass); }
-.bl-sala-card:active { transform:translateY(1px); }
-.bl-sala-card-name { font:700 var(--fs-18)/1.2 var(--font-sans); letter-spacing:var(--tr-n015); }
-.bl-sala-card-meta { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text-sec); }
-.bl-sala-card-next { margin-top:8px; font:500 var(--fs-13)/1.35 var(--font-sans); color:var(--bl-text-sec); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.bl-sala-card-next b { font:600 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); text-transform:uppercase; color:var(--bl-accent-bass); margin-right:4px; }
 .bl-sala-hits { display:flex; flex-direction:column; gap:8px; margin:12px 0; }
 .bl-sala-hit { display:flex; align-items:baseline; gap:12px; padding:12px 16px; border:1px solid var(--bl-accent-bass); border-radius:var(--r-12); background:color-mix(in srgb, var(--bl-accent-bass) 8%, transparent); color:var(--bl-text); cursor:pointer; text-align:left; }
 .bl-sala-hit-name { font:700 var(--fs-16) var(--font-sans); flex:1; }
@@ -5969,22 +5875,46 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-sala { padding:24px 32px 40px; }
 .bl-sala-back { background:none; border:0; padding:0; margin-bottom:16px; color:var(--bl-text-sec); font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-04); cursor:pointer; }
 .bl-sala-back:hover { color:var(--bl-text); }
-.bl-sala-head { margin-bottom:20px; }
+.bl-sala-head { margin-bottom:4px; }
 .bl-sala-name { margin:0; font:800 var(--fs-34)/1.05 var(--font-sans); letter-spacing:var(--tr-n03); }
 .bl-sala-meta { margin:8px 0 0; font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text-sec); }
-.bl-sala-day { margin-bottom:16px; }
-.bl-sala-date { margin:0 0 8px; padding-bottom:8px; border-bottom:1px solid var(--bl-border-sub); font:600 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-accent-bass); }
-.bl-sala-show { display:flex; align-items:center; gap:12px; padding:8px 0; color:var(--bl-text); text-decoration:none; }
-.bl-sala-show:hover .bl-sala-show-title { color:var(--bl-accent-bass); }
-.bl-sala-thumb { flex:none; width:56px; height:56px; border-radius:var(--r-8); object-fit:cover; background:var(--bl-subtle); }
-.bl-sala-thumb.is-empty { display:grid; place-items:center; font:800 var(--fs-22) var(--font-sans); color:var(--bl-text-ter); }
-.bl-sala-show-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
-.bl-sala-show-title { font:600 var(--fs-16)/1.25 var(--font-sans); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; transition:color var(--duration-fast); }
-.bl-sala-show-meta { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text-sec); }
-.bl-sala-show-cta { flex:none; font:600 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-text-sec); padding:8px 12px; border:1px solid var(--bl-border); border-radius:var(--btn-r); }
+.bl-sala-meta-sm { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-sala-show-cta { font:600 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
+.bl-sala-wall { padding-bottom:40px; }
+.bl-sala .bl-ev-list { padding:8px 0 0; }
+.bl-sala .bl-feed-head { margin:24px 0 2px; }
 @media (max-width:768px) {
-  .bl-sala-grid { grid-template-columns:1fr; padding:16px 16px 40px; }
   .bl-sala { padding:16px 16px 40px; }
   .bl-sala-name { font-size:var(--fs-28); }
-  .bl-sala-show-cta { display:none; }
+  .bl-sala .bl-feed-head { margin:20px 0 2px; }
+}
+
+/* ══ Interiores unificados (oct 2026, Pablo): Noticias, Festivales y Salas
+   hablan el idioma de la Agenda — número de apertura, filtros de texto,
+   rótulos con filete, pared de afiches y afiche de la casa cuando no hay
+   imagen. Salas y la cartelera de una sala usan <button>/<a> como tarjeta. ══ */
+.bl-root .bl-ev-wall .bl-ev-item { color:var(--bl-text); text-decoration:none; text-align:left; font:inherit; cursor:pointer; }
+.bl-ev-wall span.bl-ev-body, .bl-ev-wall span.bl-ev-meta-row { display:flex; }
+.bl-ev-wall span.bl-ev-body { flex-direction:column; gap:8px; }
+.bl-ev-wall span.bl-ev-name { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-root .bl-ev-wall .bl-ev-venue-line { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-fest-wall .bl-ev-item::before, .bl-sala-wall .bl-ev-item::before { text-transform:uppercase; }
+/* Noticias: la primera es tapa (dos columnas) y sin foto va el afiche de la casa. */
+.bl-root .bl-bass-news-list { padding-top:24px; }
+.bl-root .bl-bass-news-item .bl-thumb { box-shadow:0 18px 40px rgba(0,0,0,.35); }
+.bl-root .bl-bass-news-item .bl-thumb-poster {
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--poster-tint, #C49070) 26%, transparent) 0 1.5px, transparent 1.5px 5px),
+    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--poster-tint, #C49070) 30%, transparent) 0%, transparent 65%),
+    linear-gradient(180deg, color-mix(in srgb, var(--poster-tint, #C49070) 14%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
+  -webkit-mask-image:none; container-type:inline-size;
+}
+.bl-root .bl-bass-news-item .bl-thumb-poster .bl-poster { font-size:clamp(15px, 9cqi, 34px); padding:7cqi 6cqi; align-items:flex-end; background:linear-gradient(0deg, color-mix(in srgb, var(--bl-bg) 85%, transparent) 0%, transparent 55%); }
+.bl-root .bl-bass-news-item .bl-thumb-poster .bl-poster-rule { display:none; }
+@media (min-width:769px) {
+  .bl-root .bl-bass-news-item:first-child { grid-column:span 2; }
+  .bl-root .bl-bass-news-item:first-child .bl-bass-news-title { font-size:var(--fs-22); line-height:1.2; letter-spacing:var(--tr-n015); }
+}
+@media (max-width:768px) {
+  .bl-root .bl-bass-news-list { padding-top:16px; }
 }

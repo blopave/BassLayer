@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
+import { useTranslatedTitle } from "./TranslatedTitle";
 import { createPortal } from "react-dom";
 import { FilterBar } from "./FilterBar";
 import { EventSkeleton, NewsSkeleton } from "./SkeletonLoader";
 import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
-import { useSalas, SalaGrid, SalaHits, SalaCartelera, salaMatches } from "./Salas";
+import { useSalas, SalaGrid, SalaHits, SalaCartelera, salaMatches, SectionHead } from "./Salas";
 import { BassTrack } from "./BassTrack";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
@@ -309,13 +309,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const [festivals, setFestivals] = useState([]);
   const [festivalsLoading, setFestivalsLoading] = useState(false);
   const [festivalsError, setFestivalsError] = useState(null);
-  const [festivalsRegion, setFestivalsRegion] = useState("All");
   const festivalsLoadedRef = useRef(false);
 
-  const loadFestivals = (region = festivalsRegion) => {
+  const loadFestivals = () => {
     setFestivalsLoading(true);
     setFestivalsError(null);
-    shared(region === "All" ? "festivals" : `festivals:${region}`, () => api.festivals(region))
+    shared("festivals", () => api.festivals())
       .then((items) => { setFestivals(items || []); })
       .catch(() => setFestivalsError(t("feed.festivalsLoadError")))
       .finally(() => setFestivalsLoading(false));
@@ -333,11 +332,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
-  // Re-fetch when region filter changes
-  useEffect(() => {
-    if (festivalsLoadedRef.current) loadFestivals(festivalsRegion);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [festivalsRegion]);
 
   // Eventos de la región activa. Festivales quedan fuera del filtro de región
   // (son curados aparte y viven en su propia sección).
@@ -633,9 +627,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           festivals={festivals}
           loading={festivalsLoading}
           error={festivalsError}
-          onRetry={() => loadFestivals(festivalsRegion)}
-          region={festivalsRegion}
-          onRegionChange={setFestivalsRegion}
+          onRetry={loadFestivals}
           onSelect={onSelectFestival}
         />
       ) : section === "noticias" ? (
@@ -848,6 +840,8 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   }
 
   return (
+    <>
+    <SectionHead n={news.length} word={t("feed.newsWord")} />
     <div className="bl-bass-news-list" role="region" aria-label={t("section.news")} ref={listRef}>
       {news.map((item, idx) => (
         <BassNewsItem
@@ -859,6 +853,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
       ))}
       <EndOfSet />
     </div>
+    </>
   );
 }
 
@@ -881,7 +876,6 @@ function BassNewsItem({ item, idx, onSelect }) {
       <div className="bl-bass-news-body">
         <h3 className="bl-bass-news-title bl-bass-t-heading" lang={tr.lang}>{tr.title}</h3>
         {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}
-        <TranslateToggle tr={tr} className="bl-finance-tr" />
       </div>
     </article>
   );
@@ -889,18 +883,6 @@ function BassNewsItem({ item, idx, onSelect }) {
 
 const FESTIVAL_REGIONS = ["All", "BA", "Sudamérica", "Europa", "Norteamérica", "Asia"];
 const festMonths = (locale) => MONTHS_ABBR[locale] || MONTHS_ABBR.es;
-
-function festivalDay(start) {
-  if (!start) return "??";
-  const s = new Date(start + "T00:00:00");
-  return String(s.getDate()).padStart(2, "0");
-}
-
-function festivalMonth(start, locale) {
-  if (!start) return "TBA";
-  const s = new Date(start + "T00:00:00");
-  return festMonths(locale)[s.getMonth()];
-}
 
 function festivalDateRange(start, end, locale) {
   if (!start) return "—";
@@ -915,89 +897,54 @@ function festivalDateRange(start, end, locale) {
   return sm === em ? `${sd}–${ed} ${sm}` : `${sd} ${sm} → ${ed} ${em}`;
 }
 
-function FestivalsList({ festivals, loading, error, onRetry, region, onRegionChange, onSelect }) {
-  const { t } = useLocale();
+// Festivales con el lenguaje de la Agenda (oct 2026, "interiores unificados"):
+// filtros de texto con conteo (solo las regiones que tienen algo), número de apertura,
+// rótulos con filete y la pared de afiches con la fecha sobre el flyer.
+function FestivalsList({ festivals, loading, error, onRetry, onSelect }) {
+  const { t, locale } = useLocale();
+  const [region, setRegion] = useState("All");
+  const all = festivals || [];
+  const regions = ["All", ...FESTIVAL_REGIONS.filter((r) => r !== "All" && all.some((f) => f.region === r))];
+  const counts = { all: all.length, ...Object.fromEntries(regions.slice(1).map((r) => [r, all.filter((f) => f.region === r).length])) };
+  const list = region === "All" ? all : all.filter((f) => f.region === region);
   const listRef = useScrollReveal(loading, region);
-
+  if (loading) return <NewsSkeleton />;
+  if (error) return <div className="bl-feed"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>;
+  if (!all.length) return <div className="bl-feed"><div className="bl-empty">{t("feed.empty.festivals")}</div></div>;
   return (
     <>
-      <div className="bl-festival-filters">
-        {FESTIVAL_REGIONS.map((r) => (
-          <button
-            key={r}
-            className={`bl-festival-region-chip${region === r ? " active" : ""}`}
-            onClick={() => onRegionChange(r)}
-          >
-            {r === "All" ? t("common.all") : r}
-          </button>
-        ))}
+      <FilterBar items={regions} active={region} onChange={setRegion} className="bass-filters" counts={counts} />
+      <SectionHead n={list.length} word={t("feed.festivalsWord")} />
+      <div className="bl-ev-list bl-ev-wall bl-fest-wall" role="region" aria-label={t("section.festivals")} ref={listRef}>
+        {[["BA", t("fest.inBA")], ["world", t("fest.inWorld")]].flatMap(([key, label]) => {
+          const group = list.filter((f) => (f.region === "BA") === (key === "BA"));
+          if (!group.length) return [];
+          return [
+            <h3 className="bl-day-header" key={`h-${key}`}><span className="bl-day-label">{label}</span><span className="bl-day-line" aria-hidden="true" /></h3>,
+            ...group.map((f, i) => (
+              <article
+                key={f.id}
+                className={`bl-ev-item bl-reveal ${i === 0 ? "bl-ev-lead" : "bl-ev-row"}`}
+                data-time={festivalDateRange(f.dates_start, f.dates_end, locale)}
+                onClick={() => onSelect?.(f)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(f))}
+                tabIndex={0}
+                role="button"
+                aria-label={`${f.name} — ${f.city}, ${f.country}`}
+                style={{ cursor: "pointer", transitionDelay: `${Math.min(i * 0.04, 0.3)}s` }}
+              >
+                <BlThumb image={f.image} poster={{ text: f.name, family: "festival" }} />
+                <div className="bl-ev-body">
+                  <div className="bl-ev-name">{f.name}</div>
+                  <div className="bl-ev-venue-line">{f.city}, {f.country}</div>
+                  {f.status === "live" && <div className="bl-ev-meta-row"><span className="bl-festival-live-dot">EN CURSO</span></div>}
+                </div>
+              </article>
+            )),
+          ];
+        })}
+        <EndOfSet />
       </div>
-      {loading ? <NewsSkeleton />
-       : error ? (
-         <div className="bl-feed">
-           <div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>
-             {error}
-           </div>
-         </div>
-       )
-       : !festivals || festivals.length === 0 ? (
-         <div className="bl-feed">
-           <div className="bl-empty">
-             {t("feed.empty.festivals")}
-           </div>
-         </div>
-       )
-       : (
-         <div className="bl-ev-list" role="region" aria-label={t("section.festivals")} ref={listRef}>
-           {/* Buenos Aires arriba y el mundo abajo, rotulados (sept 2026). */}
-           {[["BA", t("fest.inBA")], ["world", t("fest.inWorld")]].map(([key, label]) => {
-             const group = festivals.filter((f) => (f.region === "BA") === (key === "BA"));
-             if (!group.length) return null;
-             return (
-               <div className="bl-fest-group" key={key}>
-                 <h3 className={`bl-fest-k bl-bass-t-stamp${key === "BA" ? " is-here" : ""}`}>{label}</h3>
-                 {group.map((f, idx) => <FestivalItem key={f.id} f={f} idx={idx} onSelect={onSelect} />)}
-               </div>
-             );
-           })}
-           <EndOfSet />
-         </div>
-       )}
     </>
-  );
-}
-
-function FestivalItem({ f, idx, onSelect }) {
-  const { locale } = useLocale();
-  return (
-    <article
-      className="bl-ev-item bl-ev-item-festival bl-reveal"
-      onClick={() => onSelect?.(f)}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(f))}
-      tabIndex={0}
-      role="button"
-      aria-label={`${f.name} — ${f.city}, ${f.country}`}
-      style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
-    >
-      <div className="bl-ev-date">
-        <div className="bl-ev-date-d">{festivalDay(f.dates_start)}</div>
-        <div className="bl-ev-date-m">{festivalMonth(f.dates_start, locale)}</div>
-      </div>
-      <div className="bl-ev-body">
-        <div className="bl-ev-name">
-          {f.name}
-          {f.linkStatus === "broken" && (
-            <span className="bl-festival-broken-dot" title="Sitio temporalmente caído" aria-label="Sitio caído">●</span>
-          )}
-        </div>
-        <div className="bl-ev-artists">{f.city}, {f.country}</div>
-        <div className="bl-ev-meta-row">
-          <span className="bl-ev-venue-inline">{festivalDateRange(f.dates_start, f.dates_end, locale)}</span>
-          {f.region && <span className="bl-ev-genre-badge" title={f.region}>{f.region}</span>}
-          {f.status === "live" && <span className="bl-festival-live-dot">EN CURSO</span>}
-        </div>
-      </div>
-      <BlThumb image={f.image} poster={{ text: f.name, family: "festival" }} />
-    </article>
   );
 }

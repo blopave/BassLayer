@@ -174,6 +174,10 @@ export const STRINGS = {
     "filter.apply": "Ver {n} eventos",
     "filter.clear": "Limpiar",
     "feed.eventsWord": "eventos",
+    "feed.newsWord": "notas",
+    "feed.festivalsWord": "festivales",
+    "salas.word": "salas",
+    "salas.next": "Próximo",
 
 
     "saved.add": "Guardar",
@@ -562,6 +566,10 @@ export const STRINGS = {
     "filter.apply": "See {n} events",
     "filter.clear": "Clear",
     "feed.eventsWord": "events",
+    "feed.newsWord": "stories",
+    "feed.festivalsWord": "festivals",
+    "salas.word": "venues",
+    "salas.next": "Next",
 
 
     "saved.add": "Save",
