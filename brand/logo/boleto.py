@@ -167,6 +167,20 @@ def main():
     place = lambda p: C.xform(p, lambda x, y: (x * s + (S - mW * s) / 2, y * s + (S - mH * s) / 2))
     icon = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}" role="img" aria-label="BassLayer"><title>BassLayer</title><rect width="{S}" height="{S}" fill="#000"/><path fill="{BOLETOS["general"]["fondo"]}" d="{C.d(place(mb))}"/><path fill="{BOLETOS["general"]["tinta"]}" d="{C.d(place(mn))}"/></svg>\n'
     C.write("boleto-app.svg", icon)
+    # Imagen para compartir (1200 × 630): el boleto general centrado y una
+    # línea en Geist Mono pasada a curvas (las imágenes se rasterizan sin la fuente).
+    tag, tw = C.shape(C.MONO, "LA NOCHE Y EL MERCADO DE BUENOS AIRES", 400, 120)
+    OW, OH = 1200, 630
+    s1 = 760 / W
+    bx, by = (OW - W * s1) / 2, 268 - H * s1 / 2
+    ob = C.xform(body, lambda x, y: (x * s1 + bx, y * s1 + by))
+    on = C.xform(name, lambda x, y: (x * s1 + bx, y * s1 + by))
+    s2 = 15 / 1000
+    ot = C.xform(tag, lambda x, y: (x * s2 + (OW - tw * s2) / 2, y * s2 + 462))
+    og = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {OW} {OH}" width="{OW}" height="{OH}"><rect width="{OW}" height="{OH}" fill="#000"/>'
+          f'<path fill="{BOLETOS["general"]["fondo"]}" d="{C.d(ob)}"/><path fill="{BOLETOS["general"]["tinta"]}" d="{C.d(on)}"/>'
+          f'<path fill="#8A8A8A" d="{C.d(ot)}"/></svg>\n')
+    C.write("og.svg", og)
     # Medidas para la lámina de construcción.
     (OUT / "boleto-medidas.json").write_text(
         f'{{"W": {W:.1f}, "H": {H:.1f}, "cap": {CAP}, "notch_x": {nx:.1f}, "r": {0.09 * H:.1f}, "nr": {0.11 * H:.1f}, "pv": {(H - CAP) / 2:.1f}, "ph": {(H - CAP) / 2:.1f}}}\n', encoding="utf-8")

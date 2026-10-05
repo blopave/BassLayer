@@ -1,7 +1,8 @@
 {
   "name": "BassLayer",
   "short_name": "BassLayer",
-  "description": "Eventos de música electrónica & Crypto en Buenos Aires",
+  "description": "La noche y el mercado de Buenos Aires: la agenda de música electrónica y los mercados, cripto incluida.",
+  "lang": "es-AR",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -11,22 +12,22 @@
   "orientation": "portrait",
   "shortcuts": [
     {
-      "name": "Eventos hoy",
+      "name": "Hoy en la noche",
       "short_name": "Hoy",
       "url": "/eventos/hoy",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "El finde",
       "short_name": "Finde",
       "url": "/eventos/este-finde",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "Crypto",
-      "short_name": "Crypto",
+      "name": "Layer · los mercados",
+      "short_name": "Layer",
       "url": "/?view=layer",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "screenshots": [
@@ -35,39 +36,20 @@
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Agenda de eventos en Buenos Aires"
+      "label": "La agenda de la noche en Buenos Aires"
     },
     {
       "src": "/screenshot-desktop.png",
       "sizes": "1280x800",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "BassLayer — eventos y crypto"
+      "label": "BassLayer: la noche y el mercado"
     }
   ],
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

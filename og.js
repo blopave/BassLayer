@@ -14,26 +14,28 @@ import fetch from "node-fetch";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── Fuentes ───────────────────────────────────
-// Cargamos Inter Regular + Bold del paquete @fontsource/inter (woff, latin).
-// Satori soporta TTF/OTF/WOFF (no WOFF2). Lo hacemos al startup, no per-request.
-const FONT_BASE = join(__dirname, "node_modules/@fontsource/inter/files");
-const interRegular = readFileSync(join(FONT_BASE, "inter-latin-400-normal.woff"));
-const interBold = readFileSync(join(FONT_BASE, "inter-latin-700-normal.woff"));
-
+// Geist, la letra de la marca (oct 2026). Satori no lee WOFF2: og-fonts/ tiene (ver su README)
+// instancias estáticas en WOFF sacadas de public/fonts (OFL, licencia al lado).
+// Se cargan al arrancar, no por pedido.
+const FONT_BASE = join(__dirname, "og-fonts");
 const FONTS = [
-  { name: "Inter", data: interRegular, weight: 400, style: "normal" },
-  { name: "Inter", data: interBold, weight: 700, style: "normal" },
+  ...[400, 700, 800].map((weight) => ({ name: "Geist", data: readFileSync(join(FONT_BASE, `geist-${weight}.woff`)), weight, style: "normal" })),
+  { name: "Geist Mono", data: readFileSync(join(FONT_BASE, "geist-mono-400.woff")), weight: 400, style: "normal" },
 ];
 
-// ── Color tokens (alineados a la identidad del sitio) ──
+// La marca: el boleto (brand/logo, generado por boleto.py), embebido como imagen.
+const BOLETO = `data:image/svg+xml;base64,${readFileSync(join(__dirname, "brand/logo/boleto-general.svg")).toString("base64")}`;
+const BOLETO_RATIO = (() => { const [, , w, h] = readFileSync(join(__dirname, "brand/logo/boleto-general.svg"), "utf8").match(/viewBox="([^"]+)"/)[1].split(" ").map(Number); return w / h; })();
+
+// ── Color tokens (la paleta de la marca: brand/color/paleta.json) ──
 const C = {
   bg: "#0a0a0a",
   bgGradient: "linear-gradient(135deg, #0a0a0a 0%, #131316 100%)",
-  ink: "#f5f5f0",
+  ink: "#EDEAE4",
   inkSoft: "#a0a0a0",
   inkMuted: "#666",
-  accentBass: "#e6c896",      // crema cálida — Bass
-  accentLayer: "#7ec8ff",     // celeste técnico — Layer
+  accentBass: "#C49070",      // cobre — Bass
+  accentLayer: "#6CB8C8",     // celeste — Layer
   divider: "#222",
   pillBg: "#1a1a1a",
   pillBorder: "#2a2a2a",
@@ -110,22 +112,10 @@ const el = (type, props, ...children) => {
 
 // ── Brand header común a todos los templates ──
 function brandHeader(label) {
-  return el("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: "16px",
-      fontSize: "20px",
-      fontWeight: 700,
-      letterSpacing: "0.04em",
-      textTransform: "uppercase",
-      color: C.ink,
-    },
-  },
-    el("span", { style: { fontStyle: "italic", letterSpacing: "-0.01em" } }, "Bass"),
-    el("span", { style: { color: C.accentLayer, fontWeight: 400, letterSpacing: "0.12em" } }, "LAYER"),
-    el("span", { style: { color: C.divider, margin: "0 4px" } }, "·"),
-    el("span", { style: { color: C.inkSoft, fontWeight: 400, fontSize: "16px", letterSpacing: "0.18em" } }, label),
+  const h = 40;
+  return el("div", { style: { display: "flex", alignItems: "center", gap: "18px" } },
+    el("img", { src: BOLETO, width: Math.round(h * BOLETO_RATIO), height: h }),
+    el("span", { style: { fontFamily: "Geist Mono", fontSize: "16px", letterSpacing: "0.18em", textTransform: "uppercase", color: C.inkSoft } }, label),
   );
 }
 
@@ -193,7 +183,7 @@ async function eventTemplate(event) {
         display: "flex",
         background: C.bg,
         color: C.ink,
-        fontFamily: "Inter",
+        fontFamily: "Geist",
       },
     }, leftCol);
   }
@@ -230,7 +220,7 @@ async function eventTemplate(event) {
       display: "flex",
       background: C.bg,
       color: C.ink,
-      fontFamily: "Inter",
+      fontFamily: "Geist",
     },
   }, leftCol, rightCol);
 }
@@ -251,7 +241,7 @@ async function festivalTemplate(festival) {
       padding: "56px 72px",
       background: C.bgGradient,
       color: C.ink,
-      fontFamily: "Inter",
+      fontFamily: "Geist",
       justifyContent: "space-between",
     },
   },
@@ -395,7 +385,7 @@ async function newsTemplate(news) {
 
   if (!img) {
     return el("div", {
-      style: { width: "1200px", height: "630px", display: "flex", background: C.bg, color: C.ink, fontFamily: "Inter" },
+      style: { width: "1200px", height: "630px", display: "flex", background: C.bg, color: C.ink, fontFamily: "Geist" },
     }, leftCol);
   }
 
@@ -418,7 +408,7 @@ async function newsTemplate(news) {
   );
 
   return el("div", {
-    style: { width: "1200px", height: "630px", display: "flex", background: C.bg, color: C.ink, fontFamily: "Inter" },
+    style: { width: "1200px", height: "630px", display: "flex", background: C.bg, color: C.ink, fontFamily: "Geist" },
   }, leftCol, rightCol);
 }
 
@@ -468,7 +458,7 @@ async function storyTemplate(event) {
     style: {
       width: "1080px", height: "1920px", position: "relative",
       display: "flex", flexDirection: "column",
-      background: C.bg, color: C.ink, fontFamily: "Inter",
+      background: C.bg, color: C.ink, fontFamily: "Geist",
     },
   },
     bgLayer,
