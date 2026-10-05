@@ -209,8 +209,8 @@
   --bl-450:         #7A7A7A;
 
   /* Section accent colors (day) */
-  --bl-accent-bass:  #A0714D;
-  --bl-accent-layer: #3A7282;
+  --bl-accent-bass:  #8E5B3A;   /* par de día de la marca (brand/color): 5,2 sobre el hueso; #A0714D no llegaba (3,9) */
+  --bl-accent-layer: #2A6E7C;   /* 5,3 sobre el hueso */
   --bl-750:         #DDDDD8;
   /* Verde/rojo de noche dan 2.5–3:1 sobre el fondo claro: se oscurecen. */
   --bl-up:          #2A7148;
@@ -354,8 +354,8 @@
   --bl-text-ter:    #887868;
   --bl-glass:       rgba(232, 226, 218, 0.93);
   --bl-glass-light: rgba(232, 226, 218, 0.96);
-  --bl-subtle:      rgba(160, 113, 77, 0.07);
-  --bl-subtle-hover:rgba(160, 113, 77, 0.12);
+  --bl-subtle:      rgba(142, 91, 58, 0.07);
+  --bl-subtle-hover:rgba(142, 91, 58, 0.12);
   --bl-accent:      var(--bl-accent-bass);
   --bl-on-accent:   #1A120C;   /* texto sobre el acento (botones primarios) */
   --bl-radius:      8px;
@@ -415,7 +415,7 @@
 }
 .bl-root.day-mode[data-section="bass"] .bl-swipe-panel {
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(160,113,77,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 0%, rgba(142,91,58,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 100%, rgba(140,100,60,0.04) 0%, transparent 40%),
     var(--bl-section-bg);
 }
@@ -1003,7 +1003,7 @@
 
 /* World atmosphere — mantiene la calidez/frialdad del border bottom */
 .bl-root[data-section="bass"] .bl-header { border-bottom-color:rgba(196,144,112,0.14); }
-.bl-root.day-mode[data-section="bass"] .bl-header { border-bottom-color:rgba(160,113,77,0.18); }
+.bl-root.day-mode[data-section="bass"] .bl-header { border-bottom-color:rgba(142,91,58,0.18); }
 .bl-root[data-section="layer"] .bl-header {
   border-bottom-color:rgba(108,184,200,0.14);
   box-shadow:0 1px 16px rgba(108,184,200,0.04);
