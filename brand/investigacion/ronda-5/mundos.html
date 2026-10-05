@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ronda 5 · Mundos de marca</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --bone:#EDEAE4; --paper:#F2EDE4; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:9; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
+  .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:64px 40px 56px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:52px; font-weight:800; letter-spacing:-.04em; line-height:1; margin-bottom:14px; }
+  .manifesto { font-size:22px; line-height:1.4; color:var(--ink); max-width:980px; letter-spacing:-.01em; font-weight:400; }
+  .manifesto em { font-style:normal; color:var(--cu); }
+  .manifesto i { font-style:normal; color:var(--cy); }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:940px; margin-top:16px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin:36px 0 14px; }
+  .stage { border:1px solid var(--hair); border-radius:28px; background:#000; padding:56px; margin-top:32px; position:relative; overflow:hidden; }
+  .stage svg { width:100%; height:auto; display:block; }
+  .g { display:grid; gap:16px; }
+  .g3 { grid-template-columns:repeat(3, minmax(0,1fr)); } .g4 { grid-template-columns:repeat(4, minmax(0,1fr)); } .g2 { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .obj { border-radius:22px; position:relative; overflow:hidden; display:grid; place-items:center; min-height:260px; }
+  .obj .lbl { position:absolute; left:14px; bottom:12px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.5); z-index:2; }
+  .obj.lt .lbl { color:rgba(0,0,0,.45); }
+  .obj svg { display:block; }
+  .s-dark { background:linear-gradient(160deg,#34373c,#222428); }
+  .s-wall { background:#24211f; } .s-felt { background:#17222a; } .s-fridge { background:linear-gradient(180deg,#dfe2e4,#c6cacd); }
+  .s-paper { background:#e9e4da; }
+  .why { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:28px; margin-top:36px; }
+  .why div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .why b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); margin-bottom:8px; font-weight:600; }
+  .why .c b { color:#d98f6b; }
+  .intro { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:20px; margin-top:32px; }
+  .intro a { text-decoration:none; color:inherit; border:1px solid var(--hair); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:10px; background:#050505; }
+  .intro a:hover { border-color:var(--soft); }
+  .intro b { font-size:22px; font-weight:800; letter-spacing:-.02em; }
+  .intro span { font-size:13px; color:var(--soft); line-height:1.5; }
+  .intro small { font-family:var(--mono); font-size:9px; letter-spacing:.18em; color:var(--cu); text-transform:uppercase; }
+  @keyframes draw { from { stroke-dashoffset:var(--len); } to { stroke-dashoffset:0; } }
+  .draw { stroke-dasharray:var(--len); animation:draw 2.6s cubic-bezier(.6,0,.2,1) both; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+  .pulse { animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes run { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+  .run { animation:run 40s linear infinite; }
+  @media (prefers-reduced-motion:reduce) { .draw, .pulse, .run { animation:none; } }
+  .data-note { font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ter); margin-top:14px; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>Ronda 5</b> · mundos de marca</span>
+    <a href="#linea">A · La línea de la semana</a><a href="#horas">B · Las 24 horas</a><a href="#pase">C · El pase</a><a href="#cinta">D · La cinta</a>
+  </div>
+
+  <section>
+    <h2>Otro punto de partida</h2>
+    <h3>No un logo: un mundo.</h3>
+    <p class="manifesto">Las marcas que atrapan no se reconocen por cómo escriben su nombre, sino por <em>lo que hacen</em>. BassLayer ya tiene algo que ninguna otra marca tiene: <i>sabe lo que pasa hoy en Buenos Aires</i>, de noche y en el mercado, y lo dibuja en vivo.</p>
+    <p class="lead">Cada mundo de abajo es una idea completa: un <b>gesto</b> que se reconoce sin leer el nombre, un <b>comportamiento</b> (qué cambia y qué no) y <b>objetos</b> que la gente quiera tener, guardar o regalar. El nombre se escribe simple (Geist, sin efectos): el que habla es el sistema. Los datos de las piezas son <b>reales de hoy</b>, del mismo sitio.</p>
+    <div class="intro">
+      <a href="#linea"><small>A · dato vivo</small><b>La línea de la semana</b><span>Cada semana la ciudad dibuja una línea distinta: la noche que se vuelve mercado. Ningún sticker es igual a otro.</span></a>
+      <a href="#horas"><small>B · el tiempo</small><b>Las 24 horas</b><span>Buenos Aires tiene dos turnos. Un reloj de un solo anillo con la noche y el mercado.</span></a>
+      <a href="#pase"><small>C · el objeto</small><b>El pase</b><span>Todo es una entrada: numerada, troquelada, coleccionable. La línea de corte une los dos mundos.</span></a>
+      <a href="#cinta"><small>D · la señal</small><b>La cinta</b><span>La cinta que corre en el sitio, llevada al mundo: en vivo, de punta a punta.</span></a>
+    </div>
+  </section>
+
+  <section id="linea">
+    <h2>Mundo A</h2>
+    <h3>La línea de la semana</h3>
+    <p class="manifesto">Cada semana Buenos Aires dibuja <em>una sola línea</em> de tiempo: viene del mercado de los últimos días —la curva del Bitcoin—, pasa por <b>hoy</b> y se vuelve la onda de las noches que vienen, más alta donde hay más fiestas. <i>Nunca se repite.</i></p>
+    <p class="lead">El signo no es fijo: <b>se genera con los datos de cada día</b> (como el logo de Visit Nordkyn, que cambia con el viento, o la grilla de MIT). La izquierda sale del precio del Bitcoin de los últimos siete días, hora por hora; la derecha, de las fiestas de los próximos siete días (lo mismo que dibuja la onda de la portada de Bass). Es la transición del sitio —la curva que se vuelve onda— hecha con datos reales. Lleva la fecha como un sello. Lo que se imprime un día no vuelve a existir: <b>cada sticker es una edición única</b>. Para el ícono hay una "línea madre": la del día de lanzamiento, congelada.</p>
+    <div class="stage" id="A-hero"></div>
+    <p class="data-note" id="A-note"></p>
+    <p class="k">Una serie: esta semana y las dos que vienen (la noche cambia con la agenda real; el mercado, en el ejemplo, es el de esta semana)</p>
+    <div class="g g3" id="A-series"></div>
+    <p class="k">En uso</p>
+    <div class="g g4" id="A-objs"></div>
+    <div class="why"><div><b>Por qué atrapa</b>Es la única marca que es <b>un dato vivo de la ciudad</b>. Coleccionable por naturaleza: "tengo la línea del 10 de octubre". Cuenta la frase del sitio sin una palabra.</div><div><b>Cómo vive</b>En el sitio se dibuja al entrar (la carga), en cada flyer va la línea de esa noche, en la newsletter la de la semana. El ícono usa la línea madre, fija.</div><div class="c"><b>Cuidado</b>Un signo que cambia necesita una constante fuerte: la proporción, el grosor, el sello con la fecha y el nombre siempre igual. Y una versión fija para lo chico.</div></div>
+  </section>
+
+  <section id="horas">
+    <h2>Mundo B</h2>
+    <h3>Las 24 horas</h3>
+    <p class="manifesto">Buenos Aires tiene <em>dos turnos</em>. Uno empieza cuando se apaga la oficina y termina cuando sale el sol; el otro abre a la mañana y cierra a la tarde. <i>BassLayer es el reloj de los dos.</i></p>
+    <p class="lead">El signo es <b>un anillo de 24 horas</b> con dos arcos: <b>la noche</b> (de las 22 a las 7, el mismo corte que usa el sitio para decidir qué fiesta sigue en pie) y <b>el mercado</b> (el horario de rueda). Un punto marca <b>la hora de ahora</b>. Es un reloj, una brújula y una entrada a la vez; a 16 px es un círculo con dos arcos, inconfundible.</p>
+    <div class="stage" id="B-hero" style="display:grid;place-items:center"></div>
+    <p class="data-note">El arco del mercado usa 11 a 17 h (horario de negociación de BYMA): a verificar antes del cierre. Las cripto operan 24/7; el arco representa "el día hábil".</p>
+    <p class="k">En uso</p>
+    <div class="g g4" id="B-objs"></div>
+    <div class="why"><div><b>Por qué atrapa</b>Es simple como un ícono de sistema y profundo como una idea: <b>la ciudad en dos turnos</b>. Un reloj de pared o un imán con el anillo son regalos que la gente usa todos los días.</div><div><b>Cómo vive</b>El punto se mueve en vivo en el sitio; en Bass se enciende el arco de la noche, en Layer el del mercado, en la home los dos. Los flyers marcan su hora de apertura sobre el anillo.</div><div class="c"><b>Cuidado</b>Un anillo con arcos es una forma conocida (relojes, cargas): la marca vive en la proporción exacta de los dos turnos y en el punto de ahora.</div></div>
+  </section>
+
+  <section id="pase">
+    <h2>Mundo C</h2>
+    <h3>El pase</h3>
+    <p class="manifesto">La noche tiene <em>entradas</em> y el mercado tiene <i>tickers</i>. BassLayer es <em>el pase</em>: un solo boleto con una línea de corte en el medio —la noche de un lado, el mercado del otro— y el nombre cruzándola.</p>
+    <p class="lead">Todo lo que la marca imprime es <b>un boleto</b>: numerado, con fecha, troquelado, con su línea punteada. El nombre atraviesa la línea de corte: <b>romperla sería separar los dos mundos</b>, y nadie la rompe. Los stickers vienen numerados (<b>Nº 000127</b>), la pulsera de un evento propio es el mismo pase estirado, la credencial también. Es la marca más "objeto" de las cuatro.</p>
+    <div class="stage" id="C-hero" style="display:grid;place-items:center;background:#0d0d0d"></div>
+    <p class="k">En uso</p>
+    <div class="g g4" id="C-objs"></div>
+    <div class="why"><div><b>Por qué atrapa</b>Un boleto se guarda. Numerado, se colecciona. Es el lenguaje de la noche (entradas, pulseras, sellos) y del mercado (tickets, órdenes) a la vez.</div><div><b>Cómo vive</b>Cada pieza lleva su número y su fecha. En el sitio, guardar un evento "emite" un pase. En la newsletter, cada edición es un pase nuevo.</div><div class="c"><b>Cuidado</b>El boleto es un formato muy usado en eventos: la diferencia está en la línea de corte cruzada por el nombre y en la numeración como sistema.</div></div>
+  </section>
+
+  <section id="cinta">
+    <h2>Mundo D</h2>
+    <h3>La cinta</h3>
+    <p class="manifesto">En el sitio hay una cinta que <em>nunca deja de correr</em>: los artistas de esta semana, los precios de hoy. La marca es esa cinta, sacada de la pantalla: <i>BassLayer está pasando ahora</i>.</p>
+    <p class="lead">El signo es <b>una franja con un punto encendido</b> (el "en vivo" que ya tiene el sitio) y texto que corre en mono. Llevada al mundo, la cinta se imprime en <b>cinta de embalar</b> (el regalo perfecto: cada paquete se cierra con la marca), en un <b>lanyard</b>, en un <b>banner</b> de LED para un evento, en un rollo de stickers. Lo que dice la cinta cambia; la cinta no.</p>
+    <div class="stage" id="D-hero" style="padding:56px 0"></div>
+    <p class="k">En uso</p>
+    <div class="g g4" id="D-objs"></div>
+    <div class="why"><div><b>Por qué atrapa</b>Es el elemento más reconocible del sitio y es movimiento puro. La cinta de embalar con la marca es un objeto que todos quieren y que viaja solo: publicidad en cada paquete.</div><div><b>Cómo vive</b>En el sitio ya existe; en pantallas de un evento muestra el line-up y el dólar cripto; en piezas impresas lleva la fecha de impresión y los titulares de ese día.</div><div class="c"><b>Cuidado</b>La cinta de noticias es un lenguaje de TV: la marca tiene que sonar a club y a terminal, no a canal de noticias. Se cuida con la tipografía mono y el silencio entre ítems.</div></div>
+  </section>
+
+<script>
+  const CU = "#C49070", CY = "#6CB8C8", BONE = "#EDEAE4", PAPER = "#F2EDE4", INK = "#141414";
+  const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const ymd = (d) => `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getFullYear()).slice(2)}`;
+  const fmtUsd = (n) => Math.round(n).toLocaleString("es-AR");
+  const WM = (x, y, size, fill = BONE, anchor = "start") => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Geist" font-weight="750" font-size="${size}" letter-spacing="${-size * .035}" fill="${fill}">BassLayer</text>`;
+  const MONO = (x, y, size, txt, fill = "#8a8a8a", anchor = "start", ls = .18) => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="GeistMono" font-size="${size}" letter-spacing="${size * ls}" fill="${fill}">${txt}</text>`;
+
+  Promise.all([fetch("/api/events").then((r) => r.json()), fetch("/api/prices").then((r) => r.json()), document.fonts.load("750 40px Geist"), document.fonts.load("400 20px GeistMono")]).then(([events, prices]) => {
+    const amba = events.filter((e) => e.area === "amba");
+    const btc = prices.find((p) => p.sym === "BTC"), eth = prices.find((p) => p.sym === "ETH"), sol = prices.find((p) => p.sym === "SOL");
+    const now = new Date();
+    const dayEvents = (off) => { const d = new Date(now); d.setDate(d.getDate() + off); return amba.filter((e) => +e.day === d.getDate() && MES.indexOf(String(e.month).toLowerCase().slice(0,3)) === d.getMonth()); };
+
+    // ── A · La línea del día ─────────────────────────────────────────
+    // Izquierda: la noche hora por hora (de las 12 a las 12), amplitud = fiestas activas.
+    // Derecha: el BTC de las últimas 24 h (desplazado por día dentro de los 7 días de la serie).
+    // La línea de la semana: a la izquierda las fiestas de los próximos 7 días
+    // (hora por hora), a la derecha el BTC de los últimos 7 días (serie horaria).
+    // Se encuentran en HOY. off = semanas hacia adelante en la agenda.
+    function dayLine(off, W = 1000, H = 300) {
+      const start = new Date(now); start.setHours(12, 0, 0, 0); start.setDate(start.getDate() + off * 7);
+      const slots = Array(168).fill(0); let n = 0;
+      for (const e of amba) {
+        const mi = MES.indexOf(String(e.month).toLowerCase().slice(0, 3)); if (mi < 0) continue;
+        const [h, m] = String(e.time || "23:00").split(":").map(Number);
+        const t = new Date(now.getFullYear(), mi, +e.day, h || 23, m || 0);
+        const k = Math.floor((t - start) / 36e5); if (k < 0 || k >= 168) continue;
+        n++; for (let j = 0; j < 6; j++) if (k + j < 168) slots[k + j] += 1 - j / 6;
+      }
+      // Una sola línea de tiempo: el mercado de los últimos 7 días (izquierda) →
+      // HOY → las noches de los próximos 7 días (derecha).
+      const max = Math.max(1, ...slots), mid = H * .5, split = W * .48;
+      const seg = btc.sparkline, lo = Math.min(...seg), hi = Math.max(...seg), last = seg[seg.length - 1];
+      let d = "";
+      seg.forEach((v, i) => { const x = (i / (seg.length - 1)) * split; d += `${i ? "L" : "M"}${x.toFixed(1)} ${(mid - ((v - last) / ((hi - lo) || 1)) * H * .62).toFixed(1)}`; });
+      const N = 900;
+      for (let i = 1; i <= N; i++) {
+        const x = split + (i / N) * (W - split), t = (i / N) * 167, a = slots[Math.floor(t)] * (1 - (t % 1)) + slots[Math.min(167, Math.floor(t) + 1)] * (t % 1);
+        const env = Math.pow(a / max, .8) * H * .44 * Math.min(1, (W - x) / 20, (x - split) / 50);
+        d += `L${x.toFixed(1)} ${(mid - env * Math.sin(i * .9)).toFixed(1)}`;
+      }
+      const end = new Date(start); end.setDate(end.getDate() + 6);
+      return { d, n, date: start, end, last, chg: ((last - seg[0]) / seg[0]) * 100, split };
+    }
+    let gid = 0;
+    const lineSVG = (L, W = 1000, H = 300, sw = 4, anim = false, mono) => { const g = `lg${++gid}`; return `<defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="0" x2="${W}"><stop offset=".4" stop-color="${mono || CY}"/><stop offset=".56" stop-color="${mono || CU}"/></linearGradient></defs><path d="${L.d}" fill="none" stroke="url(#${g})" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" ${anim ? 'class="draw" pathLength="1" style="--len:1"' : ""}/>`; };
+    const today = dayLine(0);
+    document.getElementById("A-hero").innerHTML = `<svg viewBox="0 0 1000 470">${WM(0, 62, 64)}${MONO(1000, 50, 13, `BUENOS AIRES · ${ymd(today.date)}`, "#8a8a8a", "end")}<g transform="translate(0 110)">${lineSVG(today, 1000, 300, 3.2, true)}</g><path d="M${today.split} 120V420" stroke="#ffffff30" stroke-dasharray="3 6"/>${MONO(today.split, 108, 11, "HOY", "#8a8a8a", "middle")}${MONO(0, 462, 12, `EL MERCADO · BTC ${fmtUsd(today.last)} · ${today.chg >= 0 ? "+" : ""}${today.chg.toFixed(1).replace(".", ",")}% · ÚLTIMOS 7 DÍAS`, CY)}${MONO(1000, 462, 12, `LA NOCHE · ${today.n} FIESTAS · PRÓXIMOS 7 DÍAS`, CU, "end")}</svg>`;
+    document.getElementById("A-note").textContent = `Datos reales: ${today.n} fiestas en el AMBA en los próximos 7 días (agenda del sitio) y el BTC hora por hora de los últimos 7 días (/api/prices).`;
+    const sticker = (L, bg = "#000", fg = BONE) => `<svg viewBox="0 0 420 300" style="width:84%;filter:drop-shadow(0 12px 18px rgba(0,0,0,.45))"><rect x="4" y="4" width="412" height="292" rx="26" fill="${bg}" stroke="#fff" stroke-width="8"/>${WM(34, 72, 34, fg)}<g transform="translate(34 104) scale(.352)">${lineSVG(L, 1000, 300, 9)}</g>${MONO(34, 262, 11, `${ymd(L.date)} → ${ymd(L.end)}`, "#8a8a8a")}${MONO(386, 262, 11, `Nº ${String(127 + L.date.getDate()).padStart(6, "0")}`, "#8a8a8a", "end")}</svg>`;
+    document.getElementById("A-series").innerHTML = [0, 1, 2].map((o) => `<div class="obj s-dark" style="min-height:360px;padding-bottom:28px">${sticker(dayLine(o))}<span class="lbl">Sticker · semana del ${ymd(dayLine(o).date)}</span></div>`).join("");
+    const mother = dayLine(0);
+    document.getElementById("A-objs").innerHTML = `
+      <div class="obj s-paper lt" style="grid-row:span 2;min-height:540px"><svg viewBox="0 0 297 420" style="width:72%;box-shadow:0 18px 40px rgba(0,0,0,.25)"><rect width="297" height="420" fill="#000"/>${MONO(20, 34, 7, "BASSLAYER PRESENTA", "#8a8a8a")}<text x="20" y="96" font-family="Geist" font-weight="800" font-size="40" letter-spacing="-1.6" fill="${BONE}">La noche</text><text x="20" y="136" font-family="Geist" font-weight="800" font-size="40" letter-spacing="-1.6" fill="${BONE}">y el mercado</text><text x="20" y="176" font-family="Geist" font-weight="800" font-size="40" letter-spacing="-1.6" fill="#555">de hoy.</text><g transform="translate(20 230) scale(.257)">${lineSVG(mother, 1000, 300, 10)}</g>${MONO(20, 396, 7, `BUENOS AIRES · ${ymd(mother.date)}`, "#8a8a8a")}${MONO(277, 396, 7, "BASSLAYER.IO", "#8a8a8a", "end")}</svg><span class="lbl">Afiche A3</span></div>
+      <div class="obj s-felt"><svg viewBox="0 0 120 120" style="width:40%;border-radius:22%;background:#000;box-shadow:0 10px 20px rgba(0,0,0,.4)"><g transform="translate(14 40) scale(.092)">${lineSVG(mother, 1000, 300, 34)}</g></svg><span class="lbl">Ícono · la línea madre</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 200 140" style="width:80%"><rect width="200" height="140" rx="14" fill="#000"/><g transform="translate(20 34) scale(.16)">${lineSVG(mother, 1000, 300, 14, true)}</g>${MONO(100, 118, 7, "CARGANDO LA NOCHE…", "#6b6b6b", "middle")}</svg><span class="lbl">Carga del sitio · se dibuja</span></div>
+      <div class="obj s-wall"><svg viewBox="0 0 200 230" style="width:62%"><path d="M62 30 Q100 -8 138 30" fill="none" stroke="#E8E0D0" stroke-width="7"/><rect x="20" y="30" width="160" height="196" rx="5" fill="#E8E0D0"/>${WM(100, 96, 22, INK, "middle")}<g transform="translate(30 116) scale(.14)">${lineSVG(mother, 1000, 300, 16, false, INK)}</g>${MONO(100, 196, 6, ymd(mother.date), "#777", "middle")}</svg><span class="lbl">Tote · un color</span></div>
+      <div class="obj s-fridge lt"><svg viewBox="0 0 220 150" style="width:78%;filter:drop-shadow(0 10px 14px rgba(0,0,0,.25))"><rect width="220" height="150" rx="16" fill="#000"/><g transform="translate(20 30) scale(.18)">${lineSVG(dayLine(1), 1000, 300, 14)}</g>${MONO(20, 130, 7, `SEMANA DEL ${ymd(dayLine(1).date)} · ${dayLine(1).n} FIESTAS`, "#8a8a8a")}</svg><span class="lbl">Imán · la semana que viene</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 200 200" style="width:60%"><circle cx="100" cy="100" r="96" fill="#000" stroke="#caa46c" stroke-width="5"/><g transform="translate(22 82) scale(.156)">${lineSVG(mother, 1000, 300, 18)}</g></svg><span class="lbl">Pin</span></div>`;
+
+    // ── B · Las 24 horas ─────────────────────────────────────────────
+    const ang = (h) => (h / 24) * Math.PI * 2 - Math.PI / 2;
+    const arc = (cx, cy, r, h0, h1) => { const a0 = ang(h0), a1 = ang(h1), large = ((h1 - h0 + 24) % 24) > 12 ? 1 : 0; return `M${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)}A${r} ${r} 0 ${large} 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)}`; };
+    const hourNow = now.getHours() + now.getMinutes() / 60;
+    const ring = (cx, cy, r, sw, opts = {}) => {
+      const mono = opts.mono, dot = opts.dot !== false, ticks = opts.ticks;
+      let s = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${mono ? mono + "22" : "#ffffff14"}" stroke-width="${sw * .18}"/>`;
+      if (ticks) for (let h = 0; h < 24; h++) { const a = ang(h), r0 = r + sw * .9, r1 = r0 + (h % 6 ? sw * .25 : sw * .55); s += `<path d="M${cx + r0 * Math.cos(a)} ${cy + r0 * Math.sin(a)}L${cx + r1 * Math.cos(a)} ${cy + r1 * Math.sin(a)}" stroke="#ffffff40" stroke-width="${sw * .08}"/>`; }
+      s += `<path d="${arc(cx, cy, r, 22, 7)}" fill="none" stroke="${mono || CU}" stroke-width="${sw}" stroke-linecap="butt"/><path d="${arc(cx, cy, r, 11, 17)}" fill="none" stroke="${mono || CY}" stroke-width="${sw}" stroke-linecap="butt"/>`;
+      if (dot) { const a = ang(hourNow); s += `<circle cx="${cx + r * Math.cos(a)}" cy="${cy + r * Math.sin(a)}" r="${sw * .62}" fill="${mono || BONE}" stroke="#000" stroke-width="${sw * .2}"/>`; }
+      return s;
+    };
+    const hh = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    document.getElementById("B-hero").innerHTML = `<svg viewBox="0 0 900 520" style="max-width:1000px">${ring(260, 260, 190, 34, { ticks: true })}${MONO(260, 252, 15, "BUENOS AIRES", "#8a8a8a", "middle")}<text x="260" y="300" text-anchor="middle" font-family="GeistMono" font-size="46" fill="${BONE}">${hh}</text>
+      ${WM(530, 230, 70)}${MONO(534, 290, 14, "LA NOCHE · 22 → 07", CU)}${MONO(534, 322, 14, "EL MERCADO · 11 → 17", CY)}${MONO(534, 354, 14, `AHORA · ${hh}`, "#8a8a8a")}</svg>`;
+    document.getElementById("B-objs").innerHTML = `
+      <div class="obj s-wall"><svg viewBox="0 0 200 200" style="width:66%;filter:drop-shadow(0 14px 18px rgba(0,0,0,.5))"><circle cx="100" cy="100" r="98" fill="#0b0b0b" stroke="#2c2c2c" stroke-width="3"/>${ring(100, 100, 72, 13, { ticks: true })}<path d="M100 100L${100 + 52 * Math.cos(ang(hourNow))} ${100 + 52 * Math.sin(ang(hourNow))}" stroke="${BONE}" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="100" r="4" fill="${BONE}"/>${MONO(100, 140, 6, "BASSLAYER", "#777", "middle")}</svg><span class="lbl">Reloj de pared</span></div>
+      <div class="obj s-fridge lt"><svg viewBox="0 0 200 200" style="width:56%;filter:drop-shadow(0 10px 14px rgba(0,0,0,.28))"><circle cx="100" cy="100" r="96" fill="#000"/>${ring(100, 100, 62, 18)}</svg><span class="lbl">Imán</span></div>
+      <div class="obj s-felt"><svg viewBox="0 0 120 120" style="width:40%;border-radius:22%;background:#000;box-shadow:0 10px 20px rgba(0,0,0,.4)">${ring(60, 60, 34, 13, { dot: false })}</svg><span class="lbl">Ícono · 16 px y más</span></div>
+      <div class="obj s-paper lt" style="grid-row:span 2;min-height:540px"><svg viewBox="0 0 297 420" style="width:72%;box-shadow:0 18px 40px rgba(0,0,0,.25)"><rect width="297" height="420" fill="#000"/>${ring(148, 168, 104, 24, { ticks: true })}<text x="20" y="342" font-family="Geist" font-weight="800" font-size="30" letter-spacing="-1.2" fill="${BONE}">Buenos Aires</text><text x="20" y="374" font-family="Geist" font-weight="800" font-size="30" letter-spacing="-1.2" fill="#555">tiene dos turnos.</text>${MONO(20, 404, 7, "BASSLAYER.IO", "#8a8a8a")}</svg><span class="lbl">Afiche A3</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 220 120" style="width:86%"><rect width="220" height="120" rx="60" fill="#000" stroke="#fff" stroke-width="6"/>${ring(60, 60, 30, 10)}${WM(102, 70, 25)}</svg><span class="lbl">Sticker</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 200 140" style="width:80%"><rect width="200" height="140" rx="14" fill="#000"/>${ring(100, 70, 40, 9)}</svg><span class="lbl">Carga · el punto marca ahora</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 200 200" style="width:56%"><circle cx="100" cy="100" r="96" fill="#000" stroke="#caa46c" stroke-width="5"/>${ring(100, 100, 56, 20, { dot: false })}</svg><span class="lbl">Pin</span></div>`;
+
+    // ── C · El pase ──────────────────────────────────────────────────
+    const ticket = (n, W = 640, H = 250, opts = {}) => {
+      const tx = W * .64, paper = opts.paper || PAPER, ink = opts.ink || INK, r = 18;
+      const body = `M${r} 0H${tx - 16}a16 16 0 0 0 32 0H${W - r}a${r} ${r} 0 0 1 ${r} ${r}V${H - r}a${r} ${r} 0 0 1 ${-r} ${r}H${tx + 16}a16 16 0 0 0 -32 0H${r}a${r} ${r} 0 0 1 ${-r} ${-r}V${r}a${r} ${r} 0 0 1 ${r} ${-r}Z`;
+      let dots = ""; for (let y = 26; y < H - 20; y += 13) dots += `<circle cx="${tx}" cy="${y}" r="2.6" fill="${ink}" opacity=".5"/>`;
+      return `<path d="${body}" fill="${paper}"/><path d="M${tx} 0H${W - r}a${r} ${r} 0 0 1 ${r} ${r}V10H${tx}Z" fill="${CY}"/><path d="M${r} 0H${tx - 16}V10H0V${r}a${r} ${r} 0 0 1 ${r} ${-r}Z" fill="${CU}"/>${dots}
+        ${MONO(32, 46, 11, "ADMITE UNO · BUENOS AIRES", ink + "99")}${MONO(W - 30, 46, 11, `Nº ${String(n).padStart(6, "0")}`, ink + "99", "end")}
+        <text x="${W / 2}" y="${H * .62}" text-anchor="middle" font-family="Geist" font-weight="800" font-size="${W * .145}" letter-spacing="${-W * .006}" fill="${ink}">BassLayer</text>
+        ${MONO(32, H - 26, 11, "LA NOCHE", CU === "#C49070" ? "#8E5B3A" : CU)}${MONO(tx + 28, H - 26, 11, "EL MERCADO", "#2A6E7C")}${MONO(W - 30, H - 26, 11, ymd(now), ink + "99", "end")}`;
+    };
+    document.getElementById("C-hero").innerHTML = `<svg viewBox="-20 -20 680 290" style="max-width:980px;filter:drop-shadow(0 30px 50px rgba(0,0,0,.5))">${ticket(127)}</svg>`;
+    document.getElementById("C-objs").innerHTML = `
+      <div class="obj s-dark"><svg viewBox="-10 -10 660 270" style="width:90%;transform:rotate(-6deg);filter:drop-shadow(0 10px 16px rgba(0,0,0,.5))">${ticket(128)}</svg><span class="lbl">Sticker numerado</span></div>
+      <div class="obj s-felt" style="grid-column:span 2"><svg viewBox="0 0 900 140" style="width:96%;filter:drop-shadow(0 10px 16px rgba(0,0,0,.4))"><rect x="0" y="30" width="900" height="80" rx="6" fill="#000"/>${Array.from({ length: 4 }, (_, i) => `${WM(40 + i * 220, 84, 34)}<path d="M${222 + i * 220} 36V104" stroke="#ffffff55" stroke-width="2" stroke-dasharray="3 6"/>`).join("")}<rect x="0" y="30" width="900" height="6" fill="${CU}"/><rect x="0" y="104" width="900" height="6" fill="${CY}"/></svg><span class="lbl">Pulsera · evento propio</span></div>
+      <div class="obj s-fridge lt"><svg viewBox="-10 -10 660 270" style="width:86%;filter:drop-shadow(0 10px 14px rgba(0,0,0,.25))">${ticket(129, 640, 250, { paper: "#000", ink: BONE })}</svg><span class="lbl">Imán</span></div>
+      <div class="obj s-wall"><svg viewBox="0 0 200 260" style="width:56%"><path d="M100 0V46" stroke="${CU}" stroke-width="10"/><path d="M90 0V46" stroke="${CY}" stroke-width="10"/><rect x="30" y="46" width="140" height="200" rx="10" fill="${PAPER}"/><rect x="30" y="46" width="70" height="8" fill="${CU}"/><rect x="100" y="46" width="70" height="8" fill="${CY}"/>${MONO(46, 84, 8, "PRENSA", "#777")}<text x="100" y="150" text-anchor="middle" font-family="Geist" font-weight="800" font-size="24" letter-spacing="-1" fill="${INK}">BassLayer</text><path d="M30 186H170" stroke="#00000044" stroke-dasharray="3 5"/>${MONO(100, 222, 7, "Nº 000130 · " + ymd(now), "#777", "middle")}</svg><span class="lbl">Credencial</span></div>
+      <div class="obj s-felt"><svg viewBox="0 0 120 120" style="width:40%;border-radius:22%;background:#000;box-shadow:0 10px 20px rgba(0,0,0,.4)"><path d="M20 30H52a8 8 0 0 0 16 0H100V90H68a8 8 0 0 0 -16 0H20Z" fill="${PAPER}"/><path d="M60 42V78" stroke="${INK}" stroke-width="4" stroke-dasharray="3 4"/><rect x="20" y="30" width="40" height="6" fill="${CU}"/><rect x="60" y="30" width="40" height="6" fill="${CY}"/></svg><span class="lbl">Ícono</span></div>
+      <div class="obj s-paper lt" style="grid-column:span 2"><svg viewBox="0 0 600 220" style="width:92%;box-shadow:0 14px 30px rgba(0,0,0,.2)"><rect width="600" height="220" fill="#fff"/><g transform="translate(30 26) scale(.56)">${ticket(131)}</g><text x="412" y="96" font-family="Geist" font-weight="700" font-size="16" letter-spacing="-.4" fill="${INK}">Tu pase de la semana</text><text x="412" y="122" font-family="Geist" font-size="12" fill="#666">${today.n} fiestas · BTC ${today.chg >= 0 ? "+" : ""}${today.chg.toFixed(1).replace(".", ",")}%</text>${MONO(420, 160, 8, "NEWSLETTER Nº 131", "#999")}</svg><span class="lbl">Newsletter · cada edición, un pase</span></div>`;
+
+    // ── D · La cinta ─────────────────────────────────────────────────
+    const nxt = amba.filter((e) => e.artists && e.artists.length).slice(0, 6).map((e) => `${e.artists[0].toUpperCase()} @ ${String(e.venue).replace(/^TBA\s*-\s*/i, "").split(",")[0].toUpperCase()}`);
+    const items = [`ESTA SEMANA · ${today.n} FIESTAS`, ...nxt.slice(0, 3), `BTC ${fmtUsd(btc.usd)} ${btc.change >= 0 ? "+" : ""}${String(btc.change.toFixed(1)).replace(".", ",")}%`, ...nxt.slice(3), `ETH ${fmtUsd(eth.usd)}`, `SOL ${fmtUsd(sol.usd)}`];
+    const tapeText = items.map((t, i) => `<tspan fill="${/^(BTC|ETH|SOL)/.test(t) ? CY : i % 2 ? BONE : CU}">${t}</tspan><tspan fill="#555">   ●   </tspan>`).join("");
+    const tape = (W, H, size, ink = false) => `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block"><rect width="${W}" height="${H}" fill="${ink ? PAPER : "#000"}"/><g class="run"><text x="${H * 3.9}" y="${H * .62}" font-family="GeistMono" font-size="${size * .5}" letter-spacing="${size * .08}">${tapeText}${tapeText}</text></g><rect x="0" y="0" width="${H * 3.6}" height="${H}" fill="${ink ? INK : "#0d0d0d"}"/><circle class="pulse" cx="${H * .5}" cy="${H / 2}" r="${H * .12}" fill="${CU}"/>${WM(H * .9, H * .64, size, ink ? PAPER : BONE)}<rect x="0" y="0" width="${W}" height="2" fill="${CU}"/><rect x="0" y="${H - 2}" width="${W}" height="2" fill="${CY}"/></svg>`;
+    document.getElementById("D-hero").innerHTML = tape(2400, 120, 52);
+    const tapeRoll = `<svg viewBox="0 0 260 200" style="width:84%"><ellipse cx="96" cy="100" rx="70" ry="70" fill="#1a1a1a"/><ellipse cx="96" cy="100" rx="66" ry="66" fill="#000"/><ellipse cx="96" cy="100" rx="30" ry="30" fill="#24211f"/><path d="M96 34H250V82H140" fill="#000"/><rect x="96" y="34" width="154" height="48" fill="#000"/>${WM(110, 66, 22)}<rect x="96" y="34" width="154" height="2" fill="${CU}"/><rect x="96" y="80" width="154" height="2" fill="${CY}"/></svg>`;
+    document.getElementById("D-objs").innerHTML = `
+      <div class="obj s-wall">${tapeRoll}<span class="lbl">Cinta de embalar</span></div>
+      <div class="obj s-paper lt"><svg viewBox="0 0 220 200" style="width:82%;filter:drop-shadow(0 12px 18px rgba(0,0,0,.25))"><rect x="20" y="40" width="180" height="140" rx="6" fill="#c9a77a"/><rect x="20" y="96" width="180" height="30" fill="#000"/>${WM(30, 117, 15)}<circle cx="150" cy="111" r="3" fill="${CU}"/>${MONO(158, 114, 6, "EN VIVO", "#999")}<rect x="96" y="40" width="30" height="140" fill="#000" opacity=".92"/><text transform="translate(116 176) rotate(-90)" font-family="Geist" font-weight="750" font-size="15" letter-spacing="-.5" fill="${BONE}">BassLayer</text></svg><span class="lbl">El regalo, cerrado con la marca</span></div>
+      <div class="obj s-felt"><svg viewBox="0 0 200 260" style="width:52%"><path d="M70 0V120M130 0V120" stroke="#000" stroke-width="20"/><text transform="translate(76 112) rotate(-90)" font-family="GeistMono" font-size="9" letter-spacing="2" fill="${CU}">BASSLAYER ● LA NOCHE</text><text transform="translate(136 112) rotate(-90)" font-family="GeistMono" font-size="9" letter-spacing="2" fill="${CY}">EL MERCADO ● BASSLAYER</text><rect x="40" y="120" width="120" height="130" rx="10" fill="${PAPER}"/><circle cx="62" cy="146" r="5" fill="${CU}"/>${MONO(74, 149, 8, "EN VIVO", "#777")}<text x="100" y="200" text-anchor="middle" font-family="Geist" font-weight="800" font-size="20" letter-spacing="-.8" fill="${INK}">BassLayer</text></svg><span class="lbl">Lanyard</span></div>
+      <div class="obj s-dark"><svg viewBox="0 0 120 120" style="width:40%;border-radius:22%;background:#000;box-shadow:0 10px 20px rgba(0,0,0,.4)"><rect x="14" y="48" width="92" height="24" rx="12" fill="#1c1c1c"/><circle class="pulse" cx="30" cy="60" r="6" fill="${CU}"/><rect x="44" y="57" width="30" height="6" rx="3" fill="${BONE}"/><rect x="80" y="57" width="16" height="6" rx="3" fill="${CY}"/></svg><span class="lbl">Ícono · en vivo</span></div>
+      <div class="obj s-dark" style="grid-column:1 / -1;min-height:200px"><div style="width:100%;transform:perspective(900px) rotateX(10deg)">${tape(2400, 120, 52)}</div><span class="lbl">Banner LED · un evento propio</span></div>
+      <div class="obj s-paper lt" style="grid-column:1 / -1;min-height:150px"><div style="width:100%">${tape(2400, 90, 40, true)}</div><span class="lbl">Impreso · con los titulares del día en que se imprimió</span></div>`;
+  });
+</script>
+</body>
+</html>

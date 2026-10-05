@@ -30,7 +30,8 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 - **Ronda 1** (barras + curva, ligadura B·L, disco + bloque): signos de dos partes; se leen como dos cosas pegadas.
 - **Ronda 2** (ocho territorios: los dos puntos, Lissajous, crossfader, octava, sidechain, horizonte, diagonal, cue): signos sueltos que no unifican; faltaba partir del nombre.
 - **Ronda 3:** La línea, Peso y Etiqueta quedaron como alternativas; se eligió Horizonte.
-- **Ronda 4** (`investigacion/ronda-4/`, 2026-10-05): investigación de estudios de branding y 8 mejoras del Horizonte (bajo, perspectiva, L puente, una sola línea, sube, eco, reflejo, ranura que respira) + propuesta **Horizonte 2** (horizonte bajo + L entera en hueso + ranura que respira) + opciones nuevas (ventanas encendidas, marea de puntos, patrón). Esperando la decisión de Pablo.
+- **Ronda 4** (`investigacion/ronda-4/`, 2026-10-05): investigación de estudios de branding y 8 mejoras del Horizonte (bajo, perspectiva, L puente, una sola línea, sube, eco, reflejo, ranura que respira) + propuesta **Horizonte 2** (horizonte bajo + L entera en hueso + ranura que respira) + opciones nuevas (ventanas encendidas, marea de puntos, patrón). Pablo: "muy básico, más que el nombre con dos colores y una línea".
+- **Ronda 5** (`investigacion/ronda-5/mundos.html`, 2026-10-05): cambio de enfoque, de logo a **mundo de marca** (idea + comportamiento + objetos), con datos reales del sitio: A · La línea de la semana (mercado de los últimos 7 días → hoy → noches de los próximos 7, generada con datos), B · Las 24 horas (anillo con la noche 22–7 y el mercado 11–17, a verificar), C · El pase (todo es un boleto numerado con la línea de corte cruzada por el nombre), D · La cinta (el ticker del sitio llevado a cinta de embalar, lanyard, banner). Esperando la decisión de Pablo.
 
 ## Logo (`logo/`)
 
