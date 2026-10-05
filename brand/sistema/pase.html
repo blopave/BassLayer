@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El pase de la semana</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:9; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a, .bar button { font:inherit; font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; background:none; cursor:pointer; }
+  .bar a:hover, .bar button:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:64px 40px 56px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:52px; font-weight:800; letter-spacing:-.04em; line-height:1; margin-bottom:16px; }
+  .manifesto { font-size:22px; line-height:1.42; max-width:1000px; letter-spacing:-.01em; }
+  .manifesto em { font-style:normal; color:var(--cu); } .manifesto i { font-style:normal; color:var(--cy); }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:960px; margin-top:16px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin:40px 0 14px; }
+  .stage { display:grid; place-items:center; padding:72px 40px; border-radius:30px; background:radial-gradient(90% 120% at 20% 100%, rgba(108,184,200,.10), transparent 60%), radial-gradient(90% 120% at 80% 0%, rgba(196,144,112,.12), transparent 60%), #050505; border:1px solid var(--hair); margin-top:32px; }
+  .stage .p { width:100%; max-width:1080px; filter:drop-shadow(0 40px 60px rgba(0,0,0,.6)); }
+  .stage .p svg { width:100%; height:auto; display:block; }
+  .anat { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px; margin-top:28px; }
+  .anat div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .anat b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); margin-bottom:8px; font-weight:600; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .tile { border-radius:24px; padding:40px; display:grid; place-items:center; position:relative; }
+  .tile.dk { background:#000; border:1px solid var(--hair); } .tile.lt { background:#E9E4DA; }
+  .tile svg { width:100%; height:auto; display:block; }
+  .tile .cap { position:absolute; left:16px; top:14px; font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
+  .tile.lt .cap { color:#9a978f; }
+  .sizes { display:flex; align-items:flex-end; gap:28px; flex-wrap:wrap; }
+  .sz { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .sz span { font-family:var(--mono); font-size:9px; letter-spacing:.1em; color:var(--ter); }
+  .ic { border-radius:22.5%; overflow:hidden; }
+  .ic svg { width:100%; height:100%; display:block; }
+  .tab { display:flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:8px 8px 0 0; background:#202124; font-size:12px; color:#e8eaed; }
+  .tab .ic { width:16px; height:16px; border-radius:3px; }
+  .g4 { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; }
+  .obj { border-radius:22px; position:relative; overflow:hidden; display:grid; place-items:center; min-height:280px; }
+  .obj .lbl { position:absolute; left:14px; bottom:12px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.5); z-index:3; }
+  .obj.l .lbl { color:rgba(0,0,0,.45); }
+  .s-dark { background:linear-gradient(160deg,#34373c,#222428); } .s-wall { background:#24211f; } .s-felt { background:#17222a; } .s-fridge { background:linear-gradient(180deg,#dfe2e4,#c6cacd); } .s-paper { background:#e9e4da; }
+  .stk { width:72%; margin:28px 0 36px; transform:rotate(-5deg); filter:drop-shadow(0 0 0 #fff) drop-shadow(4px 0 0 #fff) drop-shadow(-4px 0 0 #fff) drop-shadow(0 4px 0 #fff) drop-shadow(0 -4px 0 #fff) drop-shadow(0 14px 18px rgba(0,0,0,.5)); }
+  .mag { width:84%; filter:drop-shadow(0 12px 16px rgba(0,0,0,.3)); }
+  .loader { width:84%; aspect-ratio:16/10; background:#000; border-radius:16px; display:grid; place-items:center; position:relative; overflow:hidden; }
+  .loader .p { width:86%; }
+  .loader small { position:absolute; bottom:12px; font-family:var(--mono); font-size:8px; letter-spacing:.24em; color:#5c5c5c; }
+  /* Movimiento: la línea se dibuja y el talón se arranca apenas. */
+  .bl-pase-traza { stroke-dasharray:1; stroke-dashoffset:1; animation:traza 2.4s cubic-bezier(.6,0,.2,1) .3s forwards; }
+  @keyframes traza { to { stroke-dashoffset:0; } }
+  @media (prefers-reduced-motion:reduce) { .bl-pase-traza { animation:none; stroke-dashoffset:0; } }
+  .steps { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; margin-top:24px; }
+  .steps div { border-top:2px solid var(--cu); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .steps b { display:block; color:var(--ink); font-size:17px; margin-bottom:6px; }
+  code { font-family:var(--mono); font-size:12px; color:var(--ink); background:#151515; padding:2px 6px; border-radius:6px; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>El pase de la semana</b> · sistema de marca</span>
+    <a href="#pase">El pase</a><a href="#anatomia">Anatomía</a><a href="#isotipo">Isotipo</a><a href="#usos">Usos</a><a href="#emitir">Cómo se emite</a>
+    <button id="replay" style="margin-left:auto">↻ volver a dibujar</button>
+  </div>
+
+  <section id="pase">
+    <h2>La marca</h2>
+    <h3>El pase de la semana</h3>
+    <p class="manifesto">Cada semana BassLayer emite <em>un pase</em>. Lleva impresa la línea de esa semana: <i>el mercado que ya pasó</i> se vuelve, en <b>hoy</b>, <em>las noches que vienen</em>. El corte del boleto cae en hoy, y la línea lo cruza entera: <b>nadie separa los dos mundos</b>.</p>
+    <p class="lead">Es la combinación de la <b>línea de la semana</b> (un signo hecho con datos reales, que nunca se repite) y <b>el pase</b> (un objeto numerado que se guarda y se colecciona). El de abajo es el de esta semana, con los datos del sitio de hoy.</p>
+    <div class="stage"><div class="p" id="hero"></div></div>
+  </section>
+
+  <section id="anatomia">
+    <h2>Anatomía</h2>
+    <p class="lead">Lo que <b>cambia</b> cada semana es la línea, el número y los datos. Lo que <b>no cambia nunca</b>: la forma del boleto, la muesca en hoy, las dos franjas de color, el nombre y la tipografía. Así la marca vive y a la vez se reconoce siempre.</p>
+    <div class="anat">
+      <div><b>El talón · el mercado</b>A la izquierda del corte: la curva del Bitcoin de los últimos 7 días, hora por hora. Franja celeste. Es lo que ya pasó: lo que se arranca.</div>
+      <div><b>El corte · hoy</b>Las dos muescas y la línea punteada caen en el día de emisión. La línea de la semana lo cruza sin cortarse: es la frase del sitio dibujada.</div>
+      <div><b>El cuerpo · la noche</b>A la derecha: la onda de las fiestas de los próximos 7 días en el AMBA (más alta donde hay más). Franja cobre. Es lo que te quedás.</div>
+      <div><b>El número · Nº 26·41</b>Año y semana. Cada pase es una edición única y numerada: lo que hace que la gente los guarde.</div>
+    </div>
+    <div class="two" style="margin-top:28px">
+      <div class="tile dk"><span class="cap">Papel noche</span><div id="noche" style="width:100%"></div></div>
+      <div class="tile lt"><span class="cap">Papel día</span><div id="dia" style="width:100%"></div></div>
+    </div>
+  </section>
+
+  <section id="isotipo">
+    <h2>Isotipo</h2>
+    <p class="lead">El pase reducido a su gesto: <b>la tarjeta con las dos muescas y la línea cruzándolas</b>. Es el ícono de la app, el favicon, el pin y el sello. Usa la <b>línea madre</b>: una síntesis fija de la línea de la semana (la curva del mercado que sube hasta hoy y tres pulsos de noche que crecen hacia el finde), porque las piezas chicas no cambian. Boleto de papel hueso con la línea en el par de día (legible sobre papel). A 32 px y menos, dos pulsos y trazo más grueso.</p>
+    <div class="tile dk" style="margin-top:28px;place-items:start"><span class="cap">Escalas</span>
+      <div class="sizes" style="margin-top:14px" id="sizes"></div>
+    </div>
+  </section>
+
+  <section id="usos">
+    <h2>Usos</h2>
+    <div class="g4" id="objs" style="margin-top:20px"></div>
+  </section>
+
+  <section id="emitir">
+    <h2>Cómo se emite</h2>
+    <h3>Un pase por semana, sin diseñar de nuevo</h3>
+    <div class="steps">
+      <div><b>1 · El generador</b><code>brand/sistema/pase.mjs</code> toma la agenda y los precios del sitio y devuelve el pase, el isotipo y la línea como SVG. Es la misma regla para todo.</div>
+      <div><b>2 · Emitir</b><code>node brand/sistema/exportar.mjs https://basslayer.io</code> deja el pase de la semana en <code>brand/exportados/pases/</code> (papel noche y día). El de hoy ya está: Nº 26·41.</div>
+      <div><b>3 · Usar</b>El pase de la semana va al sticker, al imán, a la newsletter y a los flyers propios. El isotipo usa siempre la línea madre. En el sitio, la carga dibuja la línea de la semana en vivo.</div>
+    </div>
+    <p class="lead">Pendiente para cerrar el sistema: el color definitivo (el par de día con contraste de lectura), pasar el texto a curvas para imprenta, el PDF para la imprenta de stickers con su troquel, y la integración en el sitio (ícono de la app, la carga y la imagen al compartir).</p>
+  </section>
+
+<script type="module">
+  import { datosDeSemana, pase, isotipo } from "/brand/sistema/pase.mjs";
+  const [events, prices] = await Promise.all([fetch("/api/events").then((r) => r.json()), fetch("/api/prices").then((r) => r.json())]);
+  await Promise.all([document.fonts.load("750 40px Geist"), document.fonts.load("400 14px GeistMono")]);
+  const D = datosDeSemana(events, prices.find((p) => p.sym === "BTC").sparkline);
+  const draw = () => { document.getElementById("hero").innerHTML = pase(D, { animar: true }); };
+  draw(); document.getElementById("replay").onclick = draw;
+  document.getElementById("noche").innerHTML = pase(D, { tema: "noche" });
+  document.getElementById("dia").innerHTML = pase(D, { tema: "dia" });
+  const iso = isotipo(D), isoS = isotipo(D, { chico: true });
+  document.getElementById("sizes").innerHTML = [[180, iso], [96, iso], [52, iso], [32, isoS], [16, isoS]].map(([s, svg]) => `<div class="sz"><div class="ic" style="width:${s}px;height:${s}px">${svg}</div><span>${s}</span></div>`).join("") + `<div class="sz"><div class="tab"><div class="ic">${isoS}</div>BassLayer</div><span>pestaña</span></div>`;
+  const P = pase(D), Pd = pase(D, { tema: "dia" });
+  document.getElementById("objs").innerHTML = `
+    <div class="obj s-dark" style="grid-column:span 2"><div class="stk">${P}</div><span class="lbl">Sticker troquelado · la semana Nº 26·41</span></div>
+    <div class="obj s-felt"><div class="ic" style="width:38%;aspect-ratio:1;box-shadow:0 10px 20px rgba(0,0,0,.4)">${iso}</div><span class="lbl">Ícono de la app</span></div>
+    <div class="obj s-fridge l"><div class="mag">${P}</div><span class="lbl">Imán</span></div>
+    <div class="obj s-paper l" style="grid-column:span 2"><svg viewBox="0 0 1000 560" style="width:92%;box-shadow:0 14px 30px rgba(0,0,0,.18);background:#fff"><rect width="1000" height="560" fill="#fff"/><text x="60" y="80" font-family="GeistMono" font-size="13" letter-spacing="2.5" fill="#999">NEWSLETTER · SEMANA Nº 26·41</text><text x="60" y="140" font-family="Geist" font-weight="800" font-size="44" letter-spacing="-1.6" fill="#141414">Tu pase de la semana</text><g transform="translate(60 180) scale(.62)">${Pd.replace(/^<svg[^>]*>|<\/svg>$/g, "").replace(/^\s*/, "")}</g><text x="700" y="250" font-family="Geist" font-size="18" fill="#444">${D.fiestas} fiestas en el AMBA</text><text x="700" y="282" font-family="Geist" font-size="18" fill="#444">BTC en la semana: ${D.btc.cambio >= 0 ? "+" : ""}${D.btc.cambio.toFixed(1).replace(".", ",")}%</text><text x="700" y="340" font-family="GeistMono" font-size="12" letter-spacing="2" fill="#999">VER LA AGENDA →</text></svg><span class="lbl">Newsletter · cada edición, el pase de su semana</span></div>
+    <div class="obj s-dark"><div class="loader"><div class="p">${pase(D, { animar: true })}</div><small>CARGANDO LA SEMANA…</small></div><span class="lbl">Carga del sitio · se dibuja</span></div>
+    <div class="obj s-felt"><svg viewBox="0 0 200 200" style="width:60%"><circle cx="100" cy="100" r="96" fill="#caa46c"/><circle cx="100" cy="100" r="90" fill="#000"/><g transform="translate(18 18) scale(.164)">${iso.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g></svg><span class="lbl">Pin</span></div>
+    <div class="obj s-wall"><svg viewBox="0 0 200 250" style="width:58%"><path d="M95 0V60" stroke="${"#6CB8C8"}" stroke-width="10"/><path d="M105 0V60" stroke="${"#C49070"}" stroke-width="10"/><g transform="translate(18 60) rotate(90 82 82) scale(.164)">${P.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g></svg><span class="lbl">Credencial de un evento propio</span></div>
+    <div class="obj s-paper l"><svg viewBox="0 0 297 420" style="width:66%;box-shadow:0 16px 34px rgba(0,0,0,.22)"><rect width="297" height="420" fill="#0B0B0B"/><text x="20" y="40" font-family="GeistMono" font-size="7" letter-spacing="1.6" fill="#7a7a7a">BUENOS AIRES · SEMANA Nº 26·41</text><text x="20" y="104" font-family="Geist" font-weight="800" font-size="36" letter-spacing="-1.4" fill="#EDEAE4">Lo que pasó.</text><text x="20" y="144" font-family="Geist" font-weight="800" font-size="36" letter-spacing="-1.4" fill="#C49070">Lo que viene.</text><g transform="translate(14 190) scale(.269)">${P.replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g><text x="20" y="400" font-family="GeistMono" font-size="7" letter-spacing="1.6" fill="#7a7a7a">BASSLAYER.IO</text></svg><span class="lbl">Afiche</span></div>`;
+</script>
+</body>
+</html>

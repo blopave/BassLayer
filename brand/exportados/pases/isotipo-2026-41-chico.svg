@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="BassLayer"><defs><linearGradient id="i4g" gradientUnits="userSpaceOnUse" x1="150" x2="860" y1="0" y2="0"><stop offset="0.3907042253521127" stop-color="#2A6E7C"/><stop offset="0.5107042253521127" stop-color="#8E5B3A"/></linearGradient></defs>
+<rect width="1000" height="1000" fill="#000"/><path d="M160 200H406a64 64 0 0 0 128 0H840a70 70 0 0 1 70 70V730a70 70 0 0 1 -70 70H534a64 64 0 0 0 -128 0H160a70 70 0 0 1 -70 -70V270a70 70 0 0 1 70 -70Z" fill="#F2EDE4"/>
+
+<g transform="translate(0 -20)"><path d="M150 640C220 640 250 572 300 584C350 596 372 520 420 528C446 532 458 520 470 520L570 520L610 480L650 560L650 520L730 520L770 425L810 615L810 520L860 520" fill="none" stroke="url(#i4g)" stroke-width="58" stroke-linejoin="round" stroke-linecap="round"/></g></svg>

@@ -23,6 +23,7 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 | 2026-10-04 | **Una sola marca: BassLayer.** Bass y Layer no tienen logo propio: son secciones y se distinguen solo por el color (cobre / celeste). |
 | 2026-10-04 | **Sistema:** el logotipo es el nombre en una sola pieza; el isotipo sale del mismo dibujo; el isologo es la suma, para usos formales. |
 | 2026-10-05 | **Logotipo elegido: Horizonte** (ronda 3). *BassLayer* entero atravesado por una línea: arriba cobre (la noche), abajo celeste (el mercado). Los dos mundos son dos capas de la misma palabra ("layer" = capa) y el horizonte de una ciudad plana frente al río. Isotipo: la **B** con el mismo corte. |
+| 2026-10-05 | **Dirección final: el pase de la semana** (ronda 5, A + C). Cada semana BassLayer emite un pase numerado con la *línea de la semana*: el BTC de los últimos 7 días → HOY → las fiestas de los próximos 7 en el AMBA. El corte del boleto cae en HOY y la línea lo cruza entera. Isotipo: el boleto de papel con sus muescas y la *línea madre* (síntesis fija). Reemplaza al Horizonte como sistema; el logotipo queda simple (Geist 750). Sistema en `sistema/` (generador `pase.mjs`, exportador `exportar.mjs`, lámina `pase.html`). |
 | 2026-10-05 | **El ".io" no va dentro del logo.** Existe una *versión de promoción* con `basslayer.io` en Geist Mono debajo, para piezas que se regalan (sticker, imán, tote). |
 
 ## Descartado (y por qué)
@@ -47,6 +48,13 @@ Medidas (unidades de la fuente, 1000 = 1 em): peso 750, espaciado −18, horizon
 | `isotipo.svg` · `-claro` · `-un-color` | La B partida, sin fondo. |
 | `isotipo-app.svg` | Sobre negro a sangre: base de los íconos de app y favicon. |
 | `isotipo-chico*.svg` | 32 px o menos (favicon, pestaña). |
+
+## Sistema (`sistema/`)
+
+- `pase.mjs`: funciones puras (`datosDeSemana`, `linea`, `pase`, `lineaMadre`, `isotipo`) que devuelven SVG. La usan la lámina y el exportador: una sola regla.
+- `exportar.mjs`: `node brand/sistema/exportar.mjs [https://basslayer.io]` emite el pase de la semana en `exportados/pases/` (papel noche y día) y el isotipo.
+- `pase.html`: la lámina (pase en vivo, anatomía, isotipo en escalas, usos, cómo se emite).
+- El texto de los SVG usa Geist: para imprenta hay que pasarlo a curvas (paso de exportados).
 
 ## Pendiente (en orden)
 
