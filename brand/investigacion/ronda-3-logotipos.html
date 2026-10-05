@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Logotipo BassLayer</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
+  .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:56px 40px 48px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:40px; font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:12px; }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:900px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin-bottom:12px; }
+  .how { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px; margin-top:28px; }
+  .how div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .how b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); margin-bottom:8px; font-weight:600; }
+
+  /* Lámina de cada logotipo */
+  .hero { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:20px; margin-top:28px; }
+  .plate { border-radius:24px; display:grid; place-items:center; padding:56px 40px; min-height:300px; position:relative; }
+  .plate.dark { background:#000; border:1px solid var(--hair); }
+  .plate.bone { background:#F5F5F0; }
+  .plate .cap { position:absolute; left:18px; top:16px; font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
+  .plate.bone .cap { color:#9a978f; }
+  .plate svg.logo { width:100%; max-width:640px; height:auto; }
+  .derive { display:grid; grid-template-rows:1fr 1fr; gap:20px; }
+  .derive .plate { min-height:0; padding:24px; }
+  .derive svg.iso { width:120px; height:120px; }
+  .why { margin-top:20px; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .why b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:6px; font-weight:600; color:var(--ink); }
+  .why .c b { color:#d98f6b; }
+
+  /* Objetos */
+  .objs { display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:16px; margin-top:28px; }
+  .obj { border-radius:20px; overflow:hidden; position:relative; aspect-ratio:1; display:grid; place-items:center; }
+  .obj .lbl { position:absolute; left:12px; bottom:10px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.55); }
+  .obj.light .lbl { color:rgba(0,0,0,.45); }
+  .obj.span2 { grid-column:span 2; aspect-ratio:2/1; }
+  /* sticker troquelado sobre una notebook */
+  .laptop { background:linear-gradient(160deg,#3a3d42,#26282c); }
+  .diecut { width:80%; transform:rotate(-5deg); background:#000; border:5px solid #fff; border-radius:999px; padding:4% 7%; box-shadow:0 10px 20px rgba(0,0,0,.45); }
+  .diecut svg { width:100%; height:auto; display:block; }
+  .round { width:62%; aspect-ratio:1; border-radius:50%; background:#000; border:5px solid #fff; display:grid; place-items:center; box-shadow:0 10px 22px rgba(0,0,0,.45); transform:rotate(8deg); }
+  .round svg { width:64%; height:64%; }
+  /* imán sobre la heladera */
+  .fridge { background:linear-gradient(180deg,#dfe2e4,#c9cdd0); }
+  .magnet { width:76%; aspect-ratio:3/2; border-radius:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; box-shadow:0 10px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08); }
+  .magnet svg { width:80%; height:auto; }
+  .magnet small { font-family:var(--mono); font-size:8px; letter-spacing:.3em; color:#8a8a8a; }
+  /* tote */
+  .wall { background:#2a2623; }
+  .tote { position:relative; width:58%; aspect-ratio:.86; background:#E8E0D0; border-radius:4px 4px 8px 8px; display:grid; place-items:center; margin-top:14%; box-shadow:0 14px 24px rgba(0,0,0,.4); }
+  .tote::before { content:""; position:absolute; left:22%; right:22%; top:-34%; height:44%; border:7px solid #E8E0D0; border-bottom:0; border-radius:60px 60px 0 0; }
+  .tote svg { width:78%; height:auto; }
+  /* pin */
+  .felt { background:#1d2a33; }
+  .pin { width:46%; aspect-ratio:1; border-radius:22%; background:#000; display:grid; place-items:center; box-shadow:0 0 0 3px #caa46c, 0 0 0 5px #8a6a3c, 0 12px 20px rgba(0,0,0,.5); }
+  .pin svg { width:70%; height:70%; }
+  /* ícono del celular + pestaña */
+  .phone { background:radial-gradient(120% 80% at 30% 0%, #2a3140 0%, #0e1016 70%); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; }
+  .phone .ic { width:30%; aspect-ratio:1; border-radius:22%; overflow:hidden; background:#000; display:grid; place-items:center; box-shadow:0 8px 16px rgba(0,0,0,.4); }
+  .phone .ic svg { width:100%; height:100%; }
+  .phone span { font-size:11px; color:#fff; }
+  .phone .tab { margin-top:14px; display:flex; align-items:center; gap:8px; height:30px; padding:0 10px; border-radius:8px 8px 0 0; background:#202124; font-size:11px; color:#e8eaed; }
+  .phone .tab svg { width:16px; height:16px; }
+  /* sitio */
+  .site { background:#000; border:1px solid var(--hair); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; }
+  .site svg { width:62%; height:auto; }
+  .site small { font-family:var(--mono); font-size:9px; letter-spacing:.24em; color:#6b6b6b; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>Logotipo BassLayer</b> · una sola pieza</span>
+    <a href="#como">Cómo funciona</a><a href="#L1">1 · La línea</a><a href="#L2">2 · Horizonte</a><a href="#L3">3 · Peso</a><a href="#L4">4 · Etiqueta</a>
+  </div>
+
+  <section id="como">
+    <h2>Cómo funciona</h2>
+    <h3>Una marca, un nombre, un dibujo.</h3>
+    <p class="lead">El nombre ya une los dos mundos en una palabra: el logo es <b>BassLayer escrito como una sola pieza</b>, con un gesto en el encuentro que cuenta la idea. De ese gesto sale el <b>isotipo</b> (el dibujo solo), así que logo e isologo no compiten: son el mismo dibujo usado según el lugar.</p>
+    <div class="how">
+      <div><b>Logotipo</b>El nombre entero. Sticker grande, imán, remera, tote, el home del sitio.</div>
+      <div><b>Isotipo</b>El gesto solo. Ícono del celular, pestaña del navegador, sticker redondo, pin.</div>
+      <div><b>Isologo</b>Los dos juntos. Firma de mail, flyer, credencial: cuando hay lugar y hace falta formalidad.</div>
+      <div><b>Bass y Layer</b>No tienen logo propio. Son secciones de la marca: se distinguen por el color (cobre, celeste), nunca por otro dibujo.</div>
+    </div>
+  </section>
+
+  <section id="L1"><h2>Logotipo 1</h2><h3>La línea</h3><p class="lead"></p><div class="sheet" data-i="0"></div></section>
+  <section id="L2"><h2>Logotipo 2</h2><h3>Horizonte</h3><p class="lead"></p><div class="sheet" data-i="1"></div></section>
+  <section id="L3"><h2>Logotipo 3</h2><h3>Peso</h3><p class="lead"></p><div class="sheet" data-i="2"></div></section>
+  <section id="L4"><h2>Logotipo 4</h2><h3>Etiqueta</h3><p class="lead"></p><div class="sheet" data-i="3"></div></section>
+
+<script>
+  const CU = "#C49070", CY = "#6CB8C8", INK = "#EDEAE4", DCU = "#8E5B3A", DCY = "#2A6E7C", DARK = "#141414";
+  const cv = document.createElement("canvas").getContext("2d");
+  const tw = (txt, wt, size, ls = 0) => { cv.font = `${wt} ${size}px Geist`; cv.letterSpacing = `${ls}px`; return cv.measureText(txt).width; };
+  let uid = 0;
+  const id = (p) => `${p}${++uid}`;
+
+  // Cada logotipo devuelve { logo(theme), iso(theme) } como SVG. theme: "dark" | "bone" | "mono-w" | "mono-k".
+  // a/b = colores de cada mundo según el fondo; t = tinta de las letras.
+  const pal = (th) => th === "bone" ? { a: DCU, b: DCY, t: DARK } : th === "mono-w" ? { a: "#fff", b: "#fff", t: "#fff" } : th === "mono-k" ? { a: DARK, b: DARK, t: DARK } : { a: CU, b: CY, t: INK };
+
+  const LOGOS = [
+    { // 1 · La línea: el subrayado de "bass" dobla y se vuelve la "l" de "layer".
+      lead: "Una sola línea subraya <b>bass</b> y, en el encuentro, dobla hacia arriba y se convierte en la <b>l</b> de <b>layer</b>. La línea va de cobre a celeste mientras sube: la noche que se vuelve mercado, en un trazo. Es literalmente la transición que ya tiene el sitio.",
+      why: ["Une los dos mundos sin partirlos: la palabra se lee entera y la unión es la letra misma.", "El isotipo (la esquina que sube) es simple, propio y funciona a 16 px.", "La l debajo de la línea de base es un gesto fuerte: hay que afinar el peso y la curva para que se lea \"layer\" y no \"ayer\"."],
+      logo(th) {
+        const { a, b, t } = pal(th), S = 120, W1 = 700, ls = -4.5, g = id("g");
+        const wBass = tw("bass", W1, S, ls), wAyer = tw("ayer", W1, S, ls);
+        const base = 150, foot = base + 22, sw = 15, xL = 18 + wBass + 14, top = base - S * .74;
+        const W = xL + sw / 2 + 10 + wAyer + 20;
+        return `<svg class="logo" viewBox="0 0 ${W} 200"><defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="18" y1="0" x2="${xL}" y2="0"><stop offset=".55" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+          <text x="18" y="${base}" font-family="Geist" font-weight="${W1}" font-size="${S}" letter-spacing="${ls}" fill="${t}">bass</text>
+          <path d="M18 ${foot}H${xL - 16}a16 16 0 0 0 16 -16V${top}" fill="none" stroke="url(#${g})" stroke-width="${sw}" stroke-linecap="round"/>
+          <path d="M${xL} ${foot - 16}V${top}" stroke="${b}" stroke-width="${sw}" stroke-linecap="round"/>
+          <text x="${xL + sw / 2 + 10}" y="${base}" font-family="Geist" font-weight="${W1}" font-size="${S}" letter-spacing="${ls}" fill="${t}">ayer</text></svg>`;
+      },
+      iso(th) {
+        const { a, b } = pal(th), g = id("g");
+        return `<svg class="iso" viewBox="0 0 96 96"><defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="20" y1="70" x2="64" y2="22"><stop offset=".35" stop-color="${a}"/><stop offset=".85" stop-color="${b}"/></linearGradient></defs><path d="M22 68H50a14 14 0 0 0 14 -14V24" fill="none" stroke="url(#${g})" stroke-width="13" stroke-linecap="round"/></svg>`;
+      },
+    },
+    { // 2 · Horizonte: la palabra entera cortada por una línea; arriba la noche, abajo el mercado.
+      lead: "<b>BassLayer</b> entero, atravesado por una sola línea a la altura del horizonte: arriba de la línea la palabra es cobre (la noche), abajo es celeste (el mercado). No es Bass de un lado y Layer del otro: <b>los dos mundos son dos capas de la misma palabra</b> — y \"layer\" es eso, una capa. Buenos Aires plana, frente al río.",
+      why: ["Es el más unificado: cada letra tiene las dos frecuencias. Nada se lee como dos marcas.", "El isotipo es la B con el mismo corte: reconocible en el celular y en un pin.", "En un color se pierde la división de tonos y queda solo la línea: hay que cuidar que el corte se vea (tiene una ranura, no solo cambio de color)."],
+      logo(th) {
+        const { a, b } = pal(th), S = 132, Wt = 750, ls = -6, w = tw("BassLayer", Wt, S, ls), cut = 150 - S * .27, gap = 6, ct = id("t"), cb = id("b");
+        const W = w + 36;
+        const txt = (fill, clip) => `<text x="18" y="150" font-family="Geist" font-weight="${Wt}" font-size="${S}" letter-spacing="${ls}" fill="${fill}" clip-path="url(#${clip})">BassLayer</text>`;
+        return `<svg class="logo" viewBox="0 0 ${W} 190"><defs><clipPath id="${ct}"><rect x="0" y="0" width="${W}" height="${cut - gap / 2}"/></clipPath><clipPath id="${cb}"><rect x="0" y="${cut + gap / 2}" width="${W}" height="200"/></clipPath></defs>${txt(a, ct)}${txt(b, cb)}</svg>`;
+      },
+      iso(th) {
+        const { a, b } = pal(th), S = 92, Wt = 800, cut = 78 - S * .27, ct = id("t"), cb = id("b"), x = 48 - tw("B", Wt, S) / 2;
+        const txt = (fill, clip) => `<text x="${x}" y="80" font-family="Geist" font-weight="${Wt}" font-size="${S}" fill="${fill}" clip-path="url(#${clip})">B</text>`;
+        return `<svg class="iso" viewBox="0 0 96 96"><defs><clipPath id="${ct}"><rect width="96" height="${cut - 2.5}"/></clipPath><clipPath id="${cb}"><rect y="${cut + 2.5}" width="96" height="96"/></clipPath></defs>${txt(a, ct)}${txt(b, cb)}</svg>`;
+      },
+    },
+    { // 3 · Peso: el grosor baja letra a letra, de la noche (pesada) al mercado (fino).
+      lead: "<b>BassLayer</b> en una sola palabra donde el <b>peso baja letra a letra</b>: la B en negra (900), la r en finísima (200). La noche es grave y densa, el mercado es preciso y liviano, y el paso entre los dos es continuo — no hay corte. Se apoya en la Geist variable que ya usa el sitio.",
+      why: ["La transición es la marca y no se puede separar en dos: cada letra es un paso del mismo gradiente.", "El isotipo son cinco barras que se afinan: el ecualizador de Bass y, a la vez, una escala que se aliviana.", "Es el más sutil: a lo lejos puede leerse como un efecto tipográfico y no como logo. Pide un nombre bien grande."],
+      logo(th) {
+        const { a, b, t } = pal(th), S = 128, ls = -3, letters = "BassLayer".split(""), wts = letters.map((_, i) => Math.round(900 - i * 87.5));
+        let x = 18, out = "";
+        letters.forEach((ch, i) => { out += `<text x="${x}" y="150" font-family="Geist" font-weight="${wts[i]}" font-size="${S}" fill="${th === "dark" || th === "bone" ? t : t}">${ch}</text>`; x += tw(ch, wts[i], S) + ls; });
+        const g = id("g");
+        return `<svg class="logo" viewBox="0 0 ${x + 18} 190"><defs><linearGradient id="${g}" x1="0" x2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>${out}<rect x="18" y="168" width="${x - 18}" height="4" fill="url(#${g})"/></svg>`;
+      },
+      iso(th) {
+        const { a, b } = pal(th), g = id("g"), ws = [15, 11, 8, 5, 2.5];
+        let x = 20, bars = "";
+        ws.forEach((w) => { bars += `<rect x="${x}" y="24" width="${w}" height="48" fill="url(#${g})"/>`; x += w + 7; });
+        return `<svg class="iso" viewBox="0 0 96 96"><defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="20" x2="${x}" y1="0" y2="0"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>${bars}</svg>`;
+      },
+    },
+    { // 4 · Etiqueta: BASS sobre LAYER, mismo ancho, una línea entre los dos.
+      lead: "<b>BASS</b> arriba y <b>LAYER</b> abajo, compuestos al mismo ancho como un bloque, con <b>una sola línea</b> entre los dos que va de cobre a celeste. Es un sello: nace listo para un sticker, una etiqueta, una credencial o el lomo de un flyer. El isotipo es el bloque reducido: <b>B</b> sobre <b>L</b>, con su línea.",
+      why: ["Es el más \"objeto\": funciona como etiqueta, sello o parche sin adaptar nada. Ideal para regalar.", "Se lee fuerte de lejos (mayúsculas apiladas) y el isotipo B/L es claro a cualquier tamaño.", "Apilar dos palabras es un recurso conocido: la personalidad tiene que venir de la proporción, la línea y el color."],
+      logo(th) {
+        const { a, b, t } = pal(th), S = 96, Wt = 800, g = id("g");
+        const wL = tw("LAYER", Wt, S, 2), wB0 = tw("BASS", Wt, S, 0), lsB = (wL - wB0) / 3;
+        return `<svg class="logo" viewBox="0 0 ${wL + 40} 250"><defs><linearGradient id="${g}" x1="0" x2="1"><stop offset=".2" stop-color="${a}"/><stop offset=".8" stop-color="${b}"/></linearGradient></defs>
+          <text x="20" y="100" font-family="Geist" font-weight="${Wt}" font-size="${S}" letter-spacing="${lsB}" fill="${t}">BASS</text>
+          <rect x="20" y="118" width="${wL - 2}" height="8" fill="url(#${g})"/>
+          <text x="20" y="214" font-family="Geist" font-weight="${Wt}" font-size="${S}" letter-spacing="2" fill="${t}">LAYER</text></svg>`;
+      },
+      iso(th) {
+        const { a, b, t } = pal(th), g = id("g"), S = 40, Wt = 800, wB = tw("B", Wt, S), wL = tw("L", Wt, S);
+        return `<svg class="iso" viewBox="0 0 96 96"><defs><linearGradient id="${g}" x1="0" x2="1"><stop offset=".15" stop-color="${a}"/><stop offset=".85" stop-color="${b}"/></linearGradient></defs>
+          <text x="${48 - wB / 2}" y="44" font-family="Geist" font-weight="${Wt}" font-size="${S}" fill="${t}">B</text>
+          <rect x="30" y="50" width="36" height="5" fill="url(#${g})"/>
+          <text x="${48 - wL / 2}" y="90" font-family="Geist" font-weight="${Wt}" font-size="${S}" fill="${t}">L</text></svg>`;
+      },
+    },
+  ];
+
+  function sheet(i) {
+    const L = LOGOS[i];
+    return `
+      <div class="hero">
+        <div class="plate dark"><span class="cap">Logotipo · fondo oscuro</span>${L.logo("dark")}</div>
+        <div class="derive">
+          <div class="plate dark"><span class="cap">Isotipo · sale del logo</span>${L.iso("dark")}</div>
+          <div class="plate bone"><span class="cap">Isotipo · claro</span>${L.iso("bone")}</div>
+        </div>
+      </div>
+      <div class="hero" style="grid-template-columns:1fr 1fr">
+        <div class="plate bone" style="min-height:220px"><span class="cap">Logotipo · fondo claro</span>${L.logo("bone")}</div>
+        <div class="plate dark" style="min-height:220px"><span class="cap">Un color (sello, grabado, bordado)</span>${L.logo("mono-w")}</div>
+      </div>
+      <p class="k" style="margin-top:36px">Para regalar y en uso</p>
+      <div class="objs">
+        <div class="obj span2 laptop"><div class="diecut">${L.logo("dark")}</div><span class="lbl">Sticker troquelado</span></div>
+        <div class="obj laptop"><div class="round">${L.iso("dark")}</div><span class="lbl">Sticker redondo</span></div>
+        <div class="obj fridge light"><div class="magnet" style="background:#000">${L.logo("dark")}<small>BUENOS AIRES</small></div><span class="lbl">Imán</span></div>
+        <div class="obj wall"><div class="tote">${L.logo("mono-k")}</div><span class="lbl">Tote</span></div>
+        <div class="obj felt"><div class="pin">${L.iso("dark")}</div><span class="lbl">Pin</span></div>
+        <div class="obj phone"><div class="ic">${L.iso("dark")}</div><span>BassLayer</span><div class="tab">${L.iso("dark")}BassLayer</div><span class="lbl">Celular · pestaña</span></div>
+        <div class="obj span2 site"><span class="lbl" style="top:12px;bottom:auto">Home del sitio</span>${L.logo("dark")}<small>· ELEGÍ UN MUNDO ·</small></div>
+        <div class="obj fridge light"><div class="magnet" style="background:#F5F5F0">${L.logo("bone")}<small style="color:#9a978f">BUENOS AIRES</small></div><span class="lbl">Imán claro</span></div>
+        <div class="obj felt"><div class="round" style="background:#F5F5F0">${L.iso("bone")}</div><span class="lbl">Sticker claro</span></div>
+        <div class="obj laptop"><div class="pin" style="border-radius:50%">${L.iso("dark")}</div><span class="lbl">Botón / chapita</span></div>
+      </div>
+      <div class="why"><div><b>Une</b>${L.why[0]}</div><div><b>Funciona</b>${L.why[1]}</div><div class="c"><b>Cuidado</b>${L.why[2]}</div></div>`;
+  }
+  Promise.all([300, 700, 750, 800, 900, 200].map((w) => document.fonts.load(`${w} 40px Geist`))).then(() => {
+    document.querySelectorAll(".sheet").forEach((el) => { const i = +el.dataset.i; el.previousElementSibling.innerHTML = LOGOS[i].lead; el.innerHTML = sheet(i); });
+  });
+</script>
+</body>
+</html>

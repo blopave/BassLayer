@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>App instalable</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --hair:#26262e; --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:12px; height:52px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { margin-left:auto; color:var(--soft); font-size:11px; letter-spacing:.08em; text-decoration:none; }
+  section { padding:40px 32px 24px; }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  .lead { margin:12px 0 28px; color:var(--soft); font-size:15px; max-width:760px; line-height:1.5; }
+  .icons { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:32px; }
+  .opt { display:flex; flex-direction:column; gap:16px; }
+  .opt .k { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); }
+  .opt .k b { color:var(--ink); }
+  .opt.is-now .k b { color:var(--soft); }
+  .big { width:180px; height:180px; border-radius:40px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.6); }
+  .big svg, .app svg { width:100%; height:100%; display:block; }
+  .note { font-size:13px; color:var(--soft); line-height:1.45; }
+  /* Pantalla de inicio de un celular (íconos neutros, sin marcas reales). */
+  .home { width:100%; max-width:300px; aspect-ratio:9/12; border-radius:28px; padding:28px 18px; display:grid; grid-template-columns:repeat(4, 1fr); align-content:start; gap:18px 10px; }
+  .home.dark { background:radial-gradient(120% 80% at 30% 0%, #2a3140 0%, #0e1016 70%); }
+  .home.light { background:radial-gradient(120% 80% at 70% 0%, #f3e4d3 0%, #cfd8de 75%); }
+  .app { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .app i, .app .ic { width:52px; height:52px; border-radius:12px; overflow:hidden; display:block; }
+  .app i { background:rgba(255,255,255,.18); }
+  .home.light .app i { background:rgba(0,0,0,.14); }
+  .app span { font-size:10px; color:#fff; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .home.light .app span { color:#1b1b1b; text-shadow:none; }
+  .homes { display:flex; gap:12px; }
+  .homes .home { flex:1; min-width:0; max-width:none; padding:20px 10px; gap:14px 4px; border-radius:22px; }
+  .homes .app i, .homes .app .ic { width:40px; height:40px; border-radius:10px; }
+  .homes .app span { font-size:9px; }
+  /* Cómo abre */
+  .splashes { display:flex; gap:24px; flex-wrap:wrap; }
+  .splash { width:180px; aspect-ratio:390/844; border-radius:24px; background:#000; border:1px solid var(--hair); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+  .splash .ic { width:72px; height:72px; border-radius:16px; overflow:hidden; }
+  .splash span { font-family:var(--mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--soft); }
+  /* Invitación: el sitio real, marcos completos. */
+  .rows { display:flex; flex-direction:column; gap:40px; }
+  .row { display:flex; gap:20px; align-items:center; justify-content:center; }
+  .row .lbl { writing-mode:vertical-rl; transform:rotate(180deg); font-family:var(--mono); font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--cu); }
+  .screen { position:relative; overflow:hidden; background:#000; border:1px solid var(--hair); box-shadow:0 20px 60px rgba(0,0,0,.5); flex:0 0 auto; }
+  .screen iframe { position:absolute; top:0; left:0; border:0; transform-origin:top left; background:#000; }
+  .m { border-radius:18px; } .d { border-radius:6px; }
+  .copy { max-width:760px; margin:0 auto 16px; color:var(--soft); font-size:14px; line-height:1.5; }
+  .copy b { color:var(--ink); }
+</style>
+</head>
+<body>
+  <div class="bar"><span class="title"><b>App instalable</b> · ícono e invitación</span><a href="#invitacion">ir a la invitación ↓</a></div>
+
+  <section>
+    <h2>1 · El ícono</h2>
+    <p class="lead">Es lo que queda en la pantalla de inicio del celular, al lado de las demás apps. Se ve a 52 px: tiene que leerse de un vistazo, en fondo oscuro y claro.</p>
+    <div class="icons" id="icons"></div>
+  </section>
+
+  <section>
+    <h2>2 · Cómo abre</h2>
+    <p class="lead">Al tocar el ícono, la app abre a pantalla completa (sin la barra del navegador) con esta pantalla un instante mientras carga.</p>
+    <div class="splashes" id="splashes"></div>
+  </section>
+
+  <section id="invitacion">
+    <h2>3 · La invitación a instalarla</h2>
+    <p class="lead">El celular no la ofrece solo: hay que invitar. Dos maneras, sobre el sitio real (el ícono que se ve es el que elijas arriba; acá va la A).</p>
+    <div class="rows">
+      <div>
+        <p class="copy"><b>1 · Solo en el menú.</b> Una entrada más en el menú ⋯: "Instalar app". Nunca interrumpe; la encuentra el que la busca.</p>
+        <div class="row"><span class="lbl">1 · Menú</span>
+          <div class="screen m"><iframe data-w="390" data-h="844" data-v="menu" src="/"></iframe></div>
+          <div class="screen d"><iframe data-w="1440" data-h="900" data-v="menu" src="/"></iframe></div>
+        </div>
+      </div>
+      <div>
+        <p class="copy"><b>2 · Una vez, abajo (y en el menú).</b> En la segunda visita aparece una línea discreta abajo; si la cerrás, no vuelve. En iPhone el botón dice "Cómo" y muestra en una línea el paso que pide Apple (Compartir ⬆ → Agregar a inicio), porque ahí no se puede instalar con un toque.</p>
+        <div class="row"><span class="lbl">2 · Una vez</span>
+          <div class="screen m"><iframe data-w="390" data-h="844" data-v="toast" src="/"></iframe></div>
+          <div class="screen d"><iframe data-w="1440" data-h="900" data-v="toast" src="/"></iframe></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<script>
+  // Los tres íconos, en SVG (fondo a sangre: el celular le pone su máscara).
+  const ICONS = {
+    now: { k: "Actual", name: "El de hoy", note: "Un \"BL\" genérico en una letra que no es la del sitio. No dice nada de la marca.",
+      svg: `<svg viewBox="0 0 512 512"><rect width="512" height="512" fill="#000"/><text x="256" y="320" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="200" fill="#e5e5e5">BL</text></svg>` },
+    a: { k: "A", name: "Las dos firmas", note: "Las barras del ecualizador de Bass (cobre) y el cursor de Layer (celeste), apoyados en la misma línea: lo que ya se ve en el header.",
+      svg: `<svg viewBox="0 0 512 512"><rect width="512" height="512" fill="#000"/><g transform="translate(118 0)"><rect x="0" y="236" width="44" height="120" rx="6" fill="#C49070"/><rect x="66" y="156" width="44" height="200" rx="6" fill="#C49070"/><rect x="132" y="206" width="44" height="150" rx="6" fill="#C49070"/><rect x="218" y="196" width="58" height="160" rx="4" fill="#6CB8C8"/></g></svg>` },
+    b: { k: "B", name: "Una sola línea", note: "La transición entre mundos hecha ícono: la onda de Bass que se vuelve la curva de Layer, en un solo trazo de cobre a celeste.",
+      svg: `<svg viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#C49070"/><stop offset=".55" stop-color="#C49070"/><stop offset="1" stop-color="#6CB8C8"/></linearGradient></defs><rect width="512" height="512" fill="#000"/><path d="M84 300 C104 300 104 220 124 220 S144 360 164 360 S184 200 204 200 S224 330 244 330 S262 270 280 280 C330 300 360 250 390 200 S420 150 432 130" fill="none" stroke="url(#g)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+    c: { k: "C", name: "Monograma", note: "B en cobre y L en celeste, en la Geist del sitio. Lo más legible a 52 px, pero lo menos propio: cualquier marca puede tener dos iniciales.",
+      svg: `<svg viewBox="0 0 512 512"><rect width="512" height="512" fill="#000"/><text x="262" y="336" text-anchor="end" font-family="Geist" font-weight="800" font-size="230" letter-spacing="-12" fill="#C49070">B</text><text x="274" y="336" font-family="Geist" font-weight="800" font-size="230" fill="#6CB8C8">L</text></svg>` },
+  };
+  const NEUTRAL = ["Fotos", "Mapas", "Clima", "Notas", "Música", "Cámara", "Reloj", "Mail", "Banco", "Correo"];
+  const homeScreen = (key, tone) => {
+    const cells = NEUTRAL.slice(0, 6).map((n) => `<div class="app"><i></i><span>${n}</span></div>`);
+    cells.splice(5, 0, `<div class="app"><div class="ic">${ICONS[key].svg}</div><span>BassLayer</span></div>`);
+    return `<div class="home ${tone}">${cells.join("")}${NEUTRAL.slice(6, 9).map((n) => `<div class="app"><i></i><span>${n}</span></div>`).join("")}</div>`;
+  };
+  document.getElementById("icons").innerHTML = Object.entries(ICONS).map(([key, o]) => `
+    <div class="opt${key === "now" ? " is-now" : ""}">
+      <span class="k"><b>${o.k}</b> · ${o.name}</span>
+      <div class="big">${o.svg}</div>
+      <p class="note">${o.note}</p>
+      <div class="homes">${homeScreen(key, "dark")}${homeScreen(key, "light")}</div>
+    </div>`).join("");
+  document.getElementById("splashes").innerHTML = ["a", "b", "c"].map((key) => `
+    <div class="opt"><span class="k"><b>${ICONS[key].k}</b> · ${ICONS[key].name}</span>
+      <div class="splash"><div class="ic">${ICONS[key].svg}</div><span>BassLayer</span></div></div>`).join("");
+
+  // Invitación: se dibuja ADENTRO del sitio real, con sus variables y su letra.
+  const ICON_A = ICONS.a.svg;
+  function stage(f) {
+    const d = f.contentDocument, v = f.dataset.v, mob = f.dataset.w === "390";
+    const st = d.createElement("style");
+    st.textContent = `
+      .pv-install { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+      .pv-install svg { width:18px; height:18px; border-radius:4px; }
+      .pv-toast { position:fixed; left:50%; transform:translateX(-50%); bottom:${mob ? 96 : 28}px; z-index:9800; display:flex; align-items:center; gap:12px; padding:8px 8px 8px 12px; width:${mob ? "calc(100% - 32px)" : "auto"};
+        border-radius:999px; border:1px solid var(--bl-border); background:color-mix(in srgb, var(--bl-bg) 82%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 18px 40px rgba(0,0,0,.45); font:500 var(--fs-13) var(--font-sans); color:var(--bl-text); }
+      .pv-toast svg { width:32px; height:32px; border-radius:8px; flex:none; }
+      .pv-toast p { flex:1; margin:0; line-height:1.3; }
+      .pv-toast p small { display:block; color:var(--bl-text-ter); font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); margin-top:2px; }
+      .pv-toast .pv-go { min-height:var(--btn-h-sm); padding:0 16px; border-radius:999px; border:0; background:var(--bl-accent-bass); color:var(--bl-bg); font:600 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; }
+      .pv-toast .pv-x { width:36px; height:36px; border-radius:50%; border:0; background:none; color:var(--bl-text-ter); font-size:18px; }`;
+    d.head.appendChild(st);
+    if (v === "menu") {
+      d.querySelector(".bl-util-fab")?.click();
+      setTimeout(() => {
+        const items = d.querySelector(".bl-util-items");
+        if (!items || items.querySelector(".pv-install")) return;
+        const b = d.createElement("button");
+        b.className = "bl-util-toggle pv-install";
+        b.innerHTML = `${ICON_A}<span>instalar app</span>`;
+        items.insertBefore(b, items.querySelector(".bl-lang-toggle"));
+      }, 400);
+    } else {
+      const t = d.createElement("div");
+      t.className = "pv-toast";
+      t.innerHTML = `${ICON_A}<p>${mob ? "Sumá BassLayer a tu inicio" : "BassLayer en tu pantalla de inicio"}</p><button class="pv-go">Instalar</button><button class="pv-x" aria-label="Cerrar">×</button>`;
+      d.body.appendChild(t);
+    }
+  }
+  const frames = [...document.querySelectorAll("iframe")];
+  function fit() {
+    const H = innerHeight - 52 - 96, W = document.body.clientWidth - 140;
+    const s = Math.min(H / 900, W / (390 * 900 / 844 + 1440 + 20));
+    frames.forEach((f) => {
+      const w = +f.dataset.w, h = +f.dataset.h, k = w === 390 ? s * 900 / 844 : s;
+      f.style.width = w + "px"; f.style.height = h + "px"; f.style.transform = `scale(${k})`;
+      f.parentElement.style.width = w * k + "px"; f.parentElement.style.height = h * k + "px";
+    });
+  }
+  frames.forEach((f) => f.addEventListener("load", () => setTimeout(() => stage(f), 2500)));
+  addEventListener("resize", fit);
+  fit();
+</script>
+</body>
+</html>

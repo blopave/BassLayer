@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marca BassLayer</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  a { color:inherit; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); overflow-x:auto; }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; white-space:nowrap; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a, .bar button { font:inherit; font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; background:none; cursor:pointer; white-space:nowrap; }
+  .bar a:hover, .bar button:hover { color:var(--ink); border-color:var(--soft); }
+  .bar .sep { width:1px; height:24px; background:var(--hair); margin:0 6px; flex:none; }
+  .bar .pal.on { color:#0a0a0a; background:var(--ink); border-color:var(--ink); }
+  section { padding:56px 40px 40px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:40px; font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:12px; }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:880px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
+  /* Plataforma */
+  .plat { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px; margin-top:32px; }
+  .plat div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .plat b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); margin-bottom:8px; font-weight:600; }
+  .fronts { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:32px; margin-top:40px; }
+  .front h4 { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); margin-bottom:14px; font-weight:600; }
+  .front ul { list-style:none; display:flex; flex-direction:column; gap:12px; }
+  .front li { font-size:13px; line-height:1.5; color:var(--soft); border-top:1px solid var(--hair); padding-top:10px; }
+  .front li b { color:var(--ink); font-weight:600; }
+  .front li a { font-family:var(--mono); font-size:10px; color:var(--ter); text-decoration:none; }
+  .front li a:hover { color:var(--soft); }
+  /* Territorios */
+  .terr { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:28px; margin-top:32px; }
+  .card { border:1px solid var(--hair); border-radius:24px; padding:28px; display:flex; flex-direction:column; gap:22px; background:#070707; }
+  .card-h { display:flex; align-items:baseline; gap:14px; }
+  .card-h .n { font-family:var(--mono); font-size:11px; color:var(--ter); letter-spacing:.14em; }
+  .card-h h4 { font-size:26px; font-weight:800; letter-spacing:-.03em; }
+  .card-h .src { margin-left:auto; font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ter); text-align:right; }
+  .card p.idea { font-size:14px; line-height:1.55; color:var(--soft); margin-top:-8px; }
+  .card p.idea b { color:var(--ink); font-weight:600; }
+  .row1 { display:grid; grid-template-columns:200px minmax(0,1fr); gap:20px; align-items:stretch; }
+  .big { aspect-ratio:1; border-radius:28px; background:#000; border:1px solid var(--hair); display:grid; place-items:center; }
+  .big svg { width:100%; height:100%; }
+  .stack { display:flex; flex-direction:column; gap:14px; justify-content:space-between; }
+  .worlds { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .w { border-radius:14px; background:#000; border:1px solid var(--hair); padding:10px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .w svg { width:64px; height:64px; }
+  .w span { font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); }
+  .sizes { display:flex; align-items:flex-end; gap:16px; }
+  .sz { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .sz .ic { background:#000; border:1px solid var(--hair); overflow:hidden; display:grid; place-items:center; }
+  .sz span { font-family:var(--mono); font-size:9px; color:var(--ter); }
+  .tabmini { display:flex; align-items:center; gap:8px; height:30px; padding:0 10px; border-radius:8px 8px 0 0; background:#202124; font-size:11px; color:#e8eaed; }
+  .tabmini svg { width:16px; height:16px; }
+  .row2 { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:20px; }
+  .lock { border-radius:16px; background:#000; border:1px solid var(--hair); display:flex; align-items:center; gap:14px; padding:22px 20px; }
+  .lock.bone { background:#F5F5F0; border-color:transparent; }
+  .lock svg { width:58px; height:58px; flex:none; margin:-8px -4px -8px -8px; }
+  .wm { display:flex; align-items:baseline; gap:.28em; line-height:1; white-space:nowrap; color:var(--ink); }
+  .lock.bone .wm { color:#141414; }
+  .wm .b { font-weight:700; font-size:30px; letter-spacing:-.03em; }
+  .wm .l { font-weight:300; font-size:24px; letter-spacing:.14em; text-transform:uppercase; }
+  .wm .colon { font-weight:700; font-size:30px; margin:0 -.12em; }
+  .locks { display:flex; flex-direction:column; gap:10px; }
+  .flyer { aspect-ratio:3/4; border-radius:14px; background:#000; border:1px solid var(--hair); position:relative; overflow:hidden; container-type:inline-size; }
+  .flyer svg.bg { position:absolute; inset:0; width:100%; height:100%; }
+  .flyer .t { position:absolute; left:7cqi; right:7cqi; bottom:7cqi; display:flex; flex-direction:column; gap:2cqi; }
+  .flyer .t .d { font-family:var(--mono); font-size:5cqi; letter-spacing:.14em; color:var(--fl-a); }
+  .flyer .t .h { font-size:11cqi; font-weight:800; letter-spacing:-.04em; line-height:.95; color:#fff; }
+  .flyer .t .s { font-family:var(--mono); font-size:3.6cqi; letter-spacing:.16em; text-transform:uppercase; color:#8a8a8a; }
+  .flyer .tag { position:absolute; top:6cqi; left:7cqi; font-family:var(--mono); font-size:3.6cqi; letter-spacing:.2em; color:#8a8a8a; text-transform:uppercase; }
+  .verdict { display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:13px; line-height:1.55; color:var(--soft); }
+  .verdict b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; margin-bottom:4px; font-weight:600; }
+  .verdict .p b { color:#7fc28f; } .verdict .c b { color:#d98f6b; }
+  /* Color */
+  .pals { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:20px; margin-top:28px; }
+  .pal-c { border:1px solid var(--hair); border-radius:20px; overflow:hidden; cursor:pointer; transition:border-color .2s; }
+  .pal-c.on { border-color:var(--ink); }
+  .pal-c .sw { display:grid; grid-template-columns:1fr 1fr; height:120px; }
+  .pal-c .sw div { display:flex; align-items:flex-end; padding:10px; font-family:var(--mono); font-size:10px; letter-spacing:.06em; }
+  .pal-c .day { display:grid; grid-template-columns:1fr 1fr; background:#F5F5F0; }
+  .pal-c .day div { padding:12px 10px; font-weight:700; font-size:15px; }
+  .pal-c .day small { display:block; font-family:var(--mono); font-weight:400; font-size:9px; color:#777; margin-top:4px; }
+  .pal-c .txt { padding:14px; font-size:13px; line-height:1.5; color:var(--soft); }
+  .pal-c .txt b { display:block; color:var(--ink); font-size:15px; margin-bottom:4px; }
+  .rec { margin-top:28px; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; }
+  .rec div { border-top:2px solid var(--cu); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .rec div b { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; letter-spacing:-.01em; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>Marca BassLayer</b> · investigación</span>
+    <a href="#plataforma">Plataforma</a><a href="#fuentes">Investigación</a><a href="#territorios">8 territorios</a><a href="#color">Color</a><a href="#recomendacion">Recomendación</a>
+    <span class="sep"></span><span class="k" style="white-space:nowrap">Paleta:</span>
+    <button class="pal" data-p="actual">Actual</button><button class="pal" data-p="refinada">Refinada</button><button class="pal" data-p="sodio">Sodio · LED</button><button class="pal" data-p="limo">Limo</button>
+  </div>
+
+  <section id="plataforma">
+    <h2>Plataforma</h2>
+    <h3>Buenos Aires, en dos frecuencias:<br>la noche y el mercado.</h3>
+    <p class="lead">La frase que ya abre el sitio es la idea central de la marca. Los estudios que mejor construyen identidad (Pentagram, Collins, Studio Dumbar, Experimental Jetset) no arrancan por el dibujo: arrancan por esa idea, fijan <b>una regla</b> (qué cambia y qué se mantiene) y recién después dibujan un signo que la cumpla. El signo tiene que vivir en una pestaña de 16 px, en el celular, en un flyer impreso y en una remera.</p>
+    <div class="plat">
+      <div><b>Idea</b>Dos frecuencias, una ciudad. No son dos marcas: es una sola marca que suena en dos registros.</div>
+      <div><b>Regla de los dos mundos</b>Una sola geometría. En Bass se enciende el cobre, en Layer el celeste, en la home los dos. Nunca el logo partido al medio: se lee como dos marcas.</div>
+      <div><b>Tres dibujos</b>Signo completo (52 px o más), reducido para 16–32 px y silueta de un color (Android la usa en modo monocromo).</div>
+      <div><b>Lo que sigue</b>Wordmark en Geist con un gesto propio, un loop de entrada de 2 s, un sonido de 1 s, plantillas de flyer, newsletter y merch.</div>
+    </div>
+  </section>
+
+  <section id="fuentes">
+    <h2>Investigación · tres frentes</h2>
+    <p class="lead">Referencias verificadas (con fuente). Lo que no se pudo verificar quedó afuera.</p>
+    <div class="fronts">
+      <div class="front"><h4>Estudios y sistemas</h4><ul>
+        <li><b>Whitney Museum</b> · Experimental Jetset, 2013. Una W que es una línea y se adapta a cualquier formato. <a href="https://www.dezeen.com/2013/05/21/whitney-graphic-identity-by-experimental-jetset/" target="_blank">dezeen ↗</a></li>
+        <li><b>MIDI</b> · Pentagram (Sascha Lobe + Yuri Suzuki), 2021. El wordmark dibuja una octava, 440→880 Hz, y el sonido es el mismo dato. <a href="https://www.itsnicethat.com/news/pentagram-sascha-lobe-yuri-suzuki-midi-identity-graphic-design-200121" target="_blank">itsnicethat ↗</a></li>
+        <li><b>ABC Australia</b> · Bill Kennard, 1965. Una curva de Lissajous: dos frecuencias en una sola figura. <a href="https://recollection.com.au/biographies/bill-kennard" target="_blank">recollection ↗</a></li>
+        <li><b>Tate</b> · Wolff Olins / North. Lo generativo tiene que simplificarse para funcionar chico (3.000 puntos → 300). <a href="https://www.fastcompany.com/3061183/how-north-saved-the-tates-iconic-logo-from-itself" target="_blank">fastcompany ↗</a></li>
+        <li><b>Plan Visual de Buenos Aires</b> · González Ruiz + Shakespear, 1971. El ADN gráfico porteño: el poste de esquina con dos placas. <a href="https://shakespearweb.com/portfolio-item/subte-sistema-senalizacion-senaletica/" target="_blank">shakespear ↗</a></li>
+      </ul></div>
+      <div class="front"><h4>Cultura electrónica</h4><ul>
+        <li><b>Unknown Pleasures</b> · Peter Saville, 1979. Un dato científico (el púlsar CP1919) convertido en ícono, sin decorarlo. <a href="https://www.scientificamerican.com/article/the-pulsar-chart-that-became-a-pop-icon-turns-50-joy-division-rsquo-s-unknown-pleasures/" target="_blank">sciam ↗</a></li>
+        <li><b>Warp</b> · The Designers Republic. Un violeta propio que vale tanto como el logo. <a href="https://warp.net/editorial/reasonable-person-an-interview-with-ian-anderson" target="_blank">warp ↗</a></li>
+        <li><b>De School</b> · Mainstudio. Cinco sub-identidades con un solo sistema: el modelo más cercano a dos mundos. <a href="https://www.itsnicethat.com/articles/mainstudio-de-school-amsterdam-identity-100516" target="_blank">itsnicethat ↗</a></li>
+        <li><b>NTS</b> · Adam Tickle. Descartó ondas y satélites por clichés: <b>la onda literal es cliché</b>. <a href="https://daily.redbullmusicacademy.com/2016/01/london-music-logos-explained/" target="_blank">RBMA ↗</a></li>
+        <li><b>RA · 23:59</b> · HelloMe, 2023. Una hora usada como nombre y como signo. <a href="https://www.designweek.co.uk/issues/13-november-18-november-2023/resident-advisor-2359-identity-hellome/" target="_blank">designweek ↗</a></li>
+      </ul></div>
+      <div class="front"><h4>Color y fintech</h4><ul>
+        <li><b>La luz de Buenos Aires</b>. Foto de la ISS (NASA, mayo 2025): el centro en LED blanco frío, la periferia en sodio naranja. <b>Cobre y celeste son las dos luces de la ciudad.</b> <a href="https://science.nasa.gov/earth/earth-observatory/traversing-buenos-aires-at-night-154789" target="_blank">NASA ↗</a></li>
+        <li><b>Josef Albers</b>. Un color se vuelve dos según su vecino: dos mundos no se leen como dos marcas si comparten fondo, valor y tinta. <a href="https://www.albersfoundation.org/learning/workshops/one-color-becomes-two" target="_blank">Albers Foundation ↗</a></li>
+        <li><b>Nubank</b> · Pentagram. "¿Cuál es el color más anti-banco?": violeta. <a href="https://www.pentagram.com/work/nubank" target="_blank">pentagram ↗</a></li>
+        <li><b>Robinhood · Ramp · Kraken</b>. Negro, neutros y <b>un</b> color propio usado con disciplina. <a href="https://robinhood.com/us/en/newsroom/a-new-visual-identity/" target="_blank">robinhood ↗</a></li>
+        <li><b>Alerta</b>. Cobre + celeste es el "teal & orange" de Hollywood, y en modo día ninguno llega al contraste mínimo sobre hueso (2,5 y 2,1). Hay que afinarlos. <a href="https://www.lafilm.edu/blog/everything-is-beige-now-flattening-contemporary-color/" target="_blank">LA Film School ↗</a></li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section id="territorios">
+    <h2>8 territorios</h2>
+    <h3>Una geometría, dos lecturas</h3>
+    <p class="lead">Cada territorio se probó con la misma vara: <b>¿se lee a 16 px?</b>, <b>¿tiene una lectura en la noche y otra en el mercado?</b>, <b>¿funciona en un color?</b>, <b>¿se extiende a un flyer?</b> Con la barra de arriba podés cambiar la paleta y ver todos los signos con cada una.</p>
+    <div class="terr" id="terr"></div>
+  </section>
+
+  <section id="color">
+    <h2>Color</h2>
+    <h3>Las dos luces de la ciudad</h3>
+    <p class="lead">El sodio de la periferia y el LED del centro: la paleta deja de ser "teal &amp; orange" y pasa a tener una historia propia. Cada opción tiene su par de noche (sobre negro) y su par de día (sobre hueso, con contraste de lectura). Tocá una para aplicarla a todos los signos.</p>
+    <div class="pals" id="pals"></div>
+  </section>
+
+  <section id="recomendacion">
+    <h2>Recomendación</h2>
+    <h3>Tres para llevar a la siguiente ronda</h3>
+    <p class="lead">Elegí uno o dos territorios (y una paleta) y lo desarrollo a fondo: construcción fina, wordmark con su gesto, motion, sonido y las plantillas.</p>
+    <div class="rec">
+      <div><b>1 · Los dos puntos</b>El más simple y el más propio: aparece en la hora de la noche (23:59) y en el precio del mercado (BTC:+4%). Vive dentro del nombre (Bass:LAYER), a 16 px es perfecto y en motion titila como el cursor que Layer ya tiene. Lo propusieron dos de los tres frentes por separado.</div>
+      <div><b>2 · Lissajous</b>Es la frase de la marca dibujada: dos frecuencias, una sola figura. Tiene respaldo histórico (ABC, 1965) y cambia con cada fecha (la relación del BPM). Riesgo a cuidar: que no se lea como el "∞".</div>
+      <div><b>3 · Crossfader</b>El toggle entre mundos hecho objeto: la tapa a la izquierda es Bass, a la derecha Layer, al centro la home. Se anima solo con la navegación y es un objeto real (pin, llavero).</div>
+    </div>
+  </section>
+
+<script>
+  const PALS = {
+    actual:   { name: "Actual", a: "#C49070", b: "#6CB8C8", da: "#C49070", db: "#6CB8C8", ca: "2,5", cb: "2,1", note: "La de hoy. Funciona de noche; de día no llega al contraste de lectura." },
+    refinada: { name: "Refinada", a: "#D39A6E", b: "#9CC9D3", da: "#8E5B3A", db: "#2A6E7C", ca: "5,2", cb: "5,3", note: "La misma idea, afinada: el celeste pierde saturación y se lee como luz, no como \"fintech\". Par de día legible." },
+    sodio:    { name: "Sodio · LED", a: "#F29A3A", b: "#D8E6EE", da: "#A35E2C", db: "#3A4650", ca: "4,6", cb: "8,9", note: "Las dos luces literales: naranja de sodio y blanco frío de LED. Layer casi sin color: rompe el cliché azul." },
+    limo:     { name: "Limo", a: "#B07A4A", b: "#8E9A9C", da: "#7A5232", db: "#4E5A5C", ca: "6,4", cb: "6,9", note: "Un tono puente, el limo del río, y cada mundo como su temperatura. Lujo silencioso; imposible leer dos marcas." },
+  };
+  let P = PALS.actual;
+  const S = (inner, extra = "") => `<svg viewBox="0 0 96 96" ${extra}>${inner}</svg>`;
+  const lissa = (rx, ry, fx, fy, ph = Math.PI / 2, n = 160) => { let d = ""; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; d += `${i ? "L" : "M"}${(48 + rx * Math.sin(fx * t + ph)).toFixed(1)} ${(48 + ry * Math.sin(fy * t)).toFixed(1)}`; } return d; };
+  const half = (rx, ry, fx, fy, from, to, ph = Math.PI / 2, n = 80) => { let d = ""; for (let i = 0; i <= n; i++) { const t = from + (to - from) * i / n; d += `${i ? "L" : "M"}${(48 + rx * Math.sin(fx * t + ph)).toFixed(1)} ${(48 + ry * Math.sin(fy * t)).toFixed(1)}`; } return d; };
+
+  // Cada territorio: draw(a, b, w) → SVG interno. a = Bass, b = Layer, w = grosor (reducido = más grueso).
+  // mode: "both" (home) · "bass" · "layer" · "mono".
+  const T = [
+    { id: "dospuntos", name: "Los dos puntos", src: "RA 23:59 · cursor de Layer", wm: "colon",
+      idea: "El <b>:</b> de la hora (23:59, la noche) y del precio (BTC:+4%, el mercado). Dos puntos, dos mundos, un signo mínimo. Vive dentro del nombre: <b>Bass:LAYER</b>.",
+      draw: (a, b, w) => { const q = w * 2.2, g = w * 1.3, y0 = 48 - q - g / 2; return `<rect x="${48 - q / 2}" y="${y0}" width="${q}" height="${q}" fill="${b}"/><rect x="${48 - q / 2}" y="${y0 + q + g}" width="${q}" height="${q}" fill="${a}"/>`; },
+      pro: "Perfecto a 16 px, cero cliché, entra en el nombre y en la tipografía de los flyers (VIE:23). En motion titila.", con: "Es tan mínimo que depende del color y del contexto para ser reconocible; hay que protegerlo con uso constante." },
+    { id: "lissajous", name: "Lissajous", src: "ABC 1965 · osciloscopio",
+      idea: "Dos frecuencias combinadas en el osciloscopio dibujan <b>una sola figura</b>. La relación 1:2 es la marca; cada noche puede tener la suya (3:2, 5:4…).",
+      draw: (a, b, w) => `<g fill="none" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="${half(34, 20, 1, 2, 0, Math.PI, 0)}" stroke="${b}"/><path d="${half(34, 20, 1, 2, Math.PI, Math.PI * 2, 0)}" stroke="${a}"/></g>`,
+      pro: "Es la frase de la marca convertida en geometría. Es generativo: cada fecha, una figura propia.", con: "La relación 1:2 se parece al ∞, muy usado en cripto. Hay que dibujarla con carácter (grosor variable, fase)." },
+    { id: "crossfader", name: "Crossfader", src: "mixer · toggle del sitio",
+      idea: "El control que pasa de un canal al otro es el <b>toggle entre mundos</b>. La tapa en el centro es la home; a la izquierda, Bass; a la derecha, Layer.",
+      draw: (a, b, w, pos = 0, n = "#F2ECE4") => `<g stroke-width="${w * .7}" stroke-linecap="round"><path d="M18 48H48" stroke="${a}"/><path d="M48 48H78" stroke="${b}"/></g><rect x="${48 + pos * 22 - w * 1.1}" y="${48 - w * 2.4}" width="${w * 2.2}" height="${w * 4.8}" rx="${w * .35}" fill="${pos < 0 ? a : pos > 0 ? b : n}"/>`,
+      pro: "Se anima solo con la navegación del sitio. Es un objeto real: pin, llavero, merch.", con: "Fuera de la escena DJ puede leerse como un \"slider\" genérico de interfaz." },
+    { id: "octava", name: "La octava", src: "MIDI · Pentagram 2021",
+      idea: "Una octava es <b>duplicar la frecuencia</b>; la escala logarítmica del Bitcoin también mide duplicaciones. Anillos a r, 2r y 4r: un parlante de frente y una grilla log.",
+      draw: (a, b, w) => `<g fill="none" stroke-width="${w * .75}"><circle cx="48" cy="48" r="34" stroke="${a}"/><circle cx="48" cy="48" r="17" stroke="${a}"/></g><circle cx="48" cy="48" r="${w * 1.1}" fill="${b}"/>`,
+      pro: "La lectura doble es real y sorprendente (música y mercado miden lo mismo). Fuerte como sello en merch.", con: "Sin la explicación se ve como una diana o un parlante genérico." },
+    { id: "sidechain", name: "Sidechain", src: "compresor · envolvente",
+      idea: "El kick que aplasta la mezcla y el precio que cae y rebota: <b>caída vertical y recuperación curva</b>. Un solo gesto para la pista y para el gráfico.",
+      draw: (a, b, w) => `<g fill="none" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="M24 24V70" stroke="${a}"/><path d="M24 70C40 70 56 50 74 26" stroke="${b}"/></g>`,
+      pro: "Excelente a 16 px. Repetido es un patrón al tempo (bordes de flyer, loader).", con: "Puede leerse como un tilde de \"listo\" (✓)." },
+    { id: "horizonte", name: "Horizonte", src: "Whitney · Costanera",
+      idea: "Buenos Aires es plana y frente al río: <b>una sola línea es el horizonte</b>. La noche arriba, el mercado reflejado abajo, y un punto donde se cruzan.",
+      draw: (a, b, w, _, n = "#F2ECE4") => `<g stroke-linecap="round" stroke-width="${w * .8}"><path d="M14 52H58" stroke="${a}"/><path d="M58 52H82" stroke="${b}"/></g><circle cx="58" cy="${52 - w * 2.6}" r="${w * 1.2}" fill="${n}"/>`,
+      pro: "El más atmosférico y el más porteño. En flyers la línea cruza todo el formato.", con: "Débil como ícono: una línea sola necesita su versión gruesa para 16 px." },
+    { id: "diagonal", name: "La diagonal", src: "Plan Visual BA · MIT",
+      idea: "La manzana porteña con su <b>diagonal</b> (la Diagonal Norte): también es la rampa de un fader y la subida de un mercado. Una grilla de manzanas genera las secciones.",
+      draw: (a, b, w) => `<rect x="${22 + w / 2}" y="${22 + w / 2}" width="${52 - w}" height="${52 - w}" rx="2" fill="none" stroke="${a}" stroke-width="${w * .8}"/><path d="M${22 + w} ${74 - w}L${74 - w} ${22 + w}" stroke="${b}" stroke-width="${w * .8}" stroke-linecap="round"/>`,
+      pro: "Legible a cualquier tamaño, con raíz en la ciudad, y genera submarcas (Agenda, Salas, Finanzas) con la misma grilla.", con: "Un cuadrado con diagonal es una forma muy común; el valor está en el sistema, no en el signo solo." },
+    { id: "cue", name: "Cue", src: "CDJ · marcar el momento",
+      idea: "El cue del CDJ dice <b>\"acá empieza\"</b>. En la agenda es el hoy; en el mercado, la entrada. Una línea de tiempo y la marca que la corta.",
+      draw: (a, b, w, _, n = "#F2ECE4") => `<g stroke-linecap="round" stroke-width="${w * .8}"><path d="M14 60H40" stroke="${a}"/><path d="M40 60H82" stroke="${b}"/></g><path d="M${40 - w * 2} ${30} H${40 + w * 2} L40 ${30 + w * 3.2}Z" fill="${n}"/><path d="M40 ${36 + w * 2}V${60 - w}" stroke="${n}" stroke-width="${w * .45}"/>`,
+      pro: "Funcional: el mismo signo marca el hoy en la agenda y el precio en la curva.", con: "Es la idea menos emocional; se parece a un marcador de reproductor." },
+  ];
+  const col = (mode) => mode === "bass" ? [P.a, P.a + "33"] : mode === "layer" ? [P.b + "33", P.b] : mode === "mono" ? ["#E5E5E5", "#E5E5E5"] : [P.a, P.b];
+  const draw = (t, mode = "both", w = 8, extra) => { const [a, b] = col(mode); return t.draw(a, b, w, extra, mode === "mono" ? "#E5E5E5" : undefined); };
+  const WM = (t) => t.wm === "colon" ? `<div class="wm"><span class="b">Bass</span><span class="colon" style="color:var(--pa)">:</span><span class="l">Layer</span></div>` : `<div class="wm"><span class="b">Bass</span><span class="l">Layer</span></div>`;
+  const flyerArt = (t) => {
+    if (t.id === "dospuntos") return `<svg class="bg" viewBox="0 0 75 100"><text x="5" y="48" font-family="Geist" font-weight="800" font-size="25" fill="#fff" letter-spacing="-1.2">23</text><rect x="35" y="31" width="4.5" height="4.5" fill="${P.b}"/><rect x="35" y="41" width="4.5" height="4.5" fill="${P.a}"/><text x="42" y="48" font-family="Geist" font-weight="800" font-size="25" fill="#fff" letter-spacing="-1.2">59</text></svg>`;
+    if (t.id === "lissajous") return `<svg class="bg" viewBox="0 0 96 128">${[[1, 2], [3, 2]].map(([fx, fy], i) => `<path d="${lissa(30, 13, fx, fy, 0)}" transform="translate(0 ${i * 30 - 12})" fill="none" stroke="${i === 0 ? P.a : i === 1 ? P.b : "#F2ECE4"}" stroke-width="1.6" opacity="${1 - i * .25}"/>`).join("")}</svg>`;
+    if (t.id === "sidechain") return `<svg class="bg" viewBox="0 0 96 128">${Array.from({ length: 6 }, (_, i) => `<path d="M${8 + i * 14} 30V54C${12 + i * 14} 54 ${16 + i * 14} 44 ${22 + i * 14} 32" fill="none" stroke="${i % 2 ? P.b : P.a}" stroke-width="2.4" stroke-linecap="round"/>`).join("")}</svg>`;
+    if (t.id === "horizonte") return `<svg class="bg" viewBox="0 0 96 128"><path d="M0 58H62" stroke="${P.a}" stroke-width="1.4"/><path d="M62 58H96" stroke="${P.b}" stroke-width="1.4"/><circle cx="62" cy="50" r="3" fill="#F2ECE4"/><path d="M0 64H62" stroke="${P.a}" stroke-width=".6" opacity=".35"/><path d="M62 64H96" stroke="${P.b}" stroke-width=".6" opacity=".35"/></svg>`;
+    return `<svg class="bg" viewBox="-24 -10 144 192">${draw(t, "both", 5, -1)}</svg>`;
+  };
+  function render() {
+    document.documentElement.style.setProperty("--pa", P.a);
+    document.getElementById("terr").innerHTML = T.map((t, i) => `
+      <article class="card" style="--fl-a:${P.a}">
+        <div class="card-h"><span class="n">${String(i + 1).padStart(2, "0")}</span><h4>${t.name}</h4><span class="src">${t.src}</span></div>
+        <p class="idea">${t.idea}</p>
+        <div class="row1">
+          <div class="big">${S(draw(t, "both", 8))}</div>
+          <div class="stack">
+            <div class="worlds">
+              <div class="w">${S(draw(t, "bass", 8, -1))}<span>En Bass</span></div>
+              <div class="w">${S(draw(t, "layer", 8, 1))}<span>En Layer</span></div>
+              <div class="w">${S(draw(t, "mono", 8))}<span>Un color</span></div>
+            </div>
+            <div class="sizes">
+              ${[52, 32, 16].map((s) => `<div class="sz"><div class="ic" style="width:${s}px;height:${s}px;border-radius:${s * .225}px">${S(draw(t, "both", s <= 32 ? 12 : 8), `width="${s}" height="${s}"`)}</div><span>${s}</span></div>`).join("")}
+              <div class="tabmini">${S(draw(t, "both", 12))}BassLayer</div>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="locks">
+            <div class="lock">${S(draw(t, "both", 8))}${WM(t)}</div>
+            <div class="lock bone">${S(t.draw(P.da, P.db, 8, undefined, "#141414"))}${WM(t)}</div>
+          </div>
+          <div class="flyer"><span class="tag">BassLayer presenta</span>${flyerArt(t)}<div class="t"><span class="d">VIE 10 OCT · 23:59</span><span class="h">Noche<br>de ejemplo</span><span class="s">Una sala · Buenos Aires</span></div></div>
+        </div>
+        <div class="verdict"><div class="p"><b>A favor</b>${t.pro}</div><div class="c"><b>Cuidado</b>${t.con}</div></div>
+      </article>`).join("");
+    document.getElementById("pals").innerHTML = Object.entries(PALS).map(([k, p]) => `
+      <div class="pal-c${p === P ? " on" : ""}" data-p="${k}">
+        <div class="sw"><div style="background:${p.a};color:#0a0a0a">Bass ${p.a}</div><div style="background:${p.b};color:#0a0a0a">Layer ${p.b}</div></div>
+        <div class="day"><div style="color:${p.da}">Bass<small>día · ${p.ca}:1</small></div><div style="color:${p.db}">Layer<small>día · ${p.cb}:1</small></div></div>
+        <div class="txt"><b>${p.name}</b>${p.note}</div>
+      </div>`).join("");
+    document.querySelectorAll("[data-p]").forEach((el) => { el.classList.toggle("on", PALS[el.dataset.p] === P); el.onclick = () => { P = PALS[el.dataset.p]; render(); }; });
+  }
+  render();
+</script>
+</body>
+</html>
