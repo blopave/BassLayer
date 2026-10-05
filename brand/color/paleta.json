@@ -1,0 +1,34 @@
+{
+  "_nota": "Paleta de BassLayer (oct 2026, opción Fiel). Contrastes WCAG medidos. CMYK aproximados (conversión directa): validar con prueba de color de la imprenta antes de imprimir en cantidad.",
+  "boletos": {
+    "general": { "fondo": "#EDEAE4", "tinta": "#0B0B0B", "uso": "La marca madre: home, calcos, merch." },
+    "bass":    { "fondo": "#C49070", "tinta": "#0B0B0B", "uso": "La noche: agenda, flyers, fiestas propias." },
+    "layer":   { "fondo": "#6CB8C8", "tinta": "#0B0B0B", "uso": "El mercado: precios, noticias, newsletter de Layer." },
+    "negro":   { "fondo": "#0B0B0B", "tinta": "#EDEAE4", "uso": "Sobre fondos claros, fotos y tramas." }
+  },
+  "noche": {
+    "bass":  { "hex": "#C49070", "sobre_negro": 7.6, "cmyk_aprox": "C0 M27 Y43 K23" },
+    "layer": { "hex": "#6CB8C8", "sobre_negro": 9.3, "cmyk_aprox": "C46 M8 Y0 K22" }
+  },
+  "dia": {
+    "bass":  { "hex": "#8E5B3A", "sobre_hueso": 5.2, "sobre_papel": 4.9, "cmyk_aprox": "C0 M36 Y59 K44" },
+    "layer": { "hex": "#2A6E7C", "sobre_hueso": 5.3, "sobre_papel": 5.0, "cmyk_aprox": "C66 M11 Y0 K51" }
+  },
+  "neutros": {
+    "negro": "#000000",
+    "papel_noche": "#0B0B0B",
+    "hueso": "#EDEAE4",
+    "hueso_sitio": "#F5F5F0",
+    "papel": "#F2EDE4",
+    "tinta": "#0B0B0B",
+    "gris": "#8A8A8A"
+  },
+  "contraste_tinta_sobre_boleto": { "general": 16.4, "bass": 7.1, "layer": 8.7 },
+  "reglas": [
+    "Sobre negro u oscuro: cualquiera de los tres boletos.",
+    "Sobre fondos claros, fotos o tramas: el boleto negro (los de color pierden el borde: 2,1 a 2,5).",
+    "Texto e interfaz en modo día: el par de día (nunca el de noche sobre claro).",
+    "Un boleto, un color: nunca mitad y mitad.",
+    "Impresión especial: el cobre puede ir en tinta metálica (Pantone 876 C es un cobre metálico), con prueba previa."
+  ]
+}

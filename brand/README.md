@@ -63,7 +63,7 @@ Medidas (unidades de la fuente, 1000 = 1 em): peso 750, espaciado −18, horizon
 2. ~~Isotipo B partida: completo y reducido~~ ✓ 2026-10-05.
 3. Variantes: ~~claro, un color, promo~~ ✓ · faltan la firma de mail y el negativo sobre foto.
 4. Reglas: zona de respeto, tamaño mínimo, usos incorrectos.
-5. Color definitivo: par de noche, par de día con contraste de lectura (el actual no llega sobre hueso: 2,5 y 2,1), Pantone y CMYK.
+5. ~~Color definitivo~~ ✓ 2026-10-05: opción **Fiel** (`color/paleta.json` + `color/paleta.html`). Boletos hueso / cobre #C49070 / celeste #6CB8C8 con el nombre en negro; par de día #8E5B3A / #2A6E7C; sobre claro, el boleto negro. CMYK aproximados (falta prueba de imprenta). Pendiente con OK de Pablo: corregir el modo día del sitio (`--bl-accent-bass` #A0714D → #8E5B3A, `--bl-accent-layer` #3A7282 → #2A6E7C).
 6. Tipografía: roles y verificación de la licencia (OFL).
 7. Exportados: SVG, PNG, PDF para imprenta, favicon, íconos de app, imagen para compartir.
 8. Aplicaciones: plantillas de sticker (con troquel), imán, tote, pin, credencial, flyer, newsletter.

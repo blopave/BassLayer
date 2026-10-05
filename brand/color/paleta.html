@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Color BassLayer</title>
+<title>Color · marca BassLayer</title>
 <meta name="robots" content="noindex" />
 <style>
   @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
@@ -16,109 +16,142 @@
   .bar .title b { color:var(--cu); font-weight:600; }
   .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
   .bar a:hover { color:var(--ink); border-color:var(--soft); }
-  section { padding:56px 40px 48px; border-bottom:1px solid var(--hair); }
+  section { padding:60px 40px 52px; border-bottom:1px solid var(--hair); }
   h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:14px; }
   h2::after { content:""; flex:1; height:1px; background:var(--hair); }
-  h3 { font-size:44px; font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:14px; }
-  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:960px; }
+  h3 { font-size:48px; font-weight:800; letter-spacing:-.04em; line-height:1.02; margin-bottom:14px; }
+  .lead { color:var(--soft); font-size:17px; line-height:1.6; max-width:940px; }
   .lead b { color:var(--ink); font-weight:600; }
-  .diag { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; margin-top:28px; }
-  .diag div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
-  .diag b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); margin-bottom:8px; font-weight:600; }
-  .diag .bad b { color:#d98f6b; }
-  .opt { border:1px solid var(--hair); border-radius:28px; padding:32px; margin-top:28px; background:#050505; }
-  .opt-h { display:flex; align-items:baseline; gap:16px; margin-bottom:20px; }
-  .opt-h h4 { font-size:28px; font-weight:800; letter-spacing:-.03em; }
-  .opt-h p { font-size:14px; color:var(--soft); line-height:1.5; max-width:760px; }
-  .row { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1.4fr) minmax(0,.9fr); gap:16px; align-items:stretch; }
-  .tile { border-radius:20px; padding:28px; display:grid; place-items:center; position:relative; }
-  .tile.dk { background:#000; border:1px solid var(--hair); } .tile.lt { background:#E9E4DA; }
-  .tile svg { width:100%; height:auto; display:block; }
-  .tile .cap { position:absolute; left:14px; top:12px; font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
-  .tile.lt .cap { color:#9a978f; }
-  .sw { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-top:16px; }
-  .chip { border-radius:16px; overflow:hidden; border:1px solid var(--hair); }
-  .chip .c { height:84px; display:flex; align-items:flex-end; padding:10px; font-family:var(--mono); font-size:10px; letter-spacing:.06em; }
-  .chip .m { padding:10px 12px; font-family:var(--mono); font-size:10px; line-height:1.7; color:var(--soft); background:#0b0b0b; }
-  .chip .m b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin:36px 0 14px; }
+  .trio { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; }
+  .trio .t { border-radius:20px; background:#000; border:1px solid var(--hair); padding:40px 28px 22px; display:flex; flex-direction:column; gap:16px; align-items:center; }
+  .trio .t.lt { background:#F5F5F0; border-color:transparent; }
+  .trio .t svg { width:100%; height:auto; display:block; }
+  .trio .t p { font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--soft); text-align:center; line-height:1.7; }
+  .trio .t.lt p { color:#777; }
   .ok { color:#7fc28f; } .no { color:#e07b6a; } .mid { color:#d9b46b; }
-  .site { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
-  .mock { border-radius:18px; padding:20px 22px; border:1px solid var(--hair); }
-  .mock .hd { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
-  .mock .w1 { font-weight:700; font-size:26px; letter-spacing:-.03em; }
-  .mock .w2 { font-weight:300; font-size:20px; letter-spacing:.14em; }
+  .cmp { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; margin-top:20px; }
+  .cmp .o { border:1px solid var(--hair); border-radius:22px; padding:22px; background:#050505; display:flex; flex-direction:column; gap:14px; }
+  .cmp .o.sel { border-color:var(--cu); }
+  .cmp .o h4 { font-size:22px; font-weight:800; letter-spacing:-.02em; display:flex; justify-content:space-between; align-items:baseline; }
+  .cmp .o h4 span { font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:var(--cu); font-weight:600; }
+  .cmp .row { display:flex; gap:8px; }
+  .cmp .row svg { flex:1; min-width:0; height:auto; }
+  .cmp .o p { font-size:13px; line-height:1.5; color:var(--soft); }
+  .tokens { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-top:20px; }
+  .chip { border-radius:16px; overflow:hidden; border:1px solid var(--hair); }
+  .chip .c { height:96px; display:flex; align-items:flex-end; justify-content:space-between; padding:12px; font-family:var(--mono); font-size:10px; letter-spacing:.06em; }
+  .chip .m { padding:12px; font-family:var(--mono); font-size:10px; line-height:1.75; color:var(--soft); background:#0b0b0b; }
+  .chip .m b { color:var(--ink); font-weight:600; display:block; margin-bottom:2px; letter-spacing:.06em; }
+  .rules { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; margin-top:20px; }
+  .rule { border-radius:20px; padding:26px; display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:center; border:1px solid var(--hair); }
+  .rule .a { border-radius:14px; padding:22px; display:grid; place-items:center; position:relative; }
+  .rule .a svg { width:100%; height:auto; }
+  .rule .a small { position:absolute; left:10px; top:8px; font-family:var(--mono); font-size:9px; letter-spacing:.14em; }
+  .rule .x small { color:#e07b6a; } .rule .v small { color:#5aa36a; }
+  .rule p { grid-column:1 / -1; font-size:13px; color:var(--soft); line-height:1.5; }
+  .rule p b { color:var(--ink); }
+  .site { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+  .mock { border-radius:18px; padding:22px; border:1px solid var(--hair); }
+  .mock .hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .mock .hd svg { height:30px; width:auto; }
   .mock .lbl { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
   .mock .txt { font-size:14px; line-height:1.5; margin-top:8px; }
   .mock .row2 { display:flex; gap:14px; margin-top:12px; font-family:var(--mono); font-size:11px; letter-spacing:.12em; }
-  .rec { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; margin-top:24px; }
-  .rec div { border-top:2px solid var(--cu); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
-  .rec b { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
+  .print { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; margin-top:20px; }
+  .print div { border-top:1px solid var(--hair); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .print b { display:block; color:var(--ink); margin-bottom:6px; }
 </style>
 </head>
 <body>
   <div class="bar">
-    <span class="title"><b>Color</b> · las dos luces de la ciudad</span>
-    <a href="#diagnostico">Diagnóstico</a><a href="#fiel">1 · Fiel</a><a href="#refinada">2 · Refinada</a><a href="#sodio">3 · Sodio · LED</a><a href="#rec">Recomendación</a>
+    <span class="title"><b>Color</b> · la marca BassLayer</span>
+    <a href="#decision">Decisión</a><a href="#por-que">Por qué</a><a href="#tokens">Los colores</a><a href="#reglas">Reglas</a><a href="#sitio">En el sitio</a><a href="#imprenta">Imprenta</a>
   </div>
 
-  <section id="diagnostico">
-    <h2>Diagnóstico</h2>
-    <h3>De noche funciona. De día, no se lee.</h3>
-    <p class="lead">El cobre y el celeste son las dos luces de Buenos Aires de noche (el sodio de la periferia y el LED del centro, en la foto de la NASA). Sobre negro tienen contraste de sobra. El problema es todo lo que va sobre papel o en el modo día: <b>ahí la marca hoy no pasa el mínimo de lectura</b> (4,5 a 1 para texto; 3 a 1 para gráficos).</p>
-    <div class="diag">
-      <div><b>Sobre negro</b>Cobre #C49070: <span class="ok">7,6</span> · Celeste #6CB8C8: <span class="ok">9,3</span>. Muy bien: texto chico incluido.</div>
-      <div class="bad"><b>Sobre papel / hueso</b>Los mismos colores: <span class="no">2,5</span> y <span class="no">2,1</span>. Un sticker blanco, un pase de día o un tote no se leen.</div>
-      <div class="bad"><b>El modo día del sitio, hoy</b>Cobre #A0714D: <span class="no">3,87</span> (no llega a 4,5) · Celeste #3A7282: <span class="ok">4,91</span>. El cobre del modo día hay que corregirlo igual.</div>
-    </div>
+  <section id="decision">
+    <h2>Decisión</h2>
+    <h3>Las tres entradas, fieles a la noche.</h3>
+    <p class="lead">Los colores del boleto son los del sitio: <b>hueso</b> para la general, <b>cobre</b> para Bass y <b>celeste</b> para Layer, las dos luces de Buenos Aires de noche. El nombre va en negro sobre los tres y se lee de sobra (<span class="ok">16,4</span> · <span class="ok">7,1</span> · <span class="ok">8,7</span> a 1). Lo único que se agrega es un <b>par de día</b> para texto e interfaz sobre fondos claros.</p>
+    <p class="k">Sobre negro</p>
+    <div class="trio" id="trioDark"></div>
+    <p class="k">Sobre fondo claro: la regla</p>
+    <div class="trio" id="trioLight"></div>
   </section>
 
-  <section id="fiel"><h2>Opción 1</h2><div id="o1"></div></section>
-  <section id="refinada"><h2>Opción 2</h2><div id="o2"></div></section>
-  <section id="sodio"><h2>Opción 3</h2><div id="o3"></div></section>
+  <section id="por-que">
+    <h2>Por qué esta y no las otras</h2>
+    <p class="lead">Con el boleto, la pregunta ya no es solo "¿se lee?" sino <b>"¿se distinguen las tres entradas?"</b>. Las otras dos paletas acercan Layer al hueso de la general y el sistema de tres colores se borra.</p>
+    <div class="cmp" id="cmp"></div>
+  </section>
 
-  <section id="rec">
-    <h2>Recomendación</h2>
-    <h3>Fiel: la noche no se toca, el día se corrige.</h3>
-    <div class="rec">
-      <div><b>Por qué</b>El cobre y el celeste de noche ya son la marca: el sitio, la onda, la curva y el pase están construidos con ellos y funcionan muy bien sobre negro. Cambiarlos es perder reconocimiento sin ganar nada.</div>
-      <div><b>Qué cambia</b>Se agrega un par de día que se lee (cobre #8E5B3A, celeste #2A6E7C: 5,2 y 5,3 sobre el hueso del sitio) y se corrige el cobre del modo día del sitio, que hoy no llega.</div>
-      <div><b>Impresión</b>Los CMYK son conversiones aproximadas: antes de imprimir en cantidad hay que pedir pruebas de color a la imprenta. Para piezas especiales, el cobre puede ir en tinta metálica (Pantone 876 C es un cobre metálico).</div>
+  <section id="tokens">
+    <h2>Los colores</h2>
+    <div class="tokens" id="chips"></div>
+  </section>
+
+  <section id="reglas">
+    <h2>Reglas</h2>
+    <div class="rules" id="rules"></div>
+  </section>
+
+  <section id="sitio">
+    <h2>En el sitio</h2>
+    <p class="lead">El modo día del sitio hoy usa un cobre (<b>#A0714D</b>) que no llega al mínimo de lectura sobre el hueso (<span class="no">3,9</span>). Con el par de día pasa a <span class="ok">5,2</span>. Es un cambio de dos variables en el CSS; lo hago con tu OK.</p>
+    <div class="site" id="site"></div>
+  </section>
+
+  <section id="imprenta">
+    <h2>Imprenta</h2>
+    <div class="print">
+      <div><b>CMYK aproximados</b>Están en cada color (conversión directa). Sirven para pedir presupuesto, no para la tirada: antes de imprimir en cantidad, pedir una <b>prueba de color</b> sobre el mismo papel o vinilo.</div>
+      <div><b>Vinilo de corte</b>Para calcos de un color: el boleto calado (el nombre se ve por el vidrio). Pedir el vinilo más cercano al cobre o al celeste con la muestra en mano.</div>
+      <div><b>Tintas especiales</b>Para piezas premium (credenciales, cajas), el cobre puede ir en tinta metálica: Pantone 876 C es un cobre metálico. Siempre con prueba previa.</div>
     </div>
   </section>
 
 <script type="module">
-  import { datosDeSemana, pase, isotipo } from "/brand/sistema/pase.mjs";
-  const L = (h) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4)); return .2126 * r + .7152 * g + .0722 * b; };
-  const cr = (a, b) => { const [x, y] = [L(a), L(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
-  const badge = (v, graph = false) => `<span class="${v >= 4.5 ? "ok" : v >= 3 ? (graph ? "ok" : "mid") : "no"}">${v.toFixed(1).replace(".", ",")}</span>`;
-  const cmyk = (h) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); const k = 1 - Math.max(r, g, b); if (k >= 1) return "C0 M0 Y0 K100"; return `C${Math.round((1 - r - k) / (1 - k) * 100)} M${Math.round((1 - g - k) / (1 - k) * 100)} Y${Math.round((1 - b - k) / (1 - k) * 100)} K${Math.round(k * 100)}`; };
+  const P = await (await fetch("paleta.json")).json();
+  const base = await (await fetch("/brand/logo/boleto-general.svg")).text();
+  const paths = [...base.matchAll(/<path fill="[^"]+" d="([^"]+)"\/>/g)].map((m) => m[1]);
+  const vb = base.match(/viewBox="([^"]+)"/)[1];
+  const tk = (fondo, tinta = "#0B0B0B") => `<svg viewBox="${vb}"><path fill="${fondo}" d="${paths[0]}"/><path fill="${tinta}" d="${paths[1]}"/></svg>`;
+  const Lm = (h) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4)); return .2126 * r + .7152 * g + .0722 * b; };
+  const cr = (a, b) => { const x = Lm(a), y = Lm(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const f = (v) => `<span class="${v >= 4.5 ? "ok" : v >= 3 ? "mid" : "no"}">${v.toFixed(1).replace(".", ",")}</span>`;
+  const B = P.boletos;
+  document.getElementById("trioDark").innerHTML = ["general", "bass", "layer"].map((k) => `<div class="t">${tk(B[k].fondo)}<p>${k.toUpperCase()} · ${B[k].fondo}<br>NOMBRE ${f(cr(B[k].tinta, B[k].fondo))} · BORDE ${f(cr(B[k].fondo, "#000000"))}</p></div>`).join("");
+  document.getElementById("trioLight").innerHTML = `
+    <div class="t lt">${tk(B.general.fondo)}<p>GENERAL SOBRE CLARO · BORDE ${f(cr(B.general.fondo, "#F5F5F0"))}<br><span class="no">✕ SE PIERDE</span></p></div>
+    <div class="t lt">${tk(B.bass.fondo)}<p>COBRE SOBRE CLARO · BORDE ${f(cr(B.bass.fondo, "#F5F5F0"))}<br><span class="mid">LEE EL NOMBRE, PIERDE LA FORMA</span></p></div>
+    <div class="t lt">${tk(B.negro.fondo, B.negro.tinta)}<p>NEGRO SOBRE CLARO · BORDE ${f(cr(B.negro.fondo, "#F5F5F0"))}<br><span class="ok">✓ LA VERSIÓN PARA FONDOS CLAROS</span></p></div>`;
   const OPTS = [
-    { el: "o1", name: "Fiel", desc: "La noche queda como está (es la que ya construye todo el sitio). Se suma un par de día legible para papel, stickers claros y el modo día.", p: { noche: { bass: "#C49070", layer: "#6CB8C8" }, dia: { bass: "#8E5B3A", layer: "#2A6E7C" } } },
-    { el: "o2", name: "Refinada", desc: "La noche sube un punto de luz: el cobre más cálido y el celeste más pálido, que se lee como luz y no como \"azul fintech\". Mismo par de día.", p: { noche: { bass: "#D39A6E", layer: "#9CC9D3" }, dia: { bass: "#8E5B3A", layer: "#2A6E7C" } } },
-    { el: "o3", name: "Sodio · LED", desc: "Las dos luces literales: naranja de sodio y blanco frío de LED. La más audaz: Layer casi no tiene color. De día, sodio oscuro y grafito.", p: { noche: { bass: "#F29A3A", layer: "#D8E6EE" }, dia: { bass: "#A35E2C", layer: "#3A4650" } } },
+    ["Fiel", "elegida", ["#EDEAE4", "#C49070", "#6CB8C8"], "Las tres entradas se distinguen de un vistazo: hueso, cobre y celeste son tres colores bien separados. Y es la identidad que ya construye el sitio."],
+    ["Refinada", "", ["#EDEAE4", "#D39A6E", "#9CC9D3"], `El celeste pálido se acerca al hueso (${cr("#9CC9D3", "#EDEAE4").toFixed(1).replace(".", ",")} entre los dos): de lejos, la entrada de Layer y la general se confunden.`],
+    ["Sodio · LED", "", ["#EDEAE4", "#F29A3A", "#D8E6EE"], `El blanco LED es casi el hueso (${cr("#D8E6EE", "#EDEAE4").toFixed(2).replace(".", ",")} entre los dos): el boleto de Layer y el general son el mismo. El sistema de tres colores desaparece.`],
   ];
-  const [events, prices] = await Promise.all([fetch("/api/events").then((r) => r.json()), fetch("/api/prices").then((r) => r.json())]);
-  await Promise.all([document.fonts.load("750 40px Geist"), document.fonts.load("400 14px GeistMono")]);
-  const D = datosDeSemana(events, prices.find((x) => x.sym === "BTC").sparkline);
-  const chip = (name, hex, bgs) => `<div class="chip"><div class="c" style="background:${hex};color:${L(hex) > .3 ? "#111" : "#eee"}">${hex}</div><div class="m"><b>${name}</b><br>${bgs.map(([n, b]) => `${n}: ${badge(cr(hex, b))}`).join(" · ")}<br>${cmyk(hex)} <span style="color:#555">(aprox.)</span></div></div>`;
-  for (const o of OPTS) {
-    const { noche, dia } = o.p;
-    document.getElementById(o.el).innerHTML = `<div class="opt">
-      <div class="opt-h"><h4>${o.name}</h4><p>${o.desc}</p></div>
-      <div class="row">
-        <div class="tile dk"><span class="cap">Pase · papel noche</span>${pase(D, { paleta: o.p })}</div>
-        <div class="tile lt"><span class="cap">Pase · papel día</span>${pase(D, { tema: "dia", paleta: o.p })}</div>
-        <div class="tile dk"><span class="cap">Isotipo</span><div style="width:70%;border-radius:22.5%;overflow:hidden">${isotipo(D, { paleta: o.p })}</div></div>
-      </div>
-      <div class="sw">
-        ${chip("Bass · noche", noche.bass, [["negro", "#000000"]])}${chip("Layer · noche", noche.layer, [["negro", "#000000"]])}
-        ${chip("Bass · día", dia.bass, [["hueso", "#F5F5F0"], ["papel", "#F2EDE4"]])}${chip("Layer · día", dia.layer, [["hueso", "#F5F5F0"], ["papel", "#F2EDE4"]])}
-      </div>
-      <div class="site">
-        <div class="mock" style="background:#000"><div class="hd"><span class="w1" style="color:${noche.bass}">Bass</span><span class="w2" style="color:${noche.layer}">LAYER</span></div><span class="lbl" style="color:${noche.bass}">Hoy 05 oct</span><p class="txt" style="color:#bbb">El sitio de noche: rótulos, números y la onda en cobre; la curva y los precios en celeste.</p><div class="row2"><span style="color:${noche.bass}">TODOS 86</span><span style="color:#888">CLUB 82</span><span style="color:${noche.layer}">BTC +2,7%</span></div></div>
-        <div class="mock" style="background:#F5F5F0;border-color:transparent"><div class="hd"><span class="w1" style="color:${dia.bass}">Bass</span><span class="w2" style="color:${dia.layer}">LAYER</span></div><span class="lbl" style="color:${dia.bass}">Hoy 05 oct</span><p class="txt" style="color:#333">El modo día del sitio: el mismo lenguaje, con el par de día que se lee sobre el hueso.</p><div class="row2"><span style="color:${dia.bass}">TODOS 86</span><span style="color:#777">CLUB 82</span><span style="color:${dia.layer}">BTC +2,7%</span></div></div>
-      </div></div>`;
-  }
+  document.getElementById("cmp").innerHTML = OPTS.map(([n, sel, cols, p]) => `<div class="o${sel ? " sel" : ""}"><h4>${n}<span>${sel.toUpperCase()}</span></h4><div class="row">${cols.map((c) => tk(c)).join("")}</div><p>${p}</p></div>`).join("");
+  const chip = (name, hex, lines, dark) => `<div class="chip"><div class="c" style="background:${hex};color:${dark ? "#eee" : "#111"}"><span>${hex}</span></div><div class="m"><b>${name}</b>${lines.join("<br>")}</div></div>`;
+  document.getElementById("chips").innerHTML = [
+    chip("Hueso · la general", "#EDEAE4", [`tinta encima ${f(cr("#0B0B0B", "#EDEAE4"))}`, "C0 M1 Y4 K7 (aprox.)"]),
+    chip("Cobre · Bass (noche)", P.noche.bass.hex, [`sobre negro ${f(P.noche.bass.sobre_negro)} · tinta encima ${f(cr("#0B0B0B", P.noche.bass.hex))}`, `${P.noche.bass.cmyk_aprox} (aprox.)`]),
+    chip("Celeste · Layer (noche)", P.noche.layer.hex, [`sobre negro ${f(P.noche.layer.sobre_negro)} · tinta encima ${f(cr("#0B0B0B", P.noche.layer.hex))}`, `${P.noche.layer.cmyk_aprox} (aprox.)`]),
+    chip("Negro · tinta", "#0B0B0B", ["el nombre, el boleto negro", "C0 M0 Y0 K96 (aprox.)"], true),
+    chip("Cobre · día", P.dia.bass.hex, [`sobre hueso ${f(P.dia.bass.sobre_hueso)} · papel ${f(P.dia.bass.sobre_papel)}`, `${P.dia.bass.cmyk_aprox} (aprox.)`], true),
+    chip("Celeste · día", P.dia.layer.hex, [`sobre hueso ${f(P.dia.layer.sobre_hueso)} · papel ${f(P.dia.layer.sobre_papel)}`, `${P.dia.layer.cmyk_aprox} (aprox.)`], true),
+    chip("Hueso del sitio", "#F5F5F0", ["fondo del modo día"]),
+    chip("Gris", "#8A8A8A", ["textos secundarios sobre negro"], true),
+  ].join("");
+  const rule = (bad, good, p, bgBad = "#F5F5F0", bgGood = "#F5F5F0") => `<div class="rule"><div class="a x" style="background:${bgBad}"><small>✕</small>${bad}</div><div class="a v" style="background:${bgGood}"><small>✓</small>${good}</div><p>${p}</p></div>`;
+  document.getElementById("rules").innerHTML = [
+    rule(tk(B.layer.fondo), tk(B.negro.fondo, B.negro.tinta), "<b>Sobre claro, el boleto negro.</b> Los de color pierden el borde y la forma deja de leerse."),
+    rule(`<div style="font:700 26px Geist;color:#C49070;letter-spacing:-.5px">Hoy · 05 oct</div>`, `<div style="font:700 26px Geist;color:#8E5B3A;letter-spacing:-.5px">Hoy · 05 oct</div>`, "<b>Texto sobre claro, el par de día.</b> El cobre de noche sobre hueso no se lee (2,5)."),
+    rule(`<svg viewBox="${vb}"><defs><clipPath id="hc"><rect width="2850" height="2000"/></clipPath></defs><path fill="#6CB8C8" d="${paths[0]}"/><path fill="#C49070" d="${paths[0]}" clip-path="url(#hc)"/><path fill="#0B0B0B" d="${paths[1]}"/></svg>`, tk(B.bass.fondo), "<b>Un boleto, un color.</b> El mundo lo dice el color entero, nunca mitad y mitad.", "#000", "#000"),
+    rule(tk("#E07B6A"), tk(B.general.fondo), "<b>Solo los tres colores.</b> Nada de otros rellenos: el color del boleto es información (dónde estás).", "#000", "#000"),
+  ].join("");
+  document.getElementById("site").innerHTML = `
+    <div class="mock" style="background:#000"><div class="hd">${tk(B.general.fondo)}<span class="lbl" style="color:#8a8a8a">NOCHE</span></div><span class="lbl" style="color:${P.noche.bass.hex}">Hoy · 05 oct</span><p class="txt" style="color:#bbb">De noche, nada cambia: el cobre y el celeste de siempre.</p><div class="row2"><span style="color:${P.noche.bass.hex}">TODOS 86</span><span style="color:#888">CLUB 82</span><span style="color:${P.noche.layer.hex}">BTC +2,7%</span></div></div>
+    <div class="mock" style="background:#F5F5F0;border-color:transparent"><div class="hd">${tk(B.negro.fondo, B.negro.tinta)}<span class="lbl" style="color:#999">DÍA</span></div><span class="lbl" style="color:${P.dia.bass.hex}">Hoy · 05 oct</span><p class="txt" style="color:#333">De día, el boleto negro y el par de día: todo se lee.</p><div class="row2"><span style="color:${P.dia.bass.hex}">TODOS 86</span><span style="color:#777">CLUB 82</span><span style="color:${P.dia.layer.hex}">BTC +2,7%</span></div></div>`;
 </script>
 </body>
 </html>
