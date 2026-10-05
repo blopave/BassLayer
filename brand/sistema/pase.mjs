@@ -11,6 +11,8 @@
 // y el exportador (brand/sistema/exportar.mjs). Devuelven SVG como texto.
 
 export const COLOR = { cobre: "#C49070", celeste: "#6CB8C8", hueso: "#EDEAE4", papel: "#F2EDE4", tinta: "#141414", negro: "#000000", gris: "#8A8A8A" };
+// Paleta de los dos mundos: par de noche (sobre negro) y par de día (sobre papel).
+export const PALETA = { noche: { bass: "#C49070", layer: "#6CB8C8" }, dia: { bass: "#8E5B3A", layer: "#2A6E7C" } };
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const pad = (n) => String(n).padStart(2, "0");
 export const fecha = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
@@ -74,10 +76,10 @@ const mono = (x, y, s, t, fill, anchor = "start", ls = 0.16) => `<text x="${x}" 
 const marca = (x, y, s, fill) => `<text x="${x}" y="${y}" font-family="Geist, system-ui, sans-serif" font-weight="750" font-size="${s}" letter-spacing="${(-s * 0.035).toFixed(2)}" fill="${fill}">BassLayer</text>`;
 
 // El pase. tema: "noche" (papel negro) | "dia" (papel hueso).
-export function pase(D, { tema = "noche", W = 1000, H = 440, animar = false } = {}) {
+export function pase(D, { tema = "noche", W = 1000, H = 440, animar = false, paleta = PALETA } = {}) {
   const id = `p${++uid}`, noche = tema === "noche";
   const papel = noche ? "#0B0B0B" : COLOR.papel, tinta = noche ? COLOR.hueso : COLOR.tinta, suave = noche ? "#7A7A7A" : "#8A857C";
-  const cu = noche ? COLOR.cobre : "#8E5B3A", ce = noche ? COLOR.celeste : "#2A6E7C";
+  const cu = noche ? paleta.noche.bass : paleta.dia.bass, ce = noche ? paleta.noche.layer : paleta.dia.layer;
   const r = 26, mx = 52, lw = W - 2 * mx, L = linea(D, lw, 210), xc = mx + L.xc, nr = 22;
   const cuerpo = `M${r} 0H${xc - nr}a${nr} ${nr} 0 0 0 ${2 * nr} 0H${W - r}a${r} ${r} 0 0 1 ${r} ${r}V${H - r}a${r} ${r} 0 0 1 ${-r} ${r}H${xc + nr}a${nr} ${nr} 0 0 0 ${-2 * nr} 0H${r}a${r} ${r} 0 0 1 ${-r} ${-r}V${r}a${r} ${r} 0 0 1 ${r} ${-r}Z`;
   let puntos = "";
@@ -121,12 +123,12 @@ export function lineaMadre({ chico = false } = {}) {
 // El isotipo: el pase reducido a su gesto — un boleto de papel hueso con sus
 // dos muescas en HOY y la línea madre cruzándolas. Fondo negro a sangre
 // (ícono de app); el arte vive dentro de la zona segura de Android (80 %).
-export function isotipo(_D, { chico = false, fondo = true } = {}) {
+export function isotipo(_D, { chico = false, fondo = true, paleta = PALETA } = {}) {
   const id = `i${++uid}`, S = 1000, cw = 820, ch = chico ? 600 : 560, x0 = (S - cw) / 2, y0 = (S - ch) / 2, r = 70, nr = chico ? 64 : 52;
   const L = lineaMadre({ chico }), xc = L.xc;
   const cuerpo = `M${x0 + r} ${y0}H${xc - nr}a${nr} ${nr} 0 0 0 ${2 * nr} 0H${x0 + cw - r}a${r} ${r} 0 0 1 ${r} ${r}V${y0 + ch - r}a${r} ${r} 0 0 1 ${-r} ${r}H${xc + nr}a${nr} ${nr} 0 0 0 ${-2 * nr} 0H${x0 + r}a${r} ${r} 0 0 1 ${-r} ${-r}V${y0 + r}a${r} ${r} 0 0 1 ${r} ${-r}Z`;
   const ty = (S - 1040) / 2 + (chico ? 0 : 0);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="BassLayer"><defs>${grad(`${id}g`, 150, 860, "#2A6E7C", "#8E5B3A", (xc - 150) / 710)}</defs>
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="BassLayer"><defs>${grad(`${id}g`, 150, 860, paleta.dia.layer, paleta.dia.bass, (xc - 150) / 710)}</defs>
 ${fondo ? `<rect width="${S}" height="${S}" fill="#000"/>` : ""}<path d="${cuerpo}" fill="${COLOR.papel}"/>
 ${chico ? "" : Array.from({ length: 6 }, (_, k) => `<circle cx="${xc}" cy="${y0 + nr + 26 + k * ((ch - 2 * nr - 52) / 5)}" r="7" fill="${COLOR.tinta}" opacity=".22"/>`).join("")}
 <g transform="translate(0 ${-20 + ty * 0})"><path d="${L.d}" fill="none" stroke="url(#${id}g)" stroke-width="${chico ? 58 : 36}" stroke-linejoin="round" stroke-linecap="round"/></g></svg>`;
