@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El boleto · marca BassLayer</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --bone:#EDEAE4; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:9; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); overflow-x:auto; }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; white-space:nowrap; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; white-space:nowrap; }
+  .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:64px 40px 56px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:52px; font-weight:800; letter-spacing:-.04em; line-height:1; margin-bottom:16px; }
+  .lead { color:var(--soft); font-size:17px; line-height:1.6; max-width:940px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin:40px 0 14px; }
+  .hero { display:grid; place-items:center; padding:120px 40px; border-radius:32px; background:#050505; border:1px solid var(--hair); margin-top:32px; }
+  .hero img { width:min(78%, 900px); filter:drop-shadow(0 40px 60px rgba(0,0,0,.6)); }
+  .cols { display:grid; gap:20px; } .c2 { grid-template-columns:1fr 1fr; } .c3 { grid-template-columns:repeat(3, minmax(0,1fr)); } .c4 { grid-template-columns:repeat(4, minmax(0,1fr)); }
+  .plate { border-radius:24px; display:grid; place-items:center; padding:56px 40px; position:relative; min-height:240px; }
+  .plate.dk { background:#000; border:1px solid var(--hair); } .plate.lt { background:#E9E4DA; } .plate.mid { background:#1c1c1f; }
+  .plate img, .plate svg { width:100%; max-width:560px; display:block; }
+  .plate .cap { position:absolute; left:16px; top:14px; font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
+  .plate.lt .cap { color:#9a978f; }
+  .specs { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:20px; margin-top:24px; }
+  .specs div { border-top:1px solid var(--hair); padding-top:12px; font-size:13px; line-height:1.55; color:var(--soft); }
+  .specs b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); margin-bottom:6px; font-weight:600; }
+  .entradas { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:20px; margin-top:28px; }
+  .entrada { border-radius:24px; background:#000; border:1px solid var(--hair); padding:40px 32px 28px; display:flex; flex-direction:column; gap:18px; align-items:center; }
+  .entrada img { width:100%; }
+  .entrada p { font-size:13px; color:var(--soft); line-height:1.5; text-align:center; }
+  .entrada p b { color:var(--ink); }
+  .sizes { display:flex; align-items:flex-end; gap:32px; flex-wrap:wrap; }
+  .sz { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .sz span { font-family:var(--mono); font-size:9px; letter-spacing:.1em; color:var(--ter); }
+  .tab { display:flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:8px 8px 0 0; background:#202124; font-size:12px; color:#e8eaed; }
+  .tab img { width:16px; height:16px; border-radius:3px; }
+  .rules { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; margin-top:20px; }
+  .rule { border-radius:20px; background:#000; border:1px solid var(--hair); padding:28px 20px 16px; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  .rule .art { height:90px; display:grid; place-items:center; width:100%; }
+  .rule .art img { max-width:86%; max-height:90px; }
+  .rule p { font-size:12px; color:var(--soft); text-align:center; line-height:1.45; }
+  .rule p b { display:block; color:#e07b6a; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:4px; }
+  .rule.ok p b { color:#7fc28f; }
+  .obj { border-radius:22px; position:relative; overflow:hidden; display:grid; place-items:center; min-height:300px; }
+  .obj .lbl { position:absolute; left:14px; bottom:12px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.55); z-index:3; }
+  .obj.l .lbl { color:rgba(0,0,0,.45); }
+  .span2 { grid-column:span 2; }
+  .s-dark { background:linear-gradient(160deg,#34373c,#222428); } .s-wall { background:#24211f; } .s-felt { background:#17222a; } .s-fridge { background:linear-gradient(180deg,#dfe2e4,#c6cacd); } .s-paper { background:#e9e4da; } .s-concrete { background:linear-gradient(160deg,#5b5b58,#3b3b39); }
+  /* Luneta */
+  .car { position:absolute; inset:0; background:linear-gradient(180deg,#6f7780 0%,#3f454c 52%,#23272b 100%); }
+  .car .glass { position:absolute; left:12%; right:12%; top:10%; height:46%; border-radius:30px 30px 8px 8px; background:linear-gradient(180deg,#1d2329,#0d1013); box-shadow:inset 0 0 0 3px #2b3036; }
+  .car .body { position:absolute; left:0; right:0; top:56%; bottom:0; background:linear-gradient(180deg,#a7adb3,#8a9097); }
+  .car .plate2 { position:absolute; left:50%; transform:translateX(-50%); top:70%; width:20%; aspect-ratio:3.2; background:#f2f2f2; border-radius:4px; border:2px solid #333; }
+  .car .lights { position:absolute; top:61%; width:15%; height:9%; background:linear-gradient(90deg,#7a0d0d,#c2241e); border-radius:6px; }
+  .car .stk { position:absolute; right:17%; top:36%; width:24%; }
+  /* Objetos */
+  .stk-d { width:70%; transform:rotate(-6deg); filter:drop-shadow(5px 0 0 #fff) drop-shadow(-5px 0 0 #fff) drop-shadow(0 5px 0 #fff) drop-shadow(0 -5px 0 #fff) drop-shadow(0 14px 18px rgba(0,0,0,.5)); }
+  .mag { width:66%; filter:drop-shadow(0 12px 14px rgba(0,0,0,.3)); }
+  .tee { position:relative; width:62%; aspect-ratio:1; }
+  .tee svg { width:100%; height:100%; }
+  .tote { position:relative; width:52%; margin-top:16%; }
+  .tote .h { position:absolute; left:24%; right:24%; top:-28%; height:34%; border:8px solid #E8E0D0; border-bottom:0; border-radius:70px 70px 0 0; }
+  .tote .b { aspect-ratio:.86; background:#E8E0D0; border-radius:4px 4px 10px 10px; display:grid; place-items:center; box-shadow:0 14px 24px rgba(0,0,0,.4); }
+  .tote .b img { width:74%; }
+  .key { width:44%; transform:rotate(12deg); position:relative; filter:drop-shadow(0 12px 16px rgba(0,0,0,.5)); }
+  .key::before { content:""; position:absolute; left:-14%; top:30%; width:18%; aspect-ratio:1; border:5px solid #c9c9c9; border-radius:50%; }
+  .band { width:96%; height:26%; background:repeating-linear-gradient(90deg, #0b0b0b 0 2px, transparent 2px 4px), #0b0b0b; display:flex; align-items:center; gap:4%; padding:0 3%; overflow:hidden; box-shadow:0 10px 16px rgba(0,0,0,.4); border-radius:6px; }
+  .band img { height:62%; flex:none; }
+  .web { width:88%; border-radius:14px; overflow:hidden; background:#000; border:1px solid #2a2a2a; box-shadow:0 14px 26px rgba(0,0,0,.4); }
+  .web .top { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #1f1f1f; }
+  .web .top img { height:26px; }
+  .web .top span { font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:#777; }
+  .web .bd { padding:18px 16px 24px; font-size:22px; font-weight:800; letter-spacing:-.03em; color:#eee; }
+  .web .bd small { display:block; font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:#C49070; font-weight:400; margin-bottom:6px; }
+  .og { width:90%; aspect-ratio:1200/630; background:#000; border-radius:10px; display:grid; place-items:center; box-shadow:0 14px 26px rgba(0,0,0,.4); border:1px solid #222; }
+  .og img { width:60%; }
+  .mail { width:88%; background:#fff; border-radius:10px; padding:20px 22px; box-shadow:0 14px 26px rgba(0,0,0,.18); font-size:12px; color:#333; line-height:1.6; }
+  .mail .sig { margin-top:14px; padding-top:12px; border-top:1px solid #eee; display:flex; align-items:center; gap:12px; }
+  .mail .sig img { height:30px; }
+  .mail .sig span { font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:#999; }
+  .pin { width:34%; aspect-ratio:1.45; filter:drop-shadow(0 0 0 #caa46c) drop-shadow(3px 0 0 #caa46c) drop-shadow(-3px 0 0 #caa46c) drop-shadow(0 3px 0 #caa46c) drop-shadow(0 -3px 0 #caa46c) drop-shadow(0 10px 14px rgba(0,0,0,.5)); }
+  .pin img { width:100%; }
+  /* Movimiento */
+  .motion { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:28px; }
+  .motion .plate { min-height:320px; }
+  #construct svg { width:100%; max-width:none; height:auto; display:block; }
+  #punch svg { width:min(86%, 620px); }
+  #mundo svg { width:min(86%, 620px); }
+  .punch-n { transform-origin:center; animation:punch 3.2s cubic-bezier(.7,0,.2,1) infinite; }
+  @keyframes punch { 0%,8% { transform:scale(0); } 22%,100% { transform:scale(1); } }
+  .punch-w { animation:aparece 3.2s ease infinite; }
+  @keyframes aparece { 0%,24% { opacity:0; transform:translateY(8px); } 40%,100% { opacity:1; transform:none; } }
+  .mundo-f { animation:mundo 7.5s ease-in-out infinite; }
+  @keyframes mundo { 0%,24% { fill:#EDEAE4; } 33%,57% { fill:#C49070; } 66%,90% { fill:#6CB8C8; } 100% { fill:#EDEAE4; } }
+  @media (prefers-reduced-motion:reduce) { .punch-n, .punch-w, .mundo-f { animation:none; } }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>El boleto</b> · la marca BassLayer</span>
+    <a href="#marca">La marca</a><a href="#construccion">Construcción</a><a href="#entradas">Las tres entradas</a><a href="#versiones">Versiones</a><a href="#reglas">Reglas</a><a href="#movimiento">Movimiento</a><a href="#usos">Usos</a>
+  </div>
+
+  <section id="marca">
+    <h2>La marca</h2>
+    <h3>Una entrada a dos mundos.</h3>
+    <p class="lead">BassLayer es <b>un boleto</b>. Una sola forma, el nombre adentro y un detalle que lo dice todo: <b>la línea de corte cae exactamente entre "Bass" y "Layer"</b>. El boleto separa los dos mundos y el nombre lo cruza entero: nadie lo corta. Se lee de lejos, se dibuja de memoria y se reconoce aunque no se lea.</p>
+    <div class="hero"><img src="boleto-general.svg" alt="BassLayer" /></div>
+  </section>
+
+  <section id="construccion">
+    <h2>Construcción</h2>
+    <p class="lead">Todo sale de una medida: la <b>altura de la mayúscula</b> de Geist (C). El nombre está dibujado en vector (ExtraBold, espaciado cerrado para que sea una sola pieza) y el boleto se cala con operaciones booleanas: no depende de ninguna fuente y va directo a corte de vinilo, serigrafía o bordado.</p>
+    <div class="plate dk" style="margin-top:28px;padding:72px 56px;display:block"><span class="cap">Las medidas</span><div id="construct" style="width:100%"></div></div>
+    <div class="specs">
+      <div><b>Alto · 2,5 C</b>El nombre ocupa el 40 % del alto. Proporción final ≈ 3,4 : 1, la de una entrada.</div>
+      <div><b>Margen · 0,75 C</b>Igual arriba, abajo y a los costados. La descendente de la y cuelga dentro del margen.</div>
+      <div><b>Esquinas · 0,09 H</b>Redondas como un troquel de imprenta, no como un botón.</div>
+      <div><b>Muescas · 0,11 H</b>Centradas en el encuentro de la s y la L: la línea de corte pasa justo entre los dos mundos.</div>
+      <div><b>Nombre · Geist 800</b>Espaciado −0,026 em con el kerning de la fuente. Licencia OFL, sin nombre reservado.</div>
+    </div>
+  </section>
+
+  <section id="entradas">
+    <h2>Las tres entradas</h2>
+    <h3>El color del boleto dice el mundo.</h3>
+    <p class="lead">Como las pulseras de un festival: <b>la misma forma en tres colores</b>. La general es la marca madre; las otras dos dicen dónde estás. El nombre va siempre en negro sobre el boleto de color: así se lee en cualquiera de los tres.</p>
+    <div class="entradas">
+      <div class="entrada"><img src="boleto-general.svg" alt="" /><p><b>General · hueso</b><br>La marca. Home, calcos, merch, todo lo que es BassLayer entero.</p></div>
+      <div class="entrada"><img src="boleto-bass.svg" alt="" /><p><b>Bass · cobre</b><br>La noche. La agenda, los flyers, las fiestas propias.</p></div>
+      <div class="entrada"><img src="boleto-layer.svg" alt="" /><p><b>Layer · celeste</b><br>El mercado. Precios, noticias, la newsletter de Layer.</p></div>
+    </div>
+  </section>
+
+  <section id="versiones">
+    <h2>Versiones</h2>
+    <div class="cols c2" style="margin-top:24px">
+      <div class="plate dk"><span class="cap">Negro · sobre fondos claros o fotos</span><img src="boleto-negro.svg" alt="" /></div>
+      <div class="plate lt"><span class="cap">Un color · el nombre calado (vinilo, sello, grabado)</span><div id="mono" style="width:100%;max-width:560px;color:#141414"></div></div>
+    </div>
+    <div class="cols c3" style="margin-top:20px">
+      <div class="plate dk"><span class="cap">Apilada · formatos cuadrados</span><img src="boleto-apilado-general.svg" alt="" style="max-width:300px" /></div>
+      <div class="plate dk"><span class="cap">BL · 64 px o menos</span><img src="boleto-bl-general.svg" alt="" style="max-width:260px" /></div>
+      <div class="plate mid"><span class="cap">Ícono de la app</span><img src="boleto-app.svg" alt="" style="max-width:200px;border-radius:22.5%" /></div>
+    </div>
+    <p class="k">Escalas</p>
+    <div class="plate dk" style="place-items:start;padding:40px"><div class="sizes">
+      <div class="sz"><img src="boleto-general.svg" style="width:360px" alt=""><span>360 px</span></div>
+      <div class="sz"><img src="boleto-general.svg" style="width:160px" alt=""><span>160</span></div>
+      <div class="sz"><img src="boleto-general.svg" style="width:100px" alt=""><span>100 · mínimo del nombre</span></div>
+      <div class="sz"><img src="boleto-bl-general.svg" style="width:48px" alt=""><span>BL 48</span></div>
+      <div class="sz"><img src="boleto-app.svg" style="width:52px;border-radius:22.5%" alt=""><span>app 52</span></div>
+      <div class="sz"><div class="tab"><img src="boleto-app.svg" alt="">BassLayer</div><span>pestaña 16</span></div>
+    </div></div>
+  </section>
+
+  <section id="reglas">
+    <h2>Reglas</h2>
+    <p class="lead">La forma es la marca: por eso no se toca. <b>Zona de respeto</b>: alrededor del boleto, el radio de una muesca libre de todo. <b>Tamaño mínimo</b>: 100 px de ancho en pantalla o 25 mm impreso; por debajo, la versión BL.</p>
+    <div class="rules" id="rules"></div>
+  </section>
+
+  <section id="movimiento">
+    <h2>Movimiento</h2>
+    <p class="lead">Dos gestos, nada más. <b>El troquel</b>: las muescas se perforan y aparece el nombre (la carga del sitio, el inicio de un video). <b>El cambio de mundo</b>: el boleto cambia de color al pasar de la home a Bass y a Layer, sin cambiar de forma.</p>
+    <div class="motion">
+      <div class="plate dk" id="punch"><span class="cap">El troquel</span></div>
+      <div class="plate dk" id="mundo"><span class="cap">El cambio de mundo</span></div>
+    </div>
+  </section>
+
+  <section id="usos">
+    <h2>Usos</h2>
+    <div class="cols c4" style="margin-top:24px">
+      <div class="obj span2"><div class="car"><div class="glass"></div><div class="body"></div><div class="lights" style="left:5%"></div><div class="lights" style="right:5%"></div><div class="plate2"></div><img class="stk" src="boleto-general.svg" alt=""></div><span class="lbl">Calco en la luneta</span></div>
+      <div class="obj s-dark"><img class="stk-d" src="boleto-bass.svg" alt=""><span class="lbl">Sticker troquelado</span></div>
+      <div class="obj s-fridge l"><img class="mag" src="boleto-layer.svg" alt=""><span class="lbl">Imán</span></div>
+      <div class="obj s-wall"><div class="tee"><svg viewBox="0 0 200 200"><path d="M60 20L30 34 14 70 40 80 46 64V186H154V64L160 80 186 70 170 34 140 20C134 34 120 42 100 42S66 34 60 20Z" fill="#111"/><image href="boleto-bl-general.svg" x="118" y="62" width="26" height="18"/></svg></div><span class="lbl">Remera · BL en el pecho</span></div>
+      <div class="obj s-wall"><div class="tee"><svg viewBox="0 0 200 200"><path d="M60 20L30 34 14 70 40 80 46 64V186H154V64L160 80 186 70 170 34 140 20C134 34 120 42 100 42S66 34 60 20Z" fill="#111"/><image href="boleto-general.svg" x="52" y="66" width="96" height="28"/></svg></div><span class="lbl">Remera · espalda</span></div>
+      <div class="obj s-concrete"><div class="tote"><div class="h"></div><div class="b"><img src="boleto-negro.svg" alt=""></div></div><span class="lbl">Tote</span></div>
+      <div class="obj s-felt"><div class="key"><img src="boleto-bl-general.svg" style="width:100%" alt=""></div><span class="lbl">Llavero de acrílico</span></div>
+      <div class="obj s-felt"><div class="pin"><img src="boleto-bl-negro.svg" alt=""></div><span class="lbl">Pin esmaltado</span></div>
+      <div class="obj s-dark span2"><div class="band" id="band"></div><span class="lbl">Pulsera de tela · evento propio</span></div>
+      <div class="obj s-dark span2"><div class="web"><div class="top"><img src="boleto-general.svg" alt=""><span>BASS · LAYER</span></div><div class="bd"><small>HOY · 05 OCT</small>La noche y el mercado de Buenos Aires.</div></div><span class="lbl">El sitio · el boleto en el header</span></div>
+      <div class="obj s-paper l span2"><div class="og"><img src="boleto-general.svg" alt=""></div><span class="lbl">Imagen al compartir un link</span></div>
+      <div class="obj s-paper l span2"><div class="mail">Hola, te paso la agenda del finde.<br>Abrazo.<div class="sig"><img src="boleto-negro.svg" alt=""><span>BASSLAYER.IO · BUENOS AIRES</span></div></div><span class="lbl">Firma de mail</span></div>
+    </div>
+  </section>
+
+<script>
+  fetch("boleto-medidas.json").then((r) => r.json()).then(async (M) => {
+    const src = await (await fetch("boleto-general.svg")).text();
+    const inner = src.replace(/^<svg[^>]*>|<\/svg>\s*$/g, "").replace(/<title>.*?<\/title>/, "");
+    const { W, H, cap, notch_x: nx, nr, pv } = M, pad = 420;
+    const g = (d, c = "#8a8a8acc", dash = "14 12") => `<path d="${d}" stroke="${c}" stroke-width="9" stroke-dasharray="${dash}" fill="none"/>`;
+    const t = (x, y, s, a = "start", c = "#8a8a8a") => `<text x="${x}" y="${y}" text-anchor="${a}" font-family="GeistMono" font-size="96" letter-spacing="10" fill="${c}">${s}</text>`;
+    document.getElementById("construct").innerHTML = `<svg viewBox="${-pad} ${-pad} ${W + 2 * pad} ${H + 2 * pad}" style="width:100%">${inner}
+      ${g(`M${-pad} ${pv}H${W + pad}`)}${g(`M${-pad} ${pv + cap}H${W + pad}`)}${t(-pad + 10, pv - 40, "C · 710")}
+      ${g(`M${nx} ${-pad}V${H + pad}`, "#C4907099", "4 14")}${t(nx + 40, -pad + 110, "CORTE · ENTRE BASS Y LAYER", "start", "#C49070")}
+      ${g(`M${pv} ${-pad}V${H + pad}`)}${g(`M${W - pv} ${-pad}V${H + pad}`)}${t(W - pv + 30, H + pad - 30, "MARGEN 0,75 C")}
+      <circle cx="${nx}" cy="0" r="${nr}" fill="none" stroke="#6CB8C8aa" stroke-width="9"/>${t(nx + nr + 40, -60, "MUESCA 0,11 H", "start", "#6CB8C8")}
+      ${t(W, H + 260, "ALTO 2,5 C · PROPORCIÓN 3,4 : 1", "end")}</svg>`;
+    const mono = await (await fetch("boleto-un-color.svg")).text();
+    document.getElementById("mono").innerHTML = mono;
+    // Movimiento: el troquel y el cambio de mundo, sobre el mismo dibujo.
+    const parts = inner.match(/<path[^>]*\/>/g);
+    document.getElementById("punch").insertAdjacentHTML("beforeend", `<svg viewBox="-60 -60 ${W + 120} ${H + 120}"><path d="${parts[0].match(/d="([^"]+)"/)[1]}" fill="#EDEAE4"/><circle class="punch-n" cx="${nx}" cy="0" r="${nr}" fill="#000" style="transform-box:fill-box"/><circle class="punch-n" cx="${nx}" cy="${H}" r="${nr}" fill="#000" style="transform-box:fill-box"/><g class="punch-w"><path d="${parts[1].match(/d="([^"]+)"/)[1]}" fill="#0B0B0B"/></g></svg>`);
+    document.getElementById("mundo").insertAdjacentHTML("beforeend", `<svg viewBox="-60 -60 ${W + 120} ${H + 120}"><path class="mundo-f" d="${parts[0].match(/d="([^"]+)"/)[1]}" fill="#EDEAE4"/><path d="${parts[1].match(/d="([^"]+)"/)[1]}" fill="#0B0B0B"/></svg>`);
+    // Reglas: lo que no se hace, dibujado.
+    const R = [
+      ["ok", "Así", `<img src="boleto-general.svg">`, "La forma, el nombre y las muescas, como están."],
+      ["no", "No estirar", `<img src="boleto-general.svg" style="transform:scaleX(1.35)">`, "Ni a lo ancho ni a lo alto."],
+      ["no", "No mover las muescas", `<svg viewBox="0 0 ${W} ${H}" style="width:86%">${inner.replace(/d="M/, 'transform="translate(0 0)" d="M')}<rect x="${nx - nr}" y="${-10}" width="${nr * 2}" height="${nr + 10}" fill="#EDEAE4"/><rect x="${nx - nr}" y="${H - nr}" width="${nr * 2}" height="${nr + 10}" fill="#EDEAE4"/><circle cx="${W * .78}" cy="0" r="${nr}" fill="#000"/><circle cx="${W * .78}" cy="${H}" r="${nr}" fill="#000"/></svg>`, "Caen entre Bass y Layer: es la idea."],
+      ["no", "No partir el color", `<svg viewBox="0 0 ${W} ${H}" style="width:86%"><defs><clipPath id="cl"><rect width="${nx}" height="${H}"/></clipPath></defs>${inner}<g clip-path="url(#cl)">${inner.replace(/fill="#EDEAE4"/, 'fill="#C49070"')}</g></svg>`, "Un boleto, un color. Nunca mitad y mitad."],
+      ["no", "No poner otra letra", `<svg viewBox="0 0 ${W} ${H}" style="width:86%"><path d="${parts[0].match(/d="([^"]+)"/)[1]}" fill="#EDEAE4"/><text x="${W / 2}" y="${H * .68}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="${cap * 1.2}" fill="#0B0B0B">BassLayer</text></svg>`, "El nombre es un dibujo: no se reescribe."],
+      ["no", "No sombras ni efectos", `<img src="boleto-general.svg" style="filter:drop-shadow(10px 10px 0 #C49070) drop-shadow(0 0 12px #6CB8C8)">`, "Plano, siempre."],
+      ["no", "No sobre fondos que lo tapen", `<div style="width:100%;height:90px;border-radius:10px;background:repeating-linear-gradient(45deg,#d8d3c8 0 10px,#efeae0 10px 20px);display:grid;place-items:center"><img src="boleto-general.svg" style="width:70%"></div>`, "Sobre fotos o tramas, la versión negra."],
+      ["no", "No rotar", `<img src="boleto-general.svg" style="transform:rotate(-14deg);width:70%">`, "Salvo el sticker pegado a mano."],
+    ];
+    document.getElementById("rules").innerHTML = R.map(([k, t, art, p]) => `<div class="rule ${k}"><div class="art">${art}</div><p><b>${k === "ok" ? "✓ " : "✕ "}${t}</b>${p}</p></div>`).join("");
+    document.getElementById("band").innerHTML = Array.from({ length: 6 }, (_, i) => `<img src="boleto-${["general", "bass", "layer"][i % 3]}.svg">`).join("");
+  });
+</script>
+</body>
+</html>
