@@ -30,6 +30,7 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 - **Ronda 1** (barras + curva, ligadura B·L, disco + bloque): signos de dos partes; se leen como dos cosas pegadas.
 - **Ronda 2** (ocho territorios: los dos puntos, Lissajous, crossfader, octava, sidechain, horizonte, diagonal, cue): signos sueltos que no unifican; faltaba partir del nombre.
 - **Ronda 3:** La línea, Peso y Etiqueta quedaron como alternativas; se eligió Horizonte.
+- **Ronda 4** (`investigacion/ronda-4/`, 2026-10-05): investigación de estudios de branding y 8 mejoras del Horizonte (bajo, perspectiva, L puente, una sola línea, sube, eco, reflejo, ranura que respira) + propuesta **Horizonte 2** (horizonte bajo + L entera en hueso + ranura que respira) + opciones nuevas (ventanas encendidas, marea de puntos, patrón). Esperando la decisión de Pablo.
 
 ## Logo (`logo/`)
 

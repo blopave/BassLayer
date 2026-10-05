@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ronda 4 · Horizonte</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --bone:#EDEAE4; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
+  .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:56px 40px 48px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:40px; font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:12px; }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:920px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .learn { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:20px; margin-top:28px; }
+  .learn div { border-top:1px solid var(--hair); padding-top:12px; font-size:13px; line-height:1.5; color:var(--soft); }
+  .learn b { display:block; color:var(--ink); font-weight:600; margin-bottom:4px; }
+  .learn a { font-family:var(--mono); font-size:10px; color:var(--ter); text-decoration:none; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:28px; }
+  .card { border:1px solid var(--hair); border-radius:22px; background:#000; padding:28px 28px 22px; display:flex; flex-direction:column; gap:16px; }
+  .card svg { width:100%; height:auto; display:block; }
+  .card .t { display:flex; align-items:baseline; gap:10px; }
+  .card .t b { font-size:20px; font-weight:800; letter-spacing:-.02em; }
+  .card .t span { font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ter); margin-left:auto; text-align:right; }
+  .card p { font-size:13px; line-height:1.55; color:var(--soft); }
+  .card p b { color:var(--ink); }
+  .card .tag { font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--cu); }
+  .hero { border:1px solid var(--hair); border-radius:26px; background:#000; padding:64px 56px 48px; margin-top:28px; }
+  .hero svg { width:100%; height:auto; display:block; }
+  .hero .cap { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin-top:18px; display:flex; gap:20px; }
+  .hero.hov svg .top { transition:transform .7s cubic-bezier(.2,.8,.2,1); }
+  .hero.hov:hover svg .top { transform:translateX(34px); }
+  .row3 { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; margin-top:20px; }
+  .obj { border-radius:20px; aspect-ratio:1; display:grid; place-items:center; position:relative; overflow:hidden; }
+  .obj .lbl { position:absolute; left:12px; bottom:10px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.5); }
+  .obj.l .lbl { color:rgba(0,0,0,.45); }
+  .ic { width:34%; aspect-ratio:1; border-radius:22%; background:#000; overflow:hidden; box-shadow:0 10px 20px rgba(0,0,0,.4); }
+  .ic svg { width:100%; height:100%; }
+  .sticker { width:84%; transform:rotate(-5deg); background:#000; border:5px solid #fff; border-radius:999px; padding:5% 7%; box-shadow:0 10px 20px rgba(0,0,0,.45); }
+  .sticker svg { width:100%; height:auto; display:block; }
+  .tote { position:relative; width:60%; aspect-ratio:.86; background:#E8E0D0; border-radius:4px 4px 8px 8px; overflow:hidden; margin-top:14%; box-shadow:0 14px 24px rgba(0,0,0,.4); }
+  .totew { position:relative; width:60%; margin-top:14%; }
+  .totew .tote { width:100%; margin-top:0; }
+  .tote-h { position:absolute; left:24%; right:24%; top:-30%; height:34%; border:7px solid #E8E0D0; border-bottom:0; border-radius:60px 60px 0 0; }
+  .tote svg { position:absolute; inset:0; width:100%; height:100%; }
+  .rec { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px; margin-top:28px; }
+  .rec div { border-top:2px solid var(--cu); padding-top:14px; font-size:14px; line-height:1.55; color:var(--soft); }
+  .rec b { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>Ronda 4</b> · Horizonte, más lejos</span>
+    <a href="#aprendido">Qué hacen los estudios</a><a href="#mejoras">8 mejoras</a><a href="#h2">Horizonte 2</a><a href="#nuevas">Opciones nuevas</a><a href="#rec">Recomendación</a>
+  </div>
+
+  <section id="aprendido">
+    <h2>Qué hacen los estudios</h2>
+    <h3>La idea ya está. Lo que la vuelve propia es el detalle.</h3>
+    <p class="lead">Los estudios que mejor trabajan un logotipo no cambian la palabra: le agregan <b>un gesto</b> y le dan <b>un comportamiento</b>. Un corte ya es un recurso conocido (ESPN lo usa desde 1985); lo que hace propio al Horizonte es <b>dónde</b> corta, <b>qué</b> no corta y <b>cómo se mueve</b>.</p>
+    <div class="learn">
+      <div><b>London Fashion Week</b>Pentagram (Luke Powell, Jody Hudson-Powell): no tocaron la palabra; le sumaron un tajo, el corte del sastre. <a href="https://bpando.org/2018/03/12/branding-london-fashion-week/" target="_blank">BP&amp;O ↗</a></div>
+      <div><b>Patreon</b>Wolff Olins + Dinamo: un wordmark variable que cambia según el contexto. <a href="https://abcdinamo.com/custom/patreon" target="_blank">Dinamo ↗</a></div>
+      <div><b>Visit Nordkyn</b>Neue: el logo se deforma con el viento real, cada 5 minutos. Un logo que responde a datos. <a href="https://neue.no/work/visit-nordkyn/" target="_blank">Neue ↗</a></div>
+      <div><b>Saks Fifth Avenue</b>Pentagram (Bierut): el logo partido en 64 cuadrados que se recombinan en bolsas y cajas. <a href="https://creativepro.com/saks-fifth-avenue-logo-gets-a-makeover/" target="_blank">creativepro ↗</a></div>
+      <div><b>El oficio del corte</b>Las curvas cortadas se ven más bajas que los fustes rectos y el tajo come masa: hay que compensar 3–5 % en el dibujo final. <a href="https://handbook.glyphsapp.com/postscript-hinting/font-wide-hints/" target="_blank">Glyphs ↗</a></div>
+    </div>
+  </section>
+
+  <section id="mejoras">
+    <h2>8 mejoras del Horizonte</h2>
+    <p class="lead">Todas son vector real (la palabra cortada con operaciones booleanas). Las dos últimas son de movimiento: pasá el cursor y mirá la animación.</p>
+    <div class="grid" id="mejorasGrid"></div>
+  </section>
+
+  <section id="h2">
+    <h2>Horizonte 2 · propuesta</h2>
+    <h3>Tres mejoras juntas</h3>
+    <p class="lead"><b>El horizonte baja</b> (42 % de la x: más cielo de noche, una ciudad baja frente al río), <b>la L no se corta</b> (queda entera, en hueso: es la bisagra entre los dos mundos, la única letra que vive en los dos) y <b>la ranura respira</b> (en el sitio late al ritmo; en Layer podría abrirse con la volatilidad del día). Pasá el cursor: las capas se deslizan.</p>
+    <div class="hero hov" id="h2hero"></div>
+    <div class="row3" id="h2objs"></div>
+  </section>
+
+  <section id="nuevas">
+    <h2>Opciones nuevas</h2>
+    <p class="lead">Tres caminos distintos que salieron de la investigación, para comparar contra el Horizonte.</p>
+    <div class="grid" id="nuevasGrid"></div>
+  </section>
+
+  <section id="rec">
+    <h2>Recomendación</h2>
+    <div class="rec">
+      <div><b>Horizonte 2</b>Mantiene la idea que elegiste y le suma lo que la hace propia: la L como bisagra (nadie más la tiene), un horizonte más bajo y más porteño, y un comportamiento vivo que la marca puede usar en el sitio, en video y en pantallas.</div>
+      <div><b>Isotipo: la B partida o la L</b>Con la L en hueso aparece un segundo isotipo posible: la L parada sobre el horizonte. Hay que elegir uno; te muestro los dos en el ícono.</div>
+      <div><b>Para merch: el patrón</b>Además del logo, el corte genera un patrón de franjas (como Saks) para totes, remeras y fondos de flyer: la marca se reconoce aunque no se lea el nombre.</div>
+    </div>
+  </section>
+
+<script>
+  const CU = "#C49070", CY = "#6CB8C8", BONE = "#EDEAE4";
+  fetch("variantes.json").then((r) => r.json()).then((D) => {
+    const { w, pad, variants: V, frames, L, ventanas, puntos } = D;
+    const vb = `${-pad} -780 ${w + 2 * pad} 1040`;
+    const logo = (k, opts = {}) => {
+      const v = V[k], withL = k.endsWith("-l");
+      return `<svg viewBox="${vb}"><g class="top"><path fill="${opts.a || CU}" d="${v.top}"/></g><path fill="${opts.b || CY}" d="${v.bot}"/>${withL ? `<path fill="${opts.l || BONE}" d="${L}"/>` : ""}</svg>`;
+    };
+    const M = [
+      ["base", "El de hoy", "referencia", "El corte recto a la mitad de la x, ranura pareja."],
+      ["bajo", "Horizonte bajo", "ciudad frente al río", "El corte baja al <b>42 %</b> de la x: más cielo de noche, menos río. Esquiva las panzas de la a y la e en su punto más fino."],
+      ["perspectiva", "Ranura en perspectiva", "horizonte que se aleja", "La ranura se angosta de la <b>B</b> a la <b>r</b>, como un horizonte que se pierde a lo lejos."],
+      ["puente-l", "La L puente", "propia", "La <b>L no se corta</b>: queda entera, en hueso. Es la única letra que vive en los dos mundos: la bisagra entre la noche y el mercado."],
+      ["onda", "Una sola línea", "la transición del sitio", "El corte <b>ondula</b> bajo Bass y se vuelve una <b>curva que sube</b> bajo Layer: la onda que se vuelve curva, dentro del logo."],
+      ["sube", "El horizonte sube", "Pluto TV · DixonBaxi", "Un corte apenas inclinado (de 200 a 330): el mercado le gana terreno a la noche de izquierda a derecha. Da dirección."],
+      ["eco", "Eco", "TikTok · el tremolo", "La capa de abajo corrida, como un delay o una placa que se desliza. <b>Mejor como movimiento</b> que como logo fijo: pasá el cursor en el Horizonte 2."],
+      ["respira", "La ranura respira", "Patreon · Nordkyn", "El ancho de la ranura late. En el sitio puede ir al ritmo; en Layer, abrirse con la volatilidad del día. Con movimiento reducido queda quieta."],
+    ];
+    document.getElementById("mejorasGrid").innerHTML = M.map(([k, n, src, p], i) => `<article class="card"><div class="t"><b>${String(i + 1).padStart(2, "0")} · ${n}</b><span>${src}</span></div>${k === "respira" ? `<svg viewBox="${vb}" class="breath"><path fill="${CU}" class="bt"/><path fill="${CY}" class="bb"/><path fill="${BONE}" d="${L}"/></svg>` : logo(k)}<p>${p}</p></article>`).join("");
+    // Horizonte 2: la ranura respira y las capas se deslizan al pasar el cursor.
+    document.getElementById("h2hero").innerHTML = `<svg viewBox="${vb}" class="breath"><g class="top"><path fill="${CU}" class="bt"/></g><path fill="${CY}" class="bb"/><path fill="${BONE}" d="${L}"/></svg><div class="cap"><span>Horizonte bajo 223</span><span>L entera en hueso</span><span>Ranura 48 → 88, en loop</span></div>`;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let f = 0;
+    const tick = () => { document.querySelectorAll(".breath").forEach((s) => { s.querySelector(".bt").setAttribute("d", frames[f].top); s.querySelector(".bb").setAttribute("d", frames[f].bot); }); f = (f + 1) % frames.length; };
+    tick(); if (!reduce) setInterval(tick, 90);
+    // Isotipos posibles y objetos.
+    const isoB = `<svg viewBox="0 0 1000 1000"><image href="/brand/logo/isotipo-app.svg" width="1000" height="1000"/></svg>`;
+    const isoL = `<svg viewBox="0 0 1000 1000"><rect width="1000" height="1000" fill="#000"/><path d="M190 600H810" stroke="${CU}" stroke-width="56"/><path d="M190 668H810" stroke="${CY}" stroke-width="56"/><path d="M420 250V740H640" fill="none" stroke="${BONE}" stroke-width="120" stroke-linejoin="miter"/></svg>`;
+    // Patrón de franjas: el logotipo cortado en tiras corridas (para el tote).
+    const strips = Array.from({ length: 9 }, (_, i) => `<g transform="translate(${(i % 3) * -900 - 300} ${i * 760 - 600})">${logo("final-l").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>`).join("");
+    const pattern = `<svg viewBox="0 0 4000 5000" preserveAspectRatio="xMidYMid slice"><rect width="4000" height="5000" fill="#000"/><g transform="rotate(-8 2000 2500) scale(1.25)">${strips}</g></svg>`;
+    document.getElementById("h2objs").innerHTML = `
+      <div class="obj" style="background:linear-gradient(160deg,#3a3d42,#26282c)"><div class="sticker">${logo("final-l")}</div><span class="lbl">Sticker</span></div>
+      <div class="obj" style="background:radial-gradient(120% 80% at 30% 0%,#2a3140,#0e1016 70%)"><div class="ic">${isoB}</div><span class="lbl">Isotipo · B partida</span></div>
+      <div class="obj" style="background:radial-gradient(120% 80% at 30% 0%,#2a3140,#0e1016 70%)"><div class="ic">${isoL}</div><span class="lbl">Isotipo · L sobre el horizonte</span></div>
+      <div class="obj" style="background:#2a2623"><div class="totew"><div class="tote-h"></div><div class="tote">${pattern}</div></div><span class="lbl">Tote · patrón</span></div>`;
+    // Opciones nuevas.
+    const N = [
+      ["Ventanas encendidas", "Lundgren+Lindqvist · contraformas", `<svg viewBox="${vb}"><path fill="${BONE}" d="${ventanas.word}"/><path fill="${CU}" d="${ventanas.bass}"/><path fill="${CY}" d="${ventanas.layer}"/></svg>`, "El nombre en un solo tono y los <b>huecos de las letras encendidos</b> como ventanas de noche: cobre en Bass, celeste en Layer. Las s no tienen hueco: son silencios. Elegante y muy sobrio."],
+      ["Marea de puntos", "Tate · semitono", `<svg viewBox="${vb}"><path fill="${CU}" d="${puntos.top}"/><path fill="${CY}" d="${puntos.bot}"/></svg>`, "Arriba la letra sólida; abajo se <b>disuelve en puntos</b> que se achican hacia la línea de base, como luz sobre el agua o una pantalla. Fuerte en impresión grande; necesita versión sólida para chico."],
+      ["El patrón", "Saks · Pentagram", `<svg viewBox="0 0 4000 1400" preserveAspectRatio="xMidYMid slice"><rect width="4000" height="1400" fill="#000"/><g transform="rotate(-8 2000 700)">${Array.from({ length: 5 }, (_, i) => `<g transform="translate(${(i % 2) * -1400 - 200} ${i * 760 - 900})">${logo("final-l").replace(/^<svg[^>]*>|<\/svg>$/g, "")}${`<g transform="translate(${w + 300} 0)">${logo("final-l").replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>`}</g>`).join("")}</g></svg>`, "No es un logo: es lo que el logo genera. El Horizonte repetido y girado se vuelve <b>una tela</b> para totes, remeras, fondos de flyer y el empaque de un regalo."],
+    ];
+    document.getElementById("nuevasGrid").innerHTML = N.map(([n, src, art, p], i) => `<article class="card"${i === 2 ? ' style="grid-column:1 / -1"' : ""}><div class="t"><b>${n}</b><span>${src}</span></div>${art}<p>${p}</p></article>`).join("");
+  });
+</script>
+</body>
+</html>
