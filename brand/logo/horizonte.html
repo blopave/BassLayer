@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Horizonte · construcción</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
+  .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  section { padding:56px 40px 48px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--hair); }
+  h3 { font-size:40px; font-weight:800; letter-spacing:-.035em; line-height:1.05; margin-bottom:12px; }
+  .lead { color:var(--soft); font-size:16px; line-height:1.6; max-width:900px; }
+  .lead b { color:var(--ink); font-weight:600; }
+  .k { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); margin:28px 0 12px; }
+  .plate { border-radius:24px; display:grid; place-items:center; padding:48px; position:relative; }
+  .dark { background:#000; border:1px solid var(--hair); } .bone { background:#F5F5F0; color:#141414; }
+  .plate .cap { position:absolute; left:18px; top:16px; font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--ter); }
+  .bone .cap { color:#9a978f; }
+  .construct { width:100%; }
+  .construct svg { width:100%; height:auto; display:block; }
+  .specs { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:20px; margin-top:24px; }
+  .specs div { border-top:1px solid var(--hair); padding-top:12px; font-size:13px; line-height:1.5; color:var(--soft); }
+  .specs b { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); margin-bottom:6px; font-weight:600; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .three { display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
+  .v1 { font-family:Geist; font-weight:750; font-size:96px; letter-spacing:-6px; line-height:1; position:relative; }
+  .v1 span { display:block; }
+  img.logo { width:100%; max-width:620px; display:block; }
+  .sizes { display:flex; align-items:flex-end; gap:28px; flex-wrap:wrap; }
+  .sz { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .sz span { font-family:var(--mono); font-size:9px; letter-spacing:.1em; color:var(--ter); }
+  .ic { border-radius:22.5%; overflow:hidden; background:#000; border:1px solid var(--hair); }
+  .ic img { width:100%; height:100%; display:block; }
+  .tab { display:flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:8px 8px 0 0; background:#202124; font-size:12px; color:#e8eaed; }
+  .tab img { width:16px; height:16px; }
+  .widths { display:flex; flex-direction:column; gap:22px; align-items:flex-start; }
+  .widths .w { display:flex; align-items:center; gap:16px; }
+  .widths .w span { font-family:var(--mono); font-size:9px; color:var(--ter); width:90px; }
+  .mono { color:#fff; } .mono.k2 { color:#141414; }
+  .mono svg { width:100%; height:auto; display:block; }
+  .note { margin-top:18px; font-size:14px; color:var(--soft); line-height:1.55; max-width:900px; }
+  .note b { color:var(--ink); }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>Horizonte</b> · dibujo fino</span>
+    <a href="#construccion">Construcción</a><a href="#antes">Antes / ahora</a><a href="#chico">Tamaños chicos</a><a href="#isotipo">Isotipo</a><a href="#variantes">Variantes</a>
+  </div>
+
+  <section id="construccion">
+    <h2>Construcción</h2>
+    <h3>BassLayer, dos capas de una palabra</h3>
+    <p class="lead">Las letras salen de <b>Geist</b> convertidas en trazados (licencia OFL, sin nombre reservado: el logo no depende de la fuente) y el corte es una <b>operación booleana real</b>, no una máscara: el archivo es vector puro y va directo a imprenta. Todas las medidas en unidades de la fuente (1000 = la altura de la letra).</p>
+    <div class="plate dark" style="margin-top:28px;padding:56px 56px 40px"><span class="cap">Logotipo con su construcción</span>
+      <div class="construct" id="construct"></div>
+    </div>
+    <div class="specs">
+      <div><b>Peso 750</b>Entre Bold y ExtraBold: el corte necesita cuerpo para que la ranura no se coma las letras finas (la y, la r).</div>
+      <div><b>Horizonte a 265</b>La mitad exacta de la x (530). Corta todas las minúsculas por el centro, y a la B y la L en su tercio bajo: la noche ocupa más.</div>
+      <div><b>Ranura de 64</b>Cuatro décimos del asta. Se lee desde ~200 px de ancho y no se cierra en serigrafía ni en vinilo de corte.</div>
+      <div><b>Espaciado −18</b>Geist abre de más en tamaño grande; se cierra para que la palabra sea una sola pieza, con el kerning propio de la fuente.</div>
+      <div><b>Colores provisorios</b>Cobre #C49070 arriba, celeste #6CB8C8 abajo. Se cierran en el paso del color, con el par de día legible.</div>
+    </div>
+  </section>
+
+  <section id="antes">
+    <h2>Antes / ahora</h2>
+    <p class="lead">Arriba, la versión de la ronda 3 (texto de la fuente con una máscara). Abajo, el dibujo fino: mismo concepto, con el corte exacto, la ranura medida, el espaciado óptico y vector puro.</p>
+    <div class="two" style="margin-top:28px">
+      <div class="plate dark"><span class="cap">Ronda 3</span><div class="v1" id="v1"></div></div>
+      <div class="plate dark"><span class="cap">Dibujo fino</span><img class="logo" src="logotipo.svg" alt="BassLayer" /></div>
+    </div>
+  </section>
+
+  <section id="chico">
+    <h2>Tamaños chicos</h2>
+    <p class="lead">Debajo de ~200 px de ancho la ranura de 64 se afina demasiado. Por eso hay una <b>versión chica</b> (peso 820, ranura de 100 y más aire entre letras) que la reemplaza en el header, la firma de mail o un sticker diminuto. Comparalas al mismo tamaño:</p>
+    <div class="two" style="margin-top:28px">
+      <div class="plate dark"><span class="cap">Versión normal</span><div class="widths" id="wN"></div></div>
+      <div class="plate dark"><span class="cap">Versión chica</span><div class="widths" id="wC"></div></div>
+    </div>
+  </section>
+
+  <section id="isotipo">
+    <h2>Isotipo</h2>
+    <p class="lead">La <b>B</b> del logotipo con el mismo horizonte. Centrada por su forma y ópticamente (la panza de abajo pesa: sube un poco), dentro de la zona segura del ícono de Android. A 32 px y menos va la versión chica (más peso y ranura más ancha).</p>
+    <div class="plate dark" style="margin-top:28px;place-items:start"><span class="cap">Escalas</span>
+      <div class="sizes" style="margin-top:12px">
+        <div class="sz"><div class="ic" style="width:180px;height:180px"><img src="isotipo-app.svg" alt=""></div><span>180 · app</span></div>
+        <div class="sz"><div class="ic" style="width:96px;height:96px"><img src="isotipo-app.svg" alt=""></div><span>96</span></div>
+        <div class="sz"><div class="ic" style="width:52px;height:52px"><img src="isotipo-app.svg" alt=""></div><span>52</span></div>
+        <div class="sz"><div class="ic" style="width:32px;height:32px"><img src="isotipo-chico-app.svg" alt=""></div><span>32 · chico</span></div>
+        <div class="sz"><div class="ic" style="width:16px;height:16px;border-radius:3px"><img src="isotipo-chico-app.svg" alt=""></div><span>16 · chico</span></div>
+        <div class="sz"><div class="tab"><img src="isotipo-chico.svg" alt="">BassLayer</div><span>pestaña</span></div>
+      </div>
+    </div>
+    <div class="three" style="margin-top:20px">
+      <div class="plate dark"><span class="cap">Fondo oscuro</span><img src="isotipo.svg" alt="" style="width:200px"></div>
+      <div class="plate bone"><span class="cap">Fondo claro</span><img src="isotipo-claro.svg" alt="" style="width:200px"></div>
+      <div class="plate dark"><span class="cap">Un color</span><div class="mono" id="isoMono" style="width:200px"></div></div>
+    </div>
+  </section>
+
+  <section id="variantes">
+    <h2>Variantes</h2>
+    <div class="two" style="margin-top:20px">
+      <div class="plate bone"><span class="cap">Fondo claro</span><img class="logo" src="logotipo-claro.svg" alt="BassLayer"></div>
+      <div class="plate dark"><span class="cap">Un color (sello, grabado, bordado, vinilo)</span><div class="mono" id="logoMono" style="width:100%;max-width:620px"></div></div>
+      <div class="plate bone"><span class="cap">Un color · negro</span><div class="mono k2" id="logoMonoK" style="width:100%;max-width:620px"></div></div>
+      <div class="plate dark"><span class="cap">Promoción · con la dirección</span><img class="logo" src="logotipo-promo.svg" alt="BassLayer — basslayer.io"></div>
+    </div>
+    <p class="note">La versión de promoción no es otro logo: es el logotipo con su <b>firma</b> (basslayer.io en Geist Mono, centrada y al 62 % del ancho). Va en lo que se regala o se pega en la calle, para que quien lo vea sepa dónde entrar.</p>
+  </section>
+
+<script>
+  // Construcción: el logotipo con sus líneas guía, en el mismo sistema de coordenadas del archivo.
+  fetch("logotipo.svg").then((r) => r.text()).then((src) => {
+    const vb = src.match(/viewBox="([^"]+)"/)[1].split(" ").map(Number), [x0, y0, w, h] = vb, inner = src.replace(/^<svg[^>]*>|<\/svg>\s*$/g, "").replace(/<title>.*?<\/title>/, "");
+    const L = (y, label, col = "#ffffff40", dash = "6 6") => `<path d="M${x0} ${y}H${x0 + w}" stroke="${col}" stroke-width="2" stroke-dasharray="${dash}"/><text x="${x0 + w - 8}" y="${y - 10}" text-anchor="end" font-family="GeistMono" font-size="22" letter-spacing="2" fill="${col}">${label}</text>`;
+    document.getElementById("construct").innerHTML = `<svg viewBox="${x0} ${y0 - 40} ${w} ${h + 80}">${inner}
+      ${L(-710, "MAYÚSCULA 710")}${L(-530, "ALTURA X 530")}${L(-265 - 32, "", "#C4907088", "2 4")}${L(-265 + 32, "HORIZONTE 265 · RANURA 64", "#6CB8C8aa", "2 4")}${L(0, "LÍNEA DE BASE 0")}${L(200, "DESCENDENTE")}</svg>`;
+    const mono = src.replace(/fill="#[0-9A-Fa-f]{6}"/g, 'fill="currentColor"');
+    document.getElementById("logoMono").innerHTML = mono;
+    document.getElementById("logoMonoK").innerHTML = mono;
+  });
+  fetch("isotipo.svg").then((r) => r.text()).then((src) => { document.getElementById("isoMono").innerHTML = src.replace(/fill="#[0-9A-Fa-f]{6}"/g, 'fill="currentColor"'); });
+  // Ronda 3, como era (texto con máscara), para comparar.
+  document.fonts.load("750 96px Geist").then(() => {
+    document.getElementById("v1").innerHTML = `<svg viewBox="0 0 560 130" style="width:100%;max-width:620px"><defs><clipPath id="t"><rect width="600" height="${110 - 96 * .27 - 3}"/></clipPath><clipPath id="b"><rect y="${110 - 96 * .27 + 3}" width="600" height="60"/></clipPath></defs><text x="10" y="110" font-family="Geist" font-weight="750" font-size="96" letter-spacing="-4.4" fill="#C49070" clip-path="url(#t)">BassLayer</text><text x="10" y="110" font-family="Geist" font-weight="750" font-size="96" letter-spacing="-4.4" fill="#6CB8C8" clip-path="url(#b)">BassLayer</text></svg>`;
+  });
+  // Anchos de prueba: normal vs chico.
+  const widths = [400, 200, 120, 80];
+  document.getElementById("wN").innerHTML = widths.map((w) => `<div class="w"><span>${w} px</span><img src="logotipo.svg" style="width:${w}px" alt=""></div>`).join("");
+  document.getElementById("wC").innerHTML = widths.map((w) => `<div class="w"><span>${w} px</span><img src="logotipo-chico.svg" style="width:${w}px" alt=""></div>`).join("");
+</script>
+</body>
+</html>

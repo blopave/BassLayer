@@ -31,11 +31,26 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 - **Ronda 2** (ocho territorios: los dos puntos, Lissajous, crossfader, octava, sidechain, horizonte, diagonal, cue): signos sueltos que no unifican; faltaba partir del nombre.
 - **Ronda 3:** La línea, Peso y Etiqueta quedaron como alternativas; se eligió Horizonte.
 
+## Logo (`logo/`)
+
+Los SVG se generan con `logo/construir.py` (Geist pasada a trazados con fontTools + harfbuzz para el kerning; el corte es una operación booleana con skia-pathops: vector puro, sin máscaras ni fuentes). Para regenerar: `pip install fonttools brotli uharfbuzz skia-pathops` y `python brand/logo/construir.py`. La lámina `logo/horizonte.html` muestra la construcción, las escalas y las variantes.
+
+Medidas (unidades de la fuente, 1000 = 1 em): peso 750, espaciado −18, horizonte a 265 (mitad de la x), ranura de 64. Versión chica (menos de ~200 px de ancho): peso 820, espaciado +6, ranura de 100. Isotipo: B peso 800 y ranura 72; chico (32 px o menos) peso 880 y ranura 110.
+
+| Archivo | Uso |
+|---|---|
+| `logotipo.svg` · `-claro` · `-un-color` | Logotipo sobre oscuro, sobre claro, y en un color (`currentColor`: sello, grabado, vinilo). |
+| `logotipo-chico*.svg` | Debajo de ~200 px de ancho (header, firma de mail, sticker diminuto). |
+| `logotipo-promo.svg` | Con la firma basslayer.io: lo que se regala o se pega en la calle. |
+| `isotipo.svg` · `-claro` · `-un-color` | La B partida, sin fondo. |
+| `isotipo-app.svg` | Sobre negro a sangre: base de los íconos de app y favicon. |
+| `isotipo-chico*.svg` | 32 px o menos (favicon, pestaña). |
+
 ## Pendiente (en orden)
 
-1. Dibujo fino del logotipo Horizonte: corte ajustado letra por letra, espaciado óptico, versión para tamaños chicos, vectorizado (sin depender de la fuente).
-2. Isotipo B partida: completo y reducido para 16 px.
-3. Variantes: horizontal, con dirección (promo), un color, negativo, firma de mail.
+1. ~~Dibujo fino del logotipo Horizonte~~ ✓ 2026-10-05 (falta la aprobación de Pablo).
+2. ~~Isotipo B partida: completo y reducido~~ ✓ 2026-10-05.
+3. Variantes: ~~claro, un color, promo~~ ✓ · faltan la firma de mail y el negativo sobre foto.
 4. Reglas: zona de respeto, tamaño mínimo, usos incorrectos.
 5. Color definitivo: par de noche, par de día con contraste de lectura (el actual no llega sobre hueso: 2,5 y 2,1), Pantone y CMYK.
 6. Tipografía: roles y verificación de la licencia (OFL).
