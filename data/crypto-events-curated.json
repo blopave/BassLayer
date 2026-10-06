@@ -46,17 +46,6 @@
       "category": "web3"
     },
     {
-      "id": "permissionless-2026",
-      "title": "Permissionless IV",
-      "organizer": "Blockworks",
-      "date": "2026-10-06",
-      "location": "Brooklyn, EE.UU.",
-      "url": "https://blockworks.co/permissionless",
-      "description": "Conferencia DeFi organizada por Blockworks. Fechas estimadas — confirmar en sitio oficial.",
-      "free": false,
-      "category": "web3"
-    },
-    {
       "id": "bitcoin-amsterdam-2026",
       "title": "Bitcoin Amsterdam 2026",
       "organizer": "BTC Inc",
@@ -110,17 +99,6 @@
       "description": "Una de las conferencias tech más grandes del mundo. 70.000+ asistentes, todas las verticales.",
       "free": false,
       "category": "tech"
-    },
-    {
-      "id": "eth-argentina-2026",
-      "title": "ETH Argentina 2026",
-      "organizer": "ETH Argentina",
-      "date": "2026-11-12",
-      "location": "Buenos Aires, Argentina",
-      "url": "https://ethargentina.org",
-      "description": "Hackathon + conferencia del ecosistema Ethereum en LatAm. Fechas estimadas según cadencia anual.",
-      "free": false,
-      "category": "web3"
     },
     {
       "id": "slush-2026",
@@ -210,17 +188,6 @@
       "description": "Festival multi-track de tech, música y cine. Cruce único entre cultura, startups y AI.",
       "free": false,
       "category": "tech"
-    },
-    {
-      "id": "aleph-2027",
-      "title": "Aleph / Crecimiento 2027",
-      "organizer": "Crecimiento",
-      "date": "2027-03-15",
-      "location": "Buenos Aires, Argentina",
-      "url": "https://crecimiento.build",
-      "description": "Mes de pop-up city en BA: builders, founders y comunidad crypto LatAm. Fechas estimadas.",
-      "free": false,
-      "category": "web3"
     },
     {
       "id": "token2049-dubai-2027",

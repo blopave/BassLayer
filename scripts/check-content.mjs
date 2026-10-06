@@ -279,6 +279,16 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   } catch (e) { fail(path, "fetch", e.message); }
 }
 
+// Eventos cripto curados (oct 2026): solo fechas confirmadas en el sitio
+// oficial. "Fechas estimadas" dejó en la semana una conferencia que ya había
+// pasado (Permissionless IV, junio 2025) y otra con fecha inventada.
+{
+  const { events = [] } = JSON.parse(readFileSync(new URL("../data/crypto-events-curated.json", import.meta.url), "utf8"));
+  const estimados = events.filter((e) => /estimad|confirmar/i.test(e.description || "")).map((e) => e.id);
+  stats.push({ path: "cripto curados", count: events.length });
+  if (estimados.length) fail("cripto curados", "sin confirmar", estimados.join(", "));
+}
+
 // Voz de los textos en español (oct 2026, Pablo): voseo en todo ("Tocá", no
 // "Toca") y "cripto", no "crypto".
 {
