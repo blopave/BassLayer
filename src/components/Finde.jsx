@@ -1,8 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BlThumb } from "./BlThumb";
 import { useLocale } from "../hooks/useLocale";
 import { eventSlug } from "../utils/slug";
+import { api, shared } from "../utils/api";
+import { formatPct } from "../utils/format";
 import { findePicks, weekendWindow } from "../../lib/finde.js";
+import { semanaISO, semanaVentana } from "../../lib/semana.js";
 
 // "El finde en tu calendario" (oct 2026, Pablo eligió la B): volver sin
 // cuentas. Los elegidos de viernes a domingo (lib/finde.js, los mismos que
@@ -40,5 +43,24 @@ export function Finde({ events, onSelect }) {
         <a className="bl-finde-btn" href={subscribeUrl()}>{t("finde.subscribe")}</a>
       </div>
     </section>
+  );
+}
+
+// La línea de la semana (oct 2026): debajo del finde, discreta, lleva al
+// resumen semanal (/semana). El número de la semana sale del reloj y ocupa su
+// lugar desde el primer render; las cifras llegan después sin mover la Agenda
+// (si aparecía de golpe, el salto a un día quedaba corrido).
+export function SemanaLinea() {
+  const { t } = useLocale();
+  const [S, setS] = useState(null);
+  const numero = useMemo(() => semanaISO(new Date(semanaVentana().lunes + 12 * 36e5)).semana, []);
+  useEffect(() => { shared("semana", api.semana, 600_000).then(setS).catch(() => {}); }, []);
+  const b = S?.mercado.btc;
+  return (
+    <a className="bl-sem-line" href="/semana">
+      <b>{t("semana.line", { n: numero })}</b>
+      <span className="go" aria-hidden="true">→</span>
+      <span className="st">{S && <>{t("semana.parties", { n: S.noche.fiestas })}{b && <> {t("semana.andBtc")} <span className="y">{formatPct(b.cambio7d)}</span></>}</>}</span>
+    </a>
   );
 }

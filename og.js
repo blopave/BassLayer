@@ -546,3 +546,36 @@ export async function generateNewsOG(news) {
   cacheSet(key, png, OG_CACHE_TTL.news);
   return png;
 }
+
+// ── Template: LA SEMANA (el resumen semanal, /semana) ──
+// Titular con los datos de la semana, las barras de la noche día por día y la
+// curva del Bitcoin de 7 días: lo mismo que la página, en una imagen.
+function semanaTemplate(S) {
+  const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const fd = (iso) => { const [, m, d] = iso.split("-").map(Number); return `${d} ${MES[m - 1]}`; };
+  const pct = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1).replace(".", ",")}%`;
+  const btc = S.mercado.btc;
+  const max = Math.max(1, ...S.noche.porDia.map((d) => d.fiestas));
+  const bars = el("div", { style: { display: "flex", alignItems: "flex-end", gap: "14px", height: "120px" } },
+    ...S.noche.porDia.map((d) => el("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" } },
+      el("div", { style: { width: "36px", height: `${6 + (d.fiestas / max) * 96}px`, background: d.fiestas ? C.accentBass : "#222", borderRadius: "5px 5px 2px 2px" } }),
+      el("span", { style: { fontFamily: "Geist Mono", fontSize: "14px", letterSpacing: "0.12em", color: C.inkMuted, textTransform: "uppercase" } }, d.dia))));
+  let curve = null;
+  if (btc && btc.serie && btc.serie.length > 2) {
+    const W = 460, H = 120, lo = Math.min(...btc.serie), hi = Math.max(...btc.serie);
+    const pts = btc.serie.map((v, i) => `${((i / (btc.serie.length - 1)) * W).toFixed(1)},${(H - 6 - ((v - lo) / ((hi - lo) || 1)) * (H - 12)).toFixed(1)}`).join(" ");
+    curve = el("img", { width: W, height: H, src: `data:image/svg+xml;base64,${Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><polyline points="${pts}" fill="none" stroke="${C.accentLayer}" stroke-width="3" stroke-linejoin="round"/></svg>`).toString("base64")}` });
+  }
+  return el("div", { style: { width: "1200px", height: "630px", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "56px 64px", background: C.bgGradient, color: C.ink, fontFamily: "Geist" } },
+    el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+      brandHeader("La semana"),
+      el("span", { style: { fontFamily: "Geist Mono", fontSize: "16px", letterSpacing: "0.16em", color: C.inkSoft, textTransform: "uppercase" } }, `Nº ${S.semana.numero} · ${fd(S.semana.desde)} al ${fd(S.semana.hasta)}`)),
+    el("div", { style: { display: "flex", flexDirection: "column", fontSize: "76px", fontWeight: 800, letterSpacing: "-0.045em", lineHeight: 1 } },
+      el("span", { style: { color: C.accentBass } }, `${S.noche.fiestas} fiestas`),
+      btc ? el("span", { style: { display: "flex", gap: "20px" } }, el("span", {}, "y el Bitcoin"), el("span", { style: { color: C.accentLayer } }, pct(btc.cambio7d))) : null),
+    el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" } }, bars, curve));
+}
+
+export async function generateSemanaOG(S) {
+  return renderToPng(semanaTemplate(S));
+}

@@ -263,6 +263,22 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   if (malos.length) fail("finde (BA)", "ventana", malos.map(([n]) => n).join(", "));
 }
 
+// La semana (oct 2026): /api/semana arma el resumen de /semana — la noche día
+// por día suma lo mismo que el total, y el mercado trae el Bitcoin con su serie.
+{
+  const path = "/api/semana";
+  try {
+    const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const S = res.ok ? await res.json() : null;
+    stats.push({ path, count: S?.noche?.fiestas ?? 0 });
+    if (!S) fail(path, "http", `HTTP ${res.status}`);
+    else if (!(S.semana?.numero >= 1 && S.semana.numero <= 53)) fail(path, "semana", `número inválido (${S.semana?.numero})`);
+    else if (!S.noche.porDia.length || S.noche.porDia.length > 7) fail(path, "noche", `${S.noche.porDia.length} días`);
+    else if (S.noche.porDia.reduce((n, d) => n + d.fiestas, 0) !== S.noche.fiestas) fail(path, "noche", "los días no suman el total de fiestas");
+    else if (!S.mercado.btc || S.mercado.btc.serie.length < 10 || !Number.isFinite(S.mercado.btc.cambio7d)) fail(path, "mercado", "falta el Bitcoin de la semana");
+  } catch (e) { fail(path, "fetch", e.message); }
+}
+
 // Voz de los textos en español (oct 2026, Pablo): voseo en todo ("Tocá", no
 // "Toca") y "cripto", no "crypto".
 {

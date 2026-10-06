@@ -619,6 +619,37 @@ async function run(vp) {
       }
     }
 
+    // 5g. La semana (oct 2026): la línea discreta de la Agenda lleva a /semana,
+    // que muestra el titular, la noche día por día, el finde y el mercado sin
+    // pasarse del ancho; los elegidos sin flyer caen al afiche, nunca vacíos.
+    {
+      const S = await page.request.get(BASE + "/api/semana").then((r) => r.json()).catch(() => null);
+      if (S?.noche?.fiestas) {
+        const line = page.locator(".bl-sem-line").first();
+        await line.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+        if (!(await line.count())) fail(vp.name, "semana", "la Agenda no muestra la línea de la semana");
+        else if ((await line.getAttribute("href")) !== "/semana") fail(vp.name, "semana", "la línea no lleva a /semana");
+        await page.goto(BASE + "/semana", { waitUntil: "domcontentloaded" });
+        await page.locator(".bl-sem-h1").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        await page.waitForTimeout(800);
+        const w = await page.evaluate(() => ({
+          h1: document.querySelector(".bl-sem-h1")?.textContent || "",
+          dias: document.querySelectorAll(".bl-sem-dia").length,
+          picks: document.querySelectorAll(".bl-sem-pick").length,
+          vacios: [...document.querySelectorAll(".bl-sem-flyer")].filter((f) => !f.querySelector("img, .bl-poster, .bl-artist-photo")).length,
+          acts: document.querySelectorAll(".bl-sem-act").length,
+          ancho: document.documentElement.scrollWidth <= window.innerWidth + 1,
+        }));
+        if (!new RegExp(String(S.noche.fiestas)).test(w.h1)) fail(vp.name, "semana", `el titular no cuenta las fiestas (${w.h1})`);
+        else if (w.dias !== S.noche.porDia.length) fail(vp.name, "semana", `${w.dias} días en la página, ${S.noche.porDia.length} en la API`);
+        else if (w.picks !== S.noche.finde.length) fail(vp.name, "semana", `${w.picks} elegidos del finde de ${S.noche.finde.length}`);
+        else if (w.vacios) fail(vp.name, "semana", `${w.vacios} elegidos sin flyer ni afiche`);
+        else if (!w.acts) fail(vp.name, "semana", "el mercado no muestra los activos");
+        else if (!w.ancho) fail(vp.name, "semana", "la página se pasa del ancho");
+        await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-semana.png`, fullPage: true });
+      }
+    }
+
     // 6. Mundo Layer carga
     await page.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});

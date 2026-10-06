@@ -7,7 +7,7 @@ import { BlThumb } from "./BlThumb";
 import { OnTour } from "./OnTour";
 import { useSalas, SalaGrid, SalaHits, SalaCartelera, salaMatches, SectionHead } from "./Salas";
 import { BassTrack } from "./BassTrack";
-import { Finde } from "./Finde";
+import { Finde, SemanaLinea } from "./Finde";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api, shared } from "../utils/api";
@@ -737,7 +737,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
         </div>
       )}
       {/* El finde en tu calendario: la vuelta semanal sin cuentas (oct 2026). */}
-      {!loading && !error && !search && when !== "hoy" && !savedOnly && <Finde events={events} onSelect={onSelect} />}
+      {!loading && !error && !search && when !== "hoy" && !savedOnly && <><Finde events={events} onSelect={onSelect} /><SemanaLinea /></>}
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
         : filtered.length === 0 ? (salaMatches(salasData?.salas, search).length ? null : <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>)

@@ -31,3 +31,6 @@ export function cleanVenue(v) {
   // que va después del @ (en el ticker quedaba "… @ 2GTHR @ Morocco", oct 2026).
   return String(v).replace(/^\s*(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split("@").pop().split(",")[0].trim();
 }
+
+// Variación con signo y coma decimal: +2,3% / −7,4% (la semana, su línea en la Agenda).
+export const formatPct = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1).replace(".", ",")}%`;

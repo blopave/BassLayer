@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
-import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG } from "./og.js";
+import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { SALAS, SALAS_INGESTED, NOT_MUSIC, NOT_MUSIC_TITLES } from "./lib/salas.js";
@@ -3355,17 +3355,21 @@ app.get("/finde.ics", async (req, res) => {
 //  la noche y lo que hizo el mercado. Arma con lo que el server ya tiene
 //  cacheado (agenda, precios, festivales, eventos cripto, salas).
 // ─────────────────────────────────────────────
+async function semanaData() {
+  const events = notPast(await swr("events", buildEvents));
+  const prices = cache.prices.data || [];
+  const festivals = loadFestivals().map((f) => ({ ...f, status: festivalStatus(f) })).filter((f) => f.status !== "past");
+  const manual = (loadCryptoIrl().events || []).filter((e) => e.status === "approved");
+  const cryptoEvents = [...manual, ...loadCuratedEvents()];
+  let salas = [];
+  try { salas = (await swr("salas", buildSalas)).shows || []; } catch {}
+  return armarSemana({ events, prices, festivals, cryptoEvents, salas });
+}
+
 app.get("/api/semana", async (req, res) => {
   try {
-    const events = notPast(await swr("events", buildEvents));
-    const prices = cache.prices.data || [];
-    const festivals = loadFestivals().map((f) => ({ ...f, status: festivalStatus(f) })).filter((f) => f.status !== "past");
-    const manual = (loadCryptoIrl().events || []).filter((e) => e.status === "approved");
-    const cryptoEvents = [...manual, ...loadCuratedEvents()];
-    let salas = [];
-    try { salas = (await swr("salas", buildSalas)).shows || []; } catch {}
     res.set("Cache-Control", "public, max-age=600");
-    res.json(armarSemana({ events, prices, festivals, cryptoEvents, salas }));
+    res.json(await semanaData());
   } catch (e) {
     console.error("[semana]", e.message);
     res.status(502).json({ error: "Semana no disponible" });
@@ -5376,6 +5380,21 @@ function ogCacheSet(key, buf, ttlMs) {
   ogCache.set(key, { buf, exp: Date.now() + ttlMs });
 }
 
+app.get("/og/semana.png", async (req, res) => {
+  try {
+    const S = await semanaData();
+    const key = `semana:${S.semana.anio}-${S.semana.numero}:${S.noche.fiestas}:${S.mercado.btc ? S.mercado.btc.cambio7d.toFixed(1) : ""}`;
+    let png = ogCacheGet(key);
+    if (!png) { png = await generateSemanaOG(S); ogCacheSet(key, png, 3600_000); }
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    res.send(png);
+  } catch (e) {
+    console.error("[og/semana] error:", e.message);
+    res.status(500).end();
+  }
+});
+
 app.get("/og/event/:slug.png", async (req, res) => {
   try {
     const key = `event:${req.params.slug}`;
@@ -6602,6 +6621,32 @@ if (IS_PROD) {
     return lines.join("");
   }
 
+  // ── /semana — el resumen semanal: versión para buscadores y para compartir.
+  // La página de verdad la dibuja el cliente (src/components/Semana.jsx).
+  function renderSemanaPage(S) {
+    const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const fd = (iso) => { const [, m, d] = iso.split("-").map(Number); return `${d} ${MES[m - 1]}`; };
+    const pct = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1).replace(".", ",")}%`;
+    const btc = S.mercado.btc;
+    const h1 = `La semana Nº ${S.semana.numero}: ${S.noche.fiestas} fiestas${btc ? ` y el Bitcoin ${pct(btc.cambio7d)}` : ""}`;
+    const intro = `Lo que viene en la noche de Buenos Aires y lo que hizo el mercado en los últimos 7 días (${fd(S.semana.desde)} → ${fd(S.semana.hasta)}). Se renueva cada lunes.`;
+    const li = (t) => `<li>${t}</li>`;
+    const body = `<main style="max-width:820px;margin:0 auto;padding:2rem 1.25rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#000">
+      <h1>${escHtml(h1)}</h1><p>${escHtml(intro)}</p>
+      <h2>El finde · los elegidos</h2><ul>${S.noche.finde.map((e) => li(`${escHtml(e.nombre)} — ${escHtml(e.dia)} ${escHtml(e.mes)}, ${escHtml(e.venue)}`)).join("")}</ul>
+      ${S.noche.gira.length ? `<h2>De gira</h2><ul>${S.noche.gira.map((g) => li(`${escHtml(g.artista)} — ${escHtml(g.evento.venue)} (antes en ${escHtml(g.ciudades.join(", "))})`)).join("")}</ul>` : ""}
+      ${S.noche.festivales.length ? `<h2>Festivales que se vienen</h2><ul>${S.noche.festivales.map((f) => li(`${escHtml(f.nombre)} — ${fd(f.desde)}, ${escHtml(f.ciudad)}`)).join("")}</ul>` : ""}
+      <h2>El mercado</h2><ul>${S.mercado.activos.map((a) => li(`${escHtml(a.sym)}: ${pct(a.cambio7d)} en 7 días`)).join("")}</ul>
+      <p><a href="/" style="color:#C49070">Ver la agenda completa en BassLayer</a></p></main>`;
+    return renderHtmlWithMeta({
+      title: `${h1} | BassLayer`,
+      description: intro,
+      canonical: `${PROD_ORIGIN}/semana`,
+      image: `${PROD_ORIGIN}/og/semana.png?s=${S.semana.anio}-${S.semana.numero}`,
+      body,
+    });
+  }
+
   function renderTemporalPage(kind) {
     const events = temporalEvents(kind);
     const isHoy = kind === "hoy";
@@ -6758,6 +6803,12 @@ if (IS_PROD) {
           return res.send(renderGenrePage(genre));
         }
         return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+      }
+
+      // /semana — el resumen de la semana (link fijo, se renueva cada lunes)
+      if (/^\/semana\/?$/.test(req.path)) {
+        return semanaData().then((S) => res.set("Content-Type", "text/html").send(renderSemanaPage(S)))
+          .catch(() => res.set("Content-Type", "text/html").send(injectSeo(buildSeoHtml())));
       }
 
       // /layer — mundo crypto con URL propia

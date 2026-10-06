@@ -1,5 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Suspense } from "react";
+import { lazyNamed } from "./utils/lazy";
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LocaleProvider } from "./hooks/useLocale";
@@ -11,11 +13,16 @@ import { LocaleProvider } from "./hooks/useLocale";
 // Las @font-face viven al principio de styles.css.
 import "./styles.css";
 
+// /semana es una página aparte (el resumen semanal): su propio chunk, sin el home.
+const Semana = lazyNamed(() => import("./components/Semana"), "Semana");
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
       <LocaleProvider>
-        <App />
+        {/^\/semana\/?$/.test(window.location.pathname)
+          ? <Suspense fallback={null}><Semana /></Suspense>
+          : <App />}
       </LocaleProvider>
     </ErrorBoundary>
   </React.StrictMode>
