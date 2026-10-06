@@ -27,6 +27,13 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 | 2026-10-05 | **LA MARCA: el boleto** (ronda 6, opción B). Pablo: el pase tenía "demasiadas cosas"; la marca tiene que grabarse en la retina (la calco en la luneta). Una forma: boleto con dos muescas y *BassLayer* adentro (Geist 800). Las muescas caen entre "Bass" y "Layer". El color del boleto dice el mundo: hueso (general), cobre (Bass), celeste (Layer). Versiones: negro, un color calado, apilada, BL (≤64 px) e ícono de app. El pase de la semana pasa a ser una pieza coleccionable *dentro* del sistema, no la marca. Archivos: `logo/boleto.py` → `logo/boleto-*.svg`; lámina `logo/boleto.html`. |
 | 2026-10-05 | **El ".io" no va dentro del logo.** Existe una *versión de promoción* con `basslayer.io` en Geist Mono debajo, para piezas que se regalan (sticker, imán, tote). |
 
+## Estado (2026-10-06)
+
+- **La marca NO está aprobada para el sitio.** Pablo: "la imagen de marca necesitamos trabajarla más antes de decidir; el ticket sin color rompe con toda la estética" (el boleto hueso choca con el sitio oscuro). El sitio queda como está; la marca se trabaja en paralelo hasta que Pablo diga que está lista.
+- **Rama `marca`**: los prototipos en el sitio (`?marca=1|2|3`: boleto en el home, en el header y en la carga), el componente `Boleto.jsx` y los comparadores de `aplicaciones/`. Las próximas presentaciones tienen que ser **funcionales**: el sitio andando con la marca nueva (en esa rama), no láminas sueltas.
+- En `main` quedaron solo los arreglos que no dependen de la marca: manifest sin "Crypto" y con capturas actuales, imágenes de cada evento en Geist con la paleta.
+- Próxima iteración: un boleto que no rompa la estética oscura (siempre con color, o calado/negro con el nombre en color), probado sobre el sitio real.
+
 ## Descartado (y por qué)
 
 - **Ronda 1** (barras + curva, ligadura B·L, disco + bloque): signos de dos partes; se leen como dos cosas pegadas.
