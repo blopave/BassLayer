@@ -228,6 +228,7 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     [["TBA - Area Costanera, Quilmes", "TBA - Area Costanera, Quilmes, Buenos Aires"], "Quilmes"],
     [["Tribu", "Calle 5, Lanus, Buenos Aires"], "Lanús"],
     [["Club X", "Av. Avellaneda 1200, CABA"], "CABA"],
+    [["New Park, Pergamino", "Pergamino, Pcia. de Buenos Aires"], "Pergamino"],
     [["Crobar", "Marcelino Freyre s/n, Paseo de La Infanta, Palermo, Ciudad de Buenos Aires"], "CABA"],
   ];
   const malos = casos.filter(([[v, a], c]) => detectCity(v, a) !== c).map(([[v]]) => v);

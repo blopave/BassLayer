@@ -23,6 +23,7 @@ import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { SALAS, SALAS_INGESTED, NOT_MUSIC, NOT_MUSIC_TITLES } from "./lib/salas.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
+import { armarSemana } from "./lib/semana.js";
 import { marked } from "marked";
 import matter from "gray-matter";
 import { readdirSync } from "node:fs";
@@ -3345,6 +3346,28 @@ app.get("/finde.ics", async (req, res) => {
   lines.push("END:VCALENDAR");
   res.set("Cache-Control", "public, max-age=1800");
   res.type("text/calendar; charset=utf-8").send(lines.map(icsFold).join("\r\n") + "\r\n");
+});
+
+// ─────────────────────────────────────────────
+//  GET /api/semana — el resumen de la semana (lib/semana.js): lo que viene en
+//  la noche y lo que hizo el mercado. Arma con lo que el server ya tiene
+//  cacheado (agenda, precios, festivales, eventos cripto, salas).
+// ─────────────────────────────────────────────
+app.get("/api/semana", async (req, res) => {
+  try {
+    const events = notPast(await swr("events", buildEvents));
+    const prices = cache.prices.data || [];
+    const festivals = loadFestivals().map((f) => ({ ...f, status: festivalStatus(f) })).filter((f) => f.status !== "past");
+    const manual = (loadCryptoIrl().events || []).filter((e) => e.status === "approved");
+    const cryptoEvents = [...manual, ...loadCuratedEvents()];
+    let salas = [];
+    try { salas = (await swr("salas", buildSalas)).shows || []; } catch {}
+    res.set("Cache-Control", "public, max-age=600");
+    res.json(armarSemana({ events, prices, festivals, cryptoEvents, salas }));
+  } catch (e) {
+    console.error("[semana]", e.message);
+    res.status(502).json({ error: "Semana no disponible" });
+  }
 });
 
 // ─────────────────────────────────────────────
