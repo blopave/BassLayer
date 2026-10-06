@@ -1,4 +1,4 @@
-const CACHE_VERSION = "basslayer-v6";   // v6: la marca nueva (íconos e imagen al compartir)
+const CACHE_VERSION = "basslayer-v6";   // v6: manifest nuevo (capturas y textos)
 const STATIC_ASSETS = ["/", "/favicon.svg", "/icon-192.png"];
 
 self.addEventListener("install", (e) => {

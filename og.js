@@ -23,10 +23,6 @@ const FONTS = [
   { name: "Geist Mono", data: readFileSync(join(FONT_BASE, "geist-mono-400.woff")), weight: 400, style: "normal" },
 ];
 
-// La marca: el boleto (brand/logo, generado por boleto.py), embebido como imagen.
-const BOLETO = `data:image/svg+xml;base64,${readFileSync(join(__dirname, "brand/logo/boleto-general.svg")).toString("base64")}`;
-const BOLETO_RATIO = (() => { const [, , w, h] = readFileSync(join(__dirname, "brand/logo/boleto-general.svg"), "utf8").match(/viewBox="([^"]+)"/)[1].split(" ").map(Number); return w / h; })();
-
 // ── Color tokens (la paleta de la marca: brand/color/paleta.json) ──
 const C = {
   bg: "#0a0a0a",
@@ -112,10 +108,10 @@ const el = (type, props, ...children) => {
 
 // ── Brand header común a todos los templates ──
 function brandHeader(label) {
-  const h = 40;
-  return el("div", { style: { display: "flex", alignItems: "center", gap: "18px" } },
-    el("img", { src: BOLETO, width: Math.round(h * BOLETO_RATIO), height: h }),
-    el("span", { style: { fontFamily: "Geist Mono", fontSize: "16px", letterSpacing: "0.18em", textTransform: "uppercase", color: C.inkSoft } }, label),
+  return el("div", { style: { display: "flex", alignItems: "baseline", gap: "14px" } },
+    el("span", { style: { fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", color: C.accentBass } }, "Bass"),
+    el("span", { style: { fontSize: "22px", fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: C.accentLayer, marginLeft: "-6px" } }, "Layer"),
+    el("span", { style: { fontFamily: "Geist Mono", fontSize: "16px", letterSpacing: "0.18em", textTransform: "uppercase", color: C.inkSoft, marginLeft: "12px" } }, label),
   );
 }
 
