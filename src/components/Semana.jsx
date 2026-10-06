@@ -24,8 +24,10 @@ export function Semana() {
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
   useEffect(() => { dismissCurtain(); api.semana().then(setS).catch(() => setError(true)); }, []);
-  const dfmt = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-AR", { day: "numeric", month: "short", timeZone: "UTC" });
-  const fd = (iso) => dfmt.format(new Date(`${iso}T12:00:00Z`)).replace(/\./g, "");
+  const loc = locale === "en" ? "en-US" : "es-AR";
+  const dfmt = new Intl.DateTimeFormat(loc, { day: "numeric", month: "short", timeZone: "UTC" });
+  const wfmt = new Intl.DateTimeFormat(loc, { weekday: "short", timeZone: "UTC" });
+  const fd = (iso, f = dfmt) => f.format(new Date(`${iso}T12:00:00Z`)).replace(/\./g, "");
   const share = async () => {
     const url = "https://basslayer.io/semana";
     try {
@@ -58,7 +60,7 @@ export function Semana() {
                     <div key={d.fecha} className={`bl-sem-dia${d.fiestas ? "" : " is-empty"}${d.fiestas === max ? " is-hot" : ""}`}>
                       <span className="n">{d.fiestas}</span>
                       <span className="bar" style={{ height: `${8 + (d.fiestas / max) * 90}px` }} />
-                      <span className="d">{new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-AR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${d.fecha}T12:00:00Z`)).replace(".", "")}</span>
+                      <span className="d">{fd(d.fecha, wfmt)}</span>
                     </div>
                   ))}
                 </div>
