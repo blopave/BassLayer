@@ -278,7 +278,9 @@ function tidyEvents(events) {
   // antes; RA listó "Techno Yoga", una clase con DJ — Pablo decidió afuera).
   for (let i = events.length - 1; i >= 0; i--) if (NOT_A_SHOW_TITLE.test(events[i].name || "")) events.splice(i, 1);
   for (const ev of events) {
-    ev.artists = cleanLineup(ev.artists);
+    // Los artistas también pasan por el decodificador (oct 2026: Buenos Aliens
+    // mandaba "John O&acute;Callaghan" en el line-up aunque el título salía bien).
+    ev.artists = cleanLineup((ev.artists || []).map((x) => (typeof x === "string" ? decodeHtmlEntities(x) : x)));
     // Ciudad asignada con texto parcial (sept 2026: "Belgrano esquina Peredo"
     // → CABA, antes de completarse "Córdoba Capital"): si venue o dirección
     // nombran otra ciudad del país, se vuelve a derivar con el texto final.
@@ -793,7 +795,7 @@ const NAMED_ENTITIES = {
   atilde: "ã", otilde: "õ", Atilde: "Ã", Otilde: "Õ",
   aring: "å", oslash: "ø", szlig: "ß", aelig: "æ",
   iexcl: "¡", iquest: "¿", ordf: "ª", ordm: "º", sect: "§", para: "¶",
-  frac12: "½", frac14: "¼", sup2: "²", sup3: "³",
+  frac12: "½", frac14: "¼", sup2: "²", sup3: "³", acute: "´",
 };
 // Una pasada de decodificación. No se usa directamente: la envuelve
 // decodeHtmlEntities, que repite hasta estabilizar.
