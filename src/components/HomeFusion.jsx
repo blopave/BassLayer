@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { Boleto, MARCA } from "./Boleto";
 import cyclesData from "../../data/btc-cycles.json";
 import { imgUrl } from "../utils/img";
 
@@ -275,6 +276,13 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
       {/* wordmark central (control + marca) */}
       <div className="blf-axis">
         <div className="blf-wm">
+          {MARCA ? (
+            <div className="blf-boleto">
+              <Boleto mundo={active === "bass" ? "bass" : active === "layer" ? "layer" : "general"} />
+              <button className="blf-boleto-half b" onMouseEnter={isMobile ? undefined : () => setFocus("bass")} onClick={(e) => onEnter(e, 0)} aria-label={t("home.bassAria")} />
+              <button className="blf-boleto-half l" onMouseEnter={isMobile ? undefined : () => setFocus("layer")} onClick={(e) => onEnter(e, 1)} aria-label={t("home.layerAria")} />
+            </div>
+          ) : (
           <div className="blf-words">
             <button className="blf-half b"
               onMouseEnter={isMobile ? undefined : () => setFocus("bass")}
@@ -291,6 +299,7 @@ export default function HomeFusion({ events = [], prices = [], t, locale, isMobi
               <span className="blf-door">{t("home.blockchain")}</span>
             </button>
           </div>
+          )}
           <div className="blf-hint">
             <span className="blf-a">◂</span> {t("home.elegiMundo")} <span className="blf-a2">▸</span>
           </div>

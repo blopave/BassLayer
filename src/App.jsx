@@ -10,6 +10,7 @@ import { storage } from "./utils/storage";
 import { dismissCurtain } from "./utils/curtain";
 import { shareEventCard } from "./utils/shareCard";
 import { Preloader } from "./components/Preloader";
+import { Boleto, MARCA } from "./components/Boleto";
 import { PriceTicker } from "./components/PriceTicker";
 import { LineupTicker } from "./components/LineupTicker";
 import { lazyNamed } from "./utils/lazy";
@@ -1000,6 +1001,7 @@ export default function App() {
         {/* El cruce entre mundos: la onda se vuelve la curva (y al revés). */}
         <WorldLine ref={worldLineRef} />
         <nav className={`bl-header${wiping ? " is-wiping wiping-" + wiping : ""}`} aria-label="Navegaci&oacute;n principal">
+          {MARCA >= 2 && <button type="button" className="bl-header-boleto" onClick={navigateHome} aria-label="BassLayer — inicio"><Boleto mundo={activePanel === 0 ? "bass" : "layer"} small={isMobile} /></button>}
           <div className="bl-header-duo" role="tablist">
             <button
               className={`bl-header-half bl-header-half-bass${activePanel === 0 ? " is-active" : ""}`}

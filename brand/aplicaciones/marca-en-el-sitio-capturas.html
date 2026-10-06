@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La marca en el sitio · capturas</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --ter:#5c5c5c; --hair:#24242a; --cu:#C49070; --mono:"GeistMono",ui-monospace,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Geist",system-ui,sans-serif; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); font-family:var(--mono); }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:8px; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar a { font-size:11px; letter-spacing:.06em; color:var(--soft); text-decoration:none; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; }
+  section { padding:44px 32px; border-bottom:1px solid var(--hair); }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--cu); margin-bottom:10px; }
+  h3 { font-size:34px; font-weight:800; letter-spacing:-.03em; margin-bottom:8px; }
+  p.lead { color:var(--soft); font-size:15px; line-height:1.55; max-width:900px; margin-bottom:22px; }
+  p.lead b { color:var(--ink); }
+  .pair { display:grid; grid-template-columns:minmax(0,.31fr) minmax(0,1fr); gap:16px; align-items:start; margin-bottom:20px; }
+  .shot { position:relative; }
+  .shot img { width:100%; display:block; border-radius:14px; border:1px solid var(--hair); }
+  .shot.m img { border-radius:22px; }
+  .shot span { display:block; font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); margin-top:8px; }
+  .rec { border:1px solid var(--cu); border-radius:20px; padding:22px 26px; font-size:15px; line-height:1.55; color:var(--soft); max-width:1000px; }
+  .rec b { color:var(--ink); }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>La marca en el sitio</b> · cómo quedaría</span>
+    <a href="#actual">Hoy</a><a href="#op1">Opción 1</a><a href="#op2">Opción 2</a><a href="#op3">Opción 3</a>
+  </div>
+
+  <section id="actual">
+    <h2>Hoy</h2>
+    <h3>Así está el sitio ahora</h3>
+    <p class="lead">El home tiene el nombre escrito ("Bass LAYER") y adentro de cada mundo no aparece la marca.</p>
+    <div class="pair"><div class="shot m"><img src="capturas/actual-home-m.png" alt=""><span>Home · mobile</span></div><div class="shot"><img src="capturas/actual-home-d.png" alt=""><span>Home · desktop</span></div></div>
+  </section>
+
+  <section id="op1">
+    <h2>Opción 1</h2>
+    <h3>El boleto en el home</h3>
+    <p class="lead">El boleto reemplaza al nombre del centro. Al pasar el mouse por la mitad de Bass se vuelve <b>cobre</b>, por la de Layer <b>celeste</b>; tocás una mitad y entrás a ese mundo. Adentro del sitio, nada cambia.</p>
+    <div class="pair"><div class="shot m"><img src="capturas/op1-home-m.png" alt=""><span>Home · mobile</span></div><div class="shot"><img src="capturas/op1-home-d.png" alt=""><span>Home · desktop</span></div></div>
+  </section>
+
+  <section id="op2">
+    <h2>Opción 2 · recomendada</h2>
+    <h3>El home + un boleto chico arriba</h3>
+    <p class="lead">Igual que la 1 y además, adentro de cada mundo, un <b>boleto chico arriba a la izquierda</b>: cobre en Bass, celeste en Layer (en mobile, "BL"). Te dice dónde estás y tocándolo volvés al home.</p>
+    <div class="pair"><div class="shot m"><img src="capturas/op2-agenda-m.png" alt=""><span>Bass · mobile</span></div><div class="shot"><img src="capturas/op2-agenda-d.png" alt=""><span>Bass · desktop</span></div></div>
+    <div class="pair"><div class="shot m"><img src="capturas/op2-layer-m.png" alt=""><span>Layer · mobile</span></div><div class="shot"><img src="capturas/op2-layer-d.png" alt=""><span>Layer · desktop</span></div></div>
+  </section>
+
+  <section id="op3">
+    <h2>Opción 3</h2>
+    <h3>Todo lo de la 2 + la pantalla de carga</h3>
+    <p class="lead">Al abrir el sitio, el boleto aparece en la carga (dura menos de un segundo y medio).</p>
+    <div class="pair"><div class="shot m"><img src="capturas/op3-carga-m.png" alt=""><span>Carga · mobile</span></div><div class="shot"><img src="capturas/op3-carga-d.png" alt=""><span>Carga · desktop</span></div></div>
+    <div class="rec"><b>Mi recomendación: la 2.</b> El home presenta la marca y el boleto chico la mantiene presente en todo el sitio, diciendo en qué mundo estás. La carga es tan breve que suma poco; si te gusta, se agrega igual sin costo.</div>
+  </section>
+</body>
+</html>

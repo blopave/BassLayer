@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Boleto, MARCA } from "./Boleto";
 
 // Techo duro: pase lo que pase con el contador, el preloader no retiene la
 // pantalla más que esto. Es una cortina, no una espera.
@@ -63,10 +64,12 @@ export function Preloader({ done }) {
       <canvas className="bl-pre-canvas" ref={canvasRef} />
       <div className="bl-pre-count">{String(Math.floor(p)).padStart(3, "0")}</div>
       <div className="bl-pre-bar"><div className="bl-pre-bar-inner" style={{ width: p + "%" }} /></div>
+      {MARCA >= 3 ? <div className="bl-pre-boleto"><Boleto /></div> : (
       <div className="bl-pre-brand">
         <span className="bl-pre-bass">Bass</span>
         <span className="bl-pre-layer">Layer</span>
       </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La marca en el sitio</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --hair:#26262e; --cu:#C49070; --mono:ui-monospace,'SF Mono',Menlo,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--mono); }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); flex-wrap:nowrap; overflow-x:auto; }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:6px; white-space:nowrap; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar button { font:inherit; font-size:11px; letter-spacing:.06em; color:var(--soft); background:transparent; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; cursor:pointer; white-space:nowrap; }
+  .bar button:hover { color:var(--ink); border-color:var(--soft); }
+  .bar button.on { color:#140d08; background:var(--cu); border-color:var(--cu); }
+  .bar .sep { width:1px; height:24px; background:var(--hair); margin:0 4px; flex:none; }
+  .desc { padding:18px 24px 0; font-family:system-ui,sans-serif; font-size:14px; color:var(--soft); line-height:1.5; max-width:1100px; }
+  .desc b { color:var(--ink); }
+  .rows { display:flex; flex-direction:column; gap:28px; padding:20px 16px 48px; }
+  .row { display:flex; gap:18px; align-items:center; justify-content:center; min-height:calc(100vh - 56px - 60px); }
+  .row .lbl { writing-mode:vertical-rl; transform:rotate(180deg); font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--soft); }
+  .row .lbl b { color:var(--cu); font-weight:600; }
+  .screen { position:relative; overflow:hidden; background:#000; border:1px solid var(--hair); box-shadow:0 20px 60px rgba(0,0,0,.5); flex:0 0 auto; }
+  .screen iframe { position:absolute; top:0; left:0; border:0; transform-origin:top left; background:#000; }
+  .m { border-radius:18px; } .d { border-radius:6px; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>La marca en el sitio</b> · actual vs opción</span>
+    <button data-o="1" class="on">1 · Home</button><button data-o="2">2 · Home + header</button><button data-o="3">3 · + la carga</button>
+    <span class="sep"></span>
+    <button data-v="/" class="on">Ver el home</button><button data-v="/eventos/este-finde">Ver la agenda</button><button data-v="/?view=layer">Ver Layer</button>
+    <span class="sep"></span>
+    <button id="reload">↻ volver a cargar (ver la carga)</button>
+  </div>
+  <p class="desc" id="desc"></p>
+  <div class="rows">
+    <div class="row"><span class="lbl">Actual</span>
+      <div class="screen m"><iframe data-w="390" data-h="844" data-a="1"></iframe></div>
+      <div class="screen d"><iframe data-w="1440" data-h="900" data-a="1"></iframe></div>
+    </div>
+    <div class="row"><span class="lbl"><b id="olbl">Opción 1</b></span>
+      <div class="screen m"><iframe data-w="390" data-h="844"></iframe></div>
+      <div class="screen d"><iframe data-w="1440" data-h="900"></iframe></div>
+    </div>
+  </div>
+<script>
+  const DESC = {
+    1: "<b>Solo el home.</b> El boleto reemplaza al \"Bass LAYER\" del centro. Pasá el mouse: del lado de Bass se vuelve cobre, del lado de Layer celeste; tocás una mitad y entrás a ese mundo. El resto del sitio no cambia.",
+    2: "<b>Home + header.</b> Además, adentro de cada mundo, un boleto chico arriba a la izquierda: cobre en Bass, celeste en Layer (en mobile, la versión BL). Tocándolo volvés al home.",
+    3: "<b>Home + header + la carga.</b> Además, al abrir el sitio aparece el boleto en la pantalla de carga. Tocá \"volver a cargar\" para verla.",
+  };
+  let o = 1, v = "/";
+  const frames = [...document.querySelectorAll("iframe")];
+  function load() {
+    document.querySelectorAll("[data-o]").forEach((b) => b.classList.toggle("on", +b.dataset.o === o));
+    document.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+    document.getElementById("desc").innerHTML = DESC[o];
+    document.getElementById("olbl").textContent = `Opción ${o}`;
+    frames.forEach((f) => { const sep = v.includes("?") ? "&" : "?"; f.src = f.dataset.a ? v : `${v}${sep}marca=${o}`; });
+  }
+  function fit() {
+    const H = innerHeight - 56 - 80, W = document.body.clientWidth - 120;
+    const s = Math.min(H / 900, W / (390 * 900 / 844 + 1440 + 20));
+    frames.forEach((f) => {
+      const w = +f.dataset.w, h = +f.dataset.h, k = w === 390 ? s * 900 / 844 : s;
+      f.style.width = w + "px"; f.style.height = h + "px"; f.style.transform = `scale(${k})`;
+      f.parentElement.style.width = w * k + "px"; f.parentElement.style.height = h * k + "px";
+    });
+  }
+  document.querySelectorAll("[data-o]").forEach((b) => b.onclick = () => { o = +b.dataset.o; load(); });
+  document.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { v = b.dataset.v; load(); });
+  document.getElementById("reload").onclick = load;
+  addEventListener("resize", fit);
+  load(); fit();
+</script>
+</body>
+</html>
