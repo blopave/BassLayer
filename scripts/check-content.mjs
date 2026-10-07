@@ -289,6 +289,21 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   if (estimados.length) fail("cripto curados", "sin confirmar", estimados.join(", "));
 }
 
+// Cache en el borde (oct 2026): Cloudflare cachea /api respetando el header
+// del origen. Lo público tiene que salir "public"; lo privado, "no-store" —
+// si no, una respuesta con datos de alguien quedaría servida a todos.
+{
+  const casos = [["/api/events", /public/], ["/api/salas", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
+  const mal = [];
+  for (const [path, re] of casos) {
+    const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) }).catch(() => null);
+    const cc = res?.headers.get("cache-control") || "(sin header)";
+    if (!re.test(cc)) mal.push(`${path}: ${cc}`);
+  }
+  stats.push({ path: "cache (borde)", count: casos.length });
+  if (mal.length) fail("cache (borde)", "header", mal.join(" | "));
+}
+
 // Voz de los textos en español (oct 2026, Pablo): voseo en todo ("Tocá", no
 // "Toca") y "cripto", no "crypto".
 {

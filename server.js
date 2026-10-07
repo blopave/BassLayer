@@ -165,7 +165,9 @@ app.use("/img", makeRateLimit(600)); // una agenda carga ~90 miniaturas
 // borde (Cloudflare) reutilizan un dato que el server considera fresco por
 // minutos u horas. max-age = mitad del TTL con que la ruta cachea en memoria
 // (clave de `cache`, o ms para las rutas con cache propio); SWR cubre el hueco.
-// Solo GET con 2xx; las rutas autenticadas no figuran y quedan sin header.
+// Solo GET con 2xx. Lo que no figura acá ni pone su propio header (rutas
+// autenticadas, perfiles) sale "private, no-store": la cache rule de Cloudflare
+// para /api respeta el header del origen, así que nada privado queda en el borde.
 const API_PUBLIC_TTL = {
   "/api/prices": "prices", "/api/news": "news", "/api/finance-news": "financeNews",
   "/api/markets": "markets", "/api/events": "events", "/api/bass-news": "bassNews",
@@ -174,18 +176,18 @@ const API_PUBLIC_TTL = {
   "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
   "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000, "/api/meta": 24 * 60 * 60_000,
   "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
+  // Salas: corto a propósito. Cada deploy vacía la carga de Movistar/Passline
+  // hasta que vuelve el ingest; el borde no debe retener la cartelera a medias.
+  "/api/salas": 20 * 60_000,
 };
 app.use("/api", (req, res, next) => {
   if (req.method !== "GET") return next();
   const ttl = API_PUBLIC_TTL[req.baseUrl + req.path]; // req.path es relativo al mount
   const ttlMs = typeof ttl === "string" ? cache[ttl].ttl : ttl;
-  if (!ttlMs) return next();
-  const maxAge = Math.max(5, Math.round(ttlMs / 2000));
+  const header = ttlMs ? `public, max-age=${Math.max(5, Math.round(ttlMs / 2000))}, stale-while-revalidate=60` : "private, no-store";
   const json = res.json.bind(res);
   res.json = (body) => {
-    if (res.statusCode < 300 && !res.get("Cache-Control")) {
-      res.set("Cache-Control", `public, max-age=${maxAge}, stale-while-revalidate=60`);
-    }
+    if (!res.get("Cache-Control")) res.set("Cache-Control", ttlMs && res.statusCode < 300 ? header : "private, no-store");
     return json(body);
   };
   next();
@@ -206,7 +208,12 @@ for (const method of ["get", "post", "put", "delete"]) {
 }
 
 if (IS_PROD) {
-  app.use(express.static(join(__dirname, "dist"), { index: false }));
+  // /assets/ lleva hash en el nombre (cada build cambia la URL): se cachea un
+  // año. El resto (sw.js, manifest, íconos) se revalida siempre.
+  app.use(express.static(join(__dirname, "dist"), {
+    index: false,
+    setHeaders: (res, path) => res.set("Cache-Control", /[\\/]assets[\\/]/.test(path) ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate"),
+  }));
 }
 
 // ─────────────────────────────────────────────
