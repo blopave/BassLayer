@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La ficha · cuatro direcciones</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root {
+    --night:#070707; --panel:#0D0D0E; --hair:rgba(237,234,228,.09); --hair2:rgba(237,234,228,.16);
+    --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.38);
+    --cu:#C49070; --cy:#6CB8C8; --paper:#EDEAE4; --tinta:#0B0B0B;
+    --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  nav { position:fixed; inset:0 0 auto 0; z-index:20; display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; background:linear-gradient(180deg, rgba(7,7,7,.95), rgba(7,7,7,.0)); }
+  nav .brand { font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--sec); }
+  nav .brand b { color:var(--ink); font-weight:500; }
+  nav .links { display:flex; gap:28px; }
+  nav a { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); text-decoration:none; transition:color .3s; }
+  nav a:hover, nav a.on { color:var(--ink); }
+
+  /* portada */
+  .cover { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; align-items:center; padding:120px 8vw 80px; gap:6vw; }
+  .cover h1 { font-size:clamp(48px, 6.4vw, 104px); font-weight:800; letter-spacing:-.05em; line-height:.92; }
+  .cover h1 em { font-style:normal; color:var(--ter); }
+  .cover p { margin-top:32px; max-width:520px; font-size:17px; line-height:1.6; color:var(--sec); }
+  .cover p b { color:var(--ink); font-weight:500; }
+  .quad { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .quad a { background:var(--night); aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-decoration:none; transition:background .4s; }
+  .quad a:hover { background:#0c0c0d; }
+  .quad .mk { width:46%; }
+  .quad .k { color:var(--sec); }
+
+  /* cada dirección */
+  .dir { border-top:1px solid var(--hair); scroll-margin-top:0; }
+  .stage { position:relative; min-height:100vh; display:grid; grid-template-columns:1.25fr 1fr; }
+  .stage .big { position:relative; display:flex; align-items:center; justify-content:center; border-right:1px solid var(--hair); background:radial-gradient(70% 60% at 50% 50%, #111113 0%, var(--night) 70%); cursor:pointer; overflow:hidden; }
+  .stage .big .mk { width:min(52%, 520px); filter:drop-shadow(0 40px 80px rgba(0,0,0,.55)); }
+  .stage .big .side { position:absolute; top:84px; font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); transition:color .5s; }
+  .stage .big .side.l { left:40px; } .stage .big .side.r { right:40px; text-align:right; }
+  .stage .big[data-w="bass"] .side.l { color:var(--cu); } .stage .big[data-w="layer"] .side.r { color:var(--cy); }
+  .stage .big .hint { position:absolute; bottom:40px; left:0; right:0; text-align:center; }
+  .stage .txt { padding:120px 56px 56px; display:flex; flex-direction:column; justify-content:space-between; gap:40px; }
+  .stage .n { font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--cu); }
+  .stage h2 { font-size:clamp(40px, 4.6vw, 72px); font-weight:800; letter-spacing:-.045em; line-height:.95; margin-top:18px; }
+  .stage .idea { margin-top:28px; font-size:17px; line-height:1.62; color:var(--sec); max-width:500px; }
+  .stage .idea b { color:var(--ink); font-weight:500; }
+  .facts { display:grid; grid-template-columns:1fr; gap:0; border-top:1px solid var(--hair); }
+  .facts div { display:grid; grid-template-columns:120px 1fr; gap:16px; padding:16px 0; border-bottom:1px solid var(--hair); font-size:14px; line-height:1.5; color:var(--sec); }
+  .facts div .k { padding-top:3px; }
+  .facts .warn .k { color:#d69a7c; }
+
+  /* láminas */
+  .plates { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border-top:1px solid var(--hair); }
+  .plate { position:relative; aspect-ratio:1; background:var(--night); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .plate > .k { position:absolute; left:24px; top:22px; }
+  .plate > .k2 { position:absolute; left:24px; bottom:20px; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--ter); }
+  .plate.paper { background:var(--paper); } .plate.paper > .k, .plate.paper > .k2 { color:rgba(11,11,11,.45); }
+  .plate .mk { width:52%; }
+  .sizes { display:flex; align-items:center; gap:28px; }
+  .sizes.paper-row { margin-top:28px; }
+  .sizes span { display:block; }
+  .twoRows { display:flex; flex-direction:column; align-items:center; gap:30px; }
+  .twoRows .chip { padding:22px 28px; border-radius:6px; }
+  /* materiales */
+  .token { width:46%; aspect-ratio:1; border-radius:50%; position:relative; transform:rotate(-8deg); }
+  .token .mk { width:100%; }
+  .token::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(90% 90% at 30% 22%, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 38%), radial-gradient(120% 120% at 70% 85%, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 55%); mix-blend-mode:soft-light; pointer-events:none; }
+  .token::before { content:""; position:absolute; inset:-3%; border-radius:50%; background:conic-gradient(from 210deg, #6b4a33, #e9c3a5, #8a5f43, #f3d2b8, #6b4a33); z-index:-1; box-shadow:0 30px 50px rgba(0,0,0,.65), 0 6px 10px rgba(0,0,0,.5); }
+  .pin { width:34%; aspect-ratio:1; border-radius:50%; position:relative; box-shadow:0 0 0 6px #b99a63, 0 0 0 7px #6f5b36, 0 24px 40px rgba(0,0,0,.6); }
+  .pin::after { content:""; position:absolute; inset:0; border-radius:50%; background:linear-gradient(140deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 30%); pointer-events:none; }
+  .sticker { width:50%; aspect-ratio:1; border-radius:50%; background:#f6f3ee; padding:4.5%; transform:rotate(6deg); box-shadow:0 2px 2px rgba(0,0,0,.25), 0 18px 30px rgba(0,0,0,.45); position:relative; }
+  .sticker::after { content:""; position:absolute; right:6%; top:10%; width:30%; height:30%; border-radius:50%; background:radial-gradient(circle at 70% 30%, rgba(255,255,255,.5), transparent 60%); }
+  .iphone { width:62%; aspect-ratio:1; border-radius:28px; background:linear-gradient(160deg, #1b2a33, #2a1d16); display:grid; grid-template-columns:repeat(4,1fr); gap:14%; padding:12%; }
+  .iphone i { display:block; aspect-ratio:1; border-radius:24%; background:rgba(255,255,255,.08); }
+  .iphone i.me { background:#0b0b0b; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 14px rgba(0,0,0,.4); }
+  .iphone i.me .mk { width:78%; }
+  /* construcción */
+  .cons svg.guides { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+  .closing { padding:140px 8vw 160px; border-top:1px solid var(--hair); display:grid; grid-template-columns:1fr 1fr; gap:6vw; }
+  .closing h3 { font-size:clamp(36px, 4vw, 60px); font-weight:800; letter-spacing:-.04em; line-height:.98; }
+  .closing p { font-size:17px; line-height:1.65; color:var(--sec); }
+  .closing p b { color:var(--ink); font-weight:500; }
+
+  /* comportamiento de las marcas */
+  .mk svg { display:block; width:100%; height:auto; overflow:visible; }
+  .ecl .back, .ecl .front, .ecl .wm { transition:all 1.1s cubic-bezier(.65,0,.35,1); }
+  .hor .zone, .hor .w { transition:opacity .7s ease, fill .7s ease; }
+  .dyc .disc, .dyc .band, .dyc .w { transition:opacity .7s ease, transform .9s cubic-bezier(.65,0,.35,1); transform-box:fill-box; transform-origin:center; }
+  .moi .rings, .moi .lines { transition:opacity .8s ease; }
+
+  @media (max-width:900px) {
+    nav { padding:0 16px; } nav .links { display:none; }
+    .cover, .stage, .closing { grid-template-columns:1fr; }
+    .cover { padding:96px 16px 48px; }
+    .stage .big { min-height:72vh; border-right:0; border-bottom:1px solid var(--hair); }
+    .stage .big .side { top:24px; } .stage .big .side.l { left:16px; } .stage .big .side.r { right:16px; }
+    .stage .txt { padding:40px 16px; }
+    .plates { grid-template-columns:1fr 1fr; }
+    .closing { padding:80px 16px; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand"><b>BassLayer</b> · la ficha · ronda 8</span>
+  <span class="links"><a href="#eclipse">01 Eclipse</a><a href="#horizonte">02 Horizonte</a><a href="#disco">03 Disco y capa</a><a href="#interferencia">04 Interferencia</a><a href="#cierre">Recomendación</a></span>
+</nav>
+
+<header class="cover">
+  <div>
+    <div class="k">Marca BassLayer · oct 2026</div>
+    <h1 style="margin-top:22px">Dos mundos.<br><em>Una ficha.</em></h1>
+    <p>La forma ya está decidida: <b>un círculo</b>, la ficha que se paga en la barra y el token del mercado. Lo que falta es lo difícil: que <b>la noche y el mercado convivan adentro</b> y que cualquiera entienda, sin leer nada, que <b>hay dos mundos para elegir</b>. Cuatro maneras de resolverlo, cada una con su construcción, sus tamaños y sus materiales.</p>
+  </div>
+  <div class="quad">
+    <a href="#eclipse"><div class="mk" data-mark="eclipse"></div><span class="k">01 · Eclipse</span></a>
+    <a href="#horizonte"><div class="mk" data-mark="horizonte"></div><span class="k">02 · Horizonte</span></a>
+    <a href="#disco"><div class="mk" data-mark="disco"></div><span class="k">03 · Disco y capa</span></a>
+    <a href="#interferencia"><div class="mk" data-mark="interferencia"></div><span class="k">04 · Interferencia</span></a>
+  </div>
+</header>
+
+<main id="dirs"></main>
+
+<section class="closing" id="cierre">
+  <div><div class="k">Recomendación</div><h3 style="margin-top:20px">Eclipse, con Disco y capa como alternativa.</h3></div>
+  <div>
+    <p><b>Eclipse</b> es la que mejor cumple las dos condiciones a la vez: es <b>una sola ficha</b> (de frente se ve un círculo entero, no algo partido) y la media luna que asoma avisa, sin palabras, que <b>detrás hay otro mundo</b>. El gesto de elegir es el eclipse mismo: el otro disco pasa adelante. Funciona en 16 px, en una luneta, grabada en metal y en un solo color.</p>
+    <p style="margin-top:18px"><b>Disco y capa</b> es la más explícita (dos formas, dos mundos, cada una se toca) y la más icónica de lejos, pero su silueta recuerda al roundel del subte de Londres: habría que trabajarla para que no se lea como una cita.</p>
+    <p style="margin-top:18px">Pasá el mouse sobre cada marca grande: izquierda es Bass, derecha es Layer. Es exactamente el gesto que tendría el home.</p>
+  </div>
+</section>
+
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4";
+let uid = 0;
+
+// ── 01 · Eclipse: dos discos iguales; el de atrás asoma como una media luna.
+function eclipse(w = "bass", { mono = null } = {}) {
+  const front = w === "layer" ? CY : CU, back = w === "layer" ? CU : CY;
+  const dx = w === "layer" ? -34 : 34;
+  const f = mono || front, b = mono ? "none" : back, bs = mono ? `stroke="${mono}" stroke-width="7"` : "";
+  // El disco de atrás se recorta con un aire de 0,035 R alrededor del de adelante (transparente: sirve sobre cualquier fondo).
+  const id = "e" + uid++;
+  return `<svg viewBox="-40 -10 480 420" class="ecl" data-w="${w}">
+    <defs><mask id="${id}" maskUnits="userSpaceOnUse" x="-60" y="-30" width="520" height="460"><rect x="-60" y="-30" width="520" height="460" fill="#fff"/><circle cx="200" cy="200" r="187" fill="#000"/></mask></defs>
+    <circle class="back" cx="${200 + dx}" cy="200" r="180" fill="${b}" ${bs} mask="url(#${id})"/>
+    <circle class="front" cx="200" cy="200" r="180" fill="${f}"/>
+    <text class="wm" x="200" y="217" text-anchor="middle" font-family="Geist" font-weight="800" font-size="50" letter-spacing="-2" fill="${mono ? "#070707" : TINTA}">BassLayer</text>
+  </svg>`;
+}
+// ── 02 · Horizonte sonoro: una línea que empieza como onda y termina como curva de precio.
+function horizonteLinea() {
+  const pts = [];
+  for (let x = 20; x <= 200; x += 2) { const t = (x - 20) / 180, a = 26 * (1 - t) ** 1.3; pts.push([x, 214 + a * Math.sin(t * Math.PI * 6.5)]); }
+  const p = [[200, 214], [222, 206], [240, 212], [262, 192], [284, 198], [306, 176], [330, 182], [352, 160], [380, 150]];
+  return pts.concat(p);
+}
+function horizonte(w = "", { mono = null } = {}) {
+  const id = "h" + uid++, L = horizonteLinea();
+  const line = L.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+  const top = `M0 0 H400 V${L[L.length - 1][1]} ` + [...L].reverse().map((q) => "L" + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ") + ` L0 ${L[0][1]} Z`;
+  const bot = `M0 400 H400 V${L[L.length - 1][1]} ` + [...L].reverse().map((q) => "L" + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ") + ` L0 ${L[0][1]} Z`;
+  const dimT = w === "layer" ? .28 : 1, dimB = w === "bass" ? .28 : 1;
+  if (mono) return `<svg viewBox="0 0 400 400" class="hor"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
+    <circle cx="200" cy="200" r="180" fill="${mono}"/><path d="${line}" fill="none" stroke="#070707" stroke-width="9" clip-path="url(#${id})"/>
+    <text x="200" y="168" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="#070707">Bass</text>
+    <text x="200" y="300" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="#070707">Layer</text></svg>`;
+  return `<svg viewBox="0 0 400 400" class="hor" data-w="${w}"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
+    <g clip-path="url(#${id})"><path class="zone" d="${top}" fill="${CU}" opacity="${dimT}"/><path class="zone" d="${bot}" fill="${CY}" opacity="${dimB}"/></g>
+    <text class="w" x="200" y="160" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="${TINTA}">Bass</text>
+    <text class="w" x="200" y="306" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="${TINTA}">Layer</text></svg>`;
+}
+// ── 03 · Disco y capa: el disco (la noche) atravesado por una capa (el mercado) con el nombre.
+function disco(w = "", { mono = null } = {}) {
+  const dd = w === "layer" ? .32 : 1, bd = w === "bass" ? .32 : 1;
+  const disc = mono || CU, band = mono || CY, txt = mono ? "#070707" : TINTA;
+  return `<svg viewBox="0 0 400 400" class="dyc" data-w="${w}">
+    <circle class="disc" cx="200" cy="200" r="168" fill="${disc}" opacity="${dd}"/>
+    ${mono ? `<rect x="0" y="160" width="400" height="80" fill="#070707"/>` : ""}
+    <rect class="band" x="${mono ? 6 : 0}" y="${mono ? 166 : 162}" width="${mono ? 388 : 400}" height="${mono ? 68 : 76}" rx="3" fill="${band}" opacity="${bd}"/>
+    <text class="w" x="200" y="${mono ? 216 : 218}" text-anchor="middle" font-family="Geist" font-weight="800" font-size="50" letter-spacing="-2" fill="${txt}">BassLayer</text></svg>`;
+}
+// ── 04 · Interferencia: surcos (Bass) y capas (Layer) en el mismo círculo; al cruzarse, aparece un tercer dibujo.
+function interferencia(w = "", { mono = null, step = 10 } = {}) {
+  const id = "i" + uid++;
+  let rings = "", lines = "";
+  for (let r = step; r <= 180; r += step) rings += `<circle cx="200" cy="200" r="${r}" fill="none"/>`;
+  for (let y = 20 + step / 2; y < 380; y += step) lines += `<line x1="0" x2="400" y1="${y}" y2="${y}"/>`;
+  const ro = w === "layer" ? .12 : 1, lo = w === "bass" ? .12 : 1, sw = step * .36;
+  return `<svg viewBox="0 0 400 400" class="moi" data-w="${w}"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
+    <circle cx="200" cy="200" r="180" fill="${mono ? "#070707" : "#0E0E0F"}"/>
+    <g clip-path="url(#${id})"><g class="rings" stroke="${mono || CU}" stroke-width="${sw}" opacity="${ro}">${rings}</g>
+    <g class="lines" stroke="${mono || CY}" stroke-width="${sw}" opacity="${lo}" style="mix-blend-mode:screen">${lines}</g></g>
+    <circle cx="200" cy="200" r="64" fill="${mono ? "#070707" : TINTA}"/>
+    <text x="200" y="208" text-anchor="middle" font-family="Geist" font-weight="800" font-size="25" letter-spacing="-.8" fill="${PAPEL}">BassLayer</text>
+    <circle cx="200" cy="200" r="180" fill="none" stroke="${mono ? mono : "rgba(237,234,228,.14)"}" stroke-width="2"/></svg>`;
+}
+const MARKS = { eclipse, horizonte, disco, interferencia };
+
+// Construcción: guías sobre la marca (viewBox común 400).
+function guias(name) {
+  const g = (s) => `<svg viewBox="${name === "eclipse" ? "-40 -10 480 420" : "0 0 400 400"}" style="position:absolute;inset:0;width:100%;height:100%" preserveAspectRatio="xMidYMid meet">${s}</svg>`;
+  const L = `stroke="rgba(108,184,200,.55)" stroke-width="1" fill="none" stroke-dasharray="3 4"`, T = `font-family="GeistMono" font-size="9" fill="rgba(108,184,200,.85)" letter-spacing="1"`;
+  const base = `<line x1="-40" x2="440" y1="200" y2="200" ${L}/><line x1="200" x2="200" y1="-10" y2="410" ${L}/>`;
+  if (name === "eclipse") return g(base + `<circle cx="200" cy="200" r="180" ${L}/><circle cx="234" cy="200" r="180" ${L}/><line x1="380" x2="414" y1="40" y2="40" stroke="rgba(108,184,200,.85)"/><text x="384" y="32" ${T}>0,19R</text><text x="208" y="-0" ${T}>R</text><line x1="200" x2="380" y1="6" y2="6" stroke="rgba(108,184,200,.85)"/>`);
+  if (name === "horizonte") return g(base + `<circle cx="200" cy="200" r="180" ${L}/><line x1="200" x2="200" y1="214" y2="150" stroke="rgba(108,184,200,.85)"/><text x="206" y="244" ${T}>ONDA · 6,5 CICLOS</text><text x="270" y="140" ${T}>PRECIO · 7 DÍAS</text>`);
+  if (name === "disco") return g(base + `<circle cx="200" cy="200" r="168" ${L}/><rect x="0" y="162" width="400" height="76" ${L}/><text x="8" y="154" ${T}>CAPA = 0,45R</text><text x="300" y="30" ${T}>DISCO R</text>`);
+  return g(base + `<circle cx="200" cy="200" r="180" ${L}/><circle cx="200" cy="200" r="64" ${L}/><text x="270" y="40" ${T}>PASO 10 · TRAZO 0,36</text><text x="132" y="290" ${T}>ETIQUETA 0,36R</text>`);
+}
+
+const DIRS = [
+  { id: "eclipse", n: "01", t: "Eclipse",
+    idea: "Dos discos del mismo tamaño, uno delante del otro. De frente, <b>una sola ficha</b>; del borde asoma <b>una media luna del otro color</b>: detrás hay otro mundo. Elegir es el eclipse: el disco de atrás pasa adelante y la media luna se va al otro lado.",
+    facts: [["Los dos mundos", "Siempre presentes: uno de frente, el otro asomando. Nunca partidos."], ["Para elegir", "La media luna es la puerta. Izquierda o derecha, el otro disco cruza."], ["Un color", "La media luna se vuelve un aro calado: funciona grabado, sellado o en vinilo de corte."], ["A cuidar", "La media luna tiene que ser lo bastante gruesa (0,19 R) para leerse en 16 px; más fina, desaparece.", 1]] },
+  { id: "horizonte", n: "02", t: "Horizonte sonoro",
+    idea: "Un círculo y <b>una sola línea</b> que lo cruza: empieza como <b>onda de sonido</b> y termina como <b>curva de precio</b>. Arriba, la noche; abajo, el mercado. La línea es la firma que el sitio ya tiene al cruzar de mundo.",
+    facts: [["Los dos mundos", "Arriba Bass, abajo Layer, nombrados en su propio territorio."], ["Para elegir", "Dos zonas, dos puertas: la que no elegís se apaga."], ["Un color", "La línea se vuelve un corte: funciona en sello y grabado."], ["A cuidar", "Es la más \"dividida\" de las cuatro; la línea tiene que ser inconfundible para que no se lea como un círculo cortado.", 1]] },
+  { id: "disco", n: "03", t: "Disco y capa",
+    idea: "<b>Bass es el disco</b>: el vinilo, la ficha. <b>Layer es una capa</b>, literalmente: una banda que lo atraviesa y lleva el nombre. Dos formas que se cruzan, cada una con su mundo y cada una tocable.",
+    facts: [["Los dos mundos", "Dos formas distintas, no dos mitades: se superponen, conviven."], ["Para elegir", "Tocás el disco o la capa; la otra se apaga."], ["Un color", "La capa se recorta del disco con un filete: limpia en un color."], ["A cuidar", "La silueta (círculo + barra) recuerda al roundel del subte de Londres, marca muy protegida. Habría que alejarla: banda más fina, más corta o desplazada.", 1]] },
+  { id: "interferencia", n: "04", t: "Interferencia",
+    idea: "Los <b>surcos</b> del vinilo (Bass) y las <b>capas</b> horizontales (Layer) dibujados en el mismo círculo. Donde se cruzan aparece un tercer dibujo, el moiré: <b>los dos mundos juntos generan algo que ninguno tiene solo</b>.",
+    facts: [["Los dos mundos", "Superpuestos en todo el círculo, a la vez."], ["Para elegir", "Elegís uno y el otro patrón se desvanece."], ["Un color", "Funciona impreso y grabado; en pantalla vibra (es su gracia)."], ["A cuidar", "En chico (32 px o menos) el patrón se empasta y queda un disco texturado: necesita una versión simple para íconos.", 1]] },
+];
+
+const S = (name, w, opt) => MARKS[name](w, opt);
+document.getElementById("dirs").innerHTML = DIRS.map((d) => `
+  <section class="dir" id="${d.id}">
+    <div class="stage">
+      <div class="big" data-name="${d.id}"><span class="side l">◂ Bass · la noche</span><span class="side r">Layer · el mercado ▸</span>
+        <div class="mk" data-live="${d.id}">${S(d.id, d.id === "eclipse" ? "bass" : "")}</div>
+        <span class="hint k">Pasá el mouse: izquierda Bass, derecha Layer</span></div>
+      <div class="txt">
+        <div><div class="n">${d.n} / 04</div><h2>${d.t}</h2><p class="idea">${d.idea}</p></div>
+        <div class="facts">${d.facts.map(([k, v, warn]) => `<div class="${warn ? "warn" : ""}"><span class="k">${k}</span><span>${v}</span></div>`).join("")}</div>
+      </div>
+    </div>
+    <div class="plates">
+      <div class="plate cons"><span class="k">Construcción</span><div class="mk" style="position:relative">${S(d.id, d.id === "eclipse" ? "bass" : "")}${guias(d.id)}</div></div>
+      <div class="plate paper"><span class="k">Sobre papel · un color</span><div class="mk">${S(d.id, d.id === "eclipse" ? "bass" : "", { mono: TINTA })}</div></div>
+      <div class="plate"><span class="k">Tamaños reales</span>
+        <div class="twoRows">
+          <div class="sizes">${[128, 64, 32, 16].map((s) => `<span style="width:${s}px">${S(d.id, d.id === "eclipse" ? "bass" : "", d.id === "interferencia" && s <= 32 ? { step: 30 } : {})}</span>`).join("")}</div>
+          <div class="sizes chip" style="background:${PAPEL};padding:18px 22px;border-radius:6px">${[64, 32, 16].map((s) => `<span style="width:${s}px">${S(d.id, d.id === "eclipse" ? "bass" : "", { mono: TINTA })}</span>`).join("")}</div>
+        </div><span class="k2">128 · 64 · 32 · 16 px</span></div>
+      <div class="plate" style="background:radial-gradient(80% 80% at 50% 40%, #1a1714, #070707)"><span class="k">Ficha de metal · regalo</span><div class="token"><div class="mk">${S(d.id, d.id === "eclipse" ? "bass" : "")}</div></div></div>
+      <div class="plate" style="background:#2b2622"><span class="k">Sticker troquelado</span><div class="sticker"><div class="mk" style="width:100%">${S(d.id, d.id === "eclipse" ? "layer" : "")}</div></div></div>
+      <div class="plate" style="background:radial-gradient(90% 90% at 50% 30%, #262a2d, #0b0c0d)"><span class="k">Pin esmaltado · ícono de app</span>
+        <div style="display:flex;gap:9%;align-items:center;justify-content:center;width:100%"><div class="pin"><div class="mk" style="width:100%">${S(d.id, d.id === "eclipse" ? "bass" : "")}</div></div>
+        <div class="iphone" style="width:44%"><i></i><i></i><i></i><i></i><i></i><i class="me"><span class="mk">${S(d.id, d.id === "eclipse" ? "bass" : "", d.id === "interferencia" ? { step: 30 } : {})}</span></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+    </div>
+  </section>`).join("");
+
+// Portada
+document.querySelectorAll("[data-mark]").forEach((el) => { el.innerHTML = S(el.dataset.mark, el.dataset.mark === "eclipse" ? "bass" : ""); });
+
+// Interacción: izquierda Bass, derecha Layer (el gesto del home).
+document.querySelectorAll(".big").forEach((big) => {
+  const name = big.dataset.name, live = big.querySelector("[data-live]");
+  let cur = null;
+  const set = (w) => {
+    if (w === cur) return; cur = w; big.dataset.w = w || "";
+    const el = live.querySelector("svg");
+    if (name === "eclipse") {
+      const ww = w || "bass", front = el.querySelector(".front"), back = el.querySelector(".back");
+      front.setAttribute("fill", ww === "layer" ? CY : CU); back.setAttribute("fill", ww === "layer" ? CU : CY);
+      back.setAttribute("cx", 200 + (ww === "layer" ? -34 : 34));
+    } else if (name === "horizonte") {
+      const [t, b] = el.querySelectorAll(".zone"); t.setAttribute("opacity", w === "layer" ? .28 : 1); b.setAttribute("opacity", w === "bass" ? .28 : 1);
+    } else if (name === "disco") {
+      el.querySelector(".disc").setAttribute("opacity", w === "layer" ? .32 : 1); el.querySelector(".band").setAttribute("opacity", w === "bass" ? .32 : 1);
+    } else {
+      el.querySelector(".rings").setAttribute("opacity", w === "layer" ? .12 : 1); el.querySelector(".lines").setAttribute("opacity", w === "bass" ? .12 : 1);
+    }
+  };
+  big.addEventListener("mousemove", (e) => { const r = big.getBoundingClientRect(); set(e.clientX - r.left < r.width / 2 ? "bass" : "layer"); });
+  big.addEventListener("mouseleave", () => set(""));
+  big.addEventListener("click", (e) => { const r = big.getBoundingClientRect(); set(e.clientX - r.left < r.width / 2 ? "bass" : "layer"); });
+});
+// Eclipse en reposo: cada 5 s el otro disco pasa adelante (la marca respira entre los dos mundos).
+setInterval(() => {
+  document.querySelectorAll('.big[data-name="eclipse"]').forEach((big) => { if (big.dataset.w) return; big.dispatchEvent(new MouseEvent("mouseleave")); });
+  document.querySelectorAll('.quad [data-mark="eclipse"] svg, .big[data-name="eclipse"]:not([data-w="bass"]):not([data-w="layer"]) svg').forEach((el) => {
+    const front = el.querySelector(".front"), back = el.querySelector(".back");
+    const layerNow = front.getAttribute("fill") === CU;
+    front.setAttribute("fill", layerNow ? CY : CU); back.setAttribute("fill", layerNow ? CU : CY); back.setAttribute("cx", 200 + (layerNow ? -34 : 34));
+  });
+}, 5000);
+</script>
+</body>
+</html>
