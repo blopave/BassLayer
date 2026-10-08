@@ -197,7 +197,13 @@ function pintaAside() {
     ${INV}<p class="refs">Probalo: pasá el mouse por la izquierda (Bass) y la derecha (Layer), y tocá para entrar. Con "Sonido" encendido, Bass suena a cuatro tiempos y Layer hace tic con cada vela.</p>`;
 }
 document.querySelectorAll("[data-c]").forEach((b) => b.onclick = () => { cur = b.dataset.c; document.querySelectorAll("[data-c]").forEach((x) => x.classList.toggle("on", x === b)); pintaAside(); });
-document.getElementById("phone").onclick = (e) => { stage.classList.toggle("phone"); e.target.classList.toggle("on"); document.getElementById("hint").textContent = stage.classList.contains("phone") ? "◂ Tocá un mundo ▸" : "◂ Elegí un mundo ▸"; };
+document.getElementById("phone").onclick = (e) => {
+  const tel = stage.classList.toggle("phone"); e.target.classList.toggle("on", tel);
+  document.getElementById("hint").textContent = tel ? "◂ Tocá un mundo ▸" : "◂ Elegí un mundo ▸";
+  // En el teléfono no entran las etiquetas largas: quedan los nombres de cada mundo.
+  stage.querySelector(".tl").innerHTML = tel ? "<i></i>Bass" : "<i></i>Bass · fiestas, shows y festivales";
+  stage.querySelector(".tr").innerHTML = tel ? "Layer<i></i>" : "Blockchain · cripto · mercados · Layer<i></i>";
+};
 const lado = (e) => { const r = stage.getBoundingClientRect(); return (e.clientX ?? e.touches?.[0]?.clientX) - r.left < r.width / 2 ? "bass" : "layer"; };
 stage.addEventListener("mousemove", (e) => { if (!entering) { w = lado(e); stage.dataset.w = w; } });
 stage.addEventListener("mouseleave", () => { if (!entering) { w = ""; stage.dataset.w = ""; } });
