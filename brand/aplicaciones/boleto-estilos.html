@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El boleto en el sitio · tres estilos</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { --bg:#0A0A0A; --panel:#131317; --ink:#E5E5E5; --soft:#8a8a8a; --hair:#26262e; --cu:#C49070; --cy:#6CB8C8; --mono:ui-monospace,'SF Mono',Menlo,monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--mono); }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; height:56px; padding:0 16px; border-bottom:1px solid var(--hair); background:var(--panel); overflow-x:auto; }
+  .bar .title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--soft); margin-right:6px; white-space:nowrap; }
+  .bar .title b { color:var(--cu); font-weight:600; }
+  .bar button, .bar a { font:inherit; font-size:11px; letter-spacing:.06em; color:var(--soft); background:transparent; border:1px solid var(--hair); border-radius:999px; padding:7px 14px; cursor:pointer; white-space:nowrap; text-decoration:none; }
+  .bar button:hover, .bar a:hover { color:var(--ink); border-color:var(--soft); }
+  .bar button.on { color:#140d08; background:var(--cu); border-color:var(--cu); }
+  .bar .sep { width:1px; height:24px; background:var(--hair); margin:0 4px; flex:none; }
+  .row { display:flex; gap:18px; align-items:center; justify-content:center; padding:20px 16px; min-height:calc(100vh - 56px); border-bottom:1px solid var(--hair); scroll-margin-top:56px; }
+  .lbl { flex:none; width:180px; font-family:system-ui,sans-serif; }
+  .lbl b { display:block; font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--cu); margin-bottom:8px; }
+  .lbl p { font-size:13px; line-height:1.5; color:var(--soft); }
+  .screen { position:relative; overflow:hidden; background:#000; border:1px solid var(--hair); box-shadow:0 20px 60px rgba(0,0,0,.5); flex:0 0 auto; }
+  .screen iframe { position:absolute; top:0; left:0; border:0; transform-origin:top left; background:#000; }
+  .m { border-radius:18px; } .d { border-radius:6px; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="title"><b>El boleto en el sitio</b> · hoy vs A · B · C</span>
+    <button data-v="/" class="on">Home</button><button data-v="/eventos/este-finde">Agenda (Bass)</button><button data-v="/?view=layer">Layer</button>
+    <span class="sep"></span>
+    <button id="reload">↻ volver a cargar (ver la carga)</button>
+    <span class="sep"></span>
+    <a href="#hoy">Hoy</a><a href="#a">A</a><a href="#b">B</a><a href="#c">C</a>
+  </div>
+  <section class="row" id="hoy"><div class="lbl"><b>Hoy</b><p>El sitio como está: el nombre escrito, sin boleto.</p></div>
+    <div class="screen m"><iframe data-w="390" data-h="844"></iframe></div><div class="screen d"><iframe data-w="1440" data-h="900"></iframe></div></section>
+  <section class="row" id="a"><div class="lbl"><b>A · Siempre color</b><p>Nunca hueso. En el home, la mitad Bass cobre y la Layer celeste, partidas en la muesca. Adentro de cada mundo, entero en su color.</p></div>
+    <div class="screen m"><iframe data-w="390" data-h="844" data-e="a"></iframe></div><div class="screen d"><iframe data-w="1440" data-h="900" data-e="a"></iframe></div></section>
+  <section class="row" id="b"><div class="lbl"><b>B · Calado</b><p>Solo el contorno del boleto, en color; el nombre en hueso. Lo más liviano sobre el oscuro.</p></div>
+    <div class="screen m"><iframe data-w="390" data-h="844" data-e="b"></iframe></div><div class="screen d"><iframe data-w="1440" data-h="900" data-e="b"></iframe></div></section>
+  <section class="row" id="c"><div class="lbl"><b>C · Negro</b><p>Boleto negro apenas más claro que el fondo, con un filete; "Bass" cobre y "Layer" celeste. Lo más sobrio.</p></div>
+    <div class="screen m"><iframe data-w="390" data-h="844" data-e="c"></iframe></div><div class="screen d"><iframe data-w="1440" data-h="900" data-e="c"></iframe></div></section>
+<script>
+  // Cada opción corre el sitio real (?marca=3: home + header de cada mundo + la carga) con su estilo.
+  let v = "/";
+  const frames = [...document.querySelectorAll("iframe")];
+  function load() {
+    document.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+    frames.forEach((f) => { const sep = v.includes("?") ? "&" : "?"; f.src = f.dataset.e ? `${v}${sep}marca=3&boleto=${f.dataset.e}` : v; });
+  }
+  function fit() {
+    const H = innerHeight - 56 - 40, W = document.body.clientWidth - 32 - 180 - 54;
+    const s = Math.min(H / 900, W / (390 * 900 / 844 + 1440));
+    frames.forEach((f) => {
+      const w = +f.dataset.w, h = +f.dataset.h, k = w === 390 ? s * 900 / 844 : s;
+      f.style.width = w + "px"; f.style.height = h + "px"; f.style.transform = `scale(${k})`;
+      f.parentElement.style.width = w * k + "px"; f.parentElement.style.height = h * k + "px";
+    });
+  }
+  document.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { v = b.dataset.v; load(); });
+  document.getElementById("reload").onclick = load;
+  addEventListener("resize", fit);
+  load(); fit();
+</script>
+</body>
+</html>
