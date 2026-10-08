@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La esencia de cada mundo · ronda 11</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --paper:#EDEAE4; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  nav { position:fixed; inset:0 0 auto 0; z-index:20; display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; background:linear-gradient(180deg, rgba(7,7,7,.96), rgba(7,7,7,0)); }
+  nav .brand { font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--sec); }
+  nav .brand b { color:var(--ink); font-weight:500; }
+  nav .links { display:flex; gap:26px; }
+  nav a { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); text-decoration:none; }
+  nav a:hover { color:var(--ink); }
+  .cover { min-height:86vh; display:grid; grid-template-columns:1fr 1fr; align-items:center; padding:120px 8vw 40px; gap:6vw; }
+  .cover h1 { font-size:clamp(48px, 6.4vw, 104px); font-weight:800; letter-spacing:-.05em; line-height:.92; }
+  .cover h1 .b { color:var(--cu); } .cover h1 .l { color:var(--cy); font-weight:300; letter-spacing:-.01em; }
+  .cover p { margin-top:30px; max-width:520px; font-size:17px; line-height:1.6; color:var(--sec); }
+  .cover p b { color:var(--ink); font-weight:500; }
+  .ess { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--hair); }
+  .ess > div { padding:28px 26px; }
+  .ess > div + div { border-left:1px solid var(--hair); }
+  .ess h4 { font-size:28px; letter-spacing:-.03em; margin-bottom:4px; }
+  .ess .bh { color:var(--cu); font-weight:800; } .ess .lh { color:var(--cy); font-weight:300; letter-spacing:.12em; text-transform:uppercase; font-size:22px; }
+  .ess ul { list-style:none; margin-top:16px; }
+  .ess li { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--hair); font-size:13.5px; color:var(--sec); }
+  .ess li span:first-child { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); padding-top:2px; }
+  .ess svg { display:block; width:100%; height:46px; margin-top:16px; }
+
+  .block { padding:110px 8vw 20px; border-top:1px solid var(--hair); }
+  .block h2 { font-size:clamp(34px, 4vw, 60px); font-weight:800; letter-spacing:-.045em; line-height:.96; margin-top:14px; }
+  .block .intro { margin-top:18px; font-size:16px; line-height:1.6; color:var(--sec); max-width:760px; }
+  .grid { display:grid; grid-template-columns:160px repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:44px; }
+  .grid > div { background:var(--night); }
+  .head { padding:18px 20px; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; }
+  .head b { font-size:17px; letter-spacing:-.02em; }
+  .head span { font-size:12.5px; line-height:1.45; color:var(--sec); }
+  .rowl { padding:20px; display:flex; flex-direction:column; justify-content:center; gap:6px; }
+  .rowl b { font-size:17px; letter-spacing:-.02em; }
+  .cell { position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:radial-gradient(70% 70% at 50% 50%, #111113, #070707 72%) !important; }
+  .cell .mk { width:78%; }
+  .cell.paper { background:var(--paper) !important; }
+  .cell .lab { position:absolute; left:12px; bottom:10px; font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); transition:color .4s; }
+  .cell[data-w="bass"] .lab { color:var(--cu); } .cell[data-w="layer"] .lab { color:var(--cy); }
+  .cell.paper .lab { color:rgba(11,11,11,.45); }
+  .smalls { display:flex; gap:14px; align-items:center; justify-content:center; padding:18px; }
+  .mk svg { display:block; width:100%; height:auto; }
+  .closing { padding:120px 8vw 150px; border-top:1px solid var(--hair); display:grid; grid-template-columns:1fr 1fr; gap:6vw; margin-top:90px; }
+  .closing h3 { font-size:clamp(34px, 3.8vw, 56px); font-weight:800; letter-spacing:-.04em; line-height:.98; }
+  .closing p { font-size:17px; line-height:1.65; color:var(--sec); }
+  .closing p b { color:var(--ink); font-weight:500; }
+  @media (max-width:900px) {
+    nav { padding:0 16px; } nav .links { display:none; }
+    .cover, .closing { grid-template-columns:1fr; } .cover { padding:96px 16px 32px; }
+    .block { padding:72px 16px 12px; } .closing { padding:80px 16px; }
+    .grid { grid-template-columns:repeat(3, minmax(0,1fr)); } .grid .rowl, .grid .corner { grid-column:1 / -1; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand"><b>BassLayer</b> · la esencia de cada mundo · ronda 11</span>
+  <span class="links"><a href="#esencia">La esencia</a><a href="#noche">Sale la noche</a><a href="#onda">Onda en las capas</a><a href="#cierre">Recomendación</a></span>
+</nav>
+
+<header class="cover" id="esencia">
+  <div>
+    <div class="k">Marca BassLayer · oct 2026</div>
+    <h1 style="margin-top:22px">Que cada<br>mundo <span class="b">se</span> <span class="l">note.</span></h1>
+    <p>El nombre en blanco era neutral: no decía nada. Ahora <b>cada mundo tiene su esencia en todo el dibujo</b>, no solo en su color. <b>Bass es analógico</b>: continuo, cálido, que vibra. <b>Layer es digital</b>: discreto, preciso, en bloques. El horizonte es donde lo continuo se vuelve discreto. La tipografía sigue la misma regla.</p>
+  </div>
+  <div class="ess">
+    <div><h4 class="bh">Bass</h4><div class="k">la noche · analógico</div>
+      <ul><li><span>Línea</span><span>continua, onda</span></li><li><span>Punta</span><span>redonda</span></li><li><span>Peso</span><span>pesado (800)</span></li><li><span>Color</span><span>cobre</span></li><li><span>Movimiento</span><span>pulso, vibra</span></li></ul>
+      <svg viewBox="0 0 200 46" id="essB"></svg></div>
+    <div><h4 class="lh">Layer</h4><div class="k">el mercado · digital</div>
+      <ul><li><span>Línea</span><span>en bloques</span></li><li><span>Punta</span><span>recta</span></li><li><span>Peso</span><span>liviano, espaciado</span></li><li><span>Color</span><span>celeste</span></li><li><span>Movimiento</span><span>tick, paso a paso</span></li></ul>
+      <svg viewBox="0 0 200 46" id="essL"></svg></div>
+  </div>
+</header>
+
+<section class="block" id="noche">
+  <div class="k">Síntesis 1</div>
+  <h2>Sale la noche · con la esencia de cada mundo.</h2>
+  <p class="intro">El cielo ahora es <b style="color:var(--cy);font-weight:500">digital</b>: las capas se cortan en bloques de distinto largo, como una cadena o un registro de datos. La noche que sube es <b style="color:var(--cu);font-weight:500">analógica</b>: ondas continuas y redondas. Pasá el mouse por cada celda: izquierda Bass, derecha Layer.</p>
+  <div class="grid" data-mark="noche"></div>
+</section>
+
+<section class="block" id="onda">
+  <div class="k">Síntesis 2</div>
+  <h2>Onda en las capas · con la esencia de cada mundo.</h2>
+  <p class="intro">El pulso nace en el centro como <b style="color:var(--cu);font-weight:500">sonido continuo</b>; al viajar hacia el borde, las líneas se vuelven <b style="color:var(--cy);font-weight:500">bloques</b>. El sonido se convierte en dato a medida que se aleja.</p>
+  <div class="grid" data-mark="onda"></div>
+</section>
+
+<section class="closing" id="cierre">
+  <div><div class="k">Recomendación</div><h3 style="margin-top:20px">Sale la noche con T1 · como el sitio.</h3></div>
+  <div>
+    <p><b>T1</b> usa el par tipográfico que el sitio <b>ya tiene</b> en el home ("Bass" pesada en cobre, "LAYER" liviana y espaciada en celeste): la marca y el sitio hablan igual desde el primer día. Funciona en un color, porque la diferencia también está en el <b>peso</b>, no solo en el color.</p>
+    <p style="margin-top:18px"><b>T3</b> es la más expresiva (las letras de Bass bailan, las de Layer están cortadas en capas) y queda espectacular grande, pero en chico pierde los detalles: sirve para piezas grandes (afiche, tote, pantalla) más que como logo. <b>T2</b> pone cada nombre en su mundo, pero partir la palabra en dos renglones debilita "BassLayer" como una sola marca.</p>
+    <p style="margin-top:18px">Con esto ya se puede probar andando en el sitio real.</p>
+  </div>
+</section>
+
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
+let uid = 0;
+const R = 176, C = 200;
+const path = (pts) => "M" + pts.map((q) => q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" L");
+const ext = (y) => { const h = Math.sqrt(Math.max(0, R * R - (y - C) ** 2)); return [C - h, C + h]; };
+// Bloques de Layer: largos distintos por línea (determinístico), como un registro de datos.
+function dash(i) { const L = [64, 28, 96, 40, 18, 72, 48, 120, 32, 56]; let a = []; for (let k = 0; k < 8; k++) a.push(L[(i * 3 + k * 7) % L.length], 6); return a.join(" "); }
+// Franja limpia del horizonte según el tratamiento tipográfico.
+const BANDA = { t1: [-26, 26], t2: [-40, 44], t3: [-30, 30] };
+
+// ── Tipografía: tres tratamientos. Devuelven SVG dentro del viewBox 400.
+function tipo(t, { mono = null, bg = FONDO } = {}) {
+  const cb = mono || CU, cl = mono || CY;
+  if (t === "t1") // como el sitio: Bass pesada cobre + LAYER liviana espaciada celeste
+    return `<text x="200" y="214" text-anchor="middle" font-family="Geist"><tspan font-weight="800" font-size="42" letter-spacing="-1.6" fill="${cb}">Bass</tspan><tspan dx="6" font-weight="300" font-size="27" letter-spacing="5" fill="${cl}">LAYER</tspan></text>`;
+  if (t === "t2") // cada uno en su mundo: LAYER sobre el horizonte, Bass colgada debajo
+    return `<text x="200" y="193" text-anchor="middle" font-family="Geist" font-weight="300" font-size="24" letter-spacing="7" fill="${cl}">LAYER</text>
+      <line x1="118" x2="282" y1="203" y2="203" stroke="${mono || "rgba(237,234,228,.35)"}" stroke-width="1.2"/>
+      <text x="200" y="238" text-anchor="middle" font-family="Geist" font-weight="800" font-size="40" letter-spacing="-1.6" fill="${cb}">Bass</text>`;
+  // t3 · el nombre se comporta: Bass baila sobre una onda; Layer cortada en capas.
+  const id = "s" + uid++, s = 42, split = 200 - .12 * s;
+  const ondas = [-4, 6, -6, 4];
+  const bass = "Bass".split("").map((ch, i) => `<tspan dy="${i ? ondas[i] - ondas[i - 1] : ondas[0]}">${ch}</tspan>`).join("");
+  let rayas = ""; for (let y = 180; y < 222; y += 5.2) rayas += `<rect x="${split - 2}" y="${y}" width="180" height="1.7" fill="${bg}"/>`;
+  return `<text x="${split}" y="215" text-anchor="end" font-family="Geist" font-weight="800" font-size="${s}" letter-spacing="-1.6" fill="${cb}">${bass}</text>
+    <text x="${split}" y="215" text-anchor="start" font-family="Geist" font-weight="800" font-size="${s}" letter-spacing="-1.6" fill="${cl}">Layer</text>${rayas}`;
+}
+
+// ── 1 · Sale la noche: cielo digital (bloques celestes, puntas rectas) + noche analógica (ondas cobre, redondas).
+function noche(w = "", { mono = null, small = false, t: tp = "t1", rise = null, ph = 0, bg = FONDO } = {}) {
+  const r0 = rise ?? (w === "bass" ? 1 : w === "layer" ? 0 : .55);
+  const p = small ? 46 : 12, sw = p * .38, nr = 118, ncy = 360 - r0 * 118, id = "n" + uid++, [b0, b1] = BANDA[tp];
+  let cielo = "", sonido = "", i = 0;
+  for (let y = C - R + p * .5; y < C + R; y += p, i++) {
+    if (!small && y > C + b0 && y < C + b1) continue;
+    const [x0, x1] = ext(y); if (x1 - x0 < p) continue;
+    const pts = [];
+    for (let x = x0 + sw / 2; x <= x1 - sw / 2; x += 2) {
+      const d = Math.hypot(x - 200, y - ncy), inside = Math.max(0, Math.min(1, (nr - d) / 18));
+      pts.push([x, y + (small ? 0 : inside * p * .27 * Math.sin(x * .15 + ph))]);
+    }
+    const dp = path(pts);
+    cielo += `<path d="${dp}" stroke-dasharray="${small ? "none" : dash(i)}"/>`; sonido += `<path d="${dp}"/>`;
+  }
+  return `<svg viewBox="0 0 400 400">${mono ? "" : `<circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>`}
+    <defs><clipPath id="${id}"><circle cx="200" cy="${ncy}" r="${nr}"/></clipPath><mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="200" cy="${ncy}" r="${nr}" fill="#000"/></mask></defs>
+    <g fill="none" stroke="${mono || CY}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}m)" opacity="${w === "bass" && !mono ? .5 : 1}">${cielo}</g>
+    <g fill="none" stroke="${mono || CU}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id})" opacity="${w === "layer" && !mono ? .5 : 1}">${sonido}</g>
+    ${small ? "" : tipo(tp, { mono, bg })}</svg>`;
+}
+
+// ── 2 · Onda en las capas: el pulso nace continuo y cobre en el centro; hacia el borde se vuelve bloques celestes.
+function onda(w = "", { mono = null, small = false, t: tp = "t1", ph = 0, bg = FONDO } = {}) {
+  const A = w === "bass" ? 4.4 : w === "layer" ? .5 : 3.2, core = w === "bass" ? 132 : w === "layer" ? 70 : 104;
+  const p = small ? 46 : 12, sw = p * .38, id = "o" + uid++, [b0, b1] = BANDA[tp];
+  let s = "", i = 0;
+  for (let y = C - R + p * .5; y < C + R; y += p, i++) {
+    if (!small && y > C + b0 && y < C + b1) continue;
+    const [x0, x1] = ext(y); if (x1 - x0 < p) continue;
+    const pts = [];
+    for (let x = x0 + sw / 2; x <= x1 - sw / 2; x += 2) { const r = Math.hypot(x - 200, y - 200), fall = Math.max(0, 1 - r / R) ** .8; pts.push([x, y + (small ? 0 : A * fall * Math.sin(r * .2 - ph))]); }
+    s += `<path d="${path(pts)}" data-i="${i}"/>`;
+  }
+  const dashed = s.replace(/data-i="(\d+)"/g, (_, n) => `stroke-dasharray="${small ? "none" : dash(+n)}"`);
+  return `<svg viewBox="0 0 400 400">${mono ? "" : `<circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>`}
+    <defs><clipPath id="${id}"><circle cx="200" cy="200" r="${core}"/></clipPath><mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="200" cy="200" r="${core}" fill="#000"/></mask></defs>
+    <g fill="none" stroke="${mono || CY}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}m)">${dashed}</g>
+    <g fill="none" stroke="${mono || CU}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id})">${s}</g>
+    ${small ? "" : tipo(tp, { mono, bg })}</svg>`;
+}
+
+// Esencias (muestras de línea)
+(() => {
+  let d = "M6 23"; for (let x = 6; x <= 194; x += 2) d += ` L${x} ${(23 + 7 * Math.sin(x * .12)).toFixed(1)}`;
+  document.getElementById("essB").innerHTML = `<path d="${d}" fill="none" stroke="${CU}" stroke-width="6" stroke-linecap="round"/>`;
+  document.getElementById("essL").innerHTML = `<line x1="6" x2="194" y1="23" y2="23" stroke="${CY}" stroke-width="6" stroke-dasharray="${dash(2)}"/>`;
+})();
+
+const MK = { noche, onda };
+const TIPOS = [["t1", "T1 · Como el sitio", "Bass pesada en cobre + LAYER liviana y espaciada en celeste. El par que ya usa el home."], ["t2", "T2 · Cada uno en su mundo", "LAYER apoyada en el horizonte, en el cielo; Bass colgada abajo, en la noche."], ["t3", "T3 · El nombre se comporta", "Las letras de Bass bailan sobre una onda; las de Layer están cortadas en capas."]];
+document.querySelectorAll(".grid").forEach((g) => {
+  const m = g.dataset.mark;
+  let h = `<div class="corner"></div>` + TIPOS.map(([, n, d]) => `<div class="head"><b>${n}</b><span>${d}</span></div>`).join("");
+  h += `<div class="rowl"><b>Sobre negro</b><span class="k">en vivo · pasá el mouse</span></div>` + TIPOS.map(([t]) => `<div class="cell live" data-m="${m}" data-t="${t}"><div class="mk">${MK[m]("", { t })}</div><span class="lab">◂ Bass · Layer ▸</span></div>`).join("");
+  h += `<div class="rowl"><b>Un color</b><span class="k">sello, grabado, papel</span></div>` + TIPOS.map(([t]) => `<div class="cell paper"><div class="mk">${MK[m]("", { t, mono: TINTA, bg: PAPEL })}</div><span class="lab">Un color</span></div>`).join("");
+  h += `<div class="rowl"><b>Chico</b><span class="k">64 · 32 · 16 px</span></div>` + TIPOS.map(([t]) => `<div class="smalls">${[64, 32, 16].map((s) => `<span class="mk" style="width:${s}px">${MK[m]("", { t, small: s <= 32 })}</span>`).join("")}</div>`).join("");
+  g.innerHTML = h;
+});
+
+// En vivo: cada celda reacciona y se mueve (la noche sube/baja; el pulso late).
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cells = [...document.querySelectorAll(".cell.live")].map((c) => {
+  const st = { c, m: c.dataset.m, t: c.dataset.t, el: c.querySelector(".mk"), w: "", rise: .55 };
+  c.addEventListener("mousemove", (e) => { const r = c.getBoundingClientRect(); st.w = e.clientX - r.left < r.width / 2 ? "bass" : "layer"; c.dataset.w = st.w; });
+  c.addEventListener("mouseleave", () => { st.w = ""; c.dataset.w = ""; });
+  return st;
+});
+const t0 = performance.now();
+function tick(now) {
+  const ph = reduce ? 0 : (now - t0) / 700;
+  for (const st of cells) {
+    const r = st.c.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
+    if (st.m === "noche") { const target = st.w === "bass" ? 1 : st.w === "layer" ? 0 : .55; st.rise += (target - st.rise) * .07; st.el.innerHTML = noche(st.w, { t: st.t, rise: st.rise, ph }); }
+    else st.el.innerHTML = onda(st.w, { t: st.t, ph });
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
