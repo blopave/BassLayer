@@ -154,7 +154,7 @@ function eclipse(w = "bass", { mono = null } = {}) {
     <defs><mask id="${id}" maskUnits="userSpaceOnUse" x="-60" y="-30" width="520" height="460"><rect x="-60" y="-30" width="520" height="460" fill="#fff"/><circle cx="200" cy="200" r="187" fill="#000"/></mask></defs>
     <circle class="back" cx="${200 + dx}" cy="200" r="180" fill="${b}" ${bs} mask="url(#${id})"/>
     <circle class="front" cx="200" cy="200" r="180" fill="${f}"/>
-    <text class="wm" x="200" y="217" text-anchor="middle" font-family="Geist" font-weight="800" font-size="50" letter-spacing="-2" fill="${mono ? "#070707" : TINTA}">BassLayer</text>
+    <text class="wm" x="200" y="217" text-anchor="middle" font-family="Geist" font-weight="800" font-size="50" letter-spacing="-2" fill="${mono ? PAPEL : TINTA}">BassLayer</text>
   </svg>`;
 }
 // ── 02 · Horizonte sonoro: una línea que empieza como onda y termina como curva de precio.
@@ -171,9 +171,9 @@ function horizonte(w = "", { mono = null } = {}) {
   const bot = `M0 400 H400 V${L[L.length - 1][1]} ` + [...L].reverse().map((q) => "L" + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ") + ` L0 ${L[0][1]} Z`;
   const dimT = w === "layer" ? .28 : 1, dimB = w === "bass" ? .28 : 1;
   if (mono) return `<svg viewBox="0 0 400 400" class="hor"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
-    <circle cx="200" cy="200" r="180" fill="${mono}"/><path d="${line}" fill="none" stroke="#070707" stroke-width="9" clip-path="url(#${id})"/>
-    <text x="200" y="168" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="#070707">Bass</text>
-    <text x="200" y="300" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="#070707">Layer</text></svg>`;
+    <circle cx="200" cy="200" r="180" fill="${mono}"/><path d="${line}" fill="none" stroke="${PAPEL}" stroke-width="9" clip-path="url(#${id})"/>
+    <text x="200" y="168" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="${PAPEL}">Bass</text>
+    <text x="200" y="300" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="${PAPEL}">Layer</text></svg>`;
   return `<svg viewBox="0 0 400 400" class="hor" data-w="${w}"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
     <g clip-path="url(#${id})"><path class="zone" d="${top}" fill="${CU}" opacity="${dimT}"/><path class="zone" d="${bot}" fill="${CY}" opacity="${dimB}"/></g>
     <text class="w" x="200" y="160" text-anchor="middle" font-family="Geist" font-weight="800" font-size="64" letter-spacing="-2.6" fill="${TINTA}">Bass</text>
@@ -182,10 +182,10 @@ function horizonte(w = "", { mono = null } = {}) {
 // ── 03 · Disco y capa: el disco (la noche) atravesado por una capa (el mercado) con el nombre.
 function disco(w = "", { mono = null } = {}) {
   const dd = w === "layer" ? .32 : 1, bd = w === "bass" ? .32 : 1;
-  const disc = mono || CU, band = mono || CY, txt = mono ? "#070707" : TINTA;
+  const disc = mono || CU, band = mono || CY, txt = mono ? PAPEL : TINTA;
   return `<svg viewBox="0 0 400 400" class="dyc" data-w="${w}">
     <circle class="disc" cx="200" cy="200" r="168" fill="${disc}" opacity="${dd}"/>
-    ${mono ? `<rect x="0" y="160" width="400" height="80" fill="#070707"/>` : ""}
+    ${mono ? `<rect x="0" y="158" width="400" height="84" fill="${PAPEL}"/>` : ""}
     <rect class="band" x="${mono ? 6 : 0}" y="${mono ? 166 : 162}" width="${mono ? 388 : 400}" height="${mono ? 68 : 76}" rx="3" fill="${band}" opacity="${bd}"/>
     <text class="w" x="200" y="${mono ? 216 : 218}" text-anchor="middle" font-family="Geist" font-weight="800" font-size="50" letter-spacing="-2" fill="${txt}">BassLayer</text></svg>`;
 }
@@ -197,11 +197,11 @@ function interferencia(w = "", { mono = null, step = 10 } = {}) {
   for (let y = 20 + step / 2; y < 380; y += step) lines += `<line x1="0" x2="400" y1="${y}" y2="${y}"/>`;
   const ro = w === "layer" ? .12 : 1, lo = w === "bass" ? .12 : 1, sw = step * .36;
   return `<svg viewBox="0 0 400 400" class="moi" data-w="${w}"><defs><clipPath id="${id}"><circle cx="200" cy="200" r="180"/></clipPath></defs>
-    <circle cx="200" cy="200" r="180" fill="${mono ? "#070707" : "#0E0E0F"}"/>
+    <circle cx="200" cy="200" r="180" fill="${mono ? "none" : "#0E0E0F"}"/>
     <g clip-path="url(#${id})"><g class="rings" stroke="${mono || CU}" stroke-width="${sw}" opacity="${ro}">${rings}</g>
-    <g class="lines" stroke="${mono || CY}" stroke-width="${sw}" opacity="${lo}" style="mix-blend-mode:screen">${lines}</g></g>
-    <circle cx="200" cy="200" r="64" fill="${mono ? "#070707" : TINTA}"/>
-    <text x="200" y="208" text-anchor="middle" font-family="Geist" font-weight="800" font-size="25" letter-spacing="-.8" fill="${PAPEL}">BassLayer</text>
+    <g class="lines" stroke="${mono || CY}" stroke-width="${sw}" opacity="${lo}" style="${mono ? "" : "mix-blend-mode:screen"}">${lines}</g></g>
+    <circle cx="200" cy="200" r="64" fill="${mono ? PAPEL : TINTA}" stroke="${mono || "none"}" stroke-width="${mono ? 8 : 0}"/>
+    <text x="200" y="208" text-anchor="middle" font-family="Geist" font-weight="800" font-size="25" letter-spacing="-.8" fill="${mono || PAPEL}">BassLayer</text>
     <circle cx="200" cy="200" r="180" fill="none" stroke="${mono ? mono : "rgba(237,234,228,.14)"}" stroke-width="2"/></svg>`;
 }
 const MARKS = { eclipse, horizonte, disco, interferencia };
