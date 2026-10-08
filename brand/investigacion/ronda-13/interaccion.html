@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interacción · ronda 13</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#060606; --hair:rgba(237,234,228,.1); --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.36); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; overflow:hidden; }
+  .bar { flex:none; display:flex; align-items:center; gap:10px; height:58px; padding:0 20px; border-bottom:1px solid var(--hair); background:#0c0c0d; overflow-x:auto; }
+  .bar .t { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--sec); white-space:nowrap; margin-right:6px; }
+  .bar .t b { color:var(--cu); font-weight:500; }
+  .bar button { font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--sec); background:none; border:1px solid var(--hair); border-radius:999px; padding:8px 14px; cursor:pointer; white-space:nowrap; }
+  .bar button:hover { color:var(--ink); border-color:var(--ter); }
+  .bar button.on { color:#140d08; background:var(--cu); border-color:var(--cu); }
+  .bar .sep { width:1px; height:24px; background:var(--hair); flex:none; }
+  main { flex:1; display:grid; grid-template-columns:1fr 380px; min-height:0; }
+  .wrapStage { position:relative; display:flex; align-items:center; justify-content:center; min-height:0; }
+  .stage { position:relative; width:100%; height:100%; background:radial-gradient(70% 60% at 50% 52%, #121214, #050505 72%); overflow:hidden; cursor:pointer; user-select:none; }
+  .stage.phone { width:min(390px, 46vh); height:min(844px, 100%); max-height:calc(100vh - 100px); aspect-ratio:390/844; border-radius:36px; border:1px solid var(--hair); box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  .stage .tl, .stage .tr { position:absolute; top:24px; font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); transition:color .5s; display:flex; align-items:center; gap:8px; }
+  .stage .tl { left:26px; } .stage .tr { right:26px; }
+  .stage .tl i, .stage .tr i { width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .stage .tl i { background:var(--cu); } .stage .tr i { background:var(--cy); }
+  .stage[data-w="bass"] .tl { color:var(--cu); } .stage[data-w="layer"] .tr { color:var(--cy); }
+  .stage .hint { position:absolute; left:0; right:0; bottom:9%; text-align:center; font-family:var(--mono); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--ter); }
+  .stage .mk { position:absolute; left:50%; top:50%; width:min(52vh, 62%); aspect-ratio:1; transform:translate(-50%,-52%); transition:transform .9s cubic-bezier(.7,0,.2,1), opacity .9s; }
+  .stage.phone .mk { width:78%; }
+  .stage .mk svg { width:100%; height:100%; display:block; }
+  .stage.entering .mk { transform:translate(-50%,-52%) scale(7); opacity:0; }
+  .wash { position:absolute; inset:0; opacity:0; transition:opacity .7s; pointer-events:none; }
+  .stage.entering .wash { opacity:1; }
+  .toast { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:clamp(28px, 4vw, 54px); font-weight:800; letter-spacing:-.04em; opacity:0; transition:opacity .5s .5s; pointer-events:none; text-align:center; }
+  .stage.entering .toast { opacity:1; }
+  .toast small { display:block; font-family:var(--mono); font-size:11px; font-weight:400; letter-spacing:.2em; text-transform:uppercase; color:rgba(11,11,11,.6); margin-top:10px; }
+  aside { border-left:1px solid var(--hair); padding:32px 28px; overflow:auto; display:flex; flex-direction:column; gap:22px; }
+  aside .n { font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--cu); }
+  aside h2 { font-size:38px; font-weight:800; letter-spacing:-.04em; line-height:.98; margin-top:10px; }
+  aside p { font-size:15px; line-height:1.6; color:var(--sec); }
+  aside p b { color:var(--ink); font-weight:500; }
+  .how { border-top:1px solid var(--hair); }
+  .how div { display:grid; grid-template-columns:96px 1fr; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair); font-size:13.5px; line-height:1.5; color:var(--sec); }
+  .how span:first-child { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); padding-top:2px; }
+  .how .b { color:var(--cu); } .how .l { color:var(--cy); }
+  .refs { font-size:12.5px; line-height:1.55; color:var(--ter); }
+  .inv { border-top:1px solid var(--hair); padding-top:18px; }
+  .inv summary { cursor:pointer; font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); }
+  .inv ul { list-style:none; margin-top:14px; display:flex; flex-direction:column; gap:12px; }
+  .inv li { font-size:13px; line-height:1.55; color:var(--sec); }
+  .inv li b { color:var(--ink); font-weight:500; }
+  .inv a { color:var(--ter); font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-decoration:none; border-bottom:1px solid var(--hair); }
+  .inv .m { color:var(--cu); } .inv .k2 { color:var(--cy); }
+  @media (max-width:980px) { main { grid-template-columns:1fr; grid-template-rows:62vh auto; } body { overflow:auto; } aside { border-left:0; border-top:1px solid var(--hair); } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="t"><b>Ronda 13</b> · interacción</span>
+  <button data-c="a" class="on">A · La misma barra</button><button data-c="b">B · Ecualizador y profundidad</button><button data-c="c">C · Vinilo sobre el mercado</button>
+  <span class="sep"></span>
+  <button id="phone">📱 Ver en celular</button>
+  <button id="sound">♪ Sonido: apagado</button>
+</div>
+<main>
+  <div class="wrapStage">
+    <div class="stage" id="stage">
+      <div class="wash" id="wash"></div>
+      <span class="tl"><i></i>Bass · fiestas, shows y festivales</span>
+      <span class="tr">Blockchain · cripto · mercados · Layer<i></i></span>
+      <div class="mk" id="mk"></div>
+      <div class="toast" id="toast"></div>
+      <span class="hint" id="hint">◂ Elegí un mundo ▸</span>
+    </div>
+  </div>
+  <aside id="aside"></aside>
+</main>
+
+<script>
+const CU = [196, 144, 112], CY = [108, 184, 200], HUESO = "#EDEAE4";
+const hex = (c) => `rgb(${c.map((v) => Math.round(v)).join(",")})`;
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = (t) => t * t * (3 - 2 * t);
+const R = 176, C = 200;
+const nombre = (y) => `<text x="200" y="${y}" text-anchor="middle" font-family="Geist"><tspan font-weight="800" font-size="40" letter-spacing="-1.5" fill="${hex(CU)}">Bass</tspan><tspan dx="6" font-weight="300" font-size="26" letter-spacing="5" fill="${hex(CY)}">LAYER</tspan></text>`;
+const marco = (inner) => `<svg viewBox="0 0 400 400"><defs><clipPath id="fr"><circle cx="200" cy="200" r="${R}"/></clipPath></defs><circle cx="200" cy="200" r="${R + 6}" fill="#0E0E0F"/><g clip-path="url(#fr)">${inner}</g></svg>`;
+
+// Serie de precio (paseo determinístico) para velas y curvas.
+const PRECIO = (() => { let p = 100, s = 7, a = []; for (let i = 0; i < 400; i++) { s = (s * 9301 + 49297) % 233280; p += (s / 233280 - .47) * 6; a.push(p); } return a; })();
+
+// ── A · La misma barra: barras de audio (cobre, espejadas, redondas) que se vuelven velas (celeste, cuerpo + mecha, rectas).
+function conceptoA(st) {
+  const N = 27, x0 = 46, x1 = 354, cy = 168, w = 7.4;
+  const splitX = x0 + (x1 - x0) * st.split;
+  const k0 = Math.floor(st.tick);
+  let s = `<line x1="0" x2="400" y1="${cy}" y2="${cy}" stroke="rgba(237,234,228,.14)" stroke-width="1"/>`;
+  // rango de precio de las velas visibles
+  const ps = []; for (let i = 0; i <= N + 1; i++) ps.push(PRECIO[(k0 + i) % PRECIO.length]);
+  const pMin = Math.min(...ps) - 3, pMax = Math.max(...ps) + 3, Y = (p) => cy + 78 - ((p - pMin) / (pMax - pMin)) * 156;
+  for (let i = 0; i < N; i++) {
+    const x = x0 + i * ((x1 - x0) / (N - 1));
+    const t = ease(clamp((x - splitX) / 60 + .5));
+    const env = .35 + .65 * Math.sin(Math.PI * i / (N - 1));
+    const v = Math.abs(Math.sin(i * 1.7 + st.time * st.speed) * .6 + Math.sin(i * .63 + st.time * 1.3 * st.speed) * .4);
+    const a = 10 + 74 * env * v * st.gain;
+    const o = PRECIO[(k0 + i) % PRECIO.length], c = PRECIO[(k0 + i + 1) % PRECIO.length];
+    const up = c >= o, bt = Y(Math.max(o, c)), bb = Math.max(Y(Math.min(o, c)), bt + 3);
+    const hi = Y(Math.max(o, c) + 1.6 + (i % 3)), lo = Y(Math.min(o, c) - 1.4 - (i % 2));
+    const top = cy - a + (bt - (cy - a)) * t, bot = cy + a + (bb - (cy + a)) * t;
+    const col = hex(mix(CU, CY, t)), rx = (w / 2) * (1 - t);
+    if (t > .02) s += `<line x1="${x}" x2="${x}" y1="${hi}" y2="${lo}" stroke="${col}" stroke-width="1.6" opacity="${t}"/>`;
+    const hueca = !up && t > .5;
+    s += `<rect x="${x - w / 2}" y="${top}" width="${w}" height="${Math.max(2, bot - top)}" rx="${rx}" fill="${hueca ? "#0E0E0F" : col}" stroke="${col}" stroke-width="${hueca ? 1.6 : 0}"/>`;
+  }
+  return marco(s + nombre(306));
+}
+
+// ── B · Ecualizador y profundidad: arriba el valle en escalones del libro de órdenes (capas celestes);
+//    abajo la montaña del ecualizador (barras cobre que rebotan). Encajan.
+function conceptoB(st) {
+  const hy = 214, band = 24;
+  let s = "";
+  // Libro de órdenes: compras a la izquierda, ventas a la derecha. Escalones que crecen hacia los bordes.
+  const pasos = 9, bid = [], ask = [];
+  for (let k = 0; k < pasos; k++) { const j = Math.floor(st.tick) + k; bid.push(18 + k * 13 + ((j * 7) % 5) * 2.4 * st.flick); ask.push(16 + k * 14 + ((j * 11) % 5) * 2.4 * st.flick); }
+  const prof = (x) => { const d = Math.abs(x - 200), k = Math.min(pasos - 1, Math.floor(d / (176 / pasos))); return x < 200 ? bid[k] : ask[k]; };
+  for (let y = hy - band - 5; y > 20; y -= 10) {
+    const h = hy - band - y; let segs = [], cur = null;
+    for (let x = 20; x <= 380; x += 2) { const dentro = prof(x) * 1.25 >= h && Math.abs(x - 200) > 4; if (dentro && cur === null) cur = x; if (!dentro && cur !== null) { segs.push([cur, x]); cur = null; } }
+    if (cur !== null) segs.push([cur, 380]);
+    for (const [a, b] of segs) s += `<line x1="${a}" x2="${b}" y1="${y}" y2="${y}" stroke="${hex(CY)}" stroke-width="4" opacity="${st.dimL}"/>`;
+  }
+  // Ecualizador: montaña, barras redondas que rebotan.
+  const N = 23;
+  for (let i = 0; i < N; i++) {
+    const x = 52 + i * (296 / (N - 1)), env = Math.sin(Math.PI * (i + .5) / N) ** 1.4;
+    const v = .45 + .55 * Math.abs(Math.sin(i * 2.1 + st.time * 2.2 * st.speed) * .7 + Math.sin(i * .9 + st.time * 3.1 * st.speed) * .3);
+    const h = 14 + 150 * env * v * st.gain;
+    s += `<rect x="${x - 4.2}" y="${hy + band}" width="8.4" height="${h}" rx="4.2" fill="${hex(CU)}" opacity="${st.dimB}"/>`;
+  }
+  return marco(s + `<line x1="40" x2="360" y1="${hy}" y2="${hy}" stroke="rgba(237,234,228,.0)"/>` + nombre(hy + 14));
+}
+
+// ── C · Vinilo sobre el mercado: un vinilo que sale como un sol detrás de la línea de precio.
+function conceptoC(st) {
+  const k0 = Math.floor(st.tick), pts = [];
+  const vis = []; for (let i = 0; i < 60; i++) vis.push(PRECIO[(k0 + i) % PRECIO.length]);
+  const mn = Math.min(...vis), mx = Math.max(...vis);
+  for (let i = 0; i < 60; i++) pts.push([16 + i * (368 / 59), 262 - ((vis[i] - mn) / (mx - mn)) * 70]);
+  const line = "M" + pts.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+  const above = line + " L400 0 L0 0 Z", below = line + " L400 400 L0 400 Z";
+  const vy = 300 - st.rise * 120, vr = 112;
+  let surcos = ""; for (let r = 46; r < vr; r += 4.4) surcos += `<circle cx="200" cy="${vy}" r="${r}" fill="none" stroke="rgba(196,144,112,.34)" stroke-width="1.1"/>`;
+  const ang = st.spin % 360;
+  const vinilo = `<g><circle cx="200" cy="${vy}" r="${vr}" fill="#141414"/>${surcos}
+    <g transform="rotate(${ang} 200 ${vy})"><path d="M200 ${vy} L${200 + vr} ${vy - 18} A${vr} ${vr} 0 0 1 ${200 + vr} ${vy + 18} Z" fill="rgba(237,234,228,.07)"/><path d="M200 ${vy} L${200 - vr} ${vy + 18} A${vr} ${vr} 0 0 1 ${200 - vr} ${vy - 18} Z" fill="rgba(237,234,228,.05)"/></g>
+    <circle cx="200" cy="${vy}" r="38" fill="${hex(CU)}"/><circle cx="200" cy="${vy}" r="3.4" fill="#0E0E0F"/>
+    <g transform="rotate(${ang} 200 ${vy})"><rect x="180" y="${vy - 16}" width="40" height="2" fill="rgba(11,11,11,.35)"/></g></g>`;
+  const last = pts[pts.length - 1];
+  return marco(`<defs><clipPath id="arriba"><path d="${above}"/></clipPath><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hex(CY)}" stop-opacity=".22"/><stop offset="1" stop-color="${hex(CY)}" stop-opacity="0"/></linearGradient></defs>
+    <g clip-path="url(#arriba)" opacity="${st.dimB}">${vinilo}</g>
+    <path d="${below}" fill="url(#area)" opacity="${st.dimL}"/>
+    <path d="${line}" fill="none" stroke="${hex(CY)}" stroke-width="4.4" stroke-linejoin="round" stroke-linecap="round" opacity="${st.dimL}"/>
+    <circle cx="${last[0] - 8}" cy="${last[1]}" r="${5 + 2 * Math.abs(Math.sin(st.time * 3))}" fill="${hex(CY)}" opacity="${st.dimL}"/>` + nombre(338));
+}
+
+const CONC = {
+  a: { f: conceptoA, n: "A", t: "La misma barra", idea: "Una muestra de audio y una vela de mercado son <b>la misma forma: una barra vertical</b>. A la izquierda, barras de audio <b>espejadas y redondas</b> (lo que ves en cualquier reproductor); a la derecha, <b>velas japonesas</b> con cuerpo y mecha. En el medio, una se transforma en la otra.",
+    how: [["Reposo", "Mitad audio, mitad velas. El cambio cae en el centro."], ["Bass", "<span class='b'>El audio avanza</span> y suena: casi todas las barras son música y laten más fuerte."], ["Layer", "<span class='l'>Las velas avanzan</span>: casi todo es mercado y cada medio segundo entra una vela nueva."], ["Tocar", "Entrás al mundo: la ficha se abre y te lleva."]] },
+  b: { f: conceptoB, n: "B", t: "Ecualizador y profundidad", idea: "Abajo, <b>un ecualizador</b>: la montaña de barras que rebota con la música. Arriba, <b>el gráfico de profundidad del libro de órdenes</b>: compras y ventas en escalones, un valle hecho de capas. La montaña y el valle <b>encajan</b> y llenan el círculo.",
+    how: [["Reposo", "Los dos se mueven despacio."], ["Bass", "<span class='b'>El ecualizador rebota</span> fuerte; el libro se apaga."], ["Layer", "<span class='l'>El libro de órdenes se mueve</span>: los escalones cambian como en un exchange; el ecualizador se apaga."], ["Tocar", "Entrás al mundo."]] },
+  c: { f: conceptoC, n: "C", t: "Vinilo sobre el mercado", idea: "<b>Un vinilo sale como un sol</b> detrás de <b>la línea de precio</b>, que es el horizonte. La música es el sol de la noche; el mercado, el paisaje. Los dos signos más reconocibles de cada mundo en una sola escena.",
+    how: [["Reposo", "El vinilo asoma a medias y gira despacio."], ["Bass", "<span class='b'>El vinilo sube y gira</span> como en una bandeja."], ["Layer", "<span class='l'>El vinilo se pone</span> y la línea de precio avanza, con su punto de hoy."], ["Tocar", "Entrás al mundo."]] },
+};
+
+const INV = `<details class="inv" open><summary>Investigación · por qué estos signos</summary><ul>
+  <li><b class="m">Música</b> · El analizador de espectro muestra <b>niveles por banda de frecuencia "en vez de una onda"</b>; la fila de sliders de un ecualizador gráfico dibuja por sí sola una curva. <a href="https://en.wikipedia.org/wiki/Spectrum_analyzer" target="_blank" rel="noopener">Spectrum analyzer</a> · <a href="https://en.wikipedia.org/wiki/Equalization_(audio)" target="_blank" rel="noopener">Equalization</a></li>
+  <li><b class="m">Música</b> · En un disco, el sonido está grabado en <b>un surco en espiral</b> que va del borde al centro. <a href="https://en.wikipedia.org/wiki/Phonograph_record" target="_blank" rel="noopener">Phonograph record</a></li>
+  <li><b class="k2">Mercado</b> · En una vela, <b>el cuerpo es apertura y cierre</b>; las mechas, el máximo y el mínimo. Hueca o verde: subió; rellena o roja: bajó. Su origen japonés suele atribuirse a Munehisa Homma, aunque la atribución está discutida. <a href="https://en.wikipedia.org/wiki/Candlestick_chart" target="_blank" rel="noopener">Candlestick chart</a></li>
+  <li><b class="k2">Mercado</b> · El gráfico de profundidad muestra el volumen acumulado por precio: <b>compras a la izquierda, ventas a la derecha, en escalones</b>, y el spread en el medio. <a href="https://en.wikipedia.org/wiki/Order_book" target="_blank" rel="noopener">Order book</a></li>
+  <li><b class="k2">Mercado</b> · El ticker (1867) <b>se llama así por el sonido</b> que hacía al imprimir: el mercado nació sonando. <a href="https://en.wikipedia.org/wiki/Ticker_tape" target="_blank" rel="noopener">Ticker tape</a></li>
+  <li><b>El puente</b> · La tapa de Unknown Pleasures (Saville, 1979) es un gráfico de datos científicos, pulsos de radio de un púlsar, que se volvió un ícono de la música. Precedente directo de <b>dato = música</b>. <a href="https://en.wikipedia.org/wiki/Unknown_Pleasures" target="_blank" rel="noopener">Unknown Pleasures</a></li>
+  <li><b>Lo que rima</b> · Velas y barras de audio comparten la silueta de una fila de verticales sobre un eje de tiempo (A). El ecualizador y la profundidad comparten ejes, magnitud contra frecuencia o precio (B); la forma de valle es una composición nuestra, no un dato.</li>
+</ul></details>`;
+let cur = "a", w = "", entering = false;
+const st = { split: .5, time: 0, tick: 0, speed: 1, gain: 1, dimL: 1, dimB: 1, flick: 1, rise: .5, spin: 0 };
+const stage = document.getElementById("stage"), mk = document.getElementById("mk");
+function pintaAside() {
+  const c = CONC[cur];
+  document.getElementById("aside").innerHTML = `<div><div class="n">${c.n} / C</div><h2>${c.t}</h2></div><p>${c.idea}</p>
+    <div class="how">${c.how.map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join("")}</div>
+    ${INV}<p class="refs">Probalo: pasá el mouse por la izquierda (Bass) y la derecha (Layer), y tocá para entrar. Con "Sonido" encendido, Bass suena a cuatro tiempos y Layer hace tic con cada vela.</p>`;
+}
+document.querySelectorAll("[data-c]").forEach((b) => b.onclick = () => { cur = b.dataset.c; document.querySelectorAll("[data-c]").forEach((x) => x.classList.toggle("on", x === b)); pintaAside(); });
+document.getElementById("phone").onclick = (e) => { stage.classList.toggle("phone"); e.target.classList.toggle("on"); document.getElementById("hint").textContent = stage.classList.contains("phone") ? "◂ Tocá un mundo ▸" : "◂ Elegí un mundo ▸"; };
+const lado = (e) => { const r = stage.getBoundingClientRect(); return (e.clientX ?? e.touches?.[0]?.clientX) - r.left < r.width / 2 ? "bass" : "layer"; };
+stage.addEventListener("mousemove", (e) => { if (!entering) { w = lado(e); stage.dataset.w = w; } });
+stage.addEventListener("mouseleave", () => { if (!entering) { w = ""; stage.dataset.w = ""; } });
+stage.addEventListener("click", (e) => {
+  if (entering) return; w = lado(e); stage.dataset.w = w; entering = true;
+  const bass = w === "bass";
+  document.getElementById("wash").style.background = bass ? "radial-gradient(circle at 50% 50%, #d6a585, #C49070 60%)" : "radial-gradient(circle at 50% 50%, #8fd0dc, #6CB8C8 60%)";
+  document.getElementById("toast").innerHTML = `<span style="color:#0b0b0b">${bass ? "Bass" : "LAYER"}</span><small>${bass ? "La agenda de la noche" : "Cripto y mercados"}</small>`;
+  stage.classList.add("entering");
+  setTimeout(() => { stage.classList.remove("entering"); entering = false; w = ""; stage.dataset.w = ""; }, 2300);
+});
+
+// ── Sonido (opcional, con gesto): bombo a 124 bpm en Bass; tic por vela en Layer.
+let ac = null, sonido = false, nextBeat = 0, lastTick = 0;
+document.getElementById("sound").onclick = (e) => {
+  sonido = !sonido; e.target.textContent = sonido ? "♪ Sonido: encendido" : "♪ Sonido: apagado"; e.target.classList.toggle("on", sonido);
+  if (sonido && !ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { sonido = false; } }
+  if (ac && ac.state === "suspended") ac.resume();
+};
+function bombo(t) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + .16); g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.001, t + .32); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .34); }
+function tic(t) { const o = ac.createOscillator(), g = ac.createGain(); o.type = "square"; o.frequency.value = 1760; g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + .05); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .06); }
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let prev = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - prev) / 1000); prev = now;
+  const tgt = w === "bass" ? { split: .9, speed: 1.6, gain: 1.15, dimL: .35, dimB: 1, flick: .3, rise: 1, spinV: 200 }
+    : w === "layer" ? { split: .1, speed: .5, gain: .6, dimL: 1, dimB: .35, flick: 1.4, rise: 0, spinV: 20 }
+    : { split: .5, speed: 1, gain: .9, dimL: 1, dimB: 1, flick: .8, rise: .5, spinV: 60 };
+  for (const k of ["split", "speed", "gain", "dimL", "dimB", "flick", "rise"]) st[k] += (tgt[k] - st[k]) * Math.min(1, dt * 4);
+  if (!reduce) { st.time += dt; st.spin += tgt.spinV * dt; st.tick += dt * (w === "layer" ? 2 : .35); }
+  mk.innerHTML = CONC[cur].f(st);
+  if (sonido && ac) {
+    if (w === "bass" && ac.currentTime >= nextBeat - .05) { nextBeat = Math.max(nextBeat, ac.currentTime) + 60 / 124; bombo(nextBeat); }
+    if (w === "layer" && Math.floor(st.tick) !== lastTick) { lastTick = Math.floor(st.tick); tic(ac.currentTime); }
+  }
+  requestAnimationFrame(frame);
+}
+pintaAside();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
