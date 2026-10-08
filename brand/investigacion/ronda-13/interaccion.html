@@ -65,6 +65,8 @@
   <span class="sep"></span>
   <button id="phone">📱 Ver en celular</button>
   <button id="sound">♪ Sonido: apagado</button>
+  <span class="sep"></span>
+  <span class="t">Nombre</span><button data-n="actual">Hoy</button><button data-n="igualada" class="on">Igualada</button><button data-n="ancho">Mismo ancho</button><button data-n="peso">Mismo peso</button>
 </div>
 <main>
   <div class="wrapStage">
@@ -87,7 +89,41 @@ const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const ease = (t) => t * t * (3 - 2 * t);
 const R = 176, C = 200;
-const nombre = (y) => `<text x="200" y="${y}" text-anchor="middle" font-family="Geist"><tspan font-weight="800" font-size="40" letter-spacing="-1.5" fill="${hex(CU)}">Bass</tspan><tspan dx="6" font-weight="300" font-size="26" letter-spacing="5" fill="${hex(CY)}">LAYER</tspan></text>`;
+// ── El nombre. Cuatro maneras de equilibrar "Bass" y "LAYER", medidas con la fuente real (no a ojo).
+//    actual: como el home hoy · igualada: misma altura de mayúscula y LAYER con más peso
+//    ancho: las dos palabras miden exactamente lo mismo · peso: misma letra y grosor, cambia solo el color.
+let NOMBRE = "igualada";
+const TIPOS = {
+  actual:   { b: [800, 40, -1.5], l: [300, 26, 5, "LAYER"] },
+  igualada: { b: [800, 38, -1.4], l: [560, 38, 2.2, "LAYER"] },
+  ancho:    { b: [800, 40, -1.5], l: [560, null, null, "LAYER"] },
+  peso:     { b: [700, 40, -1.4], l: [700, 40, -1.4, "Layer"] },
+};
+const medidor = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+medidor.setAttribute("style", "position:absolute;left:-9999px;top:0;width:400px;height:100px");
+document.body.appendChild(medidor);
+function ancho(txt, peso, size, ls) {
+  medidor.innerHTML = `<text font-family="Geist" font-weight="${peso}" font-size="${size}" letter-spacing="${ls}">${txt}</text>`;
+  // El espaciado se suma también después de la última letra: se descuenta para medir la palabra óptica.
+  return medidor.firstChild.getComputedTextLength() - ls;
+}
+const CACHE = {};
+function metrica(modo) {
+  if (CACHE[modo]) return CACHE[modo];
+  const T = TIPOS[modo], [bw, bs, bl] = T.b;
+  let [lw, ls, ll, lt] = T.l;
+  const wb = ancho("Bass", bw, bs, bl);
+  if (modo === "ancho") { // busca el cuerpo de LAYER que mide lo mismo que Bass (espaciado proporcional al cuerpo)
+    let lo = 10, hi = 60; for (let k = 0; k < 18; k++) { const m = (lo + hi) / 2; ancho(lt, lw, m, m * .07) > wb ? (hi = m) : (lo = m); } ls = lo; ll = lo * .07;
+  }
+  const wl = ancho(lt, lw, ls, ll), gap = Math.max(bs, ls) * .2;
+  return (CACHE[modo] = { bw, bs, bl, lw, ls, ll, lt, wb, wl, gap });
+}
+function nombre(y) {
+  const M = metrica(NOMBRE), x0 = 200 - (M.wb + M.gap + M.wl) / 2;
+  return `<text x="${x0}" y="${y}" font-family="Geist" font-weight="${M.bw}" font-size="${M.bs}" letter-spacing="${M.bl}" fill="${hex(CU)}">Bass</text>
+    <text x="${x0 + M.wb + M.gap}" y="${y}" font-family="Geist" font-weight="${M.lw}" font-size="${M.ls}" letter-spacing="${M.ll}" fill="${hex(CY)}">${M.lt}</text>`;
+}
 const marco = (inner) => `<svg viewBox="0 0 400 400"><defs><clipPath id="fr"><circle cx="200" cy="200" r="${R}"/></clipPath></defs><circle cx="200" cy="200" r="${R + 6}" fill="#0E0E0F"/><g clip-path="url(#fr)">${inner}</g></svg>`;
 
 // Serie de precio (paseo determinístico) para velas y curvas.
@@ -188,12 +224,14 @@ const INV = `<details class="inv" open><summary>Investigación · por qué estos
   <li><b>Lo que rima</b> · Velas y barras de audio comparten la silueta de una fila de verticales sobre un eje de tiempo (A). El ecualizador y la profundidad comparten ejes, magnitud contra frecuencia o precio (B); la forma de valle es una composición nuestra, no un dato.</li>
 </ul></details>`;
 let cur = "a", w = "", entering = false;
+document.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => { NOMBRE = b.dataset.n; document.querySelectorAll("[data-n]").forEach((x) => x.classList.toggle("on", x === b)); pintaAside(); });
 const st = { split: .5, time: 0, tick: 0, speed: 1, gain: 1, dimL: 1, dimB: 1, flick: 1, rise: .5, spin: 0 };
 const stage = document.getElementById("stage"), mk = document.getElementById("mk");
 function pintaAside() {
   const c = CONC[cur];
   document.getElementById("aside").innerHTML = `<div><div class="n">${c.n} / C</div><h2>${c.t}</h2></div><p>${c.idea}</p>
     <div class="how">${c.how.map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join("")}</div>
+    <div><div class="n" style="margin-bottom:10px">El nombre · cuatro equilibrios</div>${["actual", "igualada", "ancho", "peso"].map((m) => { const prev = NOMBRE; NOMBRE = m; const svg = `<svg viewBox="40 170 320 50" style="width:100%;display:block;background:${m === prev ? "rgba(196,144,112,.08)" : "transparent"};border:1px solid ${m === prev ? "rgba(196,144,112,.4)" : "var(--hair)"};border-radius:6px;margin-bottom:8px">${nombre(208)}</svg>`; NOMBRE = prev; return `<div style="font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ter);margin:10px 0 6px">${{ actual: "Hoy · LAYER más chica y liviana", igualada: "Igualada · misma altura, más peso", ancho: "Mismo ancho · medido", peso: "Mismo peso · solo cambia el color" }[m]}</div>${svg}`; }).join("")}</div>
     ${INV}<p class="refs">Probalo: pasá el mouse por la izquierda (Bass) y la derecha (Layer), y tocá para entrar. Con "Sonido" encendido, Bass suena a cuatro tiempos y Layer hace tic con cada vela.</p>`;
 }
 document.querySelectorAll("[data-c]").forEach((b) => b.onclick = () => { cur = b.dataset.c; document.querySelectorAll("[data-c]").forEach((x) => x.classList.toggle("on", x === b)); pintaAside(); });
@@ -242,8 +280,8 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
-pintaAside();
-requestAnimationFrame(frame);
+// Cada peso se pide explícitamente: medir antes de que llegue la fuente da anchos de la tipografía de reemplazo.
+Promise.all([300, 560, 700, 800].map((w) => document.fonts.load(`${w} 40px Geist`))).then(() => { for (const k in CACHE) delete CACHE[k]; pintaAside(); requestAnimationFrame(frame); });
 </script>
 </body>
 </html>
