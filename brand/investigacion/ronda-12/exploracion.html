@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Exploración · ronda 12</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  header { padding:72px 6vw 40px; display:grid; grid-template-columns:1.1fr 1fr; gap:6vw; align-items:end; }
+  h1 { font-size:clamp(44px, 5.6vw, 92px); font-weight:800; letter-spacing:-.05em; line-height:.92; margin-top:18px; }
+  h1 .b { color:var(--cu); } h1 .l { color:var(--cy); font-weight:300; letter-spacing:.02em; }
+  header p { font-size:16px; line-height:1.6; color:var(--sec); }
+  header p b { color:var(--ink); font-weight:500; }
+  .fixed { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; }
+  .fixed span { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sec); border:1px solid var(--hair); border-radius:999px; padding:5px 10px; }
+  .favs { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px; padding:14px 6vw; background:rgba(7,7,7,.92); backdrop-filter:blur(8px); border-top:1px solid var(--hair); border-bottom:1px solid var(--hair); }
+  .favs b { color:var(--cu); font-weight:500; font-family:var(--mono); font-size:12px; letter-spacing:.1em; }
+  .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:1px; background:var(--hair); margin:0 6vw 100px; border:1px solid var(--hair); }
+  .tile { position:relative; background:radial-gradient(75% 75% at 50% 45%, #111113, #070707 74%); padding:22px 22px 20px; display:flex; flex-direction:column; gap:14px; cursor:zoom-in; }
+  .tile .mk { width:84%; margin:6px auto 0; aspect-ratio:1; }
+  .tile .top { display:flex; justify-content:space-between; align-items:center; }
+  .tile .n { font-family:var(--mono); font-size:11px; letter-spacing:.16em; color:var(--cu); }
+  .tile h3 { font-size:17px; font-weight:700; letter-spacing:-.02em; }
+  .tile p { font-size:13px; line-height:1.5; color:var(--sec); min-height:3em; }
+  .tile .eje { font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); }
+  .heart { background:none; border:1px solid var(--hair); color:var(--ter); border-radius:999px; width:34px; height:34px; font-size:15px; cursor:pointer; transition:all .25s; }
+  .heart:hover { color:var(--ink); border-color:var(--ter); }
+  .heart.on { color:#140d08; background:var(--cu); border-color:var(--cu); }
+  .mk svg { display:block; width:100%; height:100%; }
+  .modal { position:fixed; inset:0; z-index:30; background:rgba(5,5,5,.96); display:none; grid-template-columns:1.3fr 1fr; }
+  .modal.open { display:grid; }
+  .modal .stage { position:relative; display:flex; align-items:center; justify-content:center; cursor:pointer; border-right:1px solid var(--hair); }
+  .modal .stage .mk { width:min(70vh, 80%); aspect-ratio:1; }
+  .modal .side { position:absolute; top:28px; font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); transition:color .4s; }
+  .modal .side.l { left:28px; } .modal .side.r { right:28px; }
+  .modal .stage[data-w="bass"] .side.l { color:var(--cu); } .modal .stage[data-w="layer"] .side.r { color:var(--cy); }
+  .modal .info { padding:64px 48px; display:flex; flex-direction:column; gap:22px; }
+  .modal h2 { font-size:clamp(36px, 3.6vw, 60px); font-weight:800; letter-spacing:-.04em; line-height:.95; }
+  .modal .info p { font-size:16px; line-height:1.6; color:var(--sec); }
+  .modal .row { display:flex; gap:22px; align-items:center; padding:22px; border:1px solid var(--hair); border-radius:8px; }
+  .modal .row.paper { background:#EDEAE4; }
+  .modal .close { position:absolute; top:20px; right:24px; background:none; border:1px solid var(--hair); color:var(--sec); border-radius:999px; padding:8px 14px; font-family:var(--mono); font-size:11px; letter-spacing:.14em; cursor:pointer; }
+  @media (max-width:1100px) { .grid { grid-template-columns:repeat(2, minmax(0,1fr)); } header { grid-template-columns:1fr; } .modal { grid-template-columns:1fr; overflow:auto; } .modal .stage { min-height:70vh; border-right:0; } }
+</style>
+</head>
+<body>
+<header>
+  <div><div class="k">Marca BassLayer · ronda 12 · exploración</div><h1>Jugar con <span class="b">la</span> <span class="l">noche.</span></h1></div>
+  <div>
+    <p>Dieciséis variaciones sobre lo que ya funciona. <b>Queda fijo</b> lo que elegimos; <b>se mueve una sola cosa por vez</b>, como en el cuaderno de un estudio. Marcá con ♥ las que te atrapen y tocá cualquiera para verla grande y probarla con el mouse.</p>
+    <div class="fixed"><span>Fijo: el círculo</span><span>el horizonte</span><span>Bass analógico</span><span>Layer digital</span><span>el nombre como el sitio</span></div>
+  </div>
+</header>
+<div class="favs"><span class="k">Tus favoritas</span><b id="favList">— ninguna todavía</b></div>
+<div class="grid" id="grid"></div>
+
+<div class="modal" id="modal">
+  <div class="stage" id="mStage"><span class="side l">◂ Bass · la noche</span><span class="side r">Layer · el mercado ▸</span><div class="mk" id="mBig"></div></div>
+  <div class="info"><div class="n k" id="mN"></div><h2 id="mT"></h2><p id="mP"></p>
+    <div class="k">Chico · 64 · 32 · 16 px</div><div class="row" id="mSmall"></div>
+    <div class="k">Un color</div><div class="row paper" id="mMono"></div>
+  </div>
+  <button class="close" id="mClose">Cerrar ✕</button>
+</div>
+
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
+const R = 176, C = 200;
+let uid = 0;
+const seg = (pts) => "M" + pts.map((q) => q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" L");
+// Bloques de Layer (largos fijos) y "datos" (largos tomados de una serie de muestra; en el sitio, la real).
+const BLOQ = [64, 28, 96, 40, 18, 72, 48, 120, 32, 56];
+const SERIE = [42, 44, 41, 47, 52, 49, 55, 58, 54, 61, 66, 63, 70, 68, 74, 79, 76, 83, 88, 85];
+function dash(i, datos) {
+  const a = [];
+  if (datos) for (let k = 0; k < 10; k++) a.push((SERIE[(i * 2 + k) % SERIE.length] - 36) * 2.2, 6);
+  else for (let k = 0; k < 8; k++) a.push(BLOQ[(i * 3 + k * 7) % BLOQ.length], 6);
+  return a.join(" ");
+}
+
+// ── Motor: una ficha con un horizonte, un cielo digital y una noche analógica. Cada exploración mueve un parámetro.
+function ficha(o = {}, w = "", { mono = null, small = false, ph = 0, rise = null } = {}) {
+  const P = Object.assign({ hy: 200, nr: 118, ncx: 200, base: 360, mode: "disc", layer: "bloques", bass: "seno", p: 12, invert: false, tipo: "t1", escapa: false, lleno: false }, o);
+  const id = "f" + uid++;
+  const r0 = rise ?? (w === "bass" ? 1 : w === "layer" ? 0 : .55);
+  const p = small ? Math.max(P.p, 40) : P.p, sw = p * .38;
+  const ncy = P.lleno ? P.hy + 34 - (r0 - .55) * 60 : P.base - r0 * (P.base - P.hy - 40);
+  const band = small || P.tipo === "none" ? null : P.tipo === "bl" ? [P.hy - 30, P.hy + 30] : [P.hy - 26, P.hy + 26];
+  const inFrame = (x, y) => (x - C) ** 2 + (y - C) ** 2 <= (R - sw / 2) ** 2;
+  const inNight = (x, y) => (P.mode === "disc" ? (x - P.ncx) ** 2 + (y - ncy) ** 2 <= P.nr ** 2 : P.mode === "arriba" ? y < P.hy : y > P.hy);
+  const cB = P.invert ? FONDO : mono || CU, cL = P.invert ? FONDO : mono || CY;
+  let L = "", B = "", i = 0;
+  for (let y = C - R + p * .5; y < C + R + (P.escapa ? 90 : 0); y += p, i++) {
+    if (band && y > band[0] && y < band[1]) continue;
+    // Recorre la línea entera y la corta en tramos dentro de la ficha (o de la noche, si se escapa).
+    let cur = [], tramos = [];
+    for (let x = 0; x <= 400; x += 2) {
+      const dentro = inFrame(x, y) || (P.escapa && inNight(x, y));
+      if (dentro) cur.push(x); else if (cur.length) { tramos.push(cur); cur = []; }
+    }
+    if (cur.length) tramos.push(cur);
+    for (const tr of tramos) {
+      if (tr.length < 3) continue;
+      const ptsL = [], ptsB = [];
+      for (const x of tr) {
+        const d = P.mode === "disc" ? Math.hypot(x - P.ncx, y - ncy) : 0;
+        const inside = P.mode === "disc" ? Math.max(0, Math.min(1, (P.nr - d) / 18)) : inNight(x, y) ? 1 : 0;
+        const ampB = small ? 0 : inside * p * .27 * Math.sin(x * .15 + ph);
+        const sq = small || P.layer !== "cuadrada" ? 0 : p * .2 * Math.tanh(5 * Math.sin(x * .09 + i));
+        ptsB.push([x, y + ampB]); ptsL.push([x, y + ampB + sq * (1 - inside)]);
+      }
+      L += `<path d="${seg(ptsL)}" ${P.layer === "bloques" || P.layer === "datos" ? `stroke-dasharray="${small ? "none" : dash(i, P.layer === "datos")}"` : ""}/>`;
+      if (P.bass === "seno") B += `<path d="${seg(ptsB)}"/>`;
+    }
+  }
+  // Surco en espiral: la noche es un solo surco continuo (el vinilo).
+  if (P.bass === "espiral" && P.mode === "disc") {
+    const pts = []; for (let a = 0; a < Math.PI * 2 * (P.nr / p); a += .05) { const r = (a / (Math.PI * 2)) * p; pts.push([P.ncx + r * Math.cos(a), ncy + r * Math.sin(a)]); }
+    B = `<path d="${seg(pts)}"/>`;
+  }
+  const nightClip = P.mode === "disc" ? `<circle cx="${P.ncx}" cy="${ncy}" r="${P.nr}"/>` : P.mode === "arriba" ? `<rect x="0" y="0" width="400" height="${P.hy}"/>` : `<rect x="0" y="${P.hy}" width="400" height="400"/>`;
+  const frameClip = P.escapa ? `<circle cx="${C}" cy="${C}" r="${R}"/>${nightClip}` : `<circle cx="${C}" cy="${C}" r="${R}"/>`;
+  const bandMask = band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>` : "";
+  const fills = P.invert ? `<g clip-path="url(#${id}f)"><rect width="400" height="400" fill="${mono || CY}"/><g clip-path="url(#${id}n)"><rect width="400" height="480" fill="${mono || CU}"/></g></g>` : (mono ? "" : `<g clip-path="url(#${id}f)"><rect width="400" height="480" fill="${FONDO}"/></g>`);
+  const dimL = !mono && w === "bass" ? .45 : 1, dimB = !mono && w === "layer" ? .45 : 1;
+  const nombre = small || P.tipo === "none" ? "" : P.tipo === "bl"
+    ? `<text x="200" y="${P.hy + 20}" text-anchor="middle" font-family="Geist"><tspan font-weight="800" font-size="58" letter-spacing="-2" fill="${P.invert ? TINTA : mono || CU}">B</tspan><tspan font-weight="300" font-size="58" fill="${P.invert ? TINTA : mono || CY}">L</tspan></text>`
+    : `<text x="200" y="${P.hy + 14}" text-anchor="middle" font-family="Geist"><tspan font-weight="800" font-size="42" letter-spacing="-1.6" fill="${P.invert ? TINTA : mono || CU}">Bass</tspan><tspan dx="6" font-weight="300" font-size="27" letter-spacing="5" fill="${P.invert ? TINTA : mono || CY}">LAYER</tspan></text>`;
+  const vb = P.escapa ? "0 0 400 470" : "0 0 400 400";
+  return `<svg viewBox="${vb}"><defs><clipPath id="${id}f">${frameClip}</clipPath><clipPath id="${id}n">${nightClip}</clipPath>
+      <mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="480"><rect width="400" height="480" fill="#fff"/>${nightClip.replace("/>", ' fill="#000"/>')}${bandMask}</mask>
+      <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="480"><rect width="400" height="480" fill="#fff"/>${bandMask}</mask></defs>
+    ${fills}${P.invert && band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="${PAPEL}" clip-path="url(#${id}f)"/>` : ""}
+    <g fill="none" stroke="${cL}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}m)" opacity="${dimL}">${L}</g>
+    <g mask="url(#${id}b)" clip-path="url(#${id}f)"><g fill="none" stroke="${cB}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#${id}n)" opacity="${dimB}">${B}</g></g>
+    ${nombre}</svg>`;
+}
+
+const EXP = [
+  ["Base", "Composición", "Sale la noche como la dejamos en la ronda 11: el punto de partida.", {}],
+  ["Luna llena", "Composición", "La noche entera, redonda, sentada sobre el horizonte. El eclipse se vuelve luna.", { lleno: true, nr: 104 }],
+  ["Horizonte bajo", "Composición", "El cielo ocupa dos tercios: el mercado domina y la noche apenas asoma.", { hy: 250, base: 400 }],
+  ["Horizonte alto", "Composición", "La noche domina: el mercado es una franja arriba y abajo todo vibra.", { hy: 150, nr: 150, base: 380 }],
+  ["Cuadrada y senoidal", "Material", "Layer es una onda cuadrada (señal digital); Bass, una senoidal (señal analógica). Dos formas de onda de sintetizador.", { layer: "cuadrada" }],
+  ["Bloques que son datos", "Material", "El largo de cada bloque sale de una serie de precios. En el sitio, el cielo dibujaría el mercado real de la semana.", { layer: "datos" }],
+  ["Surco en espiral", "Material", "La noche es un solo surco continuo, como un vinilo. Una línea que nunca se corta.", { bass: "espiral" }],
+  ["Gruesa", "Material", "Pocas líneas y gruesas: más afiche, más de lejos, más calco en la luneta.", { p: 20 }],
+  ["Fina", "Material", "Muchas líneas finas: más grabado, más metal, más joya.", { p: 8 }],
+  ["Dos campos", "Color", "Campos sólidos: el cielo celeste, la noche cobre, y las líneas caladas en negro. La versión más fuerte para sticker.", { invert: true }],
+  ["La noche se escapa", "Composición", "La noche es más grande que la ficha y se sale por abajo: la noche no entra en ningún lado.", { escapa: true, ncx: 250, nr: 130, base: 430 }],
+  ["La noche arriba", "Composición", "Al revés: el cielo es la noche que vibra y el suelo son las capas del mercado.", { mode: "arriba" }],
+  ["Monograma BL", "Nombre", "B pesada cobre + L liviana celeste: la versión corta para ícono y favicon.", { tipo: "bl" }],
+  ["Solo símbolo", "Nombre", "Sin palabras: si la forma es buena, se reconoce sola.", { tipo: "none" }],
+  ["Dos campos + BL", "Color + nombre", "Los campos sólidos con el monograma: el ícono de la app más reconocible.", { invert: true, tipo: "bl" }],
+  ["En movimiento", "Movimiento", "La noche sube y baja sola, y las ondas laten. Así viviría en el home.", { vivo: true }],
+];
+
+let favs = [];
+try { favs = JSON.parse(localStorage.getItem("bl-r12-favs") || "[]"); } catch {}
+const saveFavs = () => { try { localStorage.setItem("bl-r12-favs", JSON.stringify(favs)); } catch {} document.getElementById("favList").textContent = favs.length ? favs.sort((a, b) => a - b).map((n) => String(n).padStart(2, "0") + " " + EXP[n - 1][0]).join(" · ") : "— ninguna todavía"; };
+
+document.getElementById("grid").innerHTML = EXP.map(([t, eje, d, o], i) => `
+  <div class="tile" data-i="${i}"><div class="top"><span class="n">${String(i + 1).padStart(2, "0")}</span><button class="heart${favs.includes(i + 1) ? " on" : ""}" data-f="${i + 1}" aria-label="Favorita">♥</button></div>
+    <div class="mk" data-mk="${i}">${ficha(o)}</div><div><div class="eje">${eje}</div><h3>${t}</h3></div><p>${d}</p></div>`).join("");
+saveFavs();
+document.querySelectorAll(".heart").forEach((h) => h.addEventListener("click", (e) => { e.stopPropagation(); const n = +h.dataset.f; favs = favs.includes(n) ? favs.filter((x) => x !== n) : [...favs, n]; h.classList.toggle("on"); saveFavs(); }));
+
+// Ver en grande
+const modal = document.getElementById("modal"), stage = document.getElementById("mStage");
+let cur = null, mw = "", mrise = .55;
+document.querySelectorAll(".tile").forEach((tl) => tl.addEventListener("click", () => {
+  cur = +tl.dataset.i; const [t, eje, d, o] = EXP[cur];
+  document.getElementById("mN").textContent = String(cur + 1).padStart(2, "0") + " · " + eje;
+  document.getElementById("mT").textContent = t; document.getElementById("mP").textContent = d;
+  document.getElementById("mSmall").innerHTML = [64, 32, 16].map((s) => `<span class="mk" style="width:${s}px;height:${s}px">${ficha(o, "", { small: s <= 32 })}</span>`).join("");
+  document.getElementById("mMono").innerHTML = [120, 64].map((s) => `<span class="mk" style="width:${s}px;height:${s}px">${ficha(o, "", { mono: TINTA })}</span>`).join("");
+  modal.classList.add("open");
+}));
+document.getElementById("mClose").onclick = () => { modal.classList.remove("open"); cur = null; };
+addEventListener("keydown", (e) => { if (e.key === "Escape") { modal.classList.remove("open"); cur = null; } });
+stage.addEventListener("mousemove", (e) => { const r = stage.getBoundingClientRect(); mw = e.clientX - r.left < r.width / 2 ? "bass" : "layer"; stage.dataset.w = mw; });
+stage.addEventListener("mouseleave", () => { mw = ""; stage.dataset.w = ""; });
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const t0 = performance.now();
+const vivoEl = document.querySelector('[data-mk="15"]');
+function tick(now) {
+  const ph = reduce ? 0 : (now - t0) / 700;
+  if (!reduce) vivoEl.innerHTML = ficha({}, "", { ph, rise: .55 + .45 * Math.sin((now - t0) / 2400) });
+  if (cur !== null) {
+    const o = EXP[cur][3];
+    const target = mw === "bass" ? 1 : mw === "layer" ? 0 : (o.vivo && !reduce ? .55 + .45 * Math.sin((now - t0) / 2400) : .55);
+    mrise += (target - mrise) * .07;
+    document.getElementById("mBig").innerHTML = ficha(o, mw, { ph, rise: mrise });
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
