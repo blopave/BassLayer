@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Síntesis · ronda 10</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --paper:#EDEAE4; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  nav { position:fixed; inset:0 0 auto 0; z-index:20; display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; background:linear-gradient(180deg, rgba(7,7,7,.96), rgba(7,7,7,0)); }
+  nav .brand { font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--sec); }
+  nav .brand b { color:var(--ink); font-weight:500; }
+  nav .links { display:flex; gap:26px; }
+  nav a { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); text-decoration:none; }
+  nav a:hover { color:var(--ink); }
+  .cover { min-height:94vh; display:grid; grid-template-columns:1fr 1.1fr; align-items:center; padding:120px 8vw 60px; gap:5vw; }
+  .cover h1 { font-size:clamp(48px, 6.4vw, 104px); font-weight:800; letter-spacing:-.05em; line-height:.92; }
+  .cover h1 em { font-style:normal; color:var(--ter); }
+  .cover p { margin-top:32px; max-width:520px; font-size:17px; line-height:1.6; color:var(--sec); }
+  .cover p b { color:var(--ink); font-weight:500; }
+  .trio { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .trio a { background:var(--night); padding:28px 18px 22px; display:flex; flex-direction:column; align-items:center; gap:18px; text-decoration:none; }
+  .trio .mk { width:82%; }
+  .trio .k { color:var(--sec); text-align:center; }
+  .rules { padding:100px 8vw 30px; border-top:1px solid var(--hair); }
+  .rules h2 { font-size:clamp(34px, 4vw, 60px); font-weight:800; letter-spacing:-.045em; line-height:.96; margin-top:16px; }
+  .rgrid { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:32px; margin-top:44px; }
+  .rgrid div { border-top:1px solid var(--hair); padding-top:16px; font-size:14px; line-height:1.55; color:var(--sec); }
+  .rgrid b { display:block; color:var(--ink); font-weight:600; font-size:16px; margin:8px 0 6px; }
+  .rgrid .n { font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--cu); }
+  .dir { border-top:1px solid var(--hair); }
+  .stage { min-height:100vh; display:grid; grid-template-columns:1.25fr 1fr; }
+  .big { position:relative; display:flex; align-items:center; justify-content:center; border-right:1px solid var(--hair); background:radial-gradient(70% 60% at 50% 50%, #111113 0%, var(--night) 70%); cursor:pointer; overflow:hidden; }
+  .big .mk { width:min(56%, 560px); }
+  .big .side { position:absolute; top:84px; font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); transition:color .5s; }
+  .big .side.l { left:40px; } .big .side.r { right:40px; }
+  .big[data-w="bass"] .side.l { color:var(--cu); } .big[data-w="layer"] .side.r { color:var(--cy); }
+  .big .hint { position:absolute; bottom:40px; left:0; right:0; text-align:center; }
+  .txt { padding:120px 56px 56px; display:flex; flex-direction:column; justify-content:space-between; gap:36px; }
+  .txt .n { font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--cu); }
+  .txt h3 { font-size:clamp(40px, 4.6vw, 72px); font-weight:800; letter-spacing:-.045em; line-height:.95; margin-top:18px; }
+  .txt .mix { margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; }
+  .txt .mix span { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--sec); border:1px solid var(--hair); border-radius:999px; padding:5px 10px; }
+  .txt .idea { margin-top:24px; font-size:17px; line-height:1.62; color:var(--sec); max-width:520px; }
+  .txt .idea b { color:var(--ink); font-weight:500; }
+  .facts { border-top:1px solid var(--hair); }
+  .facts div { display:grid; grid-template-columns:120px 1fr; gap:16px; padding:14px 0; border-bottom:1px solid var(--hair); font-size:14px; line-height:1.5; color:var(--sec); }
+  .facts .warn .k { color:#d69a7c; }
+  .plates { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border-top:1px solid var(--hair); }
+  .plate { position:relative; aspect-ratio:1; background:var(--night); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .plate > .k { position:absolute; left:24px; top:22px; }
+  .plate > .k2 { position:absolute; left:24px; bottom:20px; font-family:var(--mono); font-size:10.5px; color:var(--ter); }
+  .plate.paper { background:var(--paper); } .plate.paper > .k, .plate.paper > .k2 { color:rgba(11,11,11,.45); }
+  .plate .mk { width:56%; }
+  .states { display:flex; gap:6%; width:86%; justify-content:center; }
+  .states figure { width:30%; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .states figcaption { font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); }
+  .sizes { display:flex; align-items:center; gap:24px; }
+  .twoRows { display:flex; flex-direction:column; align-items:center; gap:28px; }
+  .token { width:46%; aspect-ratio:1; border-radius:50%; position:relative; transform:rotate(-8deg); }
+  .token .mk { width:100%; }
+  .token::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(90% 90% at 30% 22%, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 38%), radial-gradient(120% 120% at 70% 85%, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 55%); mix-blend-mode:soft-light; pointer-events:none; }
+  .token::before { content:""; position:absolute; inset:-3.5%; border-radius:50%; background:conic-gradient(from 210deg, #4a4846, #d9d6d0, #5d5a57, #eceae5, #4a4846); z-index:-1; box-shadow:0 30px 50px rgba(0,0,0,.65); }
+  .sticker { width:50%; aspect-ratio:1; border-radius:50%; background:#f6f3ee; padding:4.5%; transform:rotate(6deg); box-shadow:0 2px 2px rgba(0,0,0,.25), 0 18px 30px rgba(0,0,0,.45); }
+  .iphone { width:46%; aspect-ratio:1; border-radius:28px; background:linear-gradient(160deg, #1b2a33, #2a1d16); display:grid; grid-template-columns:repeat(4,1fr); gap:14%; padding:12%; }
+  .iphone i { display:block; aspect-ratio:1; border-radius:24%; background:rgba(255,255,255,.08); }
+  .iphone i.me { background:#0b0b0b; display:flex; align-items:center; justify-content:center; }
+  .iphone i.me .mk { width:84%; }
+  .mk svg { display:block; width:100%; height:auto; }
+  .closing { padding:140px 8vw 160px; border-top:1px solid var(--hair); display:grid; grid-template-columns:1fr 1fr; gap:6vw; }
+  .closing h3 { font-size:clamp(36px, 4vw, 60px); font-weight:800; letter-spacing:-.04em; line-height:.98; }
+  .closing p { font-size:17px; line-height:1.65; color:var(--sec); }
+  .closing p b { color:var(--ink); font-weight:500; }
+  @media (max-width:900px) {
+    nav { padding:0 16px; } nav .links { display:none; }
+    .cover, .stage, .closing { grid-template-columns:1fr; }
+    .cover { padding:96px 16px 48px; } .rules { padding:72px 16px 16px; } .rgrid { grid-template-columns:1fr 1fr; }
+    .big { min-height:72vh; border-right:0; border-bottom:1px solid var(--hair); }
+    .big .side { top:24px; } .big .side.l { left:16px; } .big .side.r { right:16px; }
+    .txt { padding:40px 16px; } .plates { grid-template-columns:1fr 1fr; } .closing { padding:80px 16px; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand"><b>BassLayer</b> · síntesis · ronda 10</span>
+  <span class="links"><a href="#reglas">Reglas</a><a href="#noche">1 · Sale la noche</a><a href="#onda">2 · Onda en las capas</a><a href="#eclipse">3 · Eclipse de líneas</a><a href="#cierre">Recomendación</a></span>
+</nav>
+
+<header class="cover">
+  <div>
+    <div class="k">Marca BassLayer · oct 2026</div>
+    <h1 style="margin-top:22px">Tres ideas,<br><em>una sola ficha.</em></h1>
+    <p>En la ronda 9 cada propuesta tomaba un poco de cada idea. Acá no se suman: <b>se funden</b>. En las tres, el horizonte, el eclipse y la interferencia son <b>un mismo gesto</b>, dibujado con un solo material: líneas.</p>
+  </div>
+  <div class="trio">
+    <a href="#noche"><div class="mk" data-mark="noche"></div><span class="k">1 · Sale la noche</span></a>
+    <a href="#onda"><div class="mk" data-mark="onda"></div><span class="k">2 · Onda en las capas</span></a>
+    <a href="#eclipse"><div class="mk" data-mark="eclipse"></div><span class="k">3 · Eclipse de líneas</span></a>
+  </div>
+</header>
+
+<section class="rules" id="reglas">
+  <div class="k">Qué se refinó</div>
+  <h2>Cinco reglas que cumplen las tres.</h2>
+  <div class="rgrid">
+    <div><span class="n">01</span><b>Un material</b>Solo líneas horizontales. Ni anillos dibujados ni franjas: los surcos y las ondas salen de deformar las mismas líneas.</div>
+    <div><span class="n">02</span><b>Un grosor</b>Trazo = 0,38 del paso entre líneas, con puntas redondas. Siempre igual, en todas las escalas.</div>
+    <div><span class="n">03</span><b>El nombre en el horizonte</b>Una franja limpia en la mitad exacta (Sugimoto). El nombre nunca pisa líneas.</div>
+    <div><span class="n">04</span><b>La interferencia es el resultado</b>No es una textura de fondo: aparece donde un mundo entra en el otro.</div>
+    <div><span class="n">05</span><b>Versión chica de origen</b>A 32 px o menos: 7 líneas y sin nombre. Definida desde el dibujo, no achicada después.</div>
+  </div>
+</section>
+
+<main id="dirs"></main>
+
+<section class="closing" id="cierre">
+  <div><div class="k">Recomendación</div><h3 style="margin-top:20px">1 · Sale la noche.</h3></div>
+  <div>
+    <p>Es la única donde <b>los tres conceptos son literalmente la misma cosa</b>: la noche es un disco (eclipse) que sube detrás del horizonte (horizonte) y, al entrar, convierte las capas en sonido (interferencia). Se entiende sin explicarlo: <b>arriba el mercado, abajo sale la noche</b>.</p>
+    <p style="margin-top:18px">Y elegir tiene un gesto propio, que nadie más tiene: <b>Bass hace salir la noche, Layer la pone</b>. En el sitio puede seguir la hora real de Buenos Aires: de día el disco está abajo; a la noche, arriba.</p>
+    <p style="margin-top:18px"><b>Onda en las capas</b> es la más hipnótica y la que mejor funciona en movimiento; <b>Eclipse de líneas</b>, la más clara para elegir pero la que más se parece a lo que ya vimos.</p>
+  </div>
+</section>
+
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
+let uid = 0;
+const R = 176, C = 200;
+// Líneas horizontales dentro de la ficha, con un hueco limpio en el horizonte para el nombre.
+function filas(p, small) {
+  const ys = [];
+  const ini = C - R + p * .5;
+  for (let y = ini; y < C + R; y += p) { if (!small && y > C - 26 && y < C + 26) continue; ys.push(y); }
+  return ys;
+}
+const path = (pts) => "M" + pts.map((q) => q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" L");
+const ext = (y) => { const h = Math.sqrt(Math.max(0, R * R - (y - C) ** 2)); return [C - h, C + h]; };
+const nombre = (fill, size = 40) => `<text x="200" y="${200 + size * .36}" text-anchor="middle" font-family="Geist" font-weight="800" font-size="${size}" letter-spacing="${-size * .038}" fill="${fill}">BassLayer</text>`;
+const marco = (svg, { mono }) => `<svg viewBox="0 0 400 400">${mono ? "" : `<circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>`}${svg}</svg>`;
+
+// ── 1 · Sale la noche. Un cielo de capas (Layer). Desde abajo del horizonte sube un disco (la noche):
+//    adentro, las mismas líneas se vuelven onda y cobre. rise: 0 = puesta, 1 = arriba.
+function noche(w = "", { mono = null, small = false, rise = null, t = 0 } = {}) {
+  const r0 = rise ?? (w === "bass" ? 1 : w === "layer" ? 0 : .55);
+  const p = small ? 46 : 12, sw = p * .38;
+  const nr = 118, ncy = 360 - r0 * 118;   // la noche: radio y centro
+  const id = "n" + uid++;
+  let cielo = "", sonido = "";
+  for (const y of filas(p, small)) {
+    const [x0, x1] = ext(y); if (x1 - x0 < p) continue;
+    const pts = [];
+    for (let x = x0 + sw / 2; x <= x1 - sw / 2; x += 2) {
+      const d = Math.hypot(x - 200, y - ncy), inside = Math.max(0, Math.min(1, (nr - d) / 18));
+      // Ondas en fase y más bajas que el aire entre líneas: surcos paralelos, nunca se cruzan.
+      const amp = small ? 0 : inside * p * .27;
+      pts.push([x, y + amp * Math.sin(x * .15 + t)]);
+    }
+    const dp = path(pts);
+    cielo += `<path d="${dp}"/>`; sonido += `<path d="${dp}"/>`;
+  }
+  const cc = mono || CY, nc = mono || CU;
+  const svg = `<defs><clipPath id="${id}"><circle cx="200" cy="${ncy}" r="${nr}"/></clipPath><mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="200" cy="${ncy}" r="${nr}" fill="#000"/></mask></defs>
+    <g fill="none" stroke="${cc}" stroke-width="${sw}" stroke-linecap="round" mask="url(#${id}m)" opacity="${w === "bass" && !mono ? .55 : 1}">${cielo}</g>
+    <g fill="none" stroke="${nc}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id})" opacity="${w === "layer" && !mono ? .55 : 1}">${sonido}</g>
+    ${small ? "" : nombre(mono || PAPEL)}`;
+  return marco(svg, { mono });
+}
+
+// ── 2 · Onda en las capas. Todas las líneas son capas; un pulso nace en el centro y las curva
+//    en anillos (los surcos aparecen sin dibujarlos). El color va del cobre (el pulso) al celeste (la capa).
+function onda(w = "", { mono = null, small = false, t = 0 } = {}) {
+  const A = w === "bass" ? 4.4 : w === "layer" ? 0.5 : 3.2;
+  const p = small ? 46 : 12, sw = p * .38, id = "o" + uid++;
+  let s = "";
+  for (const y of filas(p, small)) {
+    const [x0, x1] = ext(y); if (x1 - x0 < p) continue;
+    const pts = [];
+    for (let x = x0 + sw / 2; x <= x1 - sw / 2; x += 2) {
+      const r = Math.hypot(x - 200, y - 200), fall = Math.max(0, 1 - r / R) ** .8;
+      pts.push([x, y + (small ? 0 : A * fall * Math.sin(r * .2 - t))]);
+    }
+    s += `<path d="${path(pts)}"/>`;
+  }
+  const stroke = mono ? mono : `url(#${id})`;
+  const svg = `<defs><radialGradient id="${id}" cx="200" cy="200" r="${R}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${CU}"/><stop offset="${w === "layer" ? .15 : w === "bass" ? .8 : .5}" stop-color="${CU}"/><stop offset="1" stop-color="${CY}"/></radialGradient></defs>
+    <g fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round">${s}</g>${small ? "" : nombre(mono || PAPEL)}`;
+  return marco(svg, { mono });
+}
+
+// ── 3 · Eclipse de líneas. Dos fichas de líneas; la de adelante es tu mundo, la de atrás asoma
+//    en la media luna con el comportamiento del otro (onda o capa).
+function capaLineas(cx, kind, p, sw, small, t) {
+  let s = "";
+  for (let y = C - R + p * .5; y < C + R; y += p) {
+    if (!small && y > C - 26 && y < C + 26 && cx === 200) continue;
+    const h = Math.sqrt(Math.max(0, R * R - (y - C) ** 2)), x0 = cx - h, x1 = cx + h; if (x1 - x0 < p) continue;
+    const pts = [];
+    for (let x = x0 + sw / 2; x <= x1 - sw / 2; x += 2) pts.push([x, y + (kind === "bass" && !small ? p * .27 * Math.sin(x * .15 + t) * Math.min(1, (x - x0) / 30, (x1 - x) / 30) : 0)]);
+    s += `<path d="${path(pts)}"/>`;
+  }
+  return s;
+}
+function eclipse(w = "bass", { mono = null, small = false, t = 0 } = {}) {
+  const front = w === "layer" ? "layer" : "bass", back = front === "bass" ? "layer" : "bass";
+  const dx = front === "bass" ? 40 : -40, p = small ? 46 : 12, sw = p * .38, id = "e" + uid++;
+  const col = (k) => mono || (k === "bass" ? CU : CY);
+  const svg = `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="-60" y="0" width="520" height="400"><rect x="-60" width="520" height="400" fill="#fff"/><circle cx="200" cy="200" r="${R + 10}" fill="#000"/></mask></defs>
+    <g fill="none" stroke="${col(back)}" stroke-width="${sw}" stroke-linecap="round" mask="url(#${id})">${capaLineas(200 + dx, back, p, sw, small, t)}</g>
+    <g fill="none" stroke="${col(front)}" stroke-width="${sw}" stroke-linecap="round">${capaLineas(200, front, p, sw, small, t)}</g>${small ? "" : nombre(mono || PAPEL)}`;
+  return `<svg viewBox="-50 0 500 400">${svg}</svg>`;
+}
+
+const MARKS = { noche, onda, eclipse };
+const def = (k) => (k === "eclipse" ? "bass" : "");
+const S = (k, w, o = {}) => MARKS[k](w, o);
+
+const DIRS = [
+  { k: "noche", n: "1", t: "Sale la noche", mix: ["Horizonte", "Eclipse", "Interferencia", "Sugimoto", "Saville"],
+    idea: "Arriba, <b>un cielo de capas</b>: el mercado, quieto y ordenado. Desde abajo del horizonte <b>sube un disco</b>, la noche, como una luna. Al entrar en él, <b>las mismas líneas se vuelven sonido</b>. El eclipse, el horizonte y la interferencia son un solo gesto.",
+    facts: [["Los dos mundos", "El cielo de capas y la noche que sube. Hechos de las mismas líneas."], ["Para elegir", "Bass hace salir la noche; Layer la pone. Un gesto propio."], ["Vivo", "En el sitio puede seguir la hora de Buenos Aires: de día abajo, de noche arriba."], ["A cuidar", "En reposo, el disco tiene que asomar lo justo (55 %) para que se vea que hay algo que sube.", 1]],
+    estados: [["layer", "Layer · se pone"], ["", "Reposo"], ["bass", "Bass · sale la noche"]] },
+  { k: "onda", n: "2", t: "Onda en las capas", mix: ["Interferencia", "Horizonte", "Müller-Brockmann", "Riley"],
+    idea: "Todas las líneas son <b>capas</b>. Un <b>pulso nace en el centro</b> y las curva en anillos, como una piedra en el agua: los surcos del vinilo <b>aparecen dentro de las capas</b> sin dibujarlos. El color va del cobre, donde está el pulso, al celeste, donde la capa se aquieta.",
+    facts: [["Los dos mundos", "No están separados: el sonido viaja por las capas."], ["Para elegir", "Bass sube el pulso y el cobre; Layer lo aquieta y gana el celeste."], ["Vivo", "El pulso puede latir con el bajo (tempo) en el home."], ["A cuidar", "Es la más hipnótica pero la menos \"dos mundos\" a primera vista: la elección se lee por color y movimiento.", 1]],
+    estados: [["layer", "Layer · quieta"], ["", "Reposo"], ["bass", "Bass · pulso"]] },
+  { k: "eclipse", n: "3", t: "Eclipse de líneas", mix: ["Eclipse", "Horizonte", "Interferencia", "Pentagram"],
+    idea: "Dos fichas de líneas, una delante de la otra. <b>La de adelante es tu mundo</b>: ondas si es Bass, capas si es Layer. <b>La de atrás asoma en la media luna</b> con el comportamiento del otro. Es el eclipse de la ronda 8, pero hecho del mismo material que todo lo demás.",
+    facts: [["Los dos mundos", "Uno de frente, el otro asomando."], ["Para elegir", "La media luna es la puerta: el otro disco pasa adelante."], ["Vivo", "Las ondas del disco Bass se mueven; las capas, quietas."], ["A cuidar", "Es la más clara para elegir, pero la que menos novedad trae respecto de la ronda 8.", 1]],
+    estados: [["bass", "Bass al frente"], ["layer", "Layer al frente"]] },
+];
+
+document.getElementById("dirs").innerHTML = DIRS.map((d) => `
+  <section class="dir" id="${d.k}">
+    <div class="stage">
+      <div class="big" data-k="${d.k}"><span class="side l">◂ Bass · la noche</span><span class="side r">Layer · el mercado ▸</span>
+        <div class="mk" data-live="${d.k}">${S(d.k, def(d.k))}</div><span class="hint k">Pasá el mouse: izquierda Bass, derecha Layer</span></div>
+      <div class="txt"><div><div class="n">${d.n} / 3</div><h3>${d.t}</h3><div class="mix">${d.mix.map((m) => `<span>${m}</span>`).join("")}</div><p class="idea">${d.idea}</p></div>
+        <div class="facts">${d.facts.map(([k, v, w]) => `<div class="${w ? "warn" : ""}"><span class="k">${k}</span><span>${v}</span></div>`).join("")}</div></div>
+    </div>
+    <div class="plates">
+      <div class="plate"><span class="k">Estados · elegir un mundo</span><div class="states">${d.estados.map(([w, c]) => `<figure><div class="mk" style="width:100%">${S(d.k, w)}</div><figcaption>${c}</figcaption></figure>`).join("")}</div></div>
+      <div class="plate paper"><span class="k">Sobre papel · un color</span><div class="mk">${S(d.k, def(d.k), { mono: TINTA })}</div></div>
+      <div class="plate"><span class="k">Tamaños reales</span><div class="twoRows">
+        <div class="sizes">${[128, 64, 32, 16].map((s) => `<span style="width:${s}px" class="mk">${S(d.k, def(d.k), { small: s <= 32 })}</span>`).join("")}</div>
+        <div class="sizes" style="background:${PAPEL};padding:18px 22px;border-radius:6px">${[64, 32, 16].map((s) => `<span style="width:${s}px" class="mk">${S(d.k, def(d.k), { mono: TINTA, small: s <= 32 })}</span>`).join("")}</div></div><span class="k2">128 · 64 · 32 · 16 px — a 32 px o menos, 7 líneas y sin nombre</span></div>
+      <div class="plate" style="background:radial-gradient(80% 80% at 50% 40%, #1a1a1a, #070707)"><span class="k">Ficha de metal · regalo</span><div class="token"><div class="mk">${S(d.k, def(d.k))}</div></div></div>
+      <div class="plate" style="background:#2b2622"><span class="k">Sticker troquelado</span><div class="sticker"><div class="mk" style="width:100%">${S(d.k, d.k === "eclipse" ? "layer" : "bass")}</div></div></div>
+      <div class="plate" style="background:radial-gradient(90% 90% at 50% 30%, #262a2d, #0b0c0d)"><span class="k">Ícono de la app</span>
+        <div class="iphone"><i></i><i></i><i></i><i></i><i></i><i class="me"><span class="mk">${S(d.k, def(d.k), { small: true })}</span></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    </div>
+  </section>`).join("");
+document.querySelectorAll("[data-mark]").forEach((el) => (el.innerHTML = S(el.dataset.mark, def(el.dataset.mark))));
+
+// Vivas: cada marca grande se redibuja con su estado y su movimiento.
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const lives = [...document.querySelectorAll(".big")].map((big) => {
+  const st = { big, k: big.dataset.k, el: big.querySelector("[data-live]"), w: "", rise: .55 };
+  big.addEventListener("mousemove", (e) => { const r = big.getBoundingClientRect(); st.w = e.clientX - r.left < r.width / 2 ? "bass" : "layer"; big.dataset.w = st.w; });
+  big.addEventListener("mouseleave", () => { st.w = ""; big.dataset.w = ""; });
+  return st;
+});
+const t0 = performance.now();
+function tick(now) {
+  const t = reduce ? 0 : (now - t0) / 700;
+  for (const st of lives) {
+    const r = st.big.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
+    if (st.k === "noche") { const target = st.w === "bass" ? 1 : st.w === "layer" ? 0 : .55; st.rise += (target - st.rise) * .06; st.el.innerHTML = noche(st.w, { rise: st.rise, t }); }
+    else st.el.innerHTML = S(st.k, st.k === "eclipse" ? (st.w || "bass") : st.w, { t });
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
