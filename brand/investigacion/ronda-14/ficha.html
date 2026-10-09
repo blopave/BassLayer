@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>La ficha · ronda 14</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#060606; --hair:rgba(237,234,228,.1); --ink:#EDEAE4; --sec:rgba(237,234,228,.62); --ter:rgba(237,234,228,.36); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  .bar { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:10px; height:58px; padding:0 20px; border-bottom:1px solid var(--hair); background:#0c0c0d; overflow-x:auto; }
+  .bar .t { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--sec); white-space:nowrap; margin-right:6px; }
+  .bar .t b { color:var(--cu); font-weight:500; }
+  .bar button { font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--sec); background:none; border:1px solid var(--hair); border-radius:999px; padding:8px 14px; cursor:pointer; white-space:nowrap; }
+  .bar button:hover { color:var(--ink); border-color:var(--ter); }
+  .bar button.on { color:#140d08; background:var(--cu); border-color:var(--cu); }
+  .bar .sep { width:1px; height:24px; background:var(--hair); flex:none; }
+  .hero { display:grid; grid-template-columns:1fr 400px; height:calc(100vh - 58px); }
+  .wrapStage { display:flex; align-items:center; justify-content:center; min-height:0; }
+  .stage { position:relative; width:100%; height:100%; background:radial-gradient(70% 60% at 50% 52%, #121214, #050505 72%); overflow:hidden; cursor:pointer; user-select:none; }
+  .stage.phone { width:min(390px, 46vh); height:auto; aspect-ratio:390/844; max-height:calc(100vh - 100px); border-radius:36px; border:1px solid var(--hair); box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  .stage .tl, .stage .tr { position:absolute; top:24px; font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); transition:color .5s; display:flex; align-items:center; gap:8px; }
+  .stage .tl { left:26px; } .stage .tr { right:26px; }
+  .stage .tl i, .stage .tr i { width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .stage .tl i { background:var(--cu); } .stage .tr i { background:var(--cy); }
+  .stage[data-w="bass"] .tl { color:var(--cu); } .stage[data-w="layer"] .tr { color:var(--cy); }
+  .stage .hint { position:absolute; left:0; right:0; bottom:8%; text-align:center; font-family:var(--mono); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--ter); }
+  .stage .mk { position:absolute; left:50%; top:50%; width:min(62vh, 66%); aspect-ratio:1; transform:translate(-50%,-52%); transition:transform .9s cubic-bezier(.7,0,.2,1), opacity .9s; }
+  .stage.phone .mk { width:86%; }
+  .mk svg { width:100%; height:100%; display:block; }
+  .stage.entering .mk { transform:translate(-50%,-52%) scale(7); opacity:0; }
+  .wash { position:absolute; inset:0; opacity:0; transition:opacity .7s; pointer-events:none; }
+  .stage.entering .wash { opacity:1; }
+  .toast { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:clamp(28px, 4vw, 54px); font-weight:800; letter-spacing:-.04em; opacity:0; transition:opacity .5s .5s; pointer-events:none; text-align:center; color:#0b0b0b; }
+  .stage.entering .toast { opacity:1; }
+  .toast small { display:block; font-family:var(--mono); font-size:11px; font-weight:400; letter-spacing:.2em; text-transform:uppercase; color:rgba(11,11,11,.6); margin-top:10px; }
+  aside { border-left:1px solid var(--hair); padding:30px 28px; overflow:auto; display:flex; flex-direction:column; gap:20px; }
+  aside h2 { font-size:40px; font-weight:800; letter-spacing:-.04em; line-height:.96; margin-top:10px; }
+  aside p { font-size:15px; line-height:1.6; color:var(--sec); }
+  aside p b { color:var(--ink); font-weight:500; }
+  .how { border-top:1px solid var(--hair); }
+  .how div { display:grid; grid-template-columns:86px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid var(--hair); font-size:13.5px; line-height:1.5; color:var(--sec); }
+  .how span:first-child { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); padding-top:2px; }
+  .cu { color:var(--cu); } .cy { color:var(--cy); }
+  section.more { border-top:1px solid var(--hair); padding:90px 6vw 40px; }
+  section.more h3 { font-size:clamp(32px, 3.6vw, 56px); font-weight:800; letter-spacing:-.04em; line-height:.96; margin-top:14px; }
+  .gen { display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:40px; }
+  .gen div { background:var(--night); padding:20px 18px; display:flex; flex-direction:column; gap:8px; }
+  .gen .r { font-family:var(--mono); font-size:10px; letter-spacing:.18em; color:var(--cu); }
+  .gen b { font-size:15px; letter-spacing:-.01em; }
+  .gen span { font-size:13px; line-height:1.5; color:var(--sec); }
+  .apps { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:40px; }
+  .app { position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:var(--night); overflow:hidden; }
+  .app > .k { position:absolute; left:18px; top:16px; }
+  .app.paper { background:#EDEAE4; } .app.paper > .k { color:rgba(11,11,11,.45); }
+  .app .mk { width:60%; aspect-ratio:1; }
+  .sticker { width:60%; aspect-ratio:1; border-radius:50%; background:#f6f3ee; padding:4%; transform:rotate(6deg); box-shadow:0 2px 2px rgba(0,0,0,.25), 0 18px 30px rgba(0,0,0,.45); }
+  .sticker .mk { width:100%; }
+  .token { width:54%; aspect-ratio:1; border-radius:50%; position:relative; transform:rotate(-8deg); }
+  .token .mk { width:100%; }
+  .token::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(90% 90% at 30% 22%, rgba(255,255,255,.32), rgba(255,255,255,0) 38%), radial-gradient(120% 120% at 70% 85%, rgba(0,0,0,.45), rgba(0,0,0,0) 55%); mix-blend-mode:soft-light; pointer-events:none; }
+  .token::before { content:""; position:absolute; inset:-3.5%; border-radius:50%; background:conic-gradient(from 210deg, #4a4846, #d9d6d0, #5d5a57, #eceae5, #4a4846); z-index:-1; box-shadow:0 30px 50px rgba(0,0,0,.65); }
+  .iphone { width:62%; aspect-ratio:1; border-radius:28px; background:linear-gradient(160deg, #1b2a33, #2a1d16); display:grid; grid-template-columns:repeat(4,1fr); gap:14%; padding:12%; }
+  .iphone i { display:block; aspect-ratio:1; border-radius:24%; background:rgba(255,255,255,.08); }
+  .iphone i.me { background:#0b0b0b; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .iphone i.me .mk { width:100%; }
+  .sizes { display:flex; align-items:center; gap:22px; }
+  @media (max-width:1000px) { .hero { grid-template-columns:1fr; height:auto; } .stage { height:70vh; } aside { border-left:0; border-top:1px solid var(--hair); } .gen { grid-template-columns:1fr 1fr; } .apps { grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="t"><b>Ronda 14</b> · la ficha</span>
+  <button data-v="centro" class="on">Amanecer · vinilo al centro</button><button data-v="lado">Lado a lado · vinilo a la izquierda</button>
+  <span class="sep"></span>
+  <button id="phone">📱 Ver en celular</button><button id="sound">♪ Sonido: apagado</button>
+</div>
+<div class="hero">
+  <div class="wrapStage">
+    <div class="stage" id="stage">
+      <div class="wash" id="wash"></div>
+      <span class="tl"><i></i>Bass · fiestas, shows y festivales</span>
+      <span class="tr">Blockchain · cripto · mercados · Layer<i></i></span>
+      <div class="mk" id="mk"></div>
+      <div class="toast" id="toast"></div>
+      <span class="hint" id="hint">◂ Elegí un mundo ▸</span>
+    </div>
+  </div>
+  <aside>
+    <div><div class="k">Síntesis · lo mejor de las rondas 10 a 13</div><h2>El vinilo<br>sale del<br>mercado.</h2></div>
+    <p>Un <b class="cu">vinilo</b> sale como un sol detrás de <b class="cy">la línea de precio</b>, que es el horizonte. Debajo, el mercado es <b class="cy">un mar de capas en bloques</b>, y el largo de cada bloque sale del precio. En ese mar <b class="cu">el vinilo se refleja como sonido</b>: las mismas líneas se vuelven ondas.</p>
+    <div class="how">
+      <div><span>Reposo</span><span>El vinilo asoma a medias y gira despacio; el precio respira.</span></div>
+      <div><span class="cu">Bass</span><span>El vinilo <b class="cu">sube y gira</b> como en una bandeja; el reflejo suena más fuerte.</span></div>
+      <div><span class="cy">Layer</span><span>El vinilo <b class="cy">se pone</b>; el precio avanza y los bloques corren como una cinta de cotizaciones.</span></div>
+      <div><span>Tocar</span><span>Entrás al mundo.</span></div>
+    </div>
+    <p style="font-size:13px;color:var(--ter)">El nombre va en la proporción exacta del home en vivo. Probá con sonido: bombo a cuatro tiempos en Bass, tic de cotización en Layer.</p>
+  </aside>
+</div>
+
+<section class="more">
+  <div class="k">De dónde sale cada parte</div>
+  <h3>Nada nuevo: lo mejor de cada ronda, junto.</h3>
+  <div class="gen">
+    <div><span class="r">R13 · C</span><b>El vinilo y el precio</b><span>Los dos signos que cualquiera lee al instante.</span></div>
+    <div><span class="r">R10 · Sale la noche</span><b>El disco que sube</b><span>Detrás del horizonte, y adentro las líneas se vuelven onda.</span></div>
+    <div><span class="r">R11 · La esencia</span><b>Analógico y digital</b><span>Bass continuo y redondo; Layer en bloques y recto.</span></div>
+    <div><span class="r">R12 · 06</span><b>Bloques que son datos</b><span>El largo de cada bloque sale del precio de la semana.</span></div>
+    <div><span class="r">R12 · 10 y 13</span><b>Dos campos y BL</b><span>La versión fuerte para sticker y el ícono.</span></div>
+    <div><span class="r">El sitio</span><b>Bass LAYER</b><span>El nombre en la proporción exacta del home.</span></div>
+  </div>
+</section>
+
+<section class="more">
+  <div class="k">Aplicaciones</div>
+  <h3>Cómo vive fuera de la pantalla.</h3>
+  <div class="apps" id="apps"></div>
+</section>
+<div style="height:100px"></div>
+
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
+const R = 176, C = 200;
+let uid = 0, VAR = "centro";
+const seg = (pts) => "M" + pts.map((q) => q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" L");
+const PRECIO = (() => { let p = 100, s = 7, a = []; for (let i = 0; i < 600; i++) { s = (s * 9301 + 49297) % 233280; p += (s / 233280 - .46) * 5; a.push(p); } return a; })();
+
+// ── El nombre: proporción exacta del home en vivo (Bass 700 / LAYER 300 al 80,5 %).
+const medidor = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+medidor.setAttribute("style", "position:absolute;left:-9999px;top:0;width:400px;height:100px");
+document.body.appendChild(medidor);
+const ancho = (txt, w, s, ls) => { medidor.innerHTML = `<text font-family="Geist" font-weight="${w}" font-size="${s}" letter-spacing="${ls}">${txt}</text>`; return medidor.firstChild.getComputedTextLength() - ls; };
+let NM = null;
+function metricas(S) { const lS = S * .805; return { S, lS, bl: -.03 * S, ll: lS * .1, wb: ancho("Bass", 700, S, -.03 * S), wl: ancho("LAYER", 300, lS, lS * .1), gap: S * .28 }; }
+function nombre(y, { mono = null, S = 34, solo = false } = {}) {
+  const M = NM && NM.S === S ? NM : metricas(S); if (!NM || NM.S === S) NM = M;
+  const x0 = 200 - (M.wb + M.gap + M.wl) / 2;
+  return `<text x="${x0}" y="${y}" font-family="Geist" font-weight="700" font-size="${M.S}" letter-spacing="${M.bl}" fill="${mono || CU}">Bass</text>
+    <text x="${x0 + M.wb + M.gap}" y="${y}" font-family="Geist" font-weight="300" font-size="${M.lS}" letter-spacing="${M.ll}" fill="${mono || CY}">LAYER</text>`;
+}
+// Bloques de datos: el largo sale de los saltos de la serie de precio.
+function dash(i, k0) { const a = []; for (let k = 0; k < 14; k++) { const d = Math.abs(PRECIO[(k0 + i * 5 + k) % 600] - PRECIO[(k0 + i * 5 + k + 1) % 600]); a.push(12 + d * 26, 5); } return a.join(" "); }
+
+// ── La ficha.
+function ficha(st, { mono = null, small = false, campos = false, sinNombre = false } = {}) {
+  const id = "f" + uid++, lado = VAR === "lado";
+  const vx = lado ? 150 : 200, VR = lado ? 120 : 128;
+  // La línea de precio (el horizonte): sube hacia la derecha en la variante "lado".
+  const k0 = Math.floor(st.tick), vis = []; for (let i = 0; i < 64; i++) vis.push(PRECIO[(k0 + i) % 600]);
+  const mn = Math.min(...vis), mx = Math.max(...vis);
+  const pts = vis.map((v, i) => { const x = 10 + i * (380 / 63), tr = lado ? (x - 200) * -.16 : 0; return [x, 232 + tr - ((v - mn) / (mx - mn || 1)) * 46]; });
+  const lineY = (x) => { const f = (x - 10) / (380 / 63), i = Math.max(0, Math.min(62, Math.floor(f))); return pts[i][1] + (pts[i + 1][1] - pts[i][1]) * (f - i); };
+  const lp = small ? pts.filter((_, i) => i % 7 === 0 || i === pts.length - 1) : pts;
+  const line = seg(lp), above = line + " L400 -10 L0 -10 Z", below = line + " L400 410 L0 410 Z";
+  const vy = 334 - st.rise * 176;
+  // El reflejo es el espejo del vinilo sobre el horizonte: si el vinilo sube, el reflejo crece; si se pone, desaparece.
+  const ry = 2 * 214 - vy;
+  const p = small ? 22 : 9.5, sw = small ? 8 : 3.6;
+  const band = sinNombre || small ? null : [300, 336];
+  // Mar de capas (Layer) con el reflejo del vinilo como ondas (Bass).
+  let mar = "", eco = "", cielo = "", i = 0;
+  for (let y = 120; y < 392; y += p, i++) {
+    if (band && y > band[0] && y < band[1]) continue;
+    const ps = [], pb = [];
+    for (let x = 10; x <= 390; x += 2) {
+      const d = Math.hypot(x - vx, y - ry), ins = Math.max(0, Math.min(1, (VR - d) / 14));
+      const a = small ? 0 : ins * (2.2 + 1.8 * st.gain) * Math.sin(x * .17 + st.time * 4 * st.speed + y * .02);
+      ps.push([x, y]); pb.push([x, y + a]);
+    }
+    mar += `<path d="${seg(ps)}" stroke-dasharray="${small ? "none" : dash(i, Math.floor(st.flow))}"/>`; eco += `<path d="${seg(pb)}"/>`;
+  }
+  for (let y = 20 + p / 2; y < 230; y += p * 1.6) cielo += `<line x1="0" x2="400" y1="${y}" y2="${y}" stroke-dasharray="${small ? "none" : dash(i++, Math.floor(st.flow))}"/>`;
+  // El vinilo: surco en espiral (continuo, analógico), brillo que gira, etiqueta cobre.
+  let surco = ""; if (!small) { const P = []; for (let a = 0; a < Math.PI * 2 * 26; a += .07) { const r = 46 + (a / (Math.PI * 2)) * ((VR - 50) / 26); P.push([vx + r * Math.cos(a), vy + r * Math.sin(a)]); } surco = `<path d="${seg(P)}" fill="none" stroke="${mono ? "rgba(237,234,228,.35)" : "rgba(196,144,112,.42)"}" stroke-width=".8"/>`; }
+  const ang = st.spin % 360;
+  const discoFill = campos ? CU : mono ? mono : "#151515";
+  const vinilo = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="${discoFill}"/>${campos ? "" : surco}
+    ${small || campos ? "" : `<g transform="rotate(${ang} ${vx} ${vy})"><path d="M${vx} ${vy} L${vx + VR} ${vy - 22} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 22} Z" fill="rgba(237,234,228,.07)"/><path d="M${vx} ${vy} L${vx - VR} ${vy + 22} A${VR} ${VR} 0 0 1 ${vx - VR} ${vy - 22} Z" fill="rgba(237,234,228,.05)"/></g>`}
+    <circle cx="${vx}" cy="${vy}" r="${small ? 34 : 40}" fill="${campos ? FONDO : mono ? PAPEL : CU}"/><circle cx="${vx}" cy="${vy}" r="${small ? 5 : 3.4}" fill="${campos ? CU : mono || FONDO}"/>`;
+  const cL = mono || CY, cB = mono || CU;
+  const last = pts[pts.length - 1];
+  const bandMask = band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>` : "";
+  return `<svg viewBox="0 0 400 400"><defs><clipPath id="${id}f"><circle cx="200" cy="200" r="${R}"/></clipPath>
+      <clipPath id="${id}a"><path d="${above}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
+      <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><path d="${above}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/>${bandMask}</mask>
+      <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><path d="${above}" fill="#000"/>${bandMask}</mask>
+      <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6}" fill="#000"/><path d="${below}" fill="#000"/></mask></defs>
+    ${mono ? "" : `<circle cx="200" cy="200" r="${R + 6}" fill="${campos ? CY : FONDO}"/>`}
+    <g clip-path="url(#${id}f)">
+      ${campos ? `<path d="${below}" fill="${CY}"/>` : ""}
+      <g fill="none" stroke="${campos ? FONDO : cL}" stroke-width="${sw * .8}" opacity="${campos ? .35 : mono ? .5 : .22 * st.dimL + .05}" mask="url(#${id}c)">${cielo}</g>
+      <g clip-path="url(#${id}a)" opacity="${st.dimB}">${vinilo}</g>
+      <g fill="none" stroke="${campos ? FONDO : cL}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}b)" opacity="${st.dimL}">${mar}</g>
+      <g mask="url(#${id}e)"><g fill="none" stroke="${campos ? FONDO : cB}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id}v)" opacity="${st.dimB}">${eco}</g></g>
+      <path d="${line}" fill="none" stroke="${campos ? FONDO : cL}" stroke-width="${small ? 9 : 4.6}" stroke-linejoin="round" stroke-linecap="round"/>
+      ${small ? "" : `<circle cx="${last[0] - 6}" cy="${last[1]}" r="${4.6 + 2 * Math.abs(Math.sin(st.time * 3))}" fill="${campos ? FONDO : cL}"/>`}
+    </g>
+    ${band ? nombre(326, { mono: campos ? TINTA : mono, S: 32 }) : ""}</svg>`;
+}
+
+// ── Escenario interactivo
+const stage = document.getElementById("stage"), mk = document.getElementById("mk");
+let w = "", entering = false;
+const st = { rise: .5, time: 0, tick: 0, flow: 0, speed: 1, gain: 1, dimL: 1, dimB: 1, spin: 0 };
+const fijo = { rise: .5, time: 0, tick: 0, flow: 0, speed: 1, gain: 1, dimL: 1, dimB: 1, spin: 30 };
+document.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { VAR = b.dataset.v; document.querySelectorAll("[data-v]").forEach((x) => x.classList.toggle("on", x === b)); pintaApps(); });
+document.getElementById("phone").onclick = (e) => {
+  const tel = stage.classList.toggle("phone"); e.target.classList.toggle("on", tel);
+  document.getElementById("hint").textContent = tel ? "◂ Tocá un mundo ▸" : "◂ Elegí un mundo ▸";
+  stage.querySelector(".tl").innerHTML = tel ? "<i></i>Bass" : "<i></i>Bass · fiestas, shows y festivales";
+  stage.querySelector(".tr").innerHTML = tel ? "Layer<i></i>" : "Blockchain · cripto · mercados · Layer<i></i>";
+};
+const lado = (e) => { const r = stage.getBoundingClientRect(); return e.clientX - r.left < r.width / 2 ? "bass" : "layer"; };
+stage.addEventListener("mousemove", (e) => { if (!entering) { w = lado(e); stage.dataset.w = w; } });
+stage.addEventListener("mouseleave", () => { if (!entering) { w = ""; stage.dataset.w = ""; } });
+stage.addEventListener("click", (e) => {
+  if (entering) return; w = lado(e); stage.dataset.w = w; entering = true;
+  const bass = w === "bass";
+  document.getElementById("wash").style.background = bass ? "radial-gradient(circle, #d6a585, #C49070 60%)" : "radial-gradient(circle, #8fd0dc, #6CB8C8 60%)";
+  document.getElementById("toast").innerHTML = `${bass ? "Bass" : "LAYER"}<small>${bass ? "La agenda de la noche" : "Cripto y mercados"}</small>`;
+  stage.classList.add("entering");
+  setTimeout(() => { stage.classList.remove("entering"); entering = false; w = ""; stage.dataset.w = ""; }, 2300);
+});
+let ac = null, sonido = false, nextBeat = 0, lastTick = 0;
+document.getElementById("sound").onclick = (e) => {
+  sonido = !sonido; e.target.textContent = sonido ? "♪ Sonido: encendido" : "♪ Sonido: apagado"; e.target.classList.toggle("on", sonido);
+  if (sonido && !ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { sonido = false; } }
+  if (ac && ac.state === "suspended") ac.resume();
+};
+function bombo(t) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + .16); g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.001, t + .32); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .34); }
+function tic(t) { const o = ac.createOscillator(), g = ac.createGain(); o.type = "square"; o.frequency.value = 1760; g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.001, t + .05); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .06); }
+
+function pintaApps() {
+  const x = (o) => ficha(fijo, o);
+  document.getElementById("apps").innerHTML = `
+    <div class="app paper"><span class="k">Un color · sello, grabado</span><div class="mk">${x({ mono: TINTA })}</div></div>
+    <div class="app" style="background:#2b2622"><span class="k">Sticker · dos campos</span><div class="sticker"><div class="mk">${x({ campos: true })}</div></div></div>
+    <div class="app" style="background:radial-gradient(80% 80% at 50% 40%, #1a1a1a, #070707)"><span class="k">Ficha de metal · regalo</span><div class="token"><div class="mk">${x({})}</div></div></div>
+    <div class="app" style="background:radial-gradient(90% 90% at 50% 30%, #262a2d, #0b0c0d)"><span class="k">Ícono de la app · favicon</span><div style="display:flex;flex-direction:column;align-items:center;gap:22px;width:100%"><div class="iphone" style="width:56%"><i></i><i></i><i></i><i></i><i></i><i class="me"><span class="mk">${x({ small: true })}</span></i><i></i><i></i></div><div class="sizes">${[48, 32, 16].map((s) => `<span class="mk" style="width:${s}px;height:${s}px">${x({ small: true })}</span>`).join("")}</div></div></div>`;
+}
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let prev = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - prev) / 1000); prev = now;
+  const tg = w === "bass" ? { rise: 1, speed: 1.6, gain: 1.4, dimL: .55, dimB: 1, spinV: 200 } : w === "layer" ? { rise: 0, speed: .5, gain: .4, dimL: 1, dimB: .5, spinV: 15 } : { rise: .5, speed: 1, gain: 1, dimL: 1, dimB: 1, spinV: 50 };
+  for (const k of ["rise", "speed", "gain", "dimL", "dimB"]) st[k] += (tg[k] - st[k]) * Math.min(1, dt * 3.5);
+  if (!reduce) { st.time += dt; st.spin += tg.spinV * dt; st.tick += dt * (w === "layer" ? 2.2 : .3); st.flow += dt * (w === "layer" ? 6 : .6); }
+  mk.innerHTML = ficha(st);
+  if (sonido && ac) {
+    if (w === "bass" && ac.currentTime >= nextBeat - .05) { nextBeat = Math.max(nextBeat, ac.currentTime) + 60 / 124; bombo(nextBeat); }
+    if (w === "layer" && Math.floor(st.tick) !== lastTick) { lastTick = Math.floor(st.tick); tic(ac.currentTime); }
+  }
+  requestAnimationFrame(frame);
+}
+Promise.all([300, 700].map((x) => document.fonts.load(`${x} 40px Geist`))).then(() => { NM = null; pintaApps(); requestAnimationFrame(frame); });
+</script>
+</body>
+</html>
