@@ -405,6 +405,8 @@ export const STRINGS = {
     "home.cicloHalvings": "ciclo · halvings",
     "home.hoy": "hoy",
     "home.elegiMundo": "elegí un mundo",
+    "home.fichaHint": "El vinilo es Bass, el mercado es Layer",
+    "home.fichaHintTouch": "Tocá un mundo para verlo · tocá de nuevo para entrar",
     "home.bassAria": "Bass — agenda de música electrónica",
     "home.layerAria": "Layer — cripto y ciclos de Bitcoin",
 
@@ -821,6 +823,8 @@ export const STRINGS = {
     "home.cicloHalvings": "cycle · halvings",
     "home.hoy": "today",
     "home.elegiMundo": "choose a world",
+    "home.fichaHint": "The record is Bass, the market is Layer",
+    "home.fichaHintTouch": "Tap a world to see it · tap again to enter",
     "home.bassAria": "Bass — electronic music agenda",
     "home.layerAria": "Layer — crypto and Bitcoin cycles",
 

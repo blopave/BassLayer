@@ -114,18 +114,25 @@ async function run(vp) {
     await expectNone("home", homeCollisions);
     await expectNone("home", lowContrast);
     await expectNone("home", brokenLabels);
-    // Superficie porteña (sept 2026): la home cuenta solo CABA + GBA y el
-    // ticker no muestra ciudades del exterior; la agenda arranca en Buenos Aires.
     const amba = (await eventsData()).filter((e) => e.area === "amba").length;
-    // Se espera a que lleguen los eventos (el contador arranca en "—"): leerlo
-    // antes frenó un push por azar con "la home cuenta 0" (oct 2026).
-    await page.waitForFunction(() => /\d/.test(document.querySelector(".blf-big em")?.textContent || ""), null, { timeout: 15_000 }).catch(() => {});
-    const homeN = Number((await page.locator(".blf-big em").first().textContent().catch(() => "")).replace(/\D/g, "")) || 0;
-    if (amba > 0 && homeN !== amba) fail(vp.name, "home", `la home cuenta ${homeN} eventos y en Buenos Aires hay ${amba}`);
-    // La ciudad sale del atributo, no del texto ("Café Berlín" es un venue de CABA).
-    const foreign = await page.locator(".blf-tk[data-city]").evaluateAll((els) => els.map((e) => e.dataset.city).join(" | ")).then((x) => x.match(/\b(BERL[IÍ]N|IBIZA|LONDRES|BARCELONA|NUEVA YORK|SANTIAGO|CIUDAD DE M[EÉ]XICO|S[AÃ]O PAULO)\b/i)).catch(() => null);
-    if (foreign) fail(vp.name, "home", `el ticker de la home muestra eventos de ${foreign[0]}`);
-    await page.getByRole("button", { name: /^Bass —/ }).first().click();
+    // El home es la ficha (oct 2026): el vinilo, las velas y "Bass LAYER" adentro.
+    const fichaSvg = page.locator(".bhf-mk svg");
+    if (!(await fichaSvg.count())) fail(vp.name, "home", "el home no muestra la ficha");
+    else if (!/Bass\s*LAYER/.test(((await fichaSvg.textContent().catch(() => "")) || "").replace(/\s+/g, " "))) fail(vp.name, "home", "la ficha no muestra \"Bass LAYER\"");
+    // En reposo ningún mundo está elegido; pasar (o tocar una vez en el celular) elige sin entrar.
+    if (await page.locator('.bhf[data-w="bass"], .bhf[data-w="layer"]').count()) fail(vp.name, "home", "la ficha arranca con un mundo elegido: el reposo es neutral");
+    const bassHalf = page.getByRole("button", { name: /^Bass —/ }).first();
+    if (vp.isMobile) {
+      await bassHalf.click();
+      await page.waitForTimeout(300);
+      if ((await page.locator(".bhf").getAttribute("data-w").catch(() => "")) !== "bass") fail(vp.name, "home", "en el celular el primer toque no elige Bass");
+      if (await page.locator(".bl-btrack").isVisible().catch(() => false)) fail(vp.name, "home", "en el celular el primer toque entra directo: tiene que mostrar el mundo primero");
+    } else {
+      await bassHalf.hover();
+      await page.waitForTimeout(300);
+      if ((await page.locator(".bhf").getAttribute("data-w").catch(() => "")) !== "bass") fail(vp.name, "home", "pasar por el vinilo no elige Bass");
+    }
+    await bassHalf.click();
 
     // Índice de Bass (sept 2026): la portada es solo la forma de onda con tres
     // hot cues — Noticias, Agenda, Festivales —; Hoy, el finde, De gira y la
@@ -549,7 +556,8 @@ async function run(vp) {
     // Salas hablan el idioma de la Agenda — número de apertura, filtros de
     // texto, pared de afiches y afiche de la casa cuando no hay imagen.
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /^Bass —/ }).first().click().catch(() => {});
+    // En el celular la ficha pide dos toques: el primero elige, el segundo entra.
+    for (let n = vp.isMobile ? 2 : 1; n > 0; n--) await page.getByRole("button", { name: /^Bass —/ }).first().click().catch(() => {});
     await page.locator(".btk-cue", { hasText: /Noticias|News/ }).first().dispatchEvent("click").catch(() => {});
     await page.locator(".bl-bass-news-item").first().waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
     if (await page.locator(".bl-bass-news-item").count()) {

@@ -4,7 +4,6 @@ import { api } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, applyLayerMeta, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile } from "./utils/constants";
-import { useHomeCanvas } from "./hooks/useHomeCanvas";
 import { useFocusTrap } from "./hooks/useFocusTrap";
 import { storage } from "./utils/storage";
 import { dismissCurtain } from "./utils/curtain";
@@ -18,11 +17,7 @@ import { FestivalModal } from "./components/FestivalModal";
 import { useLocale } from "./hooks/useLocale";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
-import HomeFusion from "./components/HomeFusion";
 import HomeFicha from "./components/HomeFicha";
-
-// Prototipo de marca: ?home=a|b|c muestra el home con la ficha (ronda 19). Sin el parámetro, nada cambia.
-const HOME_FICHA = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("home") : null;
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 import { WorldLine } from "./components/WorldLine";
@@ -526,7 +521,7 @@ export default function App() {
   const cursorPos = useRef({ x: -100, y: -100 });
   const cursorTarget = useRef({ x: -100, y: -100 });
   const mouseNorm = useRef({ x: 0, y: 0 }); // -1 to 1 normalized
-  const parallaxRefs = useRef({ tl: null, tr: null, bl: null, br: null, canvas: null });
+  const parallaxRefs = useRef({ tl: null, tr: null, bl: null, br: null });
 
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -568,7 +563,6 @@ export default function App() {
         if (pr.tr) pr.tr.style.transform = `translate(${smooth.x * -6}px, ${smooth.y * -6}px)`;
         if (pr.bl) pr.bl.style.transform = `translate(${smooth.x * -10}px, ${smooth.y * -10}px)`;
         if (pr.br) pr.br.style.transform = `translate(${smooth.x * -5}px, ${smooth.y * -5}px)`;
-        if (pr.canvas) pr.canvas.style.transform = `translate(${smooth.x * 12}px, ${smooth.y * 8}px)`;
       }
 
       raf = requestAnimationFrame(animate);
@@ -577,16 +571,9 @@ export default function App() {
     return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
   }, [isMobile]);
 
-  // Canvas de atmósfera del home (desktop): resplandor cálido/frío reactivo a la
-  // posición del cursor. El tinte por hover de cada mundo ahora lo hace el
-  // cursor-glow de HomeFusion, así que el canvas solo dibuja la atmósfera base.
-  const canvasRef = useRef(null);
-
   // Force re-render for "updated X ago"
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick((n) => n + 1), 30_000); return () => clearInterval(iv); }, []);
-
-  useHomeCanvas(canvasRef, view);
 
   // Navigation
   // Desde la URL en el primer render: con /?view=layer antes se pintaba Bass
@@ -982,8 +969,6 @@ export default function App() {
       {/* HOME */}
       <div className={`bl-view bl-home-view${view === "home" ? " active" : ""}`}>
         <main className={`bl-home${heroEntered ? " hero-entered" : ""}${heroExiting ? " hero-exiting" : ""}`}>
-          {/* canvas generativo solo en desktop — en mobile es un drena-batería sin retorno visible */}
-          {!isMobile && <canvas className="bl-canvas" ref={(el) => { canvasRef.current = el; parallaxRefs.current.canvas = el; }} aria-hidden="true" />}
           {/* Las esquinas de arriba (marca y año) se pisaban con las bajadas de
               cada mundo del home dual; queda solo el reloj de abajo. */}
           <div className="bl-info bl-info-bl" ref={(el) => (parallaxRefs.current.bl = el)} aria-hidden="true">{t("home.city")} — <BaClock /></div>
@@ -994,9 +979,7 @@ export default function App() {
               {`BassLayer — Bass: ${localEvents.length} ${localEvents.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
             </h1>
           )}
-          {["a", "b", "c"].includes(HOME_FICHA)
-            ? <HomeFicha variante={HOME_FICHA} events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} active={view === "home"} onEnter={navigateToSections} />
-            : <HomeFusion events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />}
+          <HomeFicha events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} active={view === "home"} onEnter={navigateToSections} />
 
         </main>
       </div>

@@ -50,12 +50,17 @@ export function homeCollisions() {
     return r.width > 0 && getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden" ? r : null;
   };
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
-  const wm = [...document.querySelectorAll(".blf-wd")].map(box).filter(Boolean);
-  const others = [...document.querySelectorAll(".blf-fcard, .blf-chartwrap, .blf-lstats, .blf-halv, .blf-kick, .blf-big, .blf-genres, .blf-marq, .bl-info")]
-    .map((e) => [e.className.split(" ")[0], box(e)]).filter((x) => x[1]);
+  // La ficha (oct 2026): nada del chrome se mete en el disco, y las esquinas no se pisan entre sí.
+  const disco = document.querySelector(".bhf-hit");
+  const chrome = [...document.querySelectorAll(".bhf-esq, .bhf-hint, .bl-info")].map((e) => [e.className.split(" ").pop(), box(e)]).filter((x) => x[1]);
   const out = [];
-  for (const a of wm) for (const [c, b] of others) if (hit(a, b)) out.push(`el wordmark pisa ${c}`);
-  const chrome = [...document.querySelectorAll(".blf-kick, .bl-info")].map((e) => [e.className.split(" ")[0], box(e)]).filter((x) => x[1]);
+  const d = disco && box(disco);
+  if (d) for (const [c, b] of chrome) {
+    // el disco es un círculo: choca si la caja toca el círculo, no su cuadrado
+    const cx = (d.left + d.right) / 2, cy = (d.top + d.bottom) / 2, r = d.width / 2;
+    const nx = Math.max(b.left, Math.min(cx, b.right)), ny = Math.max(b.top, Math.min(cy, b.bottom));
+    if ((nx - cx) ** 2 + (ny - cy) ** 2 < (r - 1) ** 2) out.push(`${c} pisa la ficha`);
+  }
   for (let i = 0; i < chrome.length; i++) for (let j = i + 1; j < chrome.length; j++)
     if (hit(chrome[i][1], chrome[j][1])) out.push(`${chrome[i][0]} pisa ${chrome[j][0]}`);
   return [...new Set(out)];
