@@ -19,6 +19,10 @@ import { useLocale } from "./hooks/useLocale";
 import { BassFeed } from "./components/BassFeed";
 import { LayerFeed } from "./components/LayerFeed";
 import HomeFusion from "./components/HomeFusion";
+import HomeFicha from "./components/HomeFicha";
+
+// Prototipo de marca: ?home=a|b|c muestra el home con la ficha (ronda 19). Sin el parámetro, nada cambia.
+const HOME_FICHA = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("home") : null;
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 import { WorldLine } from "./components/WorldLine";
@@ -990,7 +994,9 @@ export default function App() {
               {`BassLayer — Bass: ${localEvents.length} ${localEvents.length === 1 ? t("home.evento") : t("home.eventos")} ${t("home.enAgenda")}. Layer: ${t("home.blockchain")}.`}
             </h1>
           )}
-          <HomeFusion events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />
+          {["a", "b", "c"].includes(HOME_FICHA)
+            ? <HomeFicha variante={HOME_FICHA} events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} active={view === "home"} onEnter={navigateToSections} />
+            : <HomeFusion events={localEvents} prices={prices ?? []} t={t} locale={locale} isMobile={isMobile} onEnter={navigateToSections} />}
 
         </main>
       </div>
