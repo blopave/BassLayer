@@ -50,12 +50,13 @@ function nombre(y, S, e, en) {
     ${sub(x0, "start", (en ? "THE NIGHT · " : "LA NOCHE · ") + entrar, CU, e.B) + sub(xl + M.wl, "end", cambio + entrar, CY, e.L)}`;
 }
 
-// ── La ficha, con el nombre adentro, en la franja del agua.
-export function ficha(st, { en = false } = {}) {
+// ── La ficha. El agua deja una franja para el nombre; `conNombre: false` la deja vacía
+//    (el nombre va encima, en HTML, como selector).
+export function ficha(st, { en = false, conNombre = true, franja = true } = {}) {
   const id = "bf" + uid++, H = 228;
   const vx = 124, VR = 100;
   const vy = H + 106 - st.rise * (VR + 42), ry = 2 * H - vy;
-  const band = [296, 346];
+  const band = franja ? [296, 346] : null;   // sin franja: el agua llega entera y el nombre corta el borde de abajo
   const cL = CY, cB = CU;
   const N = 12, por = Math.floor(PRECIO.length / N), V = [];
   for (let i = 0; i < N; i++) { const s2 = PRECIO.slice(i * por, (i + 1) * por + 1); V.push({ o: s2[0], c: s2[s2.length - 1], h: Math.max(...s2), l: Math.min(...s2) }); }
@@ -88,7 +89,7 @@ export function ficha(st, { en = false } = {}) {
   const p = 9.5, sw = 3.4;
   let mar = "", eco = "", cielo = "", i = 0;
   for (let y = H + 8; y < 392; y += p, i++) {
-    if (y > band[0] && y < band[1]) continue;
+    if (band && y > band[0] && y < band[1]) continue;
     const ps = [], pb = [];
     for (let x = 10; x <= 390; x += 2) {
       const d = Math.hypot(x - vx, y - ry), ins = Math.max(0, Math.min(1, (VR - d) / 14));
@@ -105,13 +106,14 @@ export function ficha(st, { en = false } = {}) {
   const vinilo = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="#151515"/>${surco}
     <g transform="rotate(${ang} ${vx} ${vy})"><path d="M${vx} ${vy} L${vx + VR} ${vy - 20} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 20} Z" fill="rgba(237,234,228,.07)"/><path d="M${vx} ${vy} L${vx - VR} ${vy + 20} A${VR} ${VR} 0 0 1 ${vx - VR} ${vy - 20} Z" fill="rgba(237,234,228,.05)"/></g>
     <circle cx="${vx}" cy="${vy}" r="34" fill="${CU}"/><circle cx="${vx}" cy="${vy}" r="3" fill="${FONDO}"/>`;
-  const bandMask = `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>`;
+  const bandMask = band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>` : "";
   return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="${id}f"><circle cx="200" cy="200" r="${R}"/></clipPath>
       <clipPath id="${id}a"><rect x="0" y="-10" width="400" height="${H + 10}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
       <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/><rect x="${xa - 10}" y="${H}" width="${xb - xa + 20}" height="66" fill="#000"/>${bandMask}</mask>
       <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/>${bandMask}</mask>
       <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6}" fill="#000"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
-    <circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
+    ${band ? "" : `<mask id="${id}n" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="84" y="357" width="232" height="52" rx="6" fill="#000"/></mask>`}
+    <g${band ? "" : ` mask="url(#${id}n)"`}><circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
     <g clip-path="url(#${id}f)">
       <g fill="none" stroke="${cL}" stroke-width="${sw * 0.8}" opacity="${Math.min(1, (0.07 + 0.33 * st.L) * il) * (1 - 0.6 * st.B)}" mask="url(#${id}c)">${cielo}</g>
       <g clip-path="url(#${id}a)" opacity="${st.dimB}">${vinilo}</g>
@@ -120,9 +122,11 @@ export function ficha(st, { en = false } = {}) {
       <g mask="url(#${id}e)" opacity="${st.dimL}">${luces}</g>
       <g mask="url(#${id}e)"><g fill="none" stroke="${cB}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id}v)" opacity="${st.dimB}">${eco}</g></g>
       <line x1="0" x2="400" y1="${H}" y2="${H}" stroke="${PAPEL}" stroke-width="1.6" opacity=".42"/>
-    </g>
-    ${nombre(322, 32, st, en)}</svg>`;
+    </g></g>
+    ${conNombre ? nombre(322, 32, st, en) : ""}</svg>`;
 }
+
+export const btc7 = () => BTC7;
 
 // Estados objetivo: reposo (los dos insinuados, se inclina despacio), Bass o Layer elegido.
 export function objetivo(w, inv) {

@@ -8,11 +8,16 @@ import { ficha, objetivo, setPrecio, resetMetricas, ESTADO_INICIAL, KL } from ".
    Reposo: los dos mundos insinuados, en equilibrio medido.
    Elegir: pasar por cada mitad de la ficha (o enfocarla con el teclado);
    en el celular, el primer toque muestra el mundo y el segundo entra.
+   PROTOTIPO ?nombre=1|2|3: el nombre sale de la imagen y va encima, en HTML,
+   como selector (1 relieve · 2 teclas · 3 sobre el borde).
    ══════════════════════════════════════════════════════════════ */
+
+const NOMBRE = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("nombre") : null;
+const OP = ["1", "2", "3"].includes(NOMBRE) ? NOMBRE : null;
 
 export default function HomeFicha({ prices = [], t, locale, isMobile, active = true, onEnter }) {
   const en = locale === "en";
-  const mkRef = useRef(null);
+  const mkRef = useRef(null), rootRef = useRef(null);
   const [w, setW] = useState("");
   const wRef = useRef("");
   wRef.current = w;
@@ -20,6 +25,8 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
   // BTC real de 7 días para las velas (la misma serie que usa /api/prices).
   const btc = useMemo(() => (prices || []).find((p) => String(p.sym || "").toUpperCase() === "BTC"), [prices]);
   useEffect(() => { if (btc?.sparkline) setPrecio(btc.sparkline); }, [btc]);
+  const sp = btc?.sparkline, cambio = sp?.length > 24 ? (sp[sp.length - 1] / sp[0] - 1) * 100 : null;
+  const fmtCambio = cambio == null ? "" : `BTC ${cambio >= 0 ? "+" : "−"}${Math.abs(cambio).toFixed(1).replace(".", en ? "." : ",")}% · 7 d · `;
   // Las medidas del nombre se toman con Geist ya cargada.
   useEffect(() => { document.fonts?.load("700 32px 'Geist Variable'").then(() => document.fonts.load("300 26px 'Geist Variable'")).then(resetMetricas).catch(() => {}); }, []);
 
@@ -31,13 +38,15 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
     const paso = isMobile ? 1 / 30 : 0;
     const st = { ...ESTADO_INICIAL };
     let prev = performance.now(), raf = 0;
-    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en }); };
+    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en, conNombre: !OP, franja: OP !== "3" }); };
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - prev) / 1000);
       if (document.hidden || dt < paso) return;
       prev = now;
-      const m = wRef.current, tg = objetivo(m, reduce ? 0 : Math.sin(st.time * 0.55));
+      const inv = reduce ? 0 : Math.sin(st.time * 0.55), m = wRef.current, tg = objetivo(m, inv);
+      // La invitación en reposo: cada palabra se enciende cuando la ficha se inclina hacia su mundo.
+      if (OP && rootRef.current) { rootRef.current.style.setProperty("--ib", Math.max(0, inv).toFixed(3)); rootRef.current.style.setProperty("--il", Math.max(0, -inv).toFixed(3)); }
       for (const k of ["rise", "speed", "gain", "dimL", "dimB", "L", "B", "grow"]) st[k] += (tg[k] - st[k]) * Math.min(1, dt * 1.3);
       if (!reduce) {
         st.time += dt; st.spin += tg.spinV * dt;
@@ -66,21 +75,29 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
   );
 
   return (
-    <div className={`bhf${isMobile ? " is-mobile" : ""}`} data-w={w}
-      onMouseLeave={() => { if (!isMobile) setW(""); }}
-      onClick={(e) => { if (isMobile && !e.target.closest(".bhf-half")) setW(""); }}>
+    <div className={`bhf${isMobile ? " is-mobile" : ""}`} data-w={w} ref={rootRef}
+      onClick={(e) => { if (isMobile && !e.target.closest(".bhf-half, .bhf-w")) setW(""); }}>
       <span className="bhf-esq bhf-tl"><i />{isMobile ? "Bass" : `Bass · ${t("home.bass")}`}</span>
       <span className="bhf-esq bhf-tr">{isMobile ? "Layer" : `${t("home.blockchain")} · Layer`}<i /></span>
 
-      <div className="bhf-mk-wrap">
+      {/* Fuera de la ficha (y de su nombre), reposo. */}
+      <div className="bhf-mk-wrap" onMouseLeave={() => { if (!isMobile) setW(""); }}>
         <div className="bhf-mk" ref={mkRef} aria-hidden="true" />
         <div className="bhf-hit">
           {mitad("bass", "b", t("home.bassAria"))}
           {mitad("layer", "l", t("home.layerAria"))}
         </div>
+        {OP && (
+          <div className={`bhf-nm bhf-nm-${OP}`} aria-hidden="true">
+            <button className="bhf-w b" tabIndex={-1} onMouseEnter={() => { if (!isMobile) setW("bass"); }} onClick={(e) => tocar(e, "bass")}>
+              <span className="w">Bass</span><span className="go">{t("home.fichaBassGo")}</span>
+            </button>
+            <button className="bhf-w l" tabIndex={-1} onMouseEnter={() => { if (!isMobile) setW("layer"); }} onClick={(e) => tocar(e, "layer")}>
+              <span className="w">LAYER</span><span className="go">{fmtCambio}{t("home.fichaGo")}</span>
+            </button>
+          </div>
+        )}
       </div>
-
-      <span className="bhf-hint">{t(isMobile ? "home.fichaHintTouch" : "home.fichaHint")}</span>
     </div>
   );
 }

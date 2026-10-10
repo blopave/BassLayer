@@ -5774,7 +5774,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 
 /* ── HomeFicha: el home es la ficha de la marca (ronda 19, versión A) ── */
 .bhf { position:absolute; inset:0; z-index:6; display:flex; align-items:center; justify-content:center; background:radial-gradient(70% 60% at 50% 50%, #121214, #050505 72%); user-select:none; }
-.bhf-mk-wrap { position:relative; width:min(76vh, 88vw); aspect-ratio:1; transform:translateY(-1.5vh); }
+.bhf-mk-wrap { position:relative; container-type:inline-size; width:min(76vh, 88vw); aspect-ratio:1; transform:translateY(-1.5vh); }
 .bhf-mk, .bhf-mk svg { width:100%; height:100%; display:block; }
 .bhf-hit { position:absolute; inset:4.5%; border-radius:50%; overflow:hidden; display:flex; }
 .bhf-half { flex:1; background:none; border:0; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -5785,16 +5785,40 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bhf-tr { right:28px; } .bhf-tr i { background:#6CB8C8; }
 .bhf[data-w="bass"] .bhf-tl { color:#C49070; }
 .bhf[data-w="layer"] .bhf-tr { color:#6CB8C8; }
-.bhf-hint { position:absolute; left:0; right:0; bottom:7%; padding:0 16px; text-align:center; font-family:var(--font-mono); font-size:var(--fs-10, 10px); letter-spacing:var(--tr-16); text-transform:uppercase; color:rgba(237,234,228,.36); pointer-events:none; transition:opacity .5s; }
-/* La bienvenida de la primera visita ocupa el mismo lugar: mientras está, la ayuda espera. */
-.bl-root:has(.bl-welcome-line) .bhf-hint { opacity:0; }
 .bhf.is-mobile .bhf-mk-wrap { width:92vw; }
 .bhf.is-mobile .bhf-esq { top:22px; }
 .bhf.is-mobile .bhf-tl { left:16px; } .bhf.is-mobile .bhf-tr { right:16px; }
-.bhf.is-mobile .bhf-hint { bottom:12%; }
 /* Día: la ficha es un objeto oscuro (un vinilo es negro) sobre papel; los textos pasan al par de día. */
 .bl-root.day-mode .bhf { background:radial-gradient(70% 60% at 50% 50%, #F3EFE8, #E2DCD2 78%); }
-.bl-root.day-mode .bhf-esq, .bl-root.day-mode .bhf-hint { color:rgba(11,11,11,.5); }
+.bl-root.day-mode .bhf-esq { color:rgba(11,11,11,.5); }
 .bl-root.day-mode .bhf[data-w="bass"] .bhf-tl { color:#8E5B3A; }
 .bl-root.day-mode .bhf[data-w="layer"] .bhf-tr { color:#2A6E7C; }
 .bl-root.day-mode .bhf-half:focus-visible { box-shadow:inset 0 0 0 2px rgba(11,11,11,.35); }
+/* ── El nombre encima de la ficha (prototipo ?nombre=1|2|3): el selector va en un plano por delante ── */
+.bhf-nm { position:absolute; left:50%; top:79%; transform:translate(-50%,-50%); display:flex; align-items:baseline; gap:.28em; font-size:8cqw; white-space:nowrap; }
+.bhf-w { position:relative; background:none; border:0; padding:0; cursor:pointer; font-family:'Geist Variable', system-ui, sans-serif; font-size:inherit; line-height:1; transition:opacity .6s ease, transform .35s cubic-bezier(.2,.8,.2,1), filter .35s; -webkit-tap-highlight-color:transparent; }
+.bhf-w .w { display:block; }
+.bhf-w.b .w { font-weight:700; letter-spacing:-.03em; color:#C49070; }
+.bhf-w.l .w { font-weight:300; font-size:.805em; letter-spacing:.1em; color:#6CB8C8; }
+.bhf-w .go { position:absolute; top:calc(100% + .5em); font-family:var(--font-mono); font-size:.27em; letter-spacing:var(--tr-16); text-transform:uppercase; white-space:nowrap; opacity:0; transition:opacity .5s; }
+.bhf-w.b .go { left:0; color:#C49070; } .bhf-w.l .go { right:0; color:#6CB8C8; }
+.bhf-w.b { opacity:calc(.74 + .26 * var(--ib, 0)); } .bhf-w.l { opacity:calc(.74 + .26 * var(--il, 0)); }
+.bhf[data-w="bass"] .bhf-w.b, .bhf[data-w="layer"] .bhf-w.l { opacity:1; transform:translateY(-.06em); filter:brightness(1.15); }
+.bhf[data-w="bass"] .bhf-w.l, .bhf[data-w="layer"] .bhf-w.b { opacity:.28; }
+.bhf[data-w="bass"] .bhf-w.b .go, .bhf[data-w="layer"] .bhf-w.l .go { opacity:1; }
+/* 1 · Relieve: a plena luz sobre la penumbra, con una sombra que la despega */
+.bhf-nm-1 .w { text-shadow:0 .05em .35em rgba(0,0,0,.95), 0 0 1.4em rgba(0,0,0,.7); }
+/* 2 · Teclas: cada palabra en una pastilla apoyada sobre el agua */
+.bhf-nm-2 { font-size:6.6cqw; gap:.36em; align-items:center; }
+.bhf-nm-2 .bhf-w { padding:.26em .58em .3em; border-radius:999px; background:rgba(9,9,10,.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+.bhf-nm-2 .bhf-w.b { box-shadow:inset 0 0 0 1px rgba(196,144,112,.38); } .bhf-nm-2 .bhf-w.l { box-shadow:inset 0 0 0 1px rgba(108,184,200,.38); }
+.bhf-nm-2 .bhf-w.l .w { padding:.1em 0; }
+.bhf.is-mobile .bhf-nm-2 .bhf-w, .bhf:not(.is-mobile) .bhf-nm-2 .bhf-w:hover { background:rgba(9,9,10,.8); }
+.bhf[data-w="bass"] .bhf-nm-2 .bhf-w.b { box-shadow:inset 0 0 0 1px rgba(196,144,112,.85); }
+.bhf[data-w="layer"] .bhf-nm-2 .bhf-w.l { box-shadow:inset 0 0 0 1px rgba(108,184,200,.85); }
+.bhf-nm-2 .bhf-w .go { top:calc(100% + .7em); font-size:.3em; } .bhf-nm-2 .bhf-w.b .go { left:.9em; } .bhf-nm-2 .bhf-w.l .go { right:.9em; }
+/* 3 · Sobre el borde: el nombre baja, cruza el círculo y lo corta */
+.bhf-nm-3 { top:95.5%; font-size:9.4cqw; }
+.bl-root.day-mode .bhf-nm-3 .bhf-w.b .w, .bl-root.day-mode .bhf-nm-3 .bhf-w.b .go { color:#8E5B3A; }
+.bl-root.day-mode .bhf-nm-3 .bhf-w.l .w, .bl-root.day-mode .bhf-nm-3 .bhf-w.l .go { color:#2A6E7C; }
+.bhf-nm-3 .bhf-w .go { top:calc(100% + .75em); }
