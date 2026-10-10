@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El símbolo desde la escena · ronda 22</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.64); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  .wrap { max-width:1320px; margin:0 auto; padding:64px 28px 120px; }
+  h1 { font-size:clamp(42px, 5.2vw, 82px); font-weight:800; letter-spacing:-.05em; line-height:.93; margin-top:16px; }
+  h1 em { font-style:normal; color:var(--ter); }
+  .lead { margin-top:22px; font-size:17px; line-height:1.6; color:var(--sec); max-width:860px; }
+  .lead b { color:var(--ink); font-weight:500; }
+  .heroes { margin-top:40px; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .heroes > div { background:radial-gradient(70% 70% at 50% 45%, #111113, #070707 72%); padding:26px 26px 28px; display:flex; flex-direction:column; gap:16px; }
+  .heroes .mk { width:76%; margin:8px auto 0; aspect-ratio:1; }
+  .heroes .tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; color:var(--cu); }
+  .heroes b { font-size:22px; letter-spacing:-.02em; }
+  .heroes p { font-size:13.5px; line-height:1.55; color:var(--sec); }
+  .grid { margin-top:40px; display:grid; grid-template-columns:200px repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .grid > div { background:var(--night); padding:18px; display:flex; align-items:center; justify-content:center; gap:14px; min-height:140px; }
+  .grid .rl { justify-content:flex-start; flex-direction:column; align-items:flex-start; gap:6px; }
+  .grid .rl b { font-size:15px; } .grid .rl span { font-size:12px; color:var(--sec); line-height:1.45; }
+  .grid .hd { min-height:auto; justify-content:flex-start; } .grid .hd b { font-size:17px; }
+  .paper { background:#EDEAE4 !important; }
+  .s svg, .mk svg { display:block; width:100%; height:100%; }
+  .meter { width:100%; } .meter .b { display:flex; height:6px; border-radius:3px; overflow:hidden; background:#151515; } .meter .t { display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; margin-top:6px; }
+  .rec { margin-top:56px; padding:30px; border:1px solid var(--cu); border-radius:14px; background:linear-gradient(135deg, rgba(196,144,112,.07), rgba(108,184,200,.05)); }
+  .rec h3 { font-size:26px; font-weight:800; letter-spacing:-.03em; margin:8px 0 10px; }
+  .rec p { color:var(--sec); line-height:1.6; max-width:980px; }
+  .rec p b { color:var(--ink); font-weight:500; }
+  @media (max-width:1000px) { .heroes { grid-template-columns:1fr; } .grid { grid-template-columns:1fr 1fr; } .grid .rl { grid-column:1 / -1; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="k">Marca BassLayer · ronda 22 · el símbolo sale de la escena</div>
+  <h1>El símbolo es<br><em>un fotograma de la escena.</em></h1>
+  <p class="lead">El símbolo de la ronda 21 se veía genérico, plano, sin la escena y con un vinilo que no se leía. Ahora sale de la escena: <b>es su mejor fotograma, dibujado con el mismo lenguaje de líneas</b>. El vinilo se ve casi entero (disco, surcos, etiqueta y agujero), las velas son un gráfico real (rellenas y huecas) y abajo vuelve el reflejo, en ondas y en luces. Para 32 px o menos, cada uno tiene una <b>reducción diseñada aparte</b>, que mantiene vinilo, velas y horizonte.</p>
+  <div class="heroes" id="heroes"></div>
+  <div class="grid" id="grid"></div>
+  <div class="rec" id="rec"></div>
+</main>
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4";
+let uid = 0;
+const HZ = 63;
+// Velas fijas del símbolo: un gráfico dibujado (sube, corrige, sube). up = rellena; down = hueca.
+const VELAS = [
+  { x: 59, o: 54, c: 48, h: 45, l: 57 }, { x: 65.5, o: 48, c: 42, h: 39, l: 50 }, { x: 72, o: 42, c: 46, h: 38, l: 49 },
+  { x: 78.5, o: 46, c: 36, h: 32, l: 48 }, { x: 85, o: 36, c: 29, h: 25, l: 38 },
+];
+const sen = (x0, x1, y, a, p) => { let d = ""; for (let x = x0; x <= x1; x += .8) d += `${d ? " L" : "M"}${x.toFixed(1)} ${(y + a * Math.sin(x / p * Math.PI * 2)).toFixed(2)}`; return d; };
+function disco(id, mono) { return `<defs><clipPath id="${id}"><circle cx="50" cy="50" r="45.5"/></clipPath></defs><circle cx="50" cy="50" r="48" fill="${mono ? "none" : "#17171A"}" stroke="${mono || "rgba(237,234,228,.22)"}" stroke-width="${mono ? 3 : 1.2}"/>`; }
+
+// ── E · Fotograma: la escena congelada en equilibrio.
+function E(m = {}) {
+  const id = "e" + uid++, cu = m.mono || CU, cy = m.mono || CY, bg = m.mono ? m.bg : "#17171A", vx = 34, vy = 54, VR = 21;
+  if (m.chico) return reducido(id, m, vx, vy, VR);
+  let surcos = ""; for (let r = 11; r <= VR - 1.5; r += 2.3) surcos += `<circle cx="${vx}" cy="${vy}" r="${r}" fill="none" stroke="${cu}" stroke-width=".7" opacity="${m.mono ? .8 : .75}"/>`;
+  const vin = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="${m.mono ? "none" : "#0C0C0D"}" stroke="${m.mono ? cu : "none"}" stroke-width="${m.mono ? 1.2 : 0}"/>${surcos}<circle cx="${vx}" cy="${vy}" r="7.4" fill="${cu}"/><circle cx="${vx}" cy="${vy}" r="1.3" fill="${bg}"/>
+    ${m.mono ? "" : `<path d="M${vx} ${vy} L${vx + VR} ${vy - 6} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 6} Z" fill="rgba(237,234,228,.08)" transform="rotate(-38 ${vx} ${vy})"/>`}`;
+  const vel = VELAS.map((v) => { const up = v.c < v.o, t = Math.min(v.o, v.c), b = Math.max(v.o, v.c);
+    return `<line x1="${v.x}" x2="${v.x}" y1="${v.h}" y2="${v.l}" stroke="${cy}" stroke-width="1"/><rect x="${v.x - 2.5}" y="${t}" width="5" height="${b - t}" fill="${up ? cy : bg}" stroke="${cy}" stroke-width="${up ? 0 : 1}"/>`; }).join("");
+  const ondas = [68, 72.5, 77].map((y, i) => `<path d="${sen(vx - 17 + i * 2.5, vx + 17 - i * 2.5, y, 1.25, 7)}" fill="none" stroke="${cu}" stroke-width="1.6" stroke-linecap="round" opacity="${1 - i * .2}"/>`).join("");
+  const luces = VELAS.map((v) => { const t = Math.min(v.o, v.c), b = Math.max(v.o, v.c); return `<line x1="${v.x}" x2="${v.x}" y1="${HZ + 3 + (HZ - b) * .35}" y2="${HZ + 3 + (HZ - t) * .35}" stroke="${cy}" stroke-width="5" stroke-dasharray="1.3 1.3" opacity=".6"/>`; }).join("");
+  const cielo = [16, 22, 28].map((y, i) => `<line x1="${52 + i * 3}" x2="96" y1="${y}" y2="${y}" stroke="${cy}" stroke-width="1.6" stroke-dasharray="${[9, 2.5, 5, 2.5, 13, 2.5][i % 6]} 2.5" opacity=".28"/>`).join("");
+  return `<svg viewBox="0 0 100 100">${disco(id, m.mono)}<g clip-path="url(#${id})">${cielo}<g><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath></g><g clip-path="url(#${id}a)">${vin}</g>${vel}${ondas}${luces}<rect x="0" y="${HZ - .6}" width="100" height="1.2" fill="${m.mono || PAPEL}" opacity="${m.mono ? 1 : .55}"/></g></svg>`;
+}
+// ── F · Grabado: todo en líneas de un solo grosor (ficha de metal, sello, grabado láser).
+function F(m = {}) {
+  const id = "f" + uid++, cu = m.mono || CU, cy = m.mono || CY, vx = 34, vy = 54, VR = 21, sw = 1.25;
+  if (m.chico) return reducido(id, m, vx, vy, VR);
+  let surcos = ""; for (let r = 4; r <= VR; r += 2.8) surcos += `<circle cx="${vx}" cy="${vy}" r="${r}" fill="none" stroke="${cu}" stroke-width="${sw}"/>`;
+  const vel = VELAS.map((v) => { const up = v.c < v.o, t = Math.min(v.o, v.c), b = Math.max(v.o, v.c);
+    return `<line x1="${v.x}" x2="${v.x}" y1="${v.h}" y2="${t}" stroke="${cy}" stroke-width="${sw}"/><line x1="${v.x}" x2="${v.x}" y1="${b}" y2="${v.l}" stroke="${cy}" stroke-width="${sw}"/><rect x="${v.x - 2.4}" y="${t}" width="4.8" height="${b - t}" fill="${up ? cy : "none"}" stroke="${cy}" stroke-width="${sw}"/>`; }).join("");
+  const ondas = [68, 72, 76, 80].map((y, i) => `<path d="${sen(vx - 18 + i * 3, vx + 18 - i * 3, y, 1.1, 7)}" fill="none" stroke="${cu}" stroke-width="${sw}" stroke-linecap="round"/>`).join("");
+  const luces = [68, 72, 76].map((y, i) => `<line x1="${58 + i * 3}" x2="${94 - i * 4}" y1="${y}" y2="${y}" stroke="${cy}" stroke-width="${sw}" stroke-dasharray="${[6, 2, 3, 2, 8, 2][i]} 2"/>`).join("");
+  return `<svg viewBox="0 0 100 100">${disco(id, m.mono)}<g clip-path="url(#${id})"><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath><g clip-path="url(#${id}a)">${surcos}</g>${vel}${ondas}${luces}<line x1="0" x2="100" y1="${HZ}" y2="${HZ}" stroke="${m.mono || PAPEL}" stroke-width="${sw}" opacity="${m.mono ? 1 : .6}"/></g></svg>`;
+}
+// ── G · Vinilo y ciudad: vinilo más grande y las velas delante, superpuestas (profundidad, silueta más fuerte).
+function G(m = {}) {
+  const id = "g" + uid++, cu = m.mono || CU, cy = m.mono || CY, bg = m.mono ? m.bg : "#17171A", vx = 40, vy = 50, VR = 28;
+  if (m.chico) return reducido(id, m, vx, vy, VR);
+  let surcos = ""; for (let r = 13; r <= VR - 1.5; r += 2.4) surcos += `<circle cx="${vx}" cy="${vy}" r="${r}" fill="none" stroke="${cu}" stroke-width=".7" opacity=".75"/>`;
+  const vin = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="${m.mono ? "none" : "#0C0C0D"}" stroke="${m.mono ? cu : "none"}" stroke-width="${m.mono ? 1.2 : 0}"/>${surcos}<circle cx="${vx}" cy="${vy}" r="9.5" fill="${cu}"/><circle cx="${vx}" cy="${vy}" r="1.5" fill="${bg}"/>`;
+  const vel = VELAS.map((v, i) => { const up = v.c < v.o, t = Math.min(v.o, v.c) + 6, b = Math.max(v.o, v.c) + 6, x = v.x - 2;
+    return `<line x1="${x}" x2="${x}" y1="${v.h + 6}" y2="${Math.min(HZ, v.l + 6)}" stroke="${cy}" stroke-width="1.1"/><rect x="${x - 2.9}" y="${t}" width="5.8" height="${b - t}" fill="${up ? cy : bg}" stroke="${cy}" stroke-width="${up ? 0 : 1.1}"/>`; }).join("");
+  const halo = VELAS.map((v) => `<rect x="${v.x - 2 - 4.4}" y="${Math.min(v.o, v.c) + 2}" width="8.8" height="${HZ - Math.min(v.o, v.c) - 2}" fill="${bg}"/>`).join("");
+  const ondas = [68, 72.5, 77].map((y, i) => `<path d="${sen(vx - 22 + i * 3, vx + 16 - i * 3, y, 1.3, 7)}" fill="none" stroke="${cu}" stroke-width="1.6" stroke-linecap="round" opacity="${1 - i * .2}"/>`).join("");
+  const luces = VELAS.map((v) => `<line x1="${v.x - 2}" x2="${v.x - 2}" y1="${HZ + 3}" y2="${HZ + 3 + (HZ - Math.min(v.o, v.c) - 6) * .35}" stroke="${cy}" stroke-width="5.8" stroke-dasharray="1.3 1.3" opacity=".6"/>`).join("");
+  return `<svg viewBox="0 0 100 100">${disco(id, m.mono)}<g clip-path="url(#${id})"><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath><g clip-path="url(#${id}a)">${vin}${m.mono ? "" : halo}</g>${vel}${ondas}${luces}<rect x="0" y="${HZ - .6}" width="100" height="1.2" fill="${m.mono || PAPEL}" opacity="${m.mono ? 1 : .55}"/></g></svg>`;
+}
+// ── Reducción para 32 px o menos (diseñada aparte): vinilo lleno con un surco y etiqueta, 3 velas gruesas, horizonte.
+function reducido(id, m, vx, vy, VR) {
+  const cu = m.mono || CU, cy = m.mono || CY, bg = m.mono ? m.bg : "#17171A";
+  return `<svg viewBox="0 0 100 100">${disco(id, m.mono)}<g clip-path="url(#${id})"><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath>
+    <g clip-path="url(#${id}a)"><circle cx="${vx}" cy="${vy}" r="${VR + 2}" fill="${cu}"/><circle cx="${vx}" cy="${vy}" r="${VR * .62}" fill="none" stroke="${bg}" stroke-width="3.4"/><circle cx="${vx}" cy="${vy}" r="3.4" fill="${bg}"/></g>
+    ${[[66, 18], [77, 27], [88, 38]].map(([x, h]) => `<rect x="${x - 4.2}" y="${HZ - h}" width="8.4" height="${h}" fill="${cy}"/>`).join("")}
+    <rect x="0" y="${HZ}" width="100" height="5" fill="${m.mono || PAPEL}"/></g></svg>`;
+}
+
+const CAND = [["E", E, "Fotograma", "La escena congelada en su equilibrio, con el mismo lenguaje: surcos, etiqueta y brillo; velas reales; ondas y luces en el agua; capas tenues en el cielo."], ["F", F, "Grabado", "Todo en líneas de un solo grosor, como una ficha de metal grabada. La más premium y la mejor para sello, láser y un color."], ["G", G, "Vinilo y ciudad", "El vinilo más grande y las velas delante, superpuestas: más profundidad y una silueta más fuerte."]];
+const S = (f, px, m = {}) => `<span class="s" style="width:${px}px;height:${px}px;display:inline-block">${f(m)}</span>`;
+document.getElementById("heroes").innerHTML = CAND.map(([n, f, t, d]) => `<div><span class="tag">${n}</span><div class="mk">${f()}</div><b>${t}</b><p>${d}</p></div>`).join("");
+const FILAS = [
+  ["Tamaños reales", "64 px completo · 32 y 16 px con la reducción", (f) => S(f, 64) + S(f, 32, { chico: true }) + S(f, 16, { chico: true })],
+  ["Un color", "Sobre papel: sello, grabado, láser", (f) => S(f, 120, { mono: TINTA, bg: PAPEL }) + S(f, 32, { mono: TINTA, bg: PAPEL, chico: true }), "paper"],
+  ["Prueba de retina", "Desenfocada", (f) => `<span style="filter:blur(5px)">${S(f, 120)}</span>`],
+  ["Escala de grises", "Los mundos por la forma", (f) => `<span style="filter:grayscale(1)">${S(f, 120)}</span>`],
+  ["Equilibrio", "Cobre contra celeste, medido", (f, i) => `<div class="meter" data-m="${i}"><div class="b"><i class="bb" style="background:var(--cu);width:50%"></i><i class="ll" style="background:var(--cy);width:50%"></i></div><div class="t"><span style="color:var(--cu)">…</span><span style="color:var(--cy)">…</span></div></div>`],
+];
+let h = `<div class="hd"></div>` + CAND.map(([n, , t]) => `<div class="hd"><b>${n} · ${t}</b></div>`).join("");
+for (const [t, d, fn, cls] of FILAS) h += `<div class="rl"><b>${t}</b><span>${d}</span></div>` + CAND.map(([, f], i) => `<div class="${cls || ""}">${fn(f, i)}</div>`).join("");
+document.getElementById("grid").innerHTML = h;
+const lienzo = document.createElement("canvas"); lienzo.width = lienzo.height = 300; const cx2 = lienzo.getContext("2d", { willReadFrequently: true });
+const medir = (svg) => new Promise((ok) => { const img = new Image(); img.onload = () => { cx2.fillStyle = "#070707"; cx2.fillRect(0, 0, 300, 300); cx2.drawImage(img, 0, 0, 300, 300); const d = cx2.getImageData(0, 0, 300, 300).data; let b = 0, l = 0;
+  for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i + 1], bl = d[i + 2], mx = Math.max(r, g, bl), mn = Math.min(r, g, bl); if (mx < 40 || mx - mn < 30) continue; if (r > bl) b += mx / 255; else if (bl > r) l += mx / 255; } ok({ b, l }); };
+  img.onerror = () => ok({ b: 1, l: 1 }); img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')); });
+(async () => { for (const [i, [, f]] of CAND.entries()) { const m = await medir(f()), pb = Math.round(m.b / (m.b + m.l || 1) * 100), el = document.querySelector(`[data-m="${i}"]`); el.querySelector(".bb").style.width = pb + "%"; el.querySelector(".ll").style.width = 100 - pb + "%"; const [a, b] = el.querySelectorAll(".t span"); a.textContent = "Cobre " + pb + " %"; b.textContent = "Celeste " + (100 - pb) + " %"; } })();
+document.getElementById("rec").innerHTML = `<div class="k">Mi lectura</div><h3>F · Grabado como símbolo; E como versión de presentación.</h3>
+  <p><b>F</b> es la que más se parece a una marca de estudio: un solo grosor, todo en líneas, se graba en metal y se imprime en un color sin perder nada, y el vinilo se lee por sus surcos. <b>E</b> es la más fiel a la escena viva (el mismo brillo, las mismas luces) y queda espectacular grande, pero tiene más detalle del que un símbolo necesita: sirve como versión de presentación (afiche, pantalla de carga). <b>G</b> gana silueta, pero las velas tapando el vinilo esconden justo lo que lo hace reconocible. En los tres, a 32 px o menos entra la reducción, que mantiene vinilo, velas y horizonte.</p>`;
+</script>
+</body>
+</html>
