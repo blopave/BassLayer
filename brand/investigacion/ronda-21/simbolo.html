@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El símbolo fijo · ronda 21</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.64); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --ok:#7fc28f; --mid:#d8b25a; --bad:#e07b6a; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  .wrap { max-width:1320px; margin:0 auto; padding:64px 28px 120px; }
+  h1 { font-size:clamp(42px, 5.2vw, 82px); font-weight:800; letter-spacing:-.05em; line-height:.93; margin-top:16px; }
+  h1 em { font-style:normal; color:var(--ter); }
+  .lead { margin-top:22px; font-size:17px; line-height:1.6; color:var(--sec); max-width:820px; }
+  .lead b { color:var(--ink); font-weight:500; }
+  .grid { margin-top:44px; display:grid; grid-template-columns:200px repeat(4, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .grid > div { background:var(--night); padding:18px; display:flex; align-items:center; justify-content:center; gap:12px; min-height:150px; }
+  .grid .rl { justify-content:flex-start; flex-direction:column; align-items:flex-start; gap:6px; }
+  .grid .rl b { font-size:15px; } .grid .rl span { font-size:12px; color:var(--sec); line-height:1.45; }
+  .grid .hd { flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:6px; min-height:auto; }
+  .grid .hd b { font-size:20px; letter-spacing:-.02em; } .grid .hd span { font-size:12.5px; color:var(--sec); line-height:1.5; }
+  .grid .hd .tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; color:var(--cu); }
+  .paper { background:#EDEAE4 !important; }
+  .s svg { display:block; width:100%; height:100%; }
+  .meter { width:100%; } .meter .b { display:flex; height:6px; border-radius:3px; overflow:hidden; background:#151515; } .meter .t { display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; margin-top:6px; }
+  .verdict { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:4px 10px; border-radius:999px; }
+  .rec { margin-top:60px; padding:30px; border:1px solid var(--cu); border-radius:14px; background:linear-gradient(135deg, rgba(196,144,112,.07), rgba(108,184,200,.05)); display:grid; grid-template-columns:240px 1fr; gap:36px; align-items:center; }
+  .rec h3 { font-size:28px; font-weight:800; letter-spacing:-.03em; margin:8px 0 10px; }
+  .rec p { color:var(--sec); line-height:1.6; }
+  .rec p b { color:var(--ink); font-weight:500; }
+  .lock { margin-top:60px; }
+  .lock h2 { font-size:clamp(28px, 3vw, 44px); font-weight:800; letter-spacing:-.04em; }
+  .locks { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:24px; }
+  .locks > div { background:var(--night); min-height:220px; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; }
+  .locks > div .k { position:absolute; left:16px; top:14px; }
+  @media (max-width:1000px) { .grid { grid-template-columns:1fr 1fr; } .grid .rl { grid-column:1 / -1; } .rec { grid-template-columns:1fr; } .locks { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="k">Marca BassLayer · ronda 21 · el símbolo fijo</div>
+  <h1>De la escena<br><em>al símbolo.</em></h1>
+  <p class="lead">El primer punto de la auditoría: <b>destilar la escena en pocas formas sólidas</b> que funcionen antes de moverse. Cuatro candidatos sobre la misma idea (medio vinilo y velas sobre un horizonte) pasan por las mismas pruebas. En todos, <b>el ancho de las velas está calculado para que cobre y celeste ocupen la misma área</b>, y los dos mundos se distinguen por <b>la forma</b> (curva contra barras), no solo por el color: así sobreviven en un color y en escala de grises.</p>
+  <div class="grid" id="grid"></div>
+  <div class="rec" id="rec"></div>
+  <section class="lock"><div class="k">El sistema que sale del símbolo elegido</div><h2>Símbolo, logotipo y combinaciones.</h2><div class="locks" id="locks"></div></section>
+</main>
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
+let uid = 0;
+// ── Geometría común (viewBox 100): horizonte en y=60, vinilo a la izquierda, tres velas a la derecha.
+const HZ = 60, VX = 33, VR = 22, HOLE = 6.5;
+const VELAS = [{ x: 63, h: 14, w: 4 }, { x: 74, h: 23, w: 4 }, { x: 85, h: 33, w: 4 }];
+// Ancho de las velas para igualar el área cobre (semicírculo menos el agujero).
+function anchoVelas(sinAgujero) { const aCu = Math.PI * VR * VR / 2 - (sinAgujero ? 0 : Math.PI * HOLE * HOLE / 2); const sumH = VELAS.reduce((s, v) => s + v.h, 0); return aCu / sumH; }
+
+function piezas({ cu, cy, hz, fondo, agujero = true, mecha = true, w }) {
+  const vw = w ?? anchoVelas(!agujero);
+  const vin = `<path d="M${VX - VR} ${HZ} A${VR} ${VR} 0 0 1 ${VX + VR} ${HZ} Z" fill="${cu}"/>` + (agujero ? `<path d="M${VX - HOLE} ${HZ} A${HOLE} ${HOLE} 0 0 1 ${VX + HOLE} ${HZ} Z" fill="${fondo}"/>` : "");
+  const vel = VELAS.map((v) => `<rect x="${v.x - vw / 2}" y="${HZ - v.h}" width="${vw}" height="${v.h}" fill="${cy}"/>` + (mecha ? `<rect x="${v.x - .9}" y="${HZ - v.h - 6}" width="1.8" height="6" fill="${cy}"/>` : "")).join("");
+  const lin = hz ? `<rect x="6" y="${HZ}" width="88" height="2.6" fill="${hz}"/>` : "";
+  return vin + vel + lin;
+}
+const SIMB = {
+  // A · Amanecer: las tres formas solas, sin contenedor.
+  amanecer: (m = {}) => `<svg viewBox="0 6 100 64">${piezas({ cu: m.mono || CU, cy: m.mono || CY, hz: m.mono || m.hz || PAPEL, fondo: m.bg || FONDO, mecha: !m.chico, agujero: !m.chico })}</svg>`,
+  // B · Ficha: las formas dentro de un disco (la ficha). El disco da la silueta redonda.
+  ficha: (m = {}) => { const id = "c" + uid++; return `<svg viewBox="0 0 100 100"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="46"/></clipPath></defs><circle cx="50" cy="50" r="48" fill="${m.mono ? "none" : "#17171A"}" stroke="${m.mono || "rgba(237,234,228,.22)"}" stroke-width="${m.mono ? 3.4 : 1.4}"/><g clip-path="url(#${id})">${piezas({ cu: m.mono || CU, cy: m.mono || CY, hz: m.mono || PAPEL, fondo: m.mono ? m.bg : FONDO, mecha: !m.chico, agujero: !m.chico })}</g></svg>`; },
+  // C · Ficha con reflejo: abajo, el reflejo en el idioma de cada mundo (ondas / barras), simplificado.
+  reflejo: (m = {}) => { const id = "r" + uid++, cu = m.mono || CU, cy = m.mono || CY; const vw = anchoVelas(m.chico);
+    const ondas = [66, 73].map((y) => `<path d="M${VX - 18} ${y} q4.5 -3 9 0 t9 0 t9 0 t9 0" fill="none" stroke="${cu}" stroke-width="2.6" stroke-linecap="round"/>`).join("");
+    const barras = VELAS.map((v) => `<rect x="${v.x - vw / 2}" y="${HZ + 5}" width="${vw}" height="${v.h * .36}" fill="${cy}" opacity=".55"/>`).join("");
+    return `<svg viewBox="0 0 100 100"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="46"/></clipPath></defs><circle cx="50" cy="50" r="48" fill="${m.mono ? "none" : "#17171A"}" stroke="${m.mono || "rgba(237,234,228,.22)"}" stroke-width="${m.mono ? 3.4 : 1.4}"/><g clip-path="url(#${id})">${piezas({ cu, cy, hz: m.mono || PAPEL, fondo: m.mono ? m.bg : FONDO, mecha: !m.chico, agujero: !m.chico })}${m.chico ? "" : ondas + barras}</g></svg>`; },
+  // D · Dos campos: la ficha partida por el horizonte; el cielo cobre con el vinilo calado, el mar celeste con las velas caladas.
+  campos: (m = {}) => { const id = "d" + uid++, cu = m.mono || CU, cy = m.mono || CY, bg = m.mono ? m.bg : FONDO; const vw = anchoVelas(true);
+    return `<svg viewBox="0 0 100 100"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="48"/></clipPath></defs><g clip-path="url(#${id})">
+      <rect x="0" y="0" width="100" height="${HZ}" fill="${m.mono ? "none" : FONDO}"/><rect x="0" y="${HZ}" width="100" height="40" fill="${cy}"/>
+      <path d="M${VX - VR} ${HZ} A${VR} ${VR} 0 0 1 ${VX + VR} ${HZ} Z" fill="${cu}"/>${m.chico ? "" : `<path d="M${VX - HOLE} ${HZ} A${HOLE} ${HOLE} 0 0 1 ${VX + HOLE} ${HZ} Z" fill="${bg}"/>`}
+      ${VELAS.map((v) => `<rect x="${v.x - vw / 2}" y="${HZ - v.h}" width="${vw}" height="${v.h}" fill="${cy}"/>`).join("")}
+      ${VELAS.map((v) => `<rect x="${v.x - vw / 2 - .6}" y="${HZ + 4}" width="${vw + 1.2}" height="${v.h * .5}" fill="${bg}"/>`).join("")}
+      <path d="M${VX - 20} ${HZ + 12} q5 -3.4 10 0 t10 0 t10 0 t10 0" fill="none" stroke="${bg}" stroke-width="2.8" stroke-linecap="round"/></g>
+      ${m.mono ? `<circle cx="50" cy="50" r="48" fill="none" stroke="${m.mono}" stroke-width="3.4"/>` : ""}</svg>`; },
+};
+const CAND = [
+  ["amanecer", "A", "Amanecer", "Las tres formas solas: el sol-vinilo y la ciudad-velas sobre el horizonte. Sin contenedor."],
+  ["ficha", "B", "Ficha", "Las mismas formas dentro de un disco: la ficha da una silueta redonda que se reconoce de lejos."],
+  ["reflejo", "C", "Ficha con reflejo", "Suma el reflejo en el idioma de cada mundo (ondas / barras). Más fiel a la escena viva."],
+  ["campos", "D", "Dos campos", "La ficha partida por el horizonte: el mar celeste, el vinilo cobre y las velas caladas. La versión del sticker que te gustó."],
+];
+
+// ── Medición: área de cobre y de celeste (píxeles) para verificar el equilibrio del símbolo.
+const lienzo = document.createElement("canvas"); lienzo.width = lienzo.height = 300; const cx2 = lienzo.getContext("2d", { willReadFrequently: true });
+function medir(svg) {
+  return new Promise((ok) => { const img = new Image(); img.onload = () => { cx2.fillStyle = "#070707"; cx2.fillRect(0, 0, 300, 300); cx2.drawImage(img, 0, 0, 300, 300); const d = cx2.getImageData(0, 0, 300, 300).data; let b = 0, l = 0;
+    for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i + 1], bl = d[i + 2]; if (Math.abs(r - 196) < 40 && Math.abs(g - 144) < 40 && Math.abs(bl - 112) < 40 && r > bl + 30) b++; else if (Math.abs(r - 108) < 40 && Math.abs(g - 184) < 40 && Math.abs(bl - 200) < 40 && bl > r + 30) l++; }
+    ok({ b, l }); }; img.onerror = () => ok({ b: 1, l: 1 }); img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')); });
+}
+
+const cel = (html, cls = "") => `<div class="${cls}">${html}</div>`;
+const S = (k, px, m = {}) => `<span class="s" style="width:${px}px;height:${px}px;display:inline-block">${SIMB[k](m)}</span>`;
+const FILAS = [
+  ["Grande", "Sobre negro, 140 px", (k) => S(k, 140)],
+  ["Tamaños reales", "64 · 32 · 16 px. A 32 o menos, versión reducida (sin mechas ni agujero)", (k) => S(k, 64) + S(k, 32, { chico: true }) + S(k, 16, { chico: true })],
+  ["Un color", "Sobre papel: sello, grabado, vinilo de corte", (k) => S(k, 110, { mono: TINTA, bg: PAPEL }) + S(k, 32, { mono: TINTA, bg: PAPEL, chico: true }) + S(k, 16, { mono: TINTA, bg: PAPEL, chico: true }), "paper"],
+  ["Prueba de retina", "Desenfocada: ¿queda una silueta?", (k) => `<span style="filter:blur(5px)">${S(k, 120)}</span>`],
+  ["Escala de grises", "Sin color: los mundos se separan por la forma", (k) => `<span style="filter:grayscale(1)">${S(k, 120)}</span>`],
+  ["Equilibrio", "Área cobre contra celeste, medida", (k) => `<div class="meter" data-m="${k}"><div class="b"><i class="bb" style="background:var(--cu);width:50%"></i><i class="ll" style="background:var(--cy);width:50%"></i></div><div class="t"><span style="color:var(--cu)">…</span><span style="color:var(--cy)">…</span></div></div>`],
+];
+let h = `<div class="hd"></div>` + CAND.map(([k, n, t, d]) => `<div class="hd"><span class="tag">${n}</span><b>${t}</b><span>${d}</span></div>`).join("");
+for (const [t, d, f, cls] of FILAS) h += `<div class="rl"><b>${t}</b><span>${d}</span></div>` + CAND.map(([k]) => cel(f(k), cls || "")).join("");
+document.getElementById("grid").innerHTML = h;
+(async () => {
+  for (const [k] of CAND) {
+    const m = await medir(SIMB[k]({})), pb = Math.round(m.b / (m.b + m.l || 1) * 100), el = document.querySelector(`[data-m="${k}"]`);
+    el.querySelector(".bb").style.width = pb + "%"; el.querySelector(".ll").style.width = 100 - pb + "%";
+    const [a, b] = el.querySelectorAll(".t span"); a.textContent = "Cobre " + pb + " %"; b.textContent = "Celeste " + (100 - pb) + " %";
+  }
+})();
+
+// ── Recomendación y sistema (logotipo con la proporción del sitio).
+document.getElementById("rec").innerHTML = `<div>${S("ficha", 200)}</div><div><div class="k">Recomendación</div><h3>B · Ficha.</h3>
+  <p><b>Es la que mejor pasa las cuatro pruebas a la vez.</b> El disco le da una silueta redonda que sobrevive al desenfoque (la "ficha" se reconoce aun sin detalles); a 16 px se leen el medio círculo y las barras; en un color funciona como sello; y en grises los mundos se separan por la forma. <b>A</b> pierde la silueta (sin el disco es una escena suelta), <b>C</b> se empasta en chico por el reflejo, y <b>D</b> es la más potente para sticker, pero el mar celeste pesa más que el cobre y desbalancea el equilibrio (por eso queda como versión de aplicación, no como símbolo).</p>
+  <p style="margin-top:12px">La escena viva de la ronda 19 se construye <b>encima</b> de este símbolo: el mismo vinilo, las mismas velas, el mismo horizonte, ahora con movimiento y datos.</p></div>`;
+const LOGO = `<svg viewBox="0 0 260 60" style="width:100%;max-width:300px"><text x="0" y="44" font-family="Geist" font-weight="700" font-size="46" letter-spacing="-1.4" fill="${CU}">Bass</text><text x="114" y="44" font-family="Geist" font-weight="300" font-size="37" letter-spacing="3.7" fill="${CY}">LAYER</text></svg>`;
+document.getElementById("locks").innerHTML = `
+  <div><span class="k">Símbolo</span>${S("ficha", 140)}</div>
+  <div><span class="k">Logotipo</span>${LOGO}</div>
+  <div style="flex-direction:column;gap:14px"><span class="k">Combinación horizontal</span><div style="display:flex;align-items:center;gap:16px">${S("ficha", 72)}<span style="width:200px">${LOGO}</span></div></div>`;
+</script>
+</body>
+</html>
