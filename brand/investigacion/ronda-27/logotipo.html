@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El logotipo · ronda 27</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.64); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  .wrap { max-width:1320px; margin:0 auto; padding:64px 28px 120px; }
+  .hero { display:grid; grid-template-columns:1fr 1fr; gap:6vw; align-items:center; min-height:70vh; }
+  h1 { font-size:clamp(42px, 5.2vw, 82px); font-weight:800; letter-spacing:-.05em; line-height:.93; margin-top:16px; }
+  h1 em { font-style:normal; color:var(--ter); }
+  .lead { margin-top:22px; font-size:17px; line-height:1.6; color:var(--sec); }
+  .lead b { color:var(--ink); font-weight:500; }
+  .hero .mk { width:min(100%, 520px); aspect-ratio:1; justify-self:center; }
+  section { margin-top:110px; }
+  h2 { font-size:clamp(30px, 3.4vw, 50px); font-weight:800; letter-spacing:-.04em; line-height:.98; margin-top:12px; }
+  .sub { margin-top:12px; color:var(--sec); font-size:15.5px; line-height:1.6; max-width:780px; }
+  .row { display:grid; gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:28px; }
+  .cell { background:var(--night); padding:22px; display:flex; flex-direction:column; gap:16px; position:relative; min-height:240px; }
+  .cell .c { flex:1; display:flex; align-items:center; justify-content:center; gap:18px; }
+  .cell .k2 { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ter); }
+  .cell .d { font-size:13px; line-height:1.5; color:var(--sec); }
+  .paper { background:#EDEAE4 !important; } .paper .k2 { color:rgba(11,11,11,.5); } .paper .d { color:rgba(11,11,11,.6); }
+  .s svg, .mk svg { display:block; width:100%; height:100%; }
+  .tab { width:92%; background:#202124; border-radius:10px 10px 0 0; padding:9px 12px; display:flex; align-items:center; gap:8px; font:12px system-ui; color:#e8eaed; }
+  .tab .x { margin-left:auto; color:#9aa0a6; }
+  .app { width:44%; aspect-ratio:1; border-radius:22%; background:#0b0b0b; display:flex; align-items:center; justify-content:center; box-shadow:0 14px 30px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06); }
+  .app .s { width:86%; height:86%; }
+  .sticker { width:52%; aspect-ratio:1; border-radius:50%; background:#f6f3ee; padding:4.5%; transform:rotate(6deg); box-shadow:0 2px 2px rgba(0,0,0,.25), 0 18px 30px rgba(0,0,0,.45); }
+  .token { width:46%; aspect-ratio:1; border-radius:50%; position:relative; transform:rotate(-8deg); }
+  .token::after { content:""; position:absolute; inset:0; border-radius:50%; background:radial-gradient(90% 90% at 30% 22%, rgba(255,255,255,.3), rgba(255,255,255,0) 38%), radial-gradient(120% 120% at 70% 85%, rgba(0,0,0,.45), rgba(0,0,0,0) 55%); mix-blend-mode:soft-light; pointer-events:none; }
+  .token::before { content:""; position:absolute; inset:-3.5%; border-radius:50%; background:conic-gradient(from 210deg, #4a4846, #d9d6d0, #5d5a57, #eceae5, #4a4846); z-index:-1; box-shadow:0 30px 50px rgba(0,0,0,.65); }
+  .note { margin-top:16px; font-size:13px; color:var(--ter); line-height:1.6; max-width:900px; }
+  .note a { color:var(--sec); }
+  @media (max-width:1000px) { .hero { grid-template-columns:1fr; } .row { grid-template-columns:1fr 1fr !important; } }
+</style>
+<style>
+  .op { margin-top:72px; }
+  .op h3 { font-size:clamp(24px,2.6vw,36px); font-weight:800; letter-spacing:-.035em; margin-top:10px; }
+  .op h3 small { font-size:.5em; font-weight:500; color:var(--ter); letter-spacing:0; margin-left:10px; }
+  .op .sub b { color:var(--ink); font-weight:500; }
+  .grid { display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:22px; }
+  .grid .big { grid-row:span 2; min-height:340px; }
+  .lg { display:block; max-width:100%; height:auto; }
+  .reco { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#070707; background:var(--ink); padding:4px 8px; border-radius:3px; margin-left:12px; vertical-align:middle; }
+  .zoom { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); margin-top:28px; }
+  .zoom .cell { min-height:200px; } #zoom .lg { max-width:none; }
+  @media (max-width:900px) { .grid { grid-template-columns:1fr; } .grid .big { grid-row:auto; min-height:220px; } .zoom { grid-template-columns:1fr 1fr; } .cell { min-height:170px; padding:16px; } .wrap { padding:40px 16px 90px; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="k">Marca BassLayer · ronda 27 · el logotipo</div>
+  <h1 style="max-width:900px">El nombre,<br><em>con su propio rasgo.</em></h1>
+  <p class="lead" style="max-width:860px">Hasta hoy, el nombre es Geist tal cual: correcto, pero cualquiera lo puede escribir igual. Los estudios que admiramos le dan al logotipo <b>un solo rasgo</b>, y casi siempre lo sacan del símbolo. El nuestro ya tiene uno: <b>el horizonte</b> que separa el vinilo de su reflejo y que en la ficha deja las muescas. Las tres opciones llevan ese horizonte al nombre, siempre a la misma altura que en la ficha (el 63 % de la letra), sin tocar la proporción del home ni los colores.</p>
+
+  <div id="ops"></div>
+
+  <section><div class="k">Cerca</div><h2>El rasgo, ampliado.</h2>
+    <p class="sub">El detalle tiene que aguantar la lupa: cortes limpios, sin costuras, la misma altura en las dos palabras.</p>
+    <div class="zoom" id="zoom"></div></section>
+
+  <section><div class="k">Regla de tamaño</div><h2>Debajo de 24 px, el nombre va limpio.</h2>
+    <p class="sub">Igual que la ficha se redibuja por escalones, el rasgo se apaga cuando ya no se ve: a 20 px el corte mediría menos de un píxel y ensuciaría. Desde 24 px hacia arriba va siempre.</p>
+    <div class="zoom" id="chico"></div></section>
+</main>
+<script>
+const PAL = {
+  noche: { cu: "#C49070", cy: "#6CB8C8", disco: "#17171A", aro: "rgba(237,234,228,.22)", vinilo: "#0C0C0D", surco: "#C49070", hz: "#EDEAE4", hzO: .55, brillo: "rgba(237,234,228,.08)" },
+  dia:   { cu: "#8E5B3A", cy: "#2A6E7C", disco: "#E4DFD6", aro: "rgba(11,11,11,.18)", vinilo: "#161616", surco: "#C49070", hz: "#0B0B0B", hzO: .6, brillo: "rgba(255,255,255,.1)" },
+};
+let uid = 0;
+const HZ = 63;
+const VELAS = [{ x: 59, o: 54, c: 48, h: 45, l: 57 }, { x: 65.5, o: 48, c: 42, h: 39, l: 50 }, { x: 72, o: 42, c: 46, h: 38, l: 49 }, { x: 78.5, o: 46, c: 36, h: 32, l: 48 }, { x: 85, o: 36, c: 29, h: 25, l: 38 }];
+const NX = Math.sqrt(48 * 48 - (HZ - 50) ** 2), MUESCAS = [[50 - NX, HZ], [50 + NX, HZ]];
+const sen = (x0, x1, y, a, p) => { let d = ""; for (let x = x0; x <= x1; x += .8) d += `${d ? " L" : "M"}${x.toFixed(1)} ${(y + a * Math.sin(x / p * Math.PI * 2)).toFixed(2)}`; return d; };
+
+// El símbolo E en tres escalones: "full" (≥ 64 px), "medio" (32–48 px), "mini" (≤ 24 px).
+// m.pal = "noche" | "dia"; m.mono = un color (tinta) con m.bg de fondo.
+function E(m = {}) {
+  const id = "e" + uid++, P = PAL[m.pal || "noche"], mono = m.mono, nivel = m.nivel || "full";
+  const cu = mono || P.cu, cy = mono || P.cy, bg = mono ? m.bg : P.disco, vx = 34, vy = 54, VR = 21;
+  // Las muescas: el borde se corta donde lo toca el horizonte (la silueta propia de la ficha).
+  const nr = nivel === "mini" ? 6.5 : nivel === "medio" ? 5.4 : 4.4, sw = mono ? (nivel === "mini" ? 6 : 3) : (nivel === "mini" ? 0 : 1.2), aro = mono || P.aro;
+  const mask = `<mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/>${MUESCAS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${nr}" fill="#000"/>`).join("")}</mask>`;
+  const borde = sw ? MUESCAS.map(([x, y]) => `<path d="M${x} ${y - nr} A${nr} ${nr} 0 0 ${x < 50 ? 1 : 0} ${x} ${y + nr}" fill="none" stroke="${aro}" stroke-width="${sw}"/>`).join("") : "";
+  const disco = `<defs>${mask}<clipPath id="${id}"><circle cx="50" cy="50" r="45.5"/></clipPath><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath></defs>
+    <g mask="url(#${id}m)"><circle cx="50" cy="50" r="48" fill="${mono ? "none" : P.disco}" stroke="${aro}" stroke-width="${sw}"/></g>${borde}`;
+  if (nivel === "mini") {
+    // ≤ 24 px: vinilo lleno (cobre) con un surco y la etiqueta, tres velas gruesas, horizonte grueso.
+    return `<svg viewBox="0 0 100 100">${disco}<g clip-path="url(#${id})" mask="url(#${id}m)"><g clip-path="url(#${id}a)"><circle cx="${vx}" cy="${vy}" r="${VR + 3}" fill="${cu}"/><circle cx="${vx}" cy="${vy}" r="${VR * .6}" fill="none" stroke="${bg}" stroke-width="4"/><circle cx="${vx}" cy="${vy}" r="4" fill="${bg}"/></g>
+      ${[[62, 16], [73, 25], [84, 34]].map(([x, h]) => `<rect x="${x - 4.6}" y="${HZ - h}" width="9.2" height="${h}" fill="${cy}"/>`).join("")}<rect x="0" y="${HZ}" width="100" height="6" fill="${mono || P.hz}"/></g></svg>`;
+  }
+  const surcoC = mono || P.surco, med = nivel === "medio";
+  // Tres pistas de dos surcos, con el espacio liso entre tema y tema (en medio, dos pistas de un surco grueso).
+  let surcos = ""; for (const r of med ? [12.6, 17.4] : [10.4, 11.7, 14.3, 15.6, 18.2, 19.5]) surcos += `<circle cx="${vx}" cy="${vy}" r="${r}" fill="none" stroke="${surcoC}" stroke-width="${med ? 1.6 : .5}" opacity="${mono ? .85 : .75}"/>`;
+  const vin = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="${mono ? "none" : P.vinilo}" stroke="${mono ? cu : "none"}" stroke-width="${mono ? 1.4 : 0}"/>${surcos}<circle cx="${vx}" cy="${vy}" r="${med ? 7.4 : 6.4}" fill="${cu}"/><rect x="${vx - (med ? 7.4 : 6.4)}" y="${vy + (med ? 2 : 1.6)}" width="${(med ? 7.4 : 6.4) * 2}" height="${med ? 1.4 : .9}" fill="${mono ? m.bg : P.vinilo}"/><circle cx="${vx}" cy="${vy}" r="${med ? 2 : 1.3}" fill="${mono ? m.bg : P.vinilo}"/>
+    ${mono || med ? "" : `<path d="M${vx} ${vy} L${vx + VR} ${vy - 6} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 6} Z" fill="${P.brillo}" transform="rotate(-38 ${vx} ${vy})"/>`}`;
+  const VV = med ? VELAS.filter((_, i) => i % 2 === 0 || i === 3) : VELAS, cw = med ? 7.4 : 6.2;
+  const vel = VV.map((v) => { const up = v.c < v.o, t = Math.min(v.o, v.c), b = Math.max(v.o, v.c);
+    const nota = `<ellipse cx="${v.x - (med ? 1.8 : 1.3)}" cy="${v.h}" rx="${med ? 2.9 : 2.1}" ry="${med ? 2 : 1.45}" transform="rotate(-24 ${v.x - (med ? 1.8 : 1.3)} ${v.h})" fill="${cy}"/>`;
+    return `<line x1="${v.x}" x2="${v.x}" y1="${v.h}" y2="${v.l}" stroke="${cy}" stroke-width="${med ? 1.8 : 1}"/>${nota}<rect x="${v.x - cw / 2}" y="${t}" width="${cw}" height="${b - t}" fill="${up ? cy : bg}" stroke="${cy}" stroke-width="${up ? 0 : med ? 1.8 : 1.2}"/>`; }).join("");
+  const ondas = (med ? [70] : [69, 74]).map((y, i) => `<path d="${sen(vx - 16 + i * 3, vx + 16 - i * 3, y, med ? 1.6 : 1.25, 7)}" fill="none" stroke="${cu}" stroke-width="${med ? 2.6 : 1.6}" stroke-linecap="round" opacity="${1 - i * .2}"/>`).join("");
+  const luces = VV.map((v) => { const t = Math.min(v.o, v.c), b = Math.max(v.o, v.c); return `<line x1="${v.x}" x2="${v.x}" y1="${HZ + 3 + (HZ - b) * .35}" y2="${HZ + 3 + (HZ - t) * .35}" stroke="${cy}" stroke-width="${cw}" stroke-dasharray="${med ? "2 1.6" : "1.3 1.1"}" opacity=".9"/>`; }).join("");
+  const cielo = med ? "" : [16, 22, 28].map((y, i) => `<line x1="${52 + i * 3}" x2="96" y1="${y}" y2="${y}" stroke="${cy}" stroke-width="1.6" stroke-dasharray="${[9, 2.5, 5, 2.5, 13, 2.5][i % 6]} 2.5" opacity=".5"/>`).join("");
+  return `<svg viewBox="0 0 100 100">${disco}<g clip-path="url(#${id})" mask="url(#${id}m)">${cielo}<g clip-path="url(#${id}a)">${vin}</g>${vel}${ondas}${luces}<rect x="0" y="${HZ - (med ? 1 : .6)}" width="100" height="${med ? 2 : 1.2}" fill="${mono || P.hz}" opacity="${mono ? 1 : P.hzO}"/></g></svg>`;
+}
+const S = (px, m = {}) => `<span class="s" style="width:${px}px;height:${px}px;display:inline-block">${E({ ...m, nivel: m.nivel || (px >= 64 ? "full" : px >= 32 ? "medio" : "mini") })}</span>`;
+// Logotipo con la proporción del home (medido: Bass ≈ 2,3 em, LAYER ≈ 2,75 em del cuerpo de Bass, aire 0,28).
+function logo(S0, { pal = "noche", mono = null } = {}) { const P = PAL[pal], wb = 2.31 * S0, gap = .28 * S0, wl = 2.76 * S0;
+  return `<svg viewBox="0 0 ${wb + gap + wl + 4} ${S0 * 1.05}" style="width:${wb + gap + wl + 4}px;height:${S0 * 1.05}px"><text x="0" y="${S0 * .86}" font-family="Geist" font-weight="700" font-size="${S0}" letter-spacing="${-.03 * S0}" fill="${mono || P.cu}">Bass</text><text x="${wb + gap}" y="${S0 * .86}" font-family="Geist" font-weight="300" font-size="${S0 * .805}" letter-spacing="${S0 * .0805}" fill="${mono || P.cy}">LAYER</text></svg>`; }
+
+const cel = (k2, c, d = "", cls = "") => `<div class="cell ${cls}"><span class="k2">${k2}</span><div class="c">${c}</div>${d ? `<span class="d">${d}</span>` : ""}</div>`;
+
+// ── Rasgos del logotipo. Medidas en tinta real (canvas) una vez cargada la fuente.
+const ALTO = .21;                       // el corte, a 0,21 S sobre la línea de base: el 63 % de la versal de LAYER, como el horizonte en la ficha
+let INK = null;                         // extremos de tinta de cada palabra, en unidades de S
+function medir() {
+  const c = document.createElement("canvas").getContext("2d"), S0 = 200;
+  c.font = `700 ${S0}px Geist`; c.letterSpacing = `${-.03 * S0}px`; const b = c.measureText("Bass");
+  c.font = `300 ${S0 * .805}px Geist`; c.letterSpacing = `${S0 * .0805}px`; const l = c.measureText("LAYER");
+  INK = { bL: -b.actualBoundingBoxLeft / S0, bR: b.actualBoundingBoxRight / S0, lL: 2.59 - l.actualBoundingBoxLeft / S0, lR: 2.59 + l.actualBoundingBoxRight / S0 };
+}
+function marca(S0, { v = "actual", pal = "noche", mono = null, bg = "#070707", hilo = null } = {}) {
+  const P = PAL[pal], wb = 2.31 * S0, gap = .28 * S0, wl = 2.76 * S0, W = wb + gap + wl + 4, H = S0 * 1.05, base = S0 * .86;
+  const con = v !== "actual" && S0 >= 24, id = "lg" + (++uid);
+  const y = base - ALTO * S0, t = Math.max(.038 * S0, 1.2), r = .085 * S0;
+  let mask = "", extra = "";
+  if (con && (v === "corte" || v === "hilo")) mask = `<rect x="-2" y="${y - t / 2}" width="${W + 4}" height="${t}" fill="#000"/>`;
+  if (con && v === "muescas") mask = `<circle cx="${INK.bL * S0}" cy="${y}" r="${r}" fill="#000"/><circle cx="${INK.lR * S0}" cy="${y}" r="${r}" fill="#000"/>`;
+  if (con && v === "hilo") { const x0 = INK.bR * S0 - .02 * S0, x1 = INK.lL * S0 + .02 * S0;   // pegado a las dos palabras: un solo horizonte que entra y sale
+    extra = `<rect x="${x0}" y="${y - t * .2}" width="${x1 - x0}" height="${t * .4}" fill="${mono || hilo || (pal === "dia" ? "rgba(11,11,11,.42)" : "rgba(237,234,228,.42)")}"/>`; }
+  const txt = `<text x="0" y="${base}" font-family="Geist" font-weight="700" font-size="${S0}" letter-spacing="${-.03 * S0}" fill="${mono || P.cu}">Bass</text><text x="${wb + gap}" y="${base}" font-family="Geist" font-weight="300" font-size="${S0 * .805}" letter-spacing="${S0 * .0805}" fill="${mono || P.cy}">LAYER</text>`;
+  return `<svg class="lg" viewBox="0 0 ${W} ${H}" style="width:${W}px"${con ? "" : ""}>${mask ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="-4" y="-4" width="${W + 8}" height="${H + 8}"><rect x="-4" y="-4" width="${W + 8}" height="${H + 8}" fill="#fff"/>${mask}</mask></defs><g mask="url(#${id})">${txt}</g>` : txt}${extra}</svg>`;
+}
+
+const OPS = [
+  { v: "actual", n: "Hoy", t: "Sin rasgo", d: "Geist en la proporción del home. Limpio, pero no propio: es la referencia contra la que se mide todo." },
+  { v: "corte", n: "A", t: "Corte", reco: 1, d: "Un <b>corte fino</b> atraviesa las dos palabras a la altura del horizonte, como el que parte la etiqueta del vinilo. Bass y LAYER quedan sobre la misma línea: un solo horizonte para los dos mundos." },
+  { v: "hilo", n: "B", t: "Hilo", d: "El mismo corte, y en el aire entre las dos palabras <b>el horizonte se ve</b>: dentro de las letras es un hueco, entre ellas es una línea. Es la ficha leída de costado; el nombre cuenta lo mismo que el símbolo: dos mundos sobre un horizonte compartido. El riesgo: entre las palabras puede leerse como un guion bajo." },
+  { v: "muescas", n: "C", t: "Muescas", d: "Sin corte: la <b>muesca</b> de la ficha muerde los dos extremos del nombre, la B y la R, a la altura del horizonte. Lo más callado; se nota de cerca." },
+];
+function pintar() {
+  medir();
+  document.getElementById("ops").innerHTML = OPS.map(o => `<div class="op"><div class="k">${o.n === "Hoy" ? "Referencia" : "Opción " + o.n}</div><h3>${o.t}${o.reco ? '<span class="reco">Recomendada</span>' : ""}</h3><p class="sub">${o.d}</p>
+    <div class="grid">
+      ${cel("Grande · noche", marca(84, { v: o.v }), "", "big")}
+      ${cel("Con el símbolo", `<div style="display:flex;align-items:center;gap:16px;max-width:100%">${S(80)}<div style="min-width:0">${marca(34, { v: o.v })}</div></div>`)}
+      ${cel("Día · papel", marca(40, { v: o.v, pal: "dia", bg: "#EDEAE4" }), "", "paper")}
+      ${cel("Un color · tinta", marca(40, { v: o.v, mono: "#0B0B0B", bg: "#EDEAE4" }), "", "paper")}
+      ${cel("Un color · hueso", marca(40, { v: o.v, mono: "#EDEAE4" }))}
+    </div></div>`).join("");
+  document.getElementById("zoom").innerHTML = OPS.map(o => cel(o.n === "Hoy" ? "Hoy" : o.n + " · " + o.t, `<div style="overflow:hidden;width:100%;height:150px;position:relative"><div style="position:absolute;top:0;left:50%;transform:translateX(${-(o.v === "muescas" ? INK.bL + .5 : (INK.bR + INK.lL) / 2) * 140}px)">${marca(140, { v: o.v })}</div></div>`)).join("");
+  document.getElementById("chico").innerHTML = [32, 24, 20, 16].map(px => cel(px + " px", marca(px, { v: "corte" }) )).join("");
+}
+Promise.all([document.fonts.load("700 40px Geist"), document.fonts.load("300 40px Geist")]).then(pintar);
+</script>
+</body>
+</html>

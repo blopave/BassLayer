@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comparar · ronda 27</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { --bg:#111; --ink:#EDEAE4; --ter:rgba(237,234,228,.45); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--bg); color:var(--ink); font:12px ui-monospace, monospace; overflow:hidden; }
+  .bar { height:36px; display:flex; align-items:center; gap:14px; padding:0 16px; color:var(--ter); letter-spacing:.12em; text-transform:uppercase; font-size:10.5px; }
+  .bar b { color:var(--ink); font-weight:500; }
+  .stage { position:absolute; inset:36px 0 0; display:flex; gap:24px; padding:12px 16px 16px; }
+  .f { position:relative; overflow:hidden; }
+  .f span { position:absolute; top:-2px; left:0; color:var(--ter); font-size:10px; letter-spacing:.14em; text-transform:uppercase; }
+  .f .box { position:absolute; top:16px; left:0; transform-origin:0 0; border:1px solid rgba(237,234,228,.12); border-radius:6px; overflow:hidden; }
+  iframe { border:0; display:block; background:#070707; }
+</style>
+</head>
+<body>
+<div class="bar"><b>Ronda 27</b> · el logotipo · celular + escritorio</div>
+<div class="stage" id="st">
+  <div class="f" id="fm"><span>Celular · 390</span><div class="box"><iframe id="im" width="390" height="844"></iframe></div></div>
+  <div class="f" id="fd"><span>Escritorio · 1440</span><div class="box"><iframe id="id" width="1440" height="900"></iframe></div></div>
+</div>
+<script>
+  const u = new URLSearchParams(location.search).get("u") || "logotipo.html";
+  im.src = id.src = u;
+  // Los dos marcos se escalan para entrar enteros (técnica del preview.html del sitio).
+  function fit() {
+    const W = st.clientWidth - 32 - 24, H = st.clientHeight - 28 - 16;
+    const k = Math.min(H / 900, W / (1440 + 390 * 900 / 844));
+    const kd = k, km = k * 900 / 844;
+    fd.style.width = 1440 * kd + "px"; fd.style.height = 900 * kd + 16 + "px"; fd.firstElementChild.nextElementSibling.style.transform = `scale(${kd})`;
+    fm.style.width = 390 * km + "px"; fm.style.height = 844 * km + 16 + "px"; fm.firstElementChild.nextElementSibling.style.transform = `scale(${km})`;
+  }
+  new ResizeObserver(fit).observe(st); fit();
+</script>
+</body>
+</html>
