@@ -14,7 +14,9 @@ import { ficha, objetivo, setPrecio, resetMetricas, ESTADO_INICIAL, KL } from ".
    ══════════════════════════════════════════════════════════════ */
 
 const NOMBRE = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("nombre") : null;
-const OP = ["1", "2", "3"].includes(NOMBRE) ? NOMBRE : null;
+const OP = ["1", "2", "3", "4"].includes(NOMBRE) ? NOMBRE : null;
+// 4 = la 1 con la auditoría aplicada (leyendas legibles en el celular, sin esquinas, reposo sin consumo).
+const V2 = OP === "4", CLASE = OP === "4" ? "1" : OP;
 
 export default function HomeFicha({ prices = [], t, locale, isMobile, active = true, onEnter }) {
   const en = locale === "en";
@@ -37,7 +39,12 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
     const paso = isMobile ? 1 / 30 : 0;
     const st = { ...ESTADO_INICIAL };
     let prev = performance.now(), raf = 0;
-    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en, conNombre: !OP, franja: OP !== "3" }); };
+    // Las leyendas nunca bajan de 11 px reales: en unidades del dibujo, 11 · 400 / ancho de la ficha.
+    let minU = 0;
+    const mide = () => { minU = V2 && mkRef.current ? (11 * 400) / Math.max(1, mkRef.current.clientWidth) : 0; };
+    mide(); window.addEventListener("resize", mide);
+    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en, conNombre: !OP, franja: OP !== "3", v2: V2, minU }); };
+    let quieta = false;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - prev) / 1000);
@@ -45,7 +52,11 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
       prev = now;
       // Reposo neutral (oct 2026, Pablo): sin el mouse encima, ningún mundo se insinúa más que el otro.
       const m = wRef.current, tg = objetivo(m);
-      for (const k of ["rise", "speed", "gain", "dimL", "dimB", "L", "B", "grow"]) st[k] += (tg[k] - st[k]) * Math.min(1, dt * 1.3);
+      let dif = 0;
+      for (const k of ["rise", "speed", "gain", "dimL", "dimB", "L", "B", "grow"]) { st[k] += (tg[k] - st[k]) * Math.min(1, dt * 1.3); dif = Math.max(dif, Math.abs(tg[k] - st[k])); }
+      // Reposo quieto: sin mundo elegido nada se mueve; ya asentada, la ficha no se redibuja (cero consumo).
+      if (V2 && !m) { if (quieta) return; quieta = dif < 0.002; pinta(); return; }
+      quieta = false;
       if (!reduce) {
         st.time += dt; st.spin += tg.spinV * dt;
         st.flow += dt * (m === "layer" ? 1.3 * KL : 0); st.sweep += dt * (m === "layer" ? 1.6 * KL : 0); st.shim += dt * (m === "layer" ? 5 * KL : 0.4);
@@ -54,7 +65,7 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
     };
     pinta();   // primer cuadro ya, sin esperar al rAF (que no corre con la pestaña oculta)
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", mide); };
   }, [active, en, isMobile]);
 
   useEffect(() => {
@@ -81,7 +92,7 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
   );
 
   return (
-    <div className={`bhf${isMobile ? " is-mobile" : ""}`} data-w={w}
+    <div className={`bhf${isMobile ? " is-mobile" : ""}${V2 ? " bhf-v2" : ""}`} data-w={w}
       onClick={(e) => { if (isMobile && !e.target.closest(".bhf-half, .bhf-w")) setW(""); }}>
       <span className="bhf-esq bhf-tl"><i />Bass</span>
       <span className="bhf-esq bhf-tr">Layer<i /></span>
@@ -94,7 +105,7 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
           {mitad("layer", "l", t("home.layerAria"))}
         </div>
         {OP && (
-          <div className={`bhf-nm bhf-nm-${OP}`} aria-hidden="true">
+          <div className={`bhf-nm bhf-nm-${CLASE}`} aria-hidden="true">
             <button className="bhf-w b" tabIndex={-1} onMouseEnter={() => { if (!isMobile) setW("bass"); }} onClick={(e) => tocar(e, "bass")}>
               <span className="w">Bass</span><span className="go">{t("home.fichaGo")}</span>
             </button>

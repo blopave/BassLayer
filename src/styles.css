@@ -5822,3 +5822,13 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root.day-mode .bhf-nm-3 .bhf-w.b .w, .bl-root.day-mode .bhf-nm-3 .bhf-w.b .go { color:#8E5B3A; }
 .bl-root.day-mode .bhf-nm-3 .bhf-w.l .w, .bl-root.day-mode .bhf-nm-3 .bhf-w.l .go { color:#2A6E7C; }
 .bhf-nm-3 .bhf-w .go { top:calc(100% + .75em); }
+/* 4 · la 1 con la auditoría: sin esquinas (el nombre ya está en la ficha), "Entrar →" legible
+   y, en el celular, la ficha llega a 16 px de cada borde (el disco ocupa el 91 % del dibujo) */
+.bhf-v2 .bhf-esq { display:none; }
+.bhf-v2 .bhf-w .go { font-size:max(11px, .27em); }
+.bhf.bhf-v2 { overflow:hidden; }
+.bhf.bhf-v2.is-mobile .bhf-mk-wrap { width:calc((100vw - 32px) / .91); }
+/* Equilibrio del nombre en reposo (medido: Bass 700 tiene ~2,3 veces la tinta de LAYER 300): se compensa con luz, no con tamaño ni peso */
+.bhf-v2 .bhf-w.b { opacity:.72; } .bhf-v2 .bhf-w.l { opacity:1; }
+.bhf-v2[data-w="bass"] .bhf-w.b, .bhf-v2[data-w="layer"] .bhf-w.l { opacity:1; }
+.bhf-v2[data-w="bass"] .bhf-w.l, .bhf-v2[data-w="layer"] .bhf-w.b { opacity:.28; }

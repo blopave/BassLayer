@@ -406,8 +406,8 @@ export const STRINGS = {
     "home.hoy": "hoy",
     "home.elegiMundo": "elegí un mundo",
     "home.fichaGo": "Entrar →",
-    "home.bassAria": "Bass — agenda de música electrónica",
-    "home.layerAria": "Layer — cripto y ciclos de Bitcoin",
+    "home.bassAria": "Bass — música, festivales y agenda",
+    "home.layerAria": "Layer — crypto, finanzas y noticias",
 
     "util.back": "Volver al inicio",
     "util.aboutBL": "Acerca de BassLayer",
@@ -823,8 +823,8 @@ export const STRINGS = {
     "home.hoy": "today",
     "home.elegiMundo": "choose a world",
     "home.fichaGo": "Enter →",
-    "home.bassAria": "Bass — electronic music agenda",
-    "home.layerAria": "Layer — crypto and Bitcoin cycles",
+    "home.bassAria": "Bass — music, festivals & listings",
+    "home.layerAria": "Layer — crypto, finance & news",
 
     "util.back": "Back to home",
     "util.aboutBL": "About BassLayer",
