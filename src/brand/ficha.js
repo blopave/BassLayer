@@ -106,17 +106,34 @@ export function ficha(st, { en = false, conNombre = true, franja = true } = {}) 
   const vinilo = `<circle cx="${vx}" cy="${vy}" r="${VR}" fill="#151515"/>${surco}
     <g transform="rotate(${ang} ${vx} ${vy})"><path d="M${vx} ${vy} L${vx + VR} ${vy - 20} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 20} Z" fill="rgba(237,234,228,.07)"/><path d="M${vx} ${vy} L${vx - VR} ${vy + 20} A${VR} ${VR} 0 0 1 ${vx - VR} ${vy - 20} Z" fill="rgba(237,234,228,.05)"/></g>
     <circle cx="${vx}" cy="${vy}" r="34" fill="${CU}"/><circle cx="${vx}" cy="${vy}" r="3" fill="${FONDO}"/>`;
+  // ── Qué hay en cada mundo, dicho en su idioma: al elegir Bass, impreso alrededor del vinilo
+  //    como el borde de un disco; al elegir Layer, una línea de cotización en el cielo del mercado.
+  const mono = "'Geist Mono Variable', GeistMono, monospace";
+  const oB = Math.max(0, Math.min(1, ((st.B ?? 0) - 0.55) / 0.35)), oL = Math.max(0, Math.min(1, ((st.L ?? 0) - 0.55) / 0.35));
+  let leyenda = "";
+  if (oB > 0.02) {
+    const r = 113, a0 = -116 * Math.PI / 180, a1 = -6 * Math.PI / 180;   // el arco entra entero en la ficha
+    leyenda += `<path id="${id}r" d="M${vx + r * Math.cos(a0)} ${vy + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${vx + r * Math.cos(a1)} ${vy + r * Math.sin(a1)}" fill="none"/>
+      <text font-family="${mono}" font-size="8.6" letter-spacing="1.8" fill="${CU}" opacity="${oB}"><textPath href="#${id}r" startOffset="50%" text-anchor="middle">${en ? "MUSIC · FESTIVALS · LISTINGS" : "MÚSICA · FESTIVALES · AGENDA"}</textPath></text>`;
+  }
+  if (oL > 0.02) {
+    // entra deslizándose como una cotización que llega, y queda quieta: las tres palabras enteras
+    const txt = en ? "CRYPTO · FINANCE · NEWS" : "CRYPTO · FINANZAS · NOTICIAS";
+    // a la altura y = 155 la ficha es ancha: entra entera entre el borde (x 40) y la columna de las velas (x 214)
+    leyenda += `<clipPath id="${id}t"><rect x="40" y="140" width="174" height="20"/></clipPath><g clip-path="url(#${id}t)" opacity="${oL}"><text x="${42 - (1 - oL) * 40}" y="155" font-family="${mono}" font-size="9" fill="${CY}" textLength="170" lengthAdjust="spacing">${txt}</text></g>`;
+  }
   const bandMask = band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>` : "";
   return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="${id}f"><circle cx="200" cy="200" r="${R}"/></clipPath>
       <clipPath id="${id}a"><rect x="0" y="-10" width="400" height="${H + 10}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
       <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/><rect x="${xa - 10}" y="${H}" width="${xb - xa + 20}" height="66" fill="#000"/>${bandMask}</mask>
       <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/>${bandMask}</mask>
-      <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6}" fill="#000"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
+      <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6 + 16 * oB}" fill="#000"/><rect x="36" y="145" width="182" height="13" fill="#000" fill-opacity="${oL}"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
     ${band ? "" : `<mask id="${id}n" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="84" y="357" width="232" height="52" rx="6" fill="#000"/></mask>`}
     <g${band ? "" : ` mask="url(#${id}n)"`}><circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
     <g clip-path="url(#${id}f)">
       <g fill="none" stroke="${cL}" stroke-width="${sw * 0.8}" opacity="${Math.min(1, (0.07 + 0.33 * st.L) * il) * (1 - 0.6 * st.B)}" mask="url(#${id}c)">${cielo}</g>
       <g clip-path="url(#${id}a)" opacity="${st.dimB}">${vinilo}</g>
+      ${leyenda}
       <g opacity="${st.dimL}">${velas}</g>
       <g fill="none" stroke="${cL}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}b)" opacity="${Math.min(1, (0.28 + 0.3 * st.L) * il) * (1 - 0.5 * st.B)}">${mar}</g>
       <g mask="url(#${id}e)" opacity="${st.dimL}">${luces}</g>
@@ -128,11 +145,10 @@ export function ficha(st, { en = false, conNombre = true, franja = true } = {}) 
 
 export const btc7 = () => BTC7;
 
-// Estados objetivo: reposo (los dos insinuados, se inclina despacio), Bass o Layer elegido.
-export function objetivo(w, inv) {
-  const hb = 0.14 * Math.max(0, inv), hl = 0.14 * Math.max(0, -inv);
+// Estados objetivo: reposo (los dos mundos insinuados y parejos, quietos), Bass o Layer elegido.
+export function objetivo(w) {
   if (w === "bass") return { rise: 1, speed: 1.6, gain: 1.4, dimL: 0.16, dimB: 1, spinV: 48, L: 0, B: 1, grow: 0.35 };
   if (w === "layer") return { rise: 0, speed: 0.5, gain: 0.4, dimL: 1, dimB: 0.16, spinV: 4, L: 1, B: 0, grow: 1 };
-  return { rise: IDLE + hb * 0.25 - hl * 0.25, speed: 0.25, gain: 0.7, dimL: 0.32 + hl, dimB: 0.32 + hb, spinV: 0, L: 0, B: 0, grow: 0.6 + hl * 0.5 - hb * 0.5 };
+  return { rise: IDLE, speed: 0.25, gain: 0.7, dimL: 0.32, dimB: 0.32, spinV: 0, L: 0, B: 0, grow: 0.6 };
 }
 export const ESTADO_INICIAL = { rise: IDLE, time: 0, flow: 0, speed: 1, gain: 1, dimL: 0.32, dimB: 0.32, spin: 0, L: 0, B: 0, grow: 0.6, sweep: 0, shim: 0 };

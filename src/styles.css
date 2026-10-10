@@ -5802,7 +5802,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bhf-w.l .w { font-weight:300; font-size:.805em; letter-spacing:.1em; color:#6CB8C8; }
 .bhf-w .go { position:absolute; top:calc(100% + .5em); font-family:var(--font-mono); font-size:.27em; letter-spacing:var(--tr-16); text-transform:uppercase; white-space:nowrap; opacity:0; transition:opacity .5s; }
 .bhf-w.b .go { left:0; color:#C49070; } .bhf-w.l .go { right:0; color:#6CB8C8; }
-.bhf-w.b { opacity:calc(.74 + .26 * var(--ib, 0)); } .bhf-w.l { opacity:calc(.74 + .26 * var(--il, 0)); }
+.bhf-w { opacity:.9; }
 .bhf[data-w="bass"] .bhf-w.b, .bhf[data-w="layer"] .bhf-w.l { opacity:1; transform:translateY(-.06em); filter:brightness(1.15); }
 .bhf[data-w="bass"] .bhf-w.l, .bhf[data-w="layer"] .bhf-w.b { opacity:.28; }
 .bhf[data-w="bass"] .bhf-w.b .go, .bhf[data-w="layer"] .bhf-w.l .go { opacity:1; }

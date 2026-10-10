@@ -405,8 +405,7 @@ export const STRINGS = {
     "home.cicloHalvings": "ciclo · halvings",
     "home.hoy": "hoy",
     "home.elegiMundo": "elegí un mundo",
-    "home.fichaBassGo": "La noche · entrar →",
-    "home.fichaGo": "entrar →",
+    "home.fichaGo": "Entrar →",
     "home.bassAria": "Bass — agenda de música electrónica",
     "home.layerAria": "Layer — cripto y ciclos de Bitcoin",
 
@@ -823,8 +822,7 @@ export const STRINGS = {
     "home.cicloHalvings": "cycle · halvings",
     "home.hoy": "today",
     "home.elegiMundo": "choose a world",
-    "home.fichaBassGo": "The night · enter →",
-    "home.fichaGo": "enter →",
+    "home.fichaGo": "Enter →",
     "home.bassAria": "Bass — electronic music agenda",
     "home.layerAria": "Layer — crypto and Bitcoin cycles",
 
