@@ -440,10 +440,27 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
+if (new URLSearchParams(location.search).get("evidencia")) { document.body.innerHTML = `<div id="ev" style="padding:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;background:#060606"></div>`; document.body.appendChild(medidor); NM = null; }
+function evidencia() {
+  const ev = document.getElementById("ev"); if (!ev) return false;
+  const lleno = { ...fijo, dimL: 1, dimB: 1 }, celda = (t, html, bg = "#0b0b0c", fg = "rgba(237,234,228,.5)") => `<div style="background:${bg};border:1px solid rgba(237,234,228,.08);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px;min-height:220px"><div style="font:10px GeistMono,monospace;letter-spacing:.16em;text-transform:uppercase;color:${fg}">${t}</div><div style="flex:1;display:flex;align-items:center;justify-content:center;gap:14px">${html}</div></div>`;
+  const tam = (n, o = {}) => `<span style="width:${n}px;height:${n}px;display:inline-block">${ficha(lleno, o)}</span>`;
+  ev.innerHTML = [
+    celda("Reposo", tam(170, {})),
+    celda("Bass elegido", `<span style="width:170px;height:170px;display:inline-block">${ficha({ ...fijo, ...ESTADO.bass }, {})}</span>`),
+    celda("Layer elegido", `<span style="width:170px;height:170px;display:inline-block">${ficha({ ...fijo, ...ESTADO.layer, sweep: 4.4, flow: 3 }, {})}</span>`),
+    celda("Chico · 64 · 32 · 16 px", tam(64, { small: true }) + tam(32, { small: true }) + tam(16, { small: true })),
+    celda("Un color sobre papel", tam(170, { mono: TINTA }), "#EDEAE4", "rgba(11,11,11,.5)"),
+    celda("Un color · chico", tam(64, { mono: TINTA, small: true }) + tam(32, { mono: TINTA, small: true }) + tam(16, { mono: TINTA, small: true }), "#EDEAE4", "rgba(11,11,11,.5)"),
+    celda("Dos campos (sticker)", tam(170, { campos: true })),
+    celda("Desenfocada · prueba de retina", `<span style="filter:blur(4px)">${tam(150, {})}</span>`),
+  ].join("");
+  return true;
+}
 Promise.all([300, 700].map((x) => document.fonts.load(`${x} 40px Geist`))).then(async () => {
   try { const j = await fetch("/api/prices").then((r) => r.json()); const b = (Array.isArray(j) ? j : j.prices || []).find((p) => p.sym === "BTC");
     if (b && b.sparkline && b.sparkline.length > 24) { PRECIO = b.sparkline; calcSalto(); BTC7 = (b.sparkline[b.sparkline.length - 1] / b.sparkline[0] - 1) * 100; } } catch {}
-  NM = null; await calibrar(); await calibrarIntensidad(); await calibrarMovimiento(); pintaApps(); requestAnimationFrame(frame); setInterval(pintaMedidor, 600); });
+  NM = null; await calibrar(); await calibrarIntensidad(); await calibrarMovimiento(); if (evidencia()) return; pintaApps(); requestAnimationFrame(frame); setInterval(pintaMedidor, 600); });
 </script>
 </body>
 </html>
