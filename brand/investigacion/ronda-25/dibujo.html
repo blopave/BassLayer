@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El dibujo propio · ronda 25</title>
+<meta name="robots" content="noindex" />
+<style>
+  @font-face { font-family:"Geist"; src:url("/fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  @font-face { font-family:"GeistMono"; src:url("/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight:100 900; }
+  :root { --night:#070707; --hair:rgba(237,234,228,.09); --ink:#EDEAE4; --sec:rgba(237,234,228,.64); --ter:rgba(237,234,228,.38); --cu:#C49070; --cy:#6CB8C8; --mono:"GeistMono",ui-monospace,monospace; --sans:"Geist",system-ui,sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--night); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  .k { font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ter); }
+  .wrap { max-width:1360px; margin:0 auto; padding:64px 28px 120px; }
+  h1 { font-size:clamp(42px, 5.2vw, 82px); font-weight:800; letter-spacing:-.05em; line-height:.93; margin-top:16px; }
+  h1 em { font-style:normal; color:var(--ter); }
+  .lead { margin-top:22px; font-size:17px; line-height:1.6; color:var(--sec); max-width:880px; }
+  .lead b { color:var(--ink); font-weight:500; }
+  .heroes { margin-top:40px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .heroes > div { background:radial-gradient(70% 70% at 50% 45%, #111113, #070707 72%); padding:24px; display:flex; flex-direction:column; gap:14px; }
+  .heroes .mk { width:84%; margin:6px auto 0; aspect-ratio:1; }
+  .heroes .tag { font-family:var(--mono); font-size:10px; letter-spacing:.18em; color:var(--cu); }
+  .heroes b { font-size:20px; letter-spacing:-.02em; } .heroes p { font-size:13px; line-height:1.55; color:var(--sec); }
+  .zoom { margin-top:40px; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .zoom > div { background:var(--night); padding:22px; display:flex; flex-direction:column; gap:12px; }
+  .zoom .z { aspect-ratio:1.6; overflow:hidden; border-radius:8px; background:#0c0c0d; position:relative; }
+  .zoom .z .in { position:absolute; width:250%; aspect-ratio:1; }
+  .zoom p { font-size:13px; line-height:1.55; color:var(--sec); }
+  .zoom b { font-size:15px; }
+  .grid { margin-top:40px; display:grid; grid-template-columns:190px repeat(4, minmax(0,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); }
+  .grid > div { background:var(--night); padding:16px; display:flex; align-items:center; justify-content:center; gap:12px; min-height:130px; }
+  .grid .rl { justify-content:flex-start; flex-direction:column; align-items:flex-start; gap:6px; }
+  .grid .rl b { font-size:14.5px; } .grid .rl span { font-size:12px; color:var(--sec); line-height:1.45; }
+  .grid .hd { min-height:auto; justify-content:flex-start; } .grid .hd b { font-size:15px; }
+  .paper { background:#EDEAE4 !important; }
+  .s svg, .mk svg, .in svg { display:block; width:100%; height:100%; }
+  .rec { margin-top:56px; padding:30px; border:1px solid var(--cu); border-radius:14px; background:linear-gradient(135deg, rgba(196,144,112,.07), rgba(108,184,200,.05)); display:grid; grid-template-columns:260px 1fr; gap:34px; align-items:center; }
+  .rec h3 { font-size:26px; font-weight:800; letter-spacing:-.03em; margin:8px 0 10px; }
+  .rec p { color:var(--sec); line-height:1.6; } .rec p b { color:var(--ink); font-weight:500; }
+  @media (max-width:1000px) { .heroes, .zoom { grid-template-columns:1fr 1fr; } .grid { grid-template-columns:1fr 1fr; } .grid .rl { grid-column:1 / -1; } .rec { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="k">Marca BassLayer · ronda 25 · el dibujo propio</div>
+  <h1>Que nadie más<br><em>pueda dibujarlo igual.</em></h1>
+  <p class="lead">La auditoría puso distintividad en 5/10: el vinilo y las velas se veían como íconos de banco. Tres direcciones de dibujo propio sobre el símbolo E, cada una con una idea: <b>la silueta</b> (muescas), <b>la verdad del objeto</b> (bandas) y <b>el cruce de mundos</b> (contagio). Abajo, los detalles ampliados y las pruebas.</p>
+  <div class="heroes" id="heroes"></div>
+  <div class="zoom" id="zoom"></div>
+  <div class="grid" id="grid"></div>
+  <div class="rec" id="rec"></div>
+</main>
+<script>
+const CU = "#C49070", CY = "#6CB8C8", TINTA = "#0B0B0B", PAPEL = "#EDEAE4", DISCO = "#17171A", VIN = "#0C0C0D";
+let uid = 0;
+const HZ = 63, VX = 34, VY = 54, VR = 21;
+const VELAS = [{ x: 59, o: 54, c: 48, h: 45, l: 57 }, { x: 65.5, o: 48, c: 42, h: 39, l: 50 }, { x: 72, o: 42, c: 46, h: 38, l: 49 }, { x: 78.5, o: 46, c: 36, h: 32, l: 48 }, { x: 85, o: 36, c: 29, h: 25, l: 38 }];
+const SALTOS = [.6, 1.4, .8, 1.9, .5, 1.1, 1.6];   // saltos de precio (muestra) para los surcos de "contagio"
+const sen = (x0, x1, y, a, p) => { let d = ""; for (let x = x0; x <= x1; x += .8) d += `${d ? " L" : "M"}${x.toFixed(1)} ${(y + a * Math.sin(x / p * Math.PI * 2)).toFixed(2)}`; return d; };
+// Dónde corta el horizonte al borde de la ficha (para las muescas).
+const NX = Math.sqrt(48 * 48 - (HZ - 50) ** 2), MUESCAS = [[50 - NX, HZ], [50 + NX, HZ]];
+
+// f: { muescas, bandas, microHz, notas, surcoDatos }
+function E(f = {}, m = {}) {
+  const id = "d" + uid++, mono = m.mono, cu = mono || CU, cy = mono || CY, bg = mono ? m.bg : DISCO, nivel = m.nivel || "full";
+  const nr = 4.4;
+  const mask = f.muescas ? `<mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/>${MUESCAS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${nr}" fill="#000"/>`).join("")}</mask>` : "";
+  const mref = f.muescas ? `mask="url(#${id}m)"` : "";
+  const sw = mono ? (nivel === "mini" ? 6 : 3) : 1.2, aro = mono || "rgba(237,234,228,.22)";
+  const borde = f.muescas ? MUESCAS.map(([x, y]) => `<path d="M${x} ${y - nr} A${nr} ${nr} 0 0 ${x < 50 ? 1 : 0} ${x} ${y + nr}" fill="none" stroke="${aro}" stroke-width="${sw}"/>`).join("") : "";
+  const disco = `<defs>${mask}<clipPath id="${id}"><circle cx="50" cy="50" r="45.5"/></clipPath><clipPath id="${id}a"><rect x="0" y="0" width="100" height="${HZ}"/></clipPath></defs>
+    <g ${mref}><circle cx="50" cy="50" r="48" fill="${mono ? "none" : DISCO}" stroke="${aro}" stroke-width="${sw}"/></g>${borde}`;
+  if (nivel === "mini") {
+    return `<svg viewBox="0 0 100 100">${disco}<g clip-path="url(#${id})" ${mref}><g clip-path="url(#${id}a)"><circle cx="${VX}" cy="${VY}" r="${VR + 3}" fill="${cu}"/><circle cx="${VX}" cy="${VY}" r="${VR * .6}" fill="none" stroke="${bg}" stroke-width="4"/><circle cx="${VX}" cy="${VY}" r="4" fill="${bg}"/></g>
+      ${[[62, 16], [73, 25], [84, 34]].map(([x, h]) => `<rect x="${x - 4.6}" y="${HZ - h}" width="9.2" height="${h}" fill="${cy}"/>`).join("")}<rect x="0" y="${HZ}" width="100" height="6" fill="${mono || PAPEL}"/></g></svg>`;
+  }
+  // Surcos: parejos (E), en tres pistas (bandas) o separados por los saltos del precio (contagio).
+  let radios = [];
+  if (f.bandas) radios = [10.4, 11.7, 14.3, 15.6, 18.2, 19.5];   // tres pistas de dos surcos, con el espacio liso entre tema y tema
+  else if (f.surcoDatos) { let r = 10.4; for (const s of SALTOS) { radios.push(r); r += 1.1 + s * 1.05; } radios = radios.filter((r) => r < VR - .8); }
+  else for (let r = 11; r <= VR - 1.5; r += 2.3) radios.push(r);
+  const surcos = radios.map((r) => `<circle cx="${VX}" cy="${VY}" r="${r}" fill="none" stroke="${cu}" stroke-width=".7" opacity="${mono ? .85 : .75}"/>`).join("");
+  const micro = f.microHz ? `<rect x="${VX - 6.4}" y="${VY + 1.6}" width="12.8" height=".9" fill="${mono ? m.bg : VIN}"/>` : "";
+  const vin = `<circle cx="${VX}" cy="${VY}" r="${VR}" fill="${mono ? "none" : VIN}" stroke="${mono ? cu : "none"}" stroke-width="${mono ? 1.2 : 0}"/>${surcos}<circle cx="${VX}" cy="${VY}" r="6.4" fill="${cu}"/>${micro}<circle cx="${VX}" cy="${VY}" r="1.3" fill="${mono ? m.bg : VIN}"/>
+    ${mono ? "" : `<path d="M${VX} ${VY} L${VX + VR} ${VY - 6} A${VR} ${VR} 0 0 1 ${VX + VR} ${VY + 6} Z" fill="rgba(237,234,228,.08)" transform="rotate(-38 ${VX} ${VY})"/>`}`;
+  const vel = VELAS.map((v) => { const up = v.c < v.o, t = Math.min(v.o, v.c), b = Math.max(v.o, v.c);
+    const nota = f.notas ? `<ellipse cx="${v.x - 1.3}" cy="${v.h}" rx="2.1" ry="1.45" transform="rotate(-24 ${v.x - 1.3} ${v.h})" fill="${cy}"/>` : "";
+    return `<line x1="${v.x}" x2="${v.x}" y1="${v.h}" y2="${v.l}" stroke="${cy}" stroke-width="1"/>${nota}<rect x="${v.x - 3.1}" y="${t}" width="6.2" height="${b - t}" fill="${up ? cy : bg}" stroke="${cy}" stroke-width="${up ? 0 : 1.2}"/>`; }).join("");
+  const ondas = [69, 74].map((y, i) => `<path d="${sen(VX - 16 + i * 3, VX + 16 - i * 3, y, 1.25, 7)}" fill="none" stroke="${cu}" stroke-width="1.6" stroke-linecap="round" opacity="${1 - i * .2}"/>`).join("");
+  const luces = VELAS.map((v) => { const t = Math.min(v.o, v.c), b = Math.max(v.o, v.c); return `<line x1="${v.x}" x2="${v.x}" y1="${HZ + 3 + (HZ - b) * .35}" y2="${HZ + 3 + (HZ - t) * .35}" stroke="${cy}" stroke-width="6.2" stroke-dasharray="1.3 1.1" opacity=".9"/>`; }).join("");
+  const cielo = [16, 22, 28].map((y, i) => `<line x1="${52 + i * 3}" x2="96" y1="${y}" y2="${y}" stroke="${cy}" stroke-width="1.6" stroke-dasharray="${[9, 2.5, 5, 2.5, 13, 2.5][i % 6]} 2.5" opacity=".5"/>`).join("");
+  return `<svg viewBox="0 0 100 100">${disco}<g clip-path="url(#${id})" ${mref}>${cielo}<g clip-path="url(#${id}a)">${vin}</g>${vel}${ondas}${luces}<rect x="0" y="${HZ - .6}" width="100" height="1.2" fill="${mono || PAPEL}" opacity="${mono ? 1 : .55}"/></g></svg>`;
+}
+const VAR = [
+  ["E", {}, "E · hoy", "El símbolo como está: el punto de partida."],
+  ["1", { muescas: true }, "1 · Muescas", "Dos muescas en el borde, a la altura del horizonte. La silueta deja de ser un círculo cualquiera: es una ficha que también es boleto."],
+  ["2", { bandas: true, microHz: true }, "2 · Bandas", "Los surcos en tres pistas, con el espacio liso entre tema y tema, y un mini horizonte en la etiqueta: la marca adentro de la marca."],
+  ["3", { notas: true, surcoDatos: true }, "3 · Contagio", "Cada mundo lleva un rasgo del otro: las velas tienen cabeza de nota (el gráfico es una partitura) y los surcos se separan según los saltos del precio (el disco es dato)."],
+];
+const S = (f, px, m = {}) => `<span class="s" style="width:${px}px;height:${px}px;display:inline-block">${E(f, { ...m, nivel: m.nivel || (px >= 64 ? "full" : "mini") })}</span>`;
+document.getElementById("heroes").innerHTML = VAR.map(([t, f, n, d]) => `<div><span class="tag">${t === "E" ? "Base" : "Dirección " + t}</span><div class="mk">${E(f)}</div><b>${n}</b><p>${d}</p></div>`).join("");
+// Detalles ampliados (recortes al 250 %).
+// Centra el recorte (ampliado ×2,5, caja 1,6:1) en el punto (cx, cy) del símbolo, en unidades de 0 a 100.
+const recorte = (f, cx, cy) => `<div class="z"><div class="in" style="left:${50 - cx * 2.5}%;top:${50 - cy * 4}%">${E(f)}</div></div>`;
+document.getElementById("zoom").innerHTML = [
+  `<div>${recorte({ muescas: true }, 6, 63)}<b>La muesca</b><p>El borde se corta justo donde el horizonte toca la ficha. Es el detalle que se ve de lejos y en la silueta.</p></div>`,
+  `<div>${recorte({ bandas: true, microHz: true }, 34, 55)}<b>Las pistas y el mini horizonte</b><p>Tres pistas como en un disco real, y la etiqueta cortada por su propio horizonte.</p></div>`,
+  `<div>${recorte({ notas: true, surcoDatos: true }, 76, 36)}<b>La cabeza de nota</b><p>En la punta de cada mecha, una nota. De lejos son velas; de cerca, también una partitura.</p></div>`,
+].join("");
+const FILAS = [
+  ["Tamaños reales", "64 · 32 · 16 px", (f) => S(f, 64) + S(f, 32) + S(f, 16)],
+  ["Un color", "Sobre papel", (f) => S(f, 110, { mono: TINTA, bg: PAPEL }) + S(f, 32, { mono: TINTA, bg: PAPEL }), "paper"],
+  ["Prueba de retina", "Desenfocada", (f) => `<span style="filter:blur(5px)">${S(f, 110)}</span>`],
+  ["Silueta", "Solo el contorno, en negro", (f) => `<span style="filter:brightness(0)">${S(f, 110, { mono: "#EDEAE4", bg: "#070707" })}</span>`, "paper"],
+];
+let h = `<div class="hd"></div>` + VAR.map(([, , n]) => `<div class="hd"><b>${n}</b></div>`).join("");
+for (const [t, d, fn, cls] of FILAS) h += `<div class="rl"><b>${t}</b><span>${d}</span></div>` + VAR.map(([, f]) => `<div class="${cls || ""}">${fn(f)}</div>`).join("");
+document.getElementById("grid").innerHTML = h;
+const FINAL = { muescas: true, bandas: true, microHz: true, notas: true };
+document.getElementById("rec").innerHTML = `<div class="s" style="width:240px;height:240px">${E(FINAL)}</div><div><div class="k">Mi recomendación</div><h3>Muescas + bandas + notas.</h3>
+  <p>Las tres direcciones suman y no se pisan, porque trabajan en escalas distintas: <b>las muescas</b> le dan la silueta propia que la auditoría pedía (es lo único que sobrevive de lejos y a 16 px); <b>las bandas y el mini horizonte</b> hacen del vinilo un disco verdadero y no un ícono; y <b>la cabeza de nota</b> es el guiño que alguien descubre de cerca, como la flecha de FedEx. Dejaría afuera los surcos separados por datos: la idea es linda, pero se confunde con las bandas y nadie la va a leer. El de la izquierda es la combinación.</p></div>`;
+</script>
+</body>
+</html>
