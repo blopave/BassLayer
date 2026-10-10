@@ -1,22 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ficha, objetivo, setPrecio, resetMetricas, ESTADO_INICIAL, KL } from "../brand/ficha";
+import { ficha, objetivo, setPrecio, ESTADO_INICIAL, KL } from "../brand/ficha";
 
 /* ══════════════════════════════════════════════════════════════
-   HomeFicha — el home es la ficha de la marca (ronda 19, versión A).
+   HomeFicha — el home es la ficha de la marca (ronda 19).
    El vinilo es Bass, las velas (BTC real de 7 días) son Layer, sobre un
-   horizonte compartido; "Bass LAYER" va adentro, en el agua.
-   Reposo: los dos mundos insinuados, en equilibrio medido.
-   Elegir: pasar por cada mitad de la ficha (o enfocarla con el teclado);
-   en el celular, el primer toque muestra el mundo y el segundo entra.
-   PROTOTIPO ?nombre=1|2|3: el nombre sale de la imagen y va encima, en HTML,
-   como selector (1 relieve · 2 teclas · 3 sobre el borde). Al elegir, la ficha
-   dice qué hay en ese mundo (ver `leyenda` en brand/ficha.js).
+   horizonte compartido. "Bass LAYER" va encima de la ficha, en HTML, como
+   selector: a plena luz sobre la penumbra, invita a elegir.
+   Reposo: neutral y quieto (oct 2026, Pablo): ningún mundo se insinúa más
+   que el otro, y la ficha no se redibuja.
+   Elegir: pasar por cada mitad o por su palabra (o el teclado); la ficha dice
+   qué hay en ese mundo (ver `leyenda` en brand/ficha.js). En el celular, el
+   primer toque muestra el mundo y el segundo entra.
    ══════════════════════════════════════════════════════════════ */
-
-const NOMBRE = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("nombre") : null;
-const OP = ["1", "2", "3", "4"].includes(NOMBRE) ? NOMBRE : null;
-// 4 = la 1 con la auditoría aplicada (leyendas legibles en el celular, sin esquinas, reposo sin consumo).
-const V2 = OP === "4", CLASE = OP === "4" ? "1" : OP;
 
 export default function HomeFicha({ prices = [], t, locale, isMobile, active = true, onEnter }) {
   const en = locale === "en";
@@ -28,34 +23,28 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
   // BTC real de 7 días para las velas (la misma serie que usa /api/prices).
   const btc = useMemo(() => (prices || []).find((p) => String(p.sym || "").toUpperCase() === "BTC"), [prices]);
   useEffect(() => { if (btc?.sparkline) setPrecio(btc.sparkline); }, [btc]);
-  // Las medidas del nombre se toman con Geist ya cargada.
-  useEffect(() => { document.fonts?.load("700 32px 'Geist Variable'").then(() => document.fonts.load("300 26px 'Geist Variable'")).then(resetMetricas).catch(() => {}); }, []);
 
-  // ── Animación: la ficha se redibuja solo mientras el home está a la vista
-  // (en el celular, a 30 cuadros por segundo: alcanza y cuida la batería).
+  // ── Animación: solo con el home a la vista y un mundo elegido (en el celular, a 30 cuadros por segundo).
   useEffect(() => {
     if (!active) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const paso = isMobile ? 1 / 30 : 0;
     const st = { ...ESTADO_INICIAL };
-    let prev = performance.now(), raf = 0;
     // Las leyendas nunca bajan de 11 px reales: en unidades del dibujo, 11 · 400 / ancho de la ficha.
-    let minU = 0;
-    const mide = () => { minU = V2 && mkRef.current ? (11 * 400) / Math.max(1, mkRef.current.clientWidth) : 0; };
-    mide(); window.addEventListener("resize", mide);
-    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en, conNombre: !OP, franja: OP !== "3", v2: V2, minU }); };
-    let quieta = false;
+    let minU = 0, quieta = false;
+    const mide = () => { minU = mkRef.current ? (11 * 400) / Math.max(1, mkRef.current.clientWidth) : 0; quieta = false; };
+    const pinta = () => { if (mkRef.current) mkRef.current.innerHTML = ficha(st, { en, minU }); };
+    let prev = performance.now(), raf = 0;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - prev) / 1000);
       if (document.hidden || dt < paso) return;
       prev = now;
-      // Reposo neutral (oct 2026, Pablo): sin el mouse encima, ningún mundo se insinúa más que el otro.
       const m = wRef.current, tg = objetivo(m);
       let dif = 0;
       for (const k of ["rise", "speed", "gain", "dimL", "dimB", "L", "B", "grow"]) { st[k] += (tg[k] - st[k]) * Math.min(1, dt * 1.3); dif = Math.max(dif, Math.abs(tg[k] - st[k])); }
-      // Reposo quieto: sin mundo elegido nada se mueve; ya asentada, la ficha no se redibuja (cero consumo).
-      if (V2 && !m) { if (quieta) return; quieta = dif < 0.002; pinta(); return; }
+      // Reposo quieto: sin mundo elegido nada se mueve; ya asentada, la ficha no se redibuja.
+      if (!m) { if (quieta) return; quieta = dif < 0.002; pinta(); return; }
       quieta = false;
       if (!reduce) {
         st.time += dt; st.spin += tg.spinV * dt;
@@ -63,11 +52,13 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
       }
       pinta();
     };
-    pinta();   // primer cuadro ya, sin esperar al rAF (que no corre con la pestaña oculta)
+    mide(); pinta();   // primer cuadro ya, sin esperar al rAF (que no corre con la pestaña oculta)
+    window.addEventListener("resize", mide);
     raf = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", mide); };
   }, [active, en, isMobile]);
 
+  // Vuelve a neutral si el mouse sale de la ventana o la pestaña pierde el foco.
   useEffect(() => {
     if (isMobile) return;
     const neutro = (e) => { if (!e.relatedTarget) setW(""); };
@@ -82,21 +73,24 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
     if (isMobile && wRef.current !== m) { setW(m); return; }
     onEnter(e, m === "bass" ? 0 : 1);
   };
+  const pasar = (m) => () => { if (!isMobile) setW(m); };
   const mitad = (m, cls, label) => (
     <button className={`bhf-half ${cls}`} aria-label={label}
-      onMouseEnter={() => { if (!isMobile) setW(m); }}
+      onMouseEnter={pasar(m)}
       // El foco por toque no cuenta: solo el del teclado elige.
       onFocus={(e) => { if (e.target.matches(":focus-visible")) setW(m); }}
       onBlur={() => setW("")}
       onClick={(e) => tocar(e, m)} />
   );
+  const palabra = (m, cls, txt) => (
+    <button className={`bhf-w ${cls}`} tabIndex={-1} onMouseEnter={pasar(m)} onClick={(e) => tocar(e, m)}>
+      <span className="w">{txt}</span><span className="go">{t("home.fichaGo")}</span>
+    </button>
+  );
 
   return (
-    <div className={`bhf${isMobile ? " is-mobile" : ""}${V2 ? " bhf-v2" : ""}`} data-w={w}
+    <div className={`bhf${isMobile ? " is-mobile" : ""}`} data-w={w}
       onClick={(e) => { if (isMobile && !e.target.closest(".bhf-half, .bhf-w")) setW(""); }}>
-      <span className="bhf-esq bhf-tl"><i />Bass</span>
-      <span className="bhf-esq bhf-tr">Layer<i /></span>
-
       {/* Fuera de la ficha (y de su nombre), reposo. */}
       <div className="bhf-mk-wrap" onMouseLeave={() => { if (!isMobile) setW(""); }}>
         <div className="bhf-mk" ref={mkRef} aria-hidden="true" />
@@ -104,16 +98,10 @@ export default function HomeFicha({ prices = [], t, locale, isMobile, active = t
           {mitad("bass", "b", t("home.bassAria"))}
           {mitad("layer", "l", t("home.layerAria"))}
         </div>
-        {OP && (
-          <div className={`bhf-nm bhf-nm-${CLASE}`} aria-hidden="true">
-            <button className="bhf-w b" tabIndex={-1} onMouseEnter={() => { if (!isMobile) setW("bass"); }} onClick={(e) => tocar(e, "bass")}>
-              <span className="w">Bass</span><span className="go">{t("home.fichaGo")}</span>
-            </button>
-            <button className="bhf-w l" tabIndex={-1} onMouseEnter={() => { if (!isMobile) setW("layer"); }} onClick={(e) => tocar(e, "layer")}>
-              <span className="w">LAYER</span><span className="go">{t("home.fichaGo")}</span>
-            </button>
-          </div>
-        )}
+        <div className="bhf-nm" aria-hidden="true">
+          {palabra("bass", "b", "Bass")}
+          {palabra("layer", "l", "LAYER")}
+        </div>
       </div>
     </div>
   );

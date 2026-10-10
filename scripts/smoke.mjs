@@ -115,10 +115,10 @@ async function run(vp) {
     await expectNone("home", lowContrast);
     await expectNone("home", brokenLabels);
     const amba = (await eventsData()).filter((e) => e.area === "amba").length;
-    // El home es la ficha (oct 2026): el vinilo, las velas y "Bass LAYER" adentro.
+    // El home es la ficha (oct 2026): el vinilo, las velas y "Bass LAYER" encima, como selector.
     const fichaSvg = page.locator(".bhf-mk svg");
     if (!(await fichaSvg.count())) fail(vp.name, "home", "el home no muestra la ficha");
-    else if (!/Bass\s*LAYER/.test(((await fichaSvg.textContent().catch(() => "")) || "").replace(/\s+/g, " "))) fail(vp.name, "home", "la ficha no muestra \"Bass LAYER\"");
+    if (!/Bass\s*LAYER/.test(((await page.locator(".bhf-nm").textContent().catch(() => "")) || "").replace(/Entrar →|Enter →/g, " ").replace(/\s+/g, " "))) fail(vp.name, "home", "la ficha no muestra \"Bass LAYER\"");
     // En reposo ningún mundo está elegido; pasar (o tocar una vez en el celular) elige sin entrar.
     if (await page.locator('.bhf[data-w="bass"], .bhf[data-w="layer"]').count()) fail(vp.name, "home", "la ficha arranca con un mundo elegido: el reposo es neutral");
     const bassHalf = page.getByRole("button", { name: /^Bass —/ }).first();
@@ -131,6 +131,19 @@ async function run(vp) {
       await bassHalf.hover();
       await page.waitForTimeout(300);
       if ((await page.locator(".bhf").getAttribute("data-w").catch(() => "")) !== "bass") fail(vp.name, "home", "pasar por el vinilo no elige Bass");
+    }
+    // Al elegir, la ficha dice qué hay en ese mundo, y "Entrar →" se lee (11 px como mínimo, también en el celular).
+    await page.waitForTimeout(1500);
+    if (!/M[ÚU]SICA|MUSIC/.test((await fichaSvg.textContent().catch(() => "")) || "")) fail(vp.name, "home", "al elegir Bass la ficha no dice qué hay (Música · Festivales · Agenda)");
+    const goPx = await page.locator(".bhf-w.b .go").evaluate((e) => parseFloat(getComputedStyle(e).fontSize)).catch(() => 0);
+    if (goPx < 11) fail(vp.name, "home", `"Entrar →" mide ${goPx}px: no se lee`);
+    if (!vp.isMobile) {
+      // Fuera de la ficha, reposo neutral: ningún mundo queda elegido.
+      await page.mouse.move(8, Math.round(vp.viewport.height / 2));
+      await page.waitForTimeout(300);
+      if (await page.locator('.bhf[data-w="bass"], .bhf[data-w="layer"]').count()) fail(vp.name, "home", "al salir de la ficha queda un mundo elegido: tiene que volver a neutral");
+      await bassHalf.hover();
+      await page.waitForTimeout(300);
     }
     await bassHalf.click();
 

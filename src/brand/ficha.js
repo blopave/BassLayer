@@ -18,47 +18,24 @@ const seg = (pts) => "M" + pts.map((q) => q[0].toFixed(1) + " " + q[1].toFixed(1
 
 // Serie de precio: muestra estable hasta que llega el BTC real.
 let PRECIO = (() => { let p = 100, s = 7; const a = []; for (let i = 0; i < 600; i++) { s = (s * 9301 + 49297) % 233280; p += (s / 233280 - 0.46) * 5; a.push(p); } return a; })();
-let SALTO = 1, BTC7 = null;
+let SALTO = 1;
 const calcSalto = () => { let t = 0; for (let i = 1; i < PRECIO.length; i++) t += Math.abs(PRECIO[i] - PRECIO[i - 1]); SALTO = t / (PRECIO.length - 1) || 1; };
 calcSalto();
 export function setPrecio(serie) {
   if (!Array.isArray(serie) || serie.length <= 24) return;
-  PRECIO = serie; calcSalto(); BTC7 = (serie[serie.length - 1] / serie[0] - 1) * 100;
+  PRECIO = serie; calcSalto();
 }
 
 // Bloques de datos: el largo sale de los saltos de la serie de precio.
 function dash(i, k0) { const a = []; for (let k = 0; k < 14; k++) { const d = Math.abs(PRECIO[(k0 + i * 5 + k) % PRECIO.length] - PRECIO[(k0 + i * 5 + k + 1) % PRECIO.length]) / SALTO; a.push(Math.min(110, 14 + d * 22), 5); } return a.join(" "); }
 
-// ── El nombre: proporción exacta del home (Bass 700 / LAYER 300 al 80,5 %).
-let NM = null, lienzo = null;
-function ancho(txt, w, s, ls) {
-  lienzo = lienzo || document.createElement("canvas").getContext("2d");
-  lienzo.font = `${w} ${s}px 'Geist Variable'`; lienzo.letterSpacing = `${ls}px`;
-  return lienzo.measureText(txt).width - ls;
-}
-export const resetMetricas = () => { NM = null; };
-function metricas(S) { const lS = S * 0.805; return { S, lS, bl: -0.03 * S, ll: lS * 0.1, wb: ancho("Bass", 700, S, -0.03 * S), wl: ancho("LAYER", 300, lS, lS * 0.1), gap: S * 0.28 }; }
-function nombre(y, S, e, en) {
-  if (!NM || NM.S !== S) NM = metricas(S);
-  const M = NM, x0 = 200 - (M.wb + M.gap + M.wl) / 2, xl = x0 + M.wb + M.gap;
-  // El nombre es el selector: la palabra elegida queda plena y muestra su línea; la otra se apaga.
-  const sub = (x, anc, txt, c, v) => { const o = Math.max(0, Math.min(1, (v - 0.55) / 0.35)); return o > 0.02 ? `<text x="${x}" y="${y + 17}" text-anchor="${anc}" font-family="'Geist Mono Variable', GeistMono, monospace" font-size="8.6" letter-spacing="1.7" fill="${c}" opacity="${o}">${txt}</text>` : ""; };
-  const cambio = BTC7 == null ? "" : `BTC ${BTC7 >= 0 ? "+" : "−"}${Math.abs(BTC7).toFixed(1).replace(".", en ? "." : ",")}% · 7 D · `;
-  const entrar = en ? "ENTER →" : "ENTRAR →";
-  return `<text x="${x0}" y="${y}" font-family="'Geist Variable', Geist, sans-serif" font-weight="700" font-size="${M.S}" letter-spacing="${M.bl}" fill="${CU}" opacity="${1 - 0.75 * e.L}">Bass</text>
-    <text x="${xl}" y="${y}" font-family="'Geist Variable', Geist, sans-serif" font-weight="300" font-size="${M.lS}" letter-spacing="${M.ll}" fill="${CY}" opacity="${1 - 0.75 * e.B}">LAYER</text>
-    ${sub(x0, "start", (en ? "THE NIGHT · " : "LA NOCHE · ") + entrar, CU, e.B) + sub(xl + M.wl, "end", cambio + entrar, CY, e.L)}`;
-}
-
-// ── La ficha. El agua deja una franja para el nombre; `conNombre: false` la deja vacía
-//    (el nombre va encima, en HTML, como selector).
-// `v2` (prototipo, auditoría oct 2026): franja un poco más alta para "Entrar →", Layer como lista de
-// cotizaciones y `minU` = tamaño mínimo de las leyendas en unidades del dibujo (11 px reales en el celular).
-export function ficha(st, { en = false, conNombre = true, franja = true, v2 = false, minU = 0 } = {}) {
+// ── La ficha. El agua deja una franja para el nombre, que va encima en HTML como selector.
+// `minU`: tamaño mínimo de las leyendas en unidades del dibujo (11 px reales en el celular).
+export function ficha(st, { en = false, minU = 0 } = {}) {
   const id = "bf" + uid++, H = 228;
   const vx = 124, VR = 100;
   const vy = H + 106 - st.rise * (VR + 42), ry = 2 * H - vy;
-  const band = franja ? (v2 ? [292, 362] : [296, 346]) : null;   // sin franja: el agua llega entera y el nombre corta el borde de abajo
+  const band = [292, 362];   // la franja del nombre y su "Entrar →"
   const cL = CY, cB = CU;
   const N = 12, por = Math.floor(PRECIO.length / N), V = [];
   for (let i = 0; i < N; i++) { const s2 = PRECIO.slice(i * por, (i + 1) * por + 1); V.push({ o: s2[0], c: s2[s2.length - 1], h: Math.max(...s2), l: Math.min(...s2) }); }
@@ -91,7 +68,7 @@ export function ficha(st, { en = false, conNombre = true, franja = true, v2 = fa
   const p = 9.5, sw = 3.4;
   let mar = "", eco = "", cielo = "", i = 0;
   for (let y = H + 8; y < 392; y += p, i++) {
-    if (band && y > band[0] && y < band[1]) continue;
+    if (y > band[0] && y < band[1]) continue;
     const ps = [], pb = [];
     for (let x = 10; x <= 390; x += 2) {
       const d = Math.hypot(x - vx, y - ry), ins = Math.max(0, Math.min(1, (VR - d) / 14));
@@ -109,38 +86,32 @@ export function ficha(st, { en = false, conNombre = true, franja = true, v2 = fa
     <g transform="rotate(${ang} ${vx} ${vy})"><path d="M${vx} ${vy} L${vx + VR} ${vy - 20} A${VR} ${VR} 0 0 1 ${vx + VR} ${vy + 20} Z" fill="rgba(237,234,228,.07)"/><path d="M${vx} ${vy} L${vx - VR} ${vy + 20} A${VR} ${VR} 0 0 1 ${vx - VR} ${vy - 20} Z" fill="rgba(237,234,228,.05)"/></g>
     <circle cx="${vx}" cy="${vy}" r="34" fill="${CU}"/><circle cx="${vx}" cy="${vy}" r="3" fill="${FONDO}"/>`;
   // ── Qué hay en cada mundo, dicho en su idioma: al elegir Bass, impreso alrededor del vinilo
-  //    como el borde de un disco; al elegir Layer, una línea de cotización en el cielo del mercado.
+  //    como el borde de un disco; al elegir Layer, una lista de cotizaciones en el cielo del mercado.
   const mono = "'Geist Mono Variable', GeistMono, monospace";
   const oB = Math.max(0, Math.min(1, ((st.B ?? 0) - 0.55) / 0.35)), oL = Math.max(0, Math.min(1, ((st.L ?? 0) - 0.55) / 0.35));
   let leyenda = "";
   const fs = Math.max(8.6, minU);
   if (oB > 0.02) {
     // a 11 px reales el texto es más largo: el arco se abre un poco (sigue entero dentro de la ficha)
-    const ancho = v2 && fs > 8.6, r = ancho ? 116 : 113, a0 = (ancho ? -122 : -116) * Math.PI / 180, a1 = (ancho ? -3 : -6) * Math.PI / 180;
+    const ancho = fs > 8.6, r = ancho ? 116 : 113, a0 = (ancho ? -122 : -116) * Math.PI / 180, a1 = (ancho ? -3 : -6) * Math.PI / 180;
     leyenda += `<path id="${id}r" d="M${vx + r * Math.cos(a0)} ${vy + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${vx + r * Math.cos(a1)} ${vy + r * Math.sin(a1)}" fill="none"/>
       <text font-family="${mono}" font-size="${fs}" letter-spacing="${ancho ? 0.5 : 1.8}" fill="${CU}" opacity="${oB}"><textPath href="#${id}r" startOffset="50%" text-anchor="middle">${en ? "MUSIC · FESTIVALS · LISTINGS" : "MÚSICA · FESTIVALES · AGENDA"}</textPath></text>`;
   }
-  if (oL > 0.02 && v2) {
+  if (oL > 0.02) {
     // una lista de cotizaciones (watchlist): cada línea entra a su turno, con su marca de nivel
     const lh = Math.max(15, fs * 1.55), y0 = 126;
-    (en ? ["CRYPTO", "FINANCE", "NEWS"] : ["CRYPTO", "FINANZAS", "NOTICIAS"]).forEach((w, k) => {
+    (en ? ["CRYPTO", "FINANCE", "NEWS"] : ["CRIPTO", "FINANZAS", "NOTICIAS"]).forEach((w, k) => {
       const o = Math.max(0, Math.min(1, oL * 1.6 - k * 0.3)), y = y0 + k * lh, dx = (1 - o) * 24;
       leyenda += `<g opacity="${o}"><line x1="${48 - dx}" x2="${60 - dx}" y1="${y - fs * 0.34}" y2="${y - fs * 0.34}" stroke="${CY}" stroke-width="1.6"/><text x="${66 - dx}" y="${y}" font-family="${mono}" font-size="${fs}" letter-spacing="1.2" fill="${CY}">${w}</text></g>`;
     });
-  } else if (oL > 0.02) {
-    // entra deslizándose como una cotización que llega, y queda quieta: las tres palabras enteras
-    const txt = en ? "CRYPTO · FINANCE · NEWS" : "CRYPTO · FINANZAS · NOTICIAS";
-    // a la altura y = 155 la ficha es ancha: entra entera entre el borde (x 40) y la columna de las velas (x 214)
-    leyenda += `<clipPath id="${id}t"><rect x="40" y="140" width="174" height="20"/></clipPath><g clip-path="url(#${id}t)" opacity="${oL}"><text x="${42 - (1 - oL) * 40}" y="155" font-family="${mono}" font-size="9" fill="${CY}" textLength="170" lengthAdjust="spacing">${txt}</text></g>`;
   }
-  const bandMask = band ? `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>` : "";
+  const bandMask = `<rect x="0" y="${band[0]}" width="400" height="${band[1] - band[0]}" fill="#000"/>`;
   return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="${id}f"><circle cx="200" cy="200" r="${R}"/></clipPath>
       <clipPath id="${id}a"><rect x="0" y="-10" width="400" height="${H + 10}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
       <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/><rect x="${xa - 10}" y="${H}" width="${xb - xa + 20}" height="66" fill="#000"/>${bandMask}</mask>
       <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/>${bandMask}</mask>
-      <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6 + 16 * oB}" fill="#000"/>${v2 ? `<rect x="36" y="${126 - fs - 4}" width="182" height="${2 * Math.max(15, fs * 1.55) + fs + 10}" fill="#000" fill-opacity="${oL}"/>` : `<rect x="36" y="145" width="182" height="13" fill="#000" fill-opacity="${oL}"/>`}<rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
-    ${band ? "" : `<mask id="${id}n" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="84" y="357" width="232" height="52" rx="6" fill="#000"/></mask>`}
-    <g${band ? "" : ` mask="url(#${id}n)"`}><circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
+      <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6 + 16 * oB}" fill="#000"/><rect x="36" y="${126 - fs - 4}" width="182" height="${2 * Math.max(15, fs * 1.55) + fs + 10}" fill="#000" fill-opacity="${oL}"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
+    <circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
     <g clip-path="url(#${id}f)">
       <g fill="none" stroke="${cL}" stroke-width="${sw * 0.8}" opacity="${Math.min(1, (0.07 + 0.33 * st.L) * il) * (1 - 0.6 * st.B)}" mask="url(#${id}c)">${cielo}</g>
       <g clip-path="url(#${id}a)" opacity="${st.dimB}">${vinilo}</g>
@@ -150,11 +121,8 @@ export function ficha(st, { en = false, conNombre = true, franja = true, v2 = fa
       <g mask="url(#${id}e)" opacity="${st.dimL}">${luces}</g>
       <g mask="url(#${id}e)"><g fill="none" stroke="${cB}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id}v)" opacity="${st.dimB}">${eco}</g></g>
       <line x1="0" x2="400" y1="${H}" y2="${H}" stroke="${PAPEL}" stroke-width="1.6" opacity=".42"/>
-    </g></g>
-    ${conNombre ? nombre(322, 32, st, en) : ""}</svg>`;
+    </g></svg>`;
 }
-
-export const btc7 = () => BTC7;
 
 // Estados objetivo: reposo (los dos mundos insinuados y parejos, quietos), Bass o Layer elegido.
 export function objetivo(w) {
