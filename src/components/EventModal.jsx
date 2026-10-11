@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useSheetDrag } from "../hooks/useSheetDrag";
 import { cleanArtists } from "../utils/artists";
-import { Poster, ArtistPhoto } from "./BlThumb";
+import { ArtistPhoto } from "./BlThumb";
 import { imgUrl } from "../utils/img";
 import { api } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
@@ -18,6 +18,25 @@ import { noOrphanSep } from "../utils/format";
 // Fechas: asumimos 23:00 local si el evento no trae hora, +5h de duración
 // para el .ics, +6h para Google Calendar (según el prompt). Zona horaria
 // fija America/Argentina/Buenos_Aires (offset -03:00 sin DST).
+// El afiche de la casa para eventos sin flyer ni foto (auditoría B6): la onda de Bass de fondo
+// (textura propia de cada evento, determinística por su nombre) y el line-up compuesto, en vez
+// de media ficha vacía con el nombre calado.
+const textura = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (i) => { const v = Math.sin((h >>> 0) * 0.0001 + i * 12.9898) * 43758.5453; return v - Math.floor(v); }; };
+function AficheCasa({ event, artists }) {
+  const r = textura(event.name || ""), N = 64;
+  const bars = Array.from({ length: N }, (_, i) => { const env = 0.35 + 0.65 * Math.sin((i / (N - 1)) * Math.PI) ** 0.8; return 6 + env * (0.45 + 0.55 * r(i)) * 44; });
+  const lineup = (artists.length ? artists : [event.name]).slice(0, 4);
+  return (
+    <div className="bl-em-afiche" aria-hidden="true">
+      <svg className="bl-em-afiche-onda" viewBox={`0 0 ${N * 6} 100`} preserveAspectRatio="none">
+        {bars.map((h, i) => <rect key={i} x={i * 6 + 2} y={50 - h} width="2" height={2 * h} />)}
+      </svg>
+      <div className="bl-em-afiche-lineup">{lineup.map((a) => <span key={a}>{a}</span>)}</div>
+      {event.venue && <div className="bl-em-afiche-venue">{event.venue.split(",")[0]}{event.time ? ` · ${event.time}` : ""}</div>}
+    </div>
+  );
+}
+
 function eventTimes(event) {
   const m = MONTH_ABBR_INDEX[event.month?.toLowerCase()];
   if (m === undefined) return null;
@@ -276,9 +295,7 @@ export function EventModal({ event, onClose, onShare }) {
               />
             </div>
           ) : (
-            <div className="bl-em-fly-poster bl-thumb-poster" aria-hidden="true">
-              <Poster text={artists[0] || event.name} family={event.family} />
-            </div>
+            <AficheCasa event={event} artists={artists} />
           )}
           <div className="bl-em-stamp" aria-hidden="true">
             <b>{event.day}</b>

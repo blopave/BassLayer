@@ -46,6 +46,18 @@ export function SaveButton({ slug, className = "" }) {
 // La familia la asigna el backend (classifyFamily). Los items son KEYS estables
 // (para estado/URL); el label visible sale de i18n (family.*), EN/ES.
 const FAMILY_FILTER_ITEMS = ["All", "club", "festival"];   // solo escena electrónica (oct 2026)
+// Agenda con el contenido primero (auditoría B4, oct 2026): De gira y El finde ya no van
+// antes de la lista sino adentro, después del primer día — el primer evento entra en la
+// primera pantalla. Si hay un solo día, al final. Antes de un cambio de mes, antes del divisor.
+function intercalar(grouped, bloque, nodos) {
+  let vistos = 0;
+  let i = grouped.findIndex((it) => it.type === "header" && ++vistos === 2);
+  if (i > 0 && grouped[i - 1].type === "month") i--;
+  const out = [...nodos];
+  out.splice(i < 0 ? out.length : i, 0, bloque);
+  return out;
+}
+
 // Agenda (oct 2026, Pablo): "Cuándo" lo resuelve la línea de días (DayRail);
 // "Hoy" / "Este finde" quedan solo para los deep links, con un chip para salir.
 
@@ -646,6 +658,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       ) : (
         <>
 
+      {/* Filtros en una sola fila en escritorio (auditoría B4): género · dónde · buscar. */}
+      <div className={isMobile ? "bl-agenda-filtros-m" : "bl-agenda-filtros"}>
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
       <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
 
@@ -703,11 +717,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           {searchSeg}
         </div>
       )}
+      </div>
 
-      {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan
-          por acá. Va después de los filtros: en la Agenda, Cuándo es lo primero. */}
+      {/* Con búsqueda, las salas que coinciden; después, la línea de días (Cuándo es lo primero). */}
       {search && <SalaHits hits={salaMatches(salasData?.salas, search)} onPick={openSala} />}
-      {!search && !when && !loading && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} compact />}
       {!loading && railMonths.length > 0 && <DayRail months={railMonths} active={railActive || railMonths[0].days.find((d) => d.count)?.key} onPick={pickDay} t={t} />}
 
       {/* Header editorial del listado. Con savedOnly activo se muestra aunque
@@ -736,13 +749,18 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
           )}
         </div>
       )}
-      {/* El finde en tu calendario: la vuelta semanal sin cuentas (oct 2026). */}
-      {!loading && !error && !search && when !== "hoy" && !savedOnly && <><Finde events={events} onSelect={onSelect} /><SemanaLinea /></>}
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
         : filtered.length === 0 ? (salaMatches(salasData?.salas, search).length ? null : <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>)
         : <div className="bl-ev-list bl-ev-wall" role="region" aria-label={t("section.events")} ref={listRef}>
-            {grouped.map((item, gIdx) => {
+            {intercalar(grouped, (
+              <div className="bl-agenda-intermedio" key="intermedio">
+                {/* De gira: el mundo entra a la agenda porteña como ruta de los que pasan por acá. */}
+                {!search && !when && regionFilter === "amba" && <OnTour events={events} onSelect={onSelect} compact />}
+                {/* El finde en tu calendario: la vuelta semanal sin cuentas (oct 2026). */}
+                {when !== "hoy" && !savedOnly && <><Finde events={events} onSelect={onSelect} /><SemanaLinea /></>}
+              </div>
+            ), grouped.map((item, gIdx) => {
               if (item.type === "month") {
                 return (
                   <div className="bl-month-divider" key={`m-${item.label}-${gIdx}`} aria-hidden="true">
@@ -807,7 +825,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   <SaveButton slug={eventSlug(ev)} />
                 </article>
               );
-            })}
+            }))}
             {filtered.length > 0 && (
               <EndOfSet />
             )}
@@ -818,9 +836,17 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   );
 }
 
+// La primera fila abre con imagen (auditoría B5): de las 8 notas más nuevas, las que tienen foto
+// pasan adelante (hasta 3); el resto sigue en su orden por hora.
+function conImagenArriba(news) {
+  const top = news.slice(0, 8), conFoto = top.filter((n) => n.image).slice(0, 3);
+  return conFoto.length ? [...conFoto, ...news.filter((n) => !conFoto.includes(n))] : news;
+}
+
 function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   const { t } = useLocale();
   const listRef = useScrollReveal(loading);
+  const ordered = useMemo(() => (Array.isArray(news) ? conImagenArriba(news) : news), [news]);
 
   if (loading) return <NewsSkeleton />;
   if (error) {
@@ -846,7 +872,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
     <>
     <SectionHead n={news.length} word={t("feed.newsWord")} />
     <div className="bl-bass-news-list" role="region" aria-label={t("section.news")} ref={listRef}>
-      {news.map((item, idx) => (
+      {ordered.map((item, idx) => (
         <BassNewsItem
           key={`${item.source_slug || item.source}-${item.url || idx}`}
           item={item}
@@ -936,7 +962,8 @@ function FestivalsList({ festivals, loading, error, onRetry, onSelect }) {
                 aria-label={`${f.name} — ${f.city}, ${f.country}`}
                 style={{ cursor: "pointer", transitionDelay: `${Math.min(i * 0.04, 0.3)}s` }}
               >
-                <BlThumb image={f.image} poster={{ text: f.name, family: "festival" }} />
+                {/* El flyer real siempre entero, sobre su propio fondo desenfocado (auditoría B7): ya no se recorta. */}
+                <BlThumb image={f.image} fit="contain" width={240} poster={{ text: f.name, family: "festival" }} />
                 <div className="bl-ev-body">
                   <div className="bl-ev-name">{f.name}</div>
                   <div className="bl-ev-venue-line">{f.city}, {f.country}</div>

@@ -218,12 +218,15 @@ async function run(vp) {
       });
       const isEven = (r) => r && r[1] - r[0] <= 14;
       if (!vp.isMobile) { await page.mouse.move(2, vp.viewport.height - 2); await page.waitForTimeout(900); const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `la onda en reposo no es de un solo color (alfa de barras ${r?.join("–")})`); }
-      // "Se materializa" (oct 2026): la palabra elegida pasa de barras finas a
-      // letra sólida — la tinta dentro de su caja tiene que crecer claramente.
+      // La palabra elegida toma la forma de la onda (auditoría B1, oct 2026): sus columnas
+      // se completan y se estiran con el sonido. Se mide la tinta dentro de la caja de la
+      // palabra y la que se estira por encima y por debajo de ella (en reposo, casi nada).
       const inkOf = (i) => page.locator(".bl-btrack").evaluate((el, i) => {
-        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, r = el.querySelectorAll(".btk-name")[i].getBoundingClientRect();
-        const d = cv.getContext("2d").getImageData(Math.round((r.left - cr.left) * k), Math.round((r.top - cr.top) * k), Math.round(r.width * k), Math.round(r.height * k)).data;
-        let n = 0; for (let q = 0; q < d.length; q += 4) if (d[q] > 200 && d[q + 1] > 190 && d[q + 2] > 180) n++; return n;
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, r = el.querySelectorAll(".btk-name")[i].getBoundingClientRect(), ext = r.height * 0.6;
+        const cuenta = (y0, h) => { const d = cv.getContext("2d").getImageData(Math.round((r.left - cr.left) * k), Math.max(0, Math.round((y0 - cr.top) * k)), Math.round(r.width * k), Math.max(1, Math.round(h * k))).data; let n = 0; for (let q = 0; q < d.length; q += 4) if (d[q] > 200 && d[q + 1] > 190 && d[q + 2] > 180) n++; return n; };
+        // la letra ocupa ~±0,36 del tamaño: la franja de la caja es "adentro"; arriba y abajo, lo estirado
+        const mid = r.top + r.height / 2, core = r.height * 0.4;
+        return { total: cuenta(r.top - ext, r.height + 2 * ext), fuera: cuenta(r.top - ext, ext + r.height / 2 - core) + cuenta(mid + core, r.height / 2 - core + ext) };
       }, i);
       const lastIdx = (await page.locator(".btk-cue").count()) - 1;
       const inkRest = vp.isMobile ? null : await inkOf(lastIdx);
@@ -232,7 +235,7 @@ async function run(vp) {
       if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
       await page.waitForTimeout(1200);
       { const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `en solo la onda cambia de color (alfa de barras ${r?.join("–")})`); }
-      if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (!(inkOn > inkRest * 1.35)) fail(vp.name, "índice", `la palabra elegida no se materializa (tinta ${inkRest} → ${inkOn})`); }
+      if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (!(inkOn.total > inkRest.total * 1.08 && inkOn.fuera > inkRest.fuera + 40)) fail(vp.name, "índice", `la palabra elegida no toma la forma de la onda (tinta ${inkRest.total} → ${inkOn.total}; estirada ${inkRest.fuera} → ${inkOn.fuera})`); }
       const vert = (await page.locator(".bl-btrack").getAttribute("data-orient")) === "v";
       if (vp.viewport.width <= 768 && !vert) fail(vp.name, "índice", "mobile: la onda de Bass no es una sola frecuencia vertical (como el tronco de Layer)");
       if (vert) {
@@ -242,7 +245,9 @@ async function run(vp) {
         const side = await page.locator(".bl-btrack").evaluate((el) => {
           const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, cx = cv.getContext("2d");
           let wMax = 0;
-          for (let y = 0; y < cv.height; y += 4) { const row = cx.getImageData(0, y, cv.width, 1).data; let a = cv.width, b = 0; for (let x = 0; x < cv.width; x++) if (row[x * 4 + 3] > 40) { a = Math.min(a, x); b = x; } if (b > a) wMax = Math.max(wMax, (b - a) / k); }
+          const c0 = Math.round(cv.width / 2), on = (row, x) => row[x * 4 + 3] > 40;
+          // Solo la onda: el tramo continuo que pasa por el centro (los nombres van al costado, separados por aire).
+          for (let y = 0; y < cv.height; y += 4) { const row = cx.getImageData(0, y, cv.width, 1).data; if (!on(row, c0)) continue; let a = c0, b = c0; while (a > 0 && (on(row, a - 1) || on(row, a - 2))) a--; while (b < cv.width - 1 && (on(row, b + 1) || on(row, b + 2))) b++; wMax = Math.max(wMax, (b - a) / k); }
           const mid = cr.left + cr.width / 2;
           const names = [...el.querySelectorAll(".btk-name")].map((n) => n.getBoundingClientRect());
           return { wMax, width: cr.width, sides: names.map((r) => (r.right <= mid ? "i" : r.left >= mid ? "d" : "x")) };
@@ -856,7 +861,9 @@ async function run(vp) {
       const strayTop = await page.evaluate(() => { const back = document.querySelector(".bl-layer-back"); return [...document.querySelectorAll(".bl-terminal-header, .bl-dolar")].some((e) => e.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING); });
       if (strayTop) fail(vp.name, "layer", "volvió el terminal/dólar suelto arriba de la sección");
       await page.locator(".bl-mpulse-body").waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
-      if (vp.viewport.width <= 768) await page.locator(".bl-mpulse-sum").click().catch(() => {});
+      // Una sola vez y plegado (auditoría L2, oct 2026): tira que se despliega en todas las pantallas.
+      if (await page.locator(".bl-mpulse-body .bl-mpulse-c").first().isVisible().catch(() => false)) fail(vp.name, "pulso", "el pulso arranca desplegado: tiene que ser una línea que se abre");
+      await page.locator(".bl-mpulse-sum").click().catch(() => {});
       if (!(await page.locator(".bl-mpulse-body .bl-mpulse-c").first().isVisible().catch(() => false))) fail(vp.name, "pulso", "el pulso del mercado no muestra sus indicadores");
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);

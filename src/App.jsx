@@ -20,7 +20,7 @@ import { LayerFeed } from "./components/LayerFeed";
 import HomeFicha from "./components/HomeFicha";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
-import { WorldLine, TRANS_B } from "./components/WorldLine";
+import { WorldLine } from "./components/WorldLine";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -771,7 +771,7 @@ export default function App() {
   // Puente "Una sola línea" (oct 2026, Pablo): el cambio de mundo desde el
   // encabezado es una transición de elemento compartido — la onda de Bass se
   // vuelve la curva de Layer y al revés (ver WorldLine). Deslizar con el dedo
-  // sigue siendo el gesto directo, sin transición.
+  // usa la misma línea (auditoría T3): un solo lenguaje para cambiar de mundo.
   const worldLineRef = useRef(null);
   const [morph, setMorph] = useState(""); // "" | "out" (apagando) ; "landed" queda puesto
   const goWorld = useCallback((panel) => {
@@ -840,6 +840,8 @@ export default function App() {
     let target = activePanel;
     if (touchDelta.current > threshold && activePanel === 1) target = 0;
     else if (touchDelta.current < -threshold && activePanel === 0) target = 1;
+    // Al soltar en el otro mundo, la línea toma la forma tal como quedó bajo el dedo y hace el viaje.
+    if (target !== activePanel) { containerRef.current?.classList.remove("dragging"); goWorld(target); return; }
     swipeTo(target);
     if (containerRef.current) {
       containerRef.current.classList.remove("dragging");
@@ -849,7 +851,7 @@ export default function App() {
       // container en translateX(0) (mostraba Bass estando en Layer).
       containerRef.current.style.transform = `translateX(${-(target * 50)}%)`;
     }
-  }, [activePanel, swipeTo]);
+  }, [activePanel, swipeTo, goWorld]);
 
   // Keyboard navigation + shortcuts
   useEffect(() => {
@@ -952,7 +954,7 @@ export default function App() {
   if (activePanel === 1) layerSeen.current = true;
 
   return (
-    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}${TRANS_B ? " trans-b" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
+    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
       {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
       {!loaded && <Preloader done={finishPreload} />}
@@ -1071,7 +1073,8 @@ export default function App() {
       )}
 
       {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
-      {showOnboarding && (
+      {/* Solo sobre el home (auditoría S3): en un interior al que se llega por un link, tapaba contenido. */}
+      {showOnboarding && view === "home" && (
         <div className="bl-welcome-line" role="status">
           <span>{t("welcome.line")}</span>
         </div>

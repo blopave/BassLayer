@@ -820,7 +820,8 @@
 .bl-home-view { z-index:200; }
 
 /* ── Swipe Container ────────────────────── */
-.bl-swipe-wrap { position:fixed; inset:0; z-index:100; overflow:hidden; visibility:hidden; opacity:0; display:flex; flex-direction:column; background:var(--bl-section-bg); }
+.bl-swipe-wrap { position:fixed; inset:0; z-index:100; overflow:hidden; overflow:clip;   /* clip: no se puede desplazar por código (auditoría S2) */
+   visibility:hidden; opacity:0; display:flex; flex-direction:column; background:var(--bl-section-bg); }
 .bl-swipe-wrap.active { visibility:visible; opacity:1; }
 .bl-swipe-container { display:flex; width:200%; flex:1; min-height:0; transition:transform .5s var(--ease-out-expo); will-change:transform; }
 .bl-swipe-container.dragging { transition:none; }
@@ -5619,9 +5620,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-swipe-wrap.morph-landed .blc-curve { animation:none; stroke-dashoffset:0 !important; }
 .bl-swipe-wrap.morph-landed :is(.blc-node, .blc-now, .blc-fan, .blc-area) { animation-delay:.15s !important; }
 /* Mobile (oct 2026, "T"): los nombres van a los costados de la onda angosta. */
-.btk-name.is-out { fill:var(--bl-text); transition:fill .35s; }
-.btk-cue.is-off .btk-name.is-out { fill:var(--bl-text-ter); }
-.btk-cue.is-hot .btk-name.is-out { fill:var(--bl-accent-bass); }
+.btk-name.is-out { fill:transparent; }   /* se dibuja en el canvas, hecho de la onda; el texto queda para leer y enfocar */
 .btk-tick { stroke:var(--bl-text-ter); stroke-width:1; opacity:.6; transition:stroke .35s, opacity .35s; }
 .btk-cue.is-hot .btk-tick { stroke:var(--bl-accent-bass); opacity:1; }
 
@@ -5798,19 +5797,77 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root.day-mode .bhf { background:radial-gradient(70% 60% at 50% 50%, #F3EFE8, #E2DCD2 78%); }
 .bl-root.day-mode .bhf-half:focus-visible { box-shadow:inset 0 0 0 2px rgba(11,11,11,.35); }
 
-/* ── PROTOTIPO ?trans=b: la transición entre mundos, continua (oct 2026) ── */
+/* ── La transición entre mundos, continua (auditoría T1, oct 2026) ── */
 /* El fondo pasa del cálido al frío durante el viaje, en vez de saltar. */
 @property --bl-section-bg { syntax:"<color>"; inherits:true; initial-value:#181614; }
-.bl-root.trans-b { transition:--bl-section-bg .9s cubic-bezier(.4,0,.2,1); }
+.bl-root { transition:--bl-section-bg .9s cubic-bezier(.4,0,.2,1); }
 /* El mundo que se va no se apaga de golpe: se desvanece mientras la línea arranca. */
-.bl-root.trans-b .bl-swipe-wrap.morph-out .bl-swipe-container { opacity:0; transition:opacity .32s ease-out; }
-.bl-root.trans-b .bl-swipe-container.no-slide { transition:opacity .55s ease-out; }
+.bl-root .bl-swipe-wrap.morph-out .bl-swipe-container { opacity:0; transition:opacity .32s ease-out; }
+.bl-root .bl-swipe-container.no-slide { transition:opacity .55s ease-out; }
 /* El que llega entra en cascada a partir de la mitad del viaje: el ticker baja del encabezado y
    después el resto aparece (solo opacidad: la línea aterriza sobre la forma real, que no se mueve). */
 @keyframes bl-llega { from { opacity:0; } to { opacity:1; } }
 @keyframes bl-baja { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
-.bl-root.trans-b .bl-swipe-wrap.morph-landed .bl-swipe-panel > * { animation:bl-llega .7s ease-out .14s both; }
-.bl-root.trans-b .bl-swipe-wrap.morph-landed .bl-swipe-panel > :nth-child(2) { animation:bl-baja .55s cubic-bezier(.2,.8,.2,1) both; }
-@media (prefers-reduced-motion:reduce) { .bl-root.trans-b { transition:none; } .bl-root.trans-b .bl-swipe-wrap.morph-landed .bl-swipe-panel > * { animation:none !important; } }
-/* PROTOTIPO ?titulo=…: en mobile el nombre se dibuja en el canvas (hecho de líneas); el texto queda para leer y enfocar. */
-.bl-btrack[data-titulo] .btk-name.is-out { fill:transparent; }
+.bl-root .bl-swipe-wrap.morph-landed .bl-swipe-panel > * { animation:bl-llega .7s ease-out .14s both; }
+.bl-root .bl-swipe-wrap.morph-landed .bl-swipe-panel > :nth-child(2) { animation:bl-baja .55s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce) { .bl-root { transition:none; } .bl-root .bl-swipe-wrap.morph-landed .bl-swipe-panel > * { animation:none !important; } }
+
+/* ── Encabezado simétrico (auditoría S1, oct 2026): "Bass LAYER" siempre en el mismo lugar, como en
+   la ficha — Bass a la izquierda del centro, LAYER a la derecha —, con la proporción del home y el
+   mundo activo encendido. El de enfrente, la puerta al otro lado, ya no cambia de lugar ni de tamaño. */
+.bl-header-half, .bl-header-half.is-active, .bl-header-half:not(.is-active) { flex-basis:50%; }
+.bl-header-half-bass { justify-content:flex-end; padding:0 8px 0 16px; }
+.bl-header-half-layer { justify-content:flex-start; padding:0 16px 0 8px; }
+.bl-header-half-bass.is-active .bl-header-cluster, .bl-header-half-layer.is-active .bl-header-cluster { transform:none; }
+.bl-header-half-bass .bl-header-cluster { flex-direction:row-reverse; }   /* la firma (eq) del lado de afuera */
+.bl-header-half-bass .bl-tab-eq { margin:0 8px 0 0; }
+.bl-header-half-bass .bl-header-world-name, .bl-header-half-bass.is-active .bl-header-world-name, .bl-header-half-bass:not(.is-active) .bl-header-world-name { font-size:40px; font-weight:700; }
+.bl-header-half-layer .bl-header-world-name, .bl-header-half-layer.is-active .bl-header-world-name, .bl-header-half-layer:not(.is-active) .bl-header-world-name { font-size:calc(40px * .805); font-weight:300; letter-spacing:var(--tr-1); }   /* la proporción del logotipo */
+.bl-header-half:not(.is-active) .bl-header-world-name { opacity:1; color:var(--bl-text-sec); text-shadow:none; }
+@media (max-width:768px) {
+  .bl-header-half, .bl-header-half.is-active, .bl-header-half:not(.is-active) { flex-basis:50%; }
+  .bl-header-half-bass .bl-header-world-name, .bl-header-half-bass.is-active .bl-header-world-name, .bl-header-half-bass:not(.is-active) .bl-header-world-name { font-size:var(--fs-28); }
+  .bl-header-half-layer .bl-header-world-name, .bl-header-half-layer.is-active .bl-header-world-name, .bl-header-half-layer:not(.is-active) .bl-header-world-name { font-size:calc(var(--fs-28) * .805); letter-spacing:var(--tr-1); }
+}
+
+/* ── El afiche de la casa en el modal de evento sin flyer (auditoría B6) ── */
+.bl-em-afiche { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:flex-end; gap:12px; padding:72px 28px 28px; background:radial-gradient(90% 70% at 30% 40%, rgba(196,144,112,.10), transparent 70%), var(--bl-surface); }
+.bl-em-afiche-onda { position:absolute; left:0; right:0; top:22%; height:38%; width:100%; fill:var(--bl-accent-bass); opacity:.32; }
+.bl-em-afiche-lineup { position:relative; display:flex; flex-direction:column; gap:4px; }
+.bl-em-afiche-lineup span { font-family:var(--font-sans); font-weight:800; font-size:var(--fs-34); letter-spacing:var(--tr-n03); line-height:1.02; color:var(--bl-text); overflow-wrap:anywhere; }
+.bl-em-afiche-lineup span + span { font-size:var(--fs-22); color:var(--bl-text-sec); }
+.bl-em-afiche-venue { position:relative; font-family:var(--font-mono); font-size:var(--fs-12); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
+@media (max-width:768px) { .bl-em-afiche { padding:56px 16px 16px; } .bl-em-afiche-lineup span { font-size:var(--fs-28); } }
+/* Agenda con el contenido primero (auditoría B4): filtros en una fila; De gira y El finde dentro de la lista. */
+.bl-agenda-filtros { display:flex; align-items:center; gap:16px; }
+.bl-agenda-filtros > .bl-filters { flex:none; margin:0; border:0; }
+.bl-agenda-filtros > .bl-ctrl-bar { flex:1; min-width:0; }
+.bl-agenda-intermedio { display:flex; flex-direction:column; gap:24px; margin:8px 0 16px; }
+.bl-agenda-intermedio:empty { display:none; }
+
+/* ── Layer (auditoría L1–L3, oct 2026) ── */
+/* L3: un filete separa cripto de los mercados tradicionales en las pestañas. */
+.bl-layer-tab-sep { flex:none; width:1px; height:16px; align-self:center; background:var(--bl-border); }
+/* L2: el pulso una sola vez, como tira desplegable arriba del contenido, también en escritorio. */
+.bl-layer-grid { grid-template-columns:minmax(0, 1fr); }
+.bl-layer-aside { position:static; order:-1; margin:16px 32px 4px; }
+.bl-mpulse { padding:0; }
+.bl-mpulse.is-loading { min-height:48px; }
+.bl-mpulse-head, .bl-mpulse-read { display:none; }
+.bl-mpulse-sum { display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; border:0; background:none; color:inherit; font:inherit; cursor:pointer; text-align:left; }
+.bl-mpulse-sum:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; border-radius:var(--r-12); }
+.bl-mpulse-rd { font-weight:650; font-size:var(--fs-14); color:var(--bl-text); }
+.bl-mpulse-q { display:flex; gap:12px; flex:1; justify-content:flex-end; font:500 var(--fs-11) var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; }
+.bl-mpulse-q b { color:var(--bl-text); font-weight:600; }
+.bl-mpulse-chev { color:var(--bl-text-ter); transition:transform .25s var(--ease-out-expo); flex-shrink:0; }
+.bl-mpulse.is-open .bl-mpulse-chev { transform:rotate(180deg); }
+.bl-mpulse-body { display:none; padding:0 16px 16px; }
+.bl-mpulse.is-open .bl-mpulse-body { display:block; }
+.bl-mpulse-grid { margin-top:0; }
+@media (min-width:769px) { .bl-mpulse.is-open .bl-mpulse-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:0 32px; } }
+@media (max-width:768px) { .bl-layer-aside { margin:16px 16px 4px; } }
+/* L1: el abanico de proyecciones un paso más tenue que la curva real: el "hoy" manda. */
+.blc-fan .blc-walk { opacity:.6; }
+/* Ciclos BTC: ningún texto de datos por debajo de 11 px (la regla del home). */
+.bl-layer-content :is(.bl-term-prompt, .bl-term-cell-label-text, .bl-cyc-section-title, .bl-cyc-subtitle) { font-size:var(--fs-11); }
+.bl-mpulse-sec { font-size:var(--fs-11); }

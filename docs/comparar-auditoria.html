@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hoy y con la auditoría</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { --bg:#0e0e0f; --ink:#EDEAE4; --ter:rgba(237,234,228,.45); --hair:rgba(237,234,228,.12); --acc:#6CB8C8; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--bg); color:var(--ink); font:12px ui-monospace, monospace; overflow:hidden; }
+  .bar { height:46px; display:flex; align-items:center; gap:8px; padding:0 16px; border-bottom:1px solid var(--hair); }
+  .bar b { letter-spacing:.14em; text-transform:uppercase; font-size:11px; margin-right:10px; }
+  .bar button { font:inherit; color:var(--ter); background:none; border:1px solid var(--hair); border-radius:999px; padding:6px 12px; cursor:pointer; }
+  .bar button.on { color:#06131a; background:var(--acc); border-color:var(--acc); }
+  .bar .sep { width:1px; height:20px; background:var(--hair); margin:0 6px; }
+  .stage { position:absolute; inset:46px 0 0; display:flex; gap:20px; padding:14px 16px 16px; }
+  .col { position:relative; flex:1; min-width:0; }
+  .col > span { position:absolute; top:-2px; left:0; color:var(--ter); font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
+  .col > span em { font-style:normal; color:var(--ink); }
+  .box { position:absolute; top:16px; left:0; transform-origin:0 0; border:1px solid var(--hair); border-radius:6px; overflow:hidden; }
+  iframe { border:0; display:block; background:#060606; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>BassLayer · hoy y con la auditoría</b>
+  <button data-m="d" class="on">Escritorio</button><button data-m="m">Celular</button>
+  <span class="sep"></span>
+  <button data-u="/">Home</button><button data-u="/eventos/hoy">Agenda</button><button data-u="/?view=layer">Layer</button>
+  <span class="sep"></span>
+  <button id="re">↻ recargar</button>
+</div>
+<div class="stage" id="st">
+  <div class="col" id="c1"><span><em>Hoy</em> · producción (main)</span><div class="box"><iframe id="f1"></iframe></div></div>
+  <div class="col" id="c2"><span><em>Con la auditoría</em> · rama transicion</span><div class="box"><iframe id="f2"></iframe></div></div>
+</div>
+<script>
+  const HOY = "http://localhost:3000", NUEVO = location.origin;
+  let modo = "d", ruta = "/";
+  const dims = () => (modo === "d" ? [1440, 900] : [390, 844]);
+  function carga() {
+    const [w, h] = dims();
+    for (const f of [f1, f2]) { f.width = w; f.height = h; }
+    f1.src = HOY + ruta; f2.src = NUEVO + ruta; fit();
+  }
+  // Los dos marcos se escalan para entrar enteros (la técnica de preview.html).
+  function fit() {
+    const [w, h] = dims(), W = c1.clientWidth, H = st.clientHeight - 30 - 16;
+    const k = Math.min(W / w, H / h);
+    for (const c of [c1, c2]) { c.querySelector(".box").style.transform = `scale(${k})`; c.querySelector(".box").style.width = w + "px"; c.querySelector(".box").style.height = h + "px"; }
+  }
+  document.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { modo = b.dataset.m; document.querySelectorAll("[data-m]").forEach((x) => x.classList.toggle("on", x === b)); carga(); });
+  document.querySelectorAll("[data-u]").forEach((b) => b.onclick = () => { ruta = b.dataset.u; carga(); });
+  re.onclick = carga;
+  new ResizeObserver(fit).observe(st);
+  carga();
+</script>
+</body>
+</html>

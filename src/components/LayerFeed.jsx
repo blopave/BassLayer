@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Suspense } from "react";
+import { Fragment, useEffect, useRef, useState, Suspense } from "react";
 import { FilterBar } from "./FilterBar";
 import { NewsSkeleton } from "./SkeletonLoader";
 import { CryptoBATimeline } from "./CryptoBATimeline";
@@ -122,8 +122,10 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
         </button>
         <nav className="bl-layer-tabs" aria-label={t("aside.sections")} ref={tabsRef}>
           {SECTIONS.map(([key, labelKey]) => (
+            <Fragment key={key}>
+            {/* Cripto primero; un filete antes de los mercados tradicionales (auditoría L3). */}
+            {key === "finanzas" && <span className="bl-layer-tab-sep" aria-hidden="true" />}
             <button
-              key={key}
               type="button"
               className={`bl-layer-tab${section === key ? " active" : ""}`}
               aria-current={section === key ? "page" : undefined}
@@ -132,12 +134,13 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
               {t(labelKey)}
               {key === "noticias" && news.length > 0 && <span className="bl-layer-tab-cnt">{news.length}</span>}
             </button>
+            </Fragment>
           ))}
         </nav>
       </div>
 
-      {/* Desktop: contenido a la izquierda, pulso del mercado a la derecha.
-          Mobile: el pulso va primero, como tira desplegable bajo las pestañas. */}
+      {/* El pulso del mercado va una sola vez, como tira desplegable bajo las pestañas,
+          también en escritorio (auditoría L2: antes ocupaba un tercio y se repetía en cada pestaña). */}
       <div className="bl-layer-grid">
       <div className="bl-layer-main">
       {/* Noticias section */}

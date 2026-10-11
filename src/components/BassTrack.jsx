@@ -24,10 +24,9 @@ import { useIsMobile } from "../utils/constants";
 // Suena (canvas): 124 BPM tocados por una persona — golpes con su fuerza (el
 // 1 del compás acentuado), ataque suave, caída larga, viajando desde ahora
 // (el comienzo de la Agenda); encima una ondulación continua. Al ponerse sobre una sección, el
-// resto del tema FRENA como una bandeja sin motor y la palabra elegida SE
-// MATERIALIZA: sus barras se engrosan hasta que la letra queda sólida (la
-// onda nunca cambia de color). En
-// mobile (sin hover) el loop hace lo mismo por turnos.
+// resto del tema FRENA como una bandeja sin motor y la palabra elegida TOMA LA
+// FORMA DE LA ONDA: sus columnas se completan y se estiran con el sonido (la
+// onda nunca cambia de color). En mobile (sin hover) el loop hace lo mismo por turnos.
 
 const BEAT = 60 / 124;                        // s por golpe: 124 BPM, tempo de club
 const CUE_BEATS = 16;                         // mobile: golpes por parte en el loop (≈7,7 s: fluye, no apura)
@@ -38,14 +37,6 @@ const FEST_WEEKS = 26;                        // Festivales: un tramo por semana
 const BED = 0.95;                              // media altura del lecho de la palabra, en tamaños de letra (la letra mide ±0,36)
 const PAD = 0.9;                               // aire a cada lado de la palabra dentro del lecho, en tamaños de letra
 const WORD_SHARE = 0.46;                      // la palabra ocupa ~46 % de su parte: aire a los costados
-
-// PROTOTIPO ?titulo=late|forma (oct 2026, Pablo: que el título elegido no quede en
-// color plano, que se mimetice con la frecuencia). late: toma el cobre de la onda y
-// sus barras se engrosan con cada golpe; forma: cada columna de la letra sube y
-// baja con su barra. En mobile los nombres pasan a ser líneas de la frecuencia.
-const TITULO = typeof window !== "undefined" ? (["late", "forma"].includes(new URLSearchParams(window.location.search).get("titulo")) ? new URLSearchParams(window.location.search).get("titulo") : null) : null;
-const rgbOf = (c) => { const v = (c || "").trim(); if (v.startsWith("#")) { const h = v.slice(1).length === 3 ? v.slice(1).replace(/./g, "$&$&") : v.slice(1); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; } const m = v.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [200, 150, 110]; };
-const mezcla = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
 
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
@@ -209,7 +200,8 @@ export function BassTrack({ events, todayKey, onCue }) {
       let i = 0;
       for (let py = 2; py <= H - 2; py += step, i++) {
         const u = Math.min(2.999, (py / H) * 3), c = parts[Math.min(2, Math.floor(u))], e = energy(u), dist = u - 1;
-        bars[c.j].push({ u, px: py, mid: cx, cap: amp + 4, h: 1 + e * amp * (0.35 + 0.65 * grain(i)), room: 0, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 });
+        const edge = 0.12 + 0.88 * smooth(Math.min(py, H - py) / (H * 0.035));   // el tema entra y sale (auditoría B2)
+        bars[c.j].push({ u, px: py, mid: cx, cap: amp + 4, h: 1 + e * amp * (0.35 + 0.65 * grain(i)) * edge, room: 0, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) * edge : 0 });
       }
       return { H, parts, bars, words: [[], [], []], lw: 1.5, size, font, step, vert: true };
     }
@@ -245,7 +237,9 @@ export function BassTrack({ events, todayKey, onCue }) {
       // una lente suave (más alta en el centro de la palabra).
       const lens = 0.86 + 0.14 * Math.cos(Math.max(-1, Math.min(1, (px - (c.wx + c.ww / 2)) / (c.ww / 2 + pad))) * Math.PI / 2);
       const dat = 1 + e * c.amp * (0.35 + 0.65 * grain(i)), bed = Math.min(c.amp, size * BED) * lens * (0.92 + 0.16 * grain(i));
-      const b = { u, px, mid: c.mid, cap: c.amp + 6, h: dat + Math.max(0, bed - dat) * room, room, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) : 0 };
+      // El tema entra y sale (auditoría B2): un fade de la envolvente en el 3 % de cada punta, como un track.
+      const edge = 0.12 + 0.88 * smooth(Math.min(px, w - px) / (w * 0.03));
+      const b = { u, px, mid: c.mid, cap: c.amp + 6, h: 1 + (dat - 1) * edge + Math.max(0, bed - dat) * room, room, dist, gain: dist >= 0 ? (0.4 + 0.6 * e) * Math.exp(-dist / 1.2) * edge : 0 };
       bars[c.j].push(b);
       if (px >= c.box.x && px <= c.box.x + c.box.w) words[c.j].push(b);   // las letras: solo las barras de su caja
     }
@@ -281,19 +275,22 @@ export function BassTrack({ events, todayKey, onCue }) {
     if (!cv || !geo) { gfx.current = null; return; }
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const mk = (c) => { c.width = Math.round(w * dpr); c.height = Math.round(geo.H * dpr); const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.lineCap = "round"; return x; };
-    const ctx = mk(cv), mask = document.createElement("canvas"), mctx = mk(mask), litCv = document.createElement("canvas"), lctx = mk(litCv);
-    mctx.font = geo.font; mctx.textBaseline = "middle"; mctx.fillStyle = "#000";
-    if (!geo.vert) for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);   // mobile: los nombres van afuera de la onda
-    else if (TITULO) for (const c of geo.parts) { mctx.textAlign = c.anchor === "end" ? "right" : "left"; mctx.fillText(c.name, c.lx, c.mid); }
-    const css = getComputedStyle(cv);
-    gfx.current = { dpr, ctx, mask, litCv, lctx, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c", ink: css.getPropertyValue("--bl-text").trim() || "#f1ece4" };
+    const ctx = mk(cv), gly = document.createElement("canvas"), gctx = mk(gly);
+    const css = getComputedStyle(cv), ink = css.getPropertyValue("--bl-text").trim() || "#f1ece4";
+    // Las palabras en tinta, una sola vez: de acá se toma cada columna (escritorio) o renglón (mobile).
+    gctx.font = geo.font; gctx.textBaseline = "middle"; gctx.fillStyle = ink;
+    for (const c of geo.parts) {
+      if (geo.vert) { gctx.textAlign = c.anchor === "end" ? "right" : "left"; gctx.fillText(c.name, c.lx, c.mid); }
+      else gctx.fillText(c.name, c.wx, c.mid);
+    }
+    gfx.current = { dpr, ctx, gly, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c" };
   }, [geo, w]);
 
   // El motor: cuadro a cuadro mientras está en pantalla; quieto con "reducir movimiento".
   useEffect(() => {
     const G = gfx.current;
     if (!G || !geo) return undefined;
-    const { dpr, ctx, mask, litCv, lctx, color, ink } = G;
+    const { dpr, ctx, gly, color } = G;
     const W = w, H = geo.H, S = motor.current;
     // Perfil de movimiento. Mobile a medio tiempo (oct 2026): un golpe cada dos,
     // suave, y una ondulación lenta que recorre la pista como agua (antes
@@ -327,7 +324,7 @@ export function BassTrack({ events, todayKey, onCue }) {
           let m = 1 + o1[0] * Math.sin(tt * o1[1] - b.px * o1[2]) + o2[0] * Math.sin(tt * o2[1] + b.px * o2[2]) + o3[0] * Math.sin(tt * o3[1] + b.u * 1.7);
           const kick = b.gain && !still ? b.gain * hit((tt - b.dist / FLOW) / F.beat, mobile) * S.rate[j] : 0;
           m += F.kick * kick;
-          b.mod = m; b.kick = kick;   // el pulso de la barra (antes de calmarla en el lecho): lo usan los títulos
+          b.mod = m;   // el pulso de la barra antes de calmarla en el lecho: lo usan los títulos
           m = 1 + (m - 1) * (1 - 0.6 * b.room);   // en el lecho la onda respira más quieta: la palabra no tiembla
           const h = Math.max(1, Math.min(b.cap, b.h * m));
           b.cur = h;   // el alto de este cuadro: la transición entre mundos parte de acá
@@ -336,61 +333,46 @@ export function BassTrack({ events, todayKey, onCue }) {
         }
         ctx.stroke();
       });
-      // Las letras: las mismas barras, recortadas a sus glifos. "Se materializa"
-      // (oct 2026, Pablo): en reposo son barras finas — la palabra es onda —;
-      // al elegirla se engrosan de izquierda a derecha hasta que la letra queda
-      // sólida, y al soltarla vuelve a ser onda.
-      lctx.fillStyle = ink;
-      for (const c of geo.vert ? [] : geo.parts) {
-        const { x, y, w: bw, h: bh } = c.box, p = S.hv[c.j];
-        lctx.globalCompositeOperation = "source-over";
-        lctx.clearRect(x, y, bw, bh);
-        lctx.globalAlpha = S.lit[c.j] * 0.92;
-        // Elegida, toma el color de la onda en un tono claro (cobre sobre cobre se perdía).
-        if (TITULO) lctx.fillStyle = mezcla(rgbOf(ink), mezcla(rgbOf(ink), rgbOf(color), 0.55).match(/\d+/g).map(Number), p);
-        const full = geo.step + 0.6 - geo.lw;
-        for (const b of geo.words[c.j]) {
-          if (TITULO === "late") {
-            // late: las barras de la letra se engrosan con cada golpe que pasa por ellas
-            const pulse = Math.max(0, Math.min(1, (b.kick || 0) * 2.6 + ((b.mod || 1) - 1) * 2.4));
-            const bwid = geo.lw + full * p * (0.15 + 0.85 * pulse);
-            lctx.globalAlpha = S.lit[c.j] * (0.92 - p * 0.42 * (1 - pulse));   // el golpe la enciende, la caída la apaga
-            lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
-          } else if (TITULO === "forma") {
-            // forma: cada columna de la letra mide lo que mide su barra en este cuadro
-            // la letra mide ±0,36 del tamaño: la columna va de un tercio a toda la letra según el golpe que pasa
-            const amp = Math.max(0, Math.min(1, ((b.mod || 1) - 0.85) * 2.2 + (b.kick || 0) * 2));
-            const hh = geo.size * (1 - p + p * 0.36 * (0.3 + 0.75 * amp)), bwid = geo.lw + full * 0.75 * p;
-            lctx.fillRect(b.px - bwid / 2, b.mid - hh, bwid, 2 * hh);
-          } else {
-            const q = p < 0.001 ? 0 : smooth((p * 1.35 - (b.px - c.wx) / c.ww) / 0.35), bwid = geo.lw + (geo.step + 0.6 - geo.lw) * q;
-            lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
-          }
-        }
-        lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
-        lctx.drawImage(mask, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
-        ctx.globalAlpha = 1;
-        ctx.drawImage(litCv, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
-      }
-      if (geo.vert && TITULO) {
-        // Mobile: el nombre de cada parte, en líneas horizontales como las barras de su onda;
-        // el elegido toma el cobre y sus líneas laten con el golpe de su parte.
+      // Las letras: columnas de la palabra real, sobre la misma grilla que la onda.
+      // En reposo cada columna es una barra fina (la palabra es onda). Al elegirla
+      // (oct 2026, Pablo: "que adopte la forma de la frecuencia") la columna se
+      // completa y se estira o aplasta en vertical con la altura de su barra en
+      // ese cuadro: la palabra toma la silueta del sonido, con un tope para que
+      // siempre se lea. Un solo eje deformable; el ancho y la línea media quedan fijos.
+      // La silueta se mide contra la propia palabra (no contra el volumen de su parte): donde su
+      // tramo de la onda sube más la columna se estira, donde baja se acorta. Así toda palabra toma
+      // forma, también en una parte tranquila (antes ahí se aplastaba).
+      const fit = (x) => Math.max(0.55, Math.min(1.9, x));
+      if (!geo.vert) {
         for (const c of geo.parts) {
-          const p = S.hv[c.j], x0 = c.anchor === "end" ? c.lx - c.ww - 2 : c.lx - 2, y0 = c.mid - geo.size * 0.75, hh = geo.size * 1.5;
-          const kick = still ? 0 : hit(S.time[c.j] / F.beat, true);
-          lctx.globalCompositeOperation = "source-over"; lctx.clearRect(x0 - 4, y0 - 4, c.ww + 12, hh + 8);
-          lctx.globalAlpha = S.lit[c.j]; lctx.fillStyle = mezcla(rgbOf(ink), rgbOf(color), p);
-          const th = geo.step * (1 - p * (TITULO === "late" ? 0.62 - 0.5 * kick : 0.45));
-          for (let y = y0; y < y0 + hh; y += geo.step) {
-            const dx = TITULO === "forma" ? p * c.ww * 0.18 * (1 - Math.min(1, kick * 1.4)) * (0.5 + 0.5 * Math.sin(y * 0.9 + S.time[c.j] * 6)) : 0;
-            lctx.fillRect(c.anchor === "end" ? x0 + dx : x0, y, c.ww + 4 - dx, Math.max(0.6, th));
+          const p = S.hv[c.j], wid = geo.lw + (geo.step - 0.4 - geo.lw) * p, ws = geo.words[c.j];
+          // La envolvente del tramo (suavizada con las columnas vecinas: forma, no temblor).
+          const env = p < 0.001 ? null : ws.map((_, i) => { let t = 0, n = 0; for (let q = Math.max(0, i - 2); q <= Math.min(ws.length - 1, i + 2); q++) { t += ws[q].h * (ws[q].mod || 1); n++; } return t / n; });
+          let lo = Infinity, hi = 0, sum = 0;
+          if (env) for (const v of env) { lo = Math.min(lo, v); hi = Math.max(hi, v); sum += v; }
+          const mean = sum / Math.max(1, ws.length), half = Math.max(1e-3, (hi - lo) / 2);
+          ctx.globalAlpha = S.lit[c.j] * 0.92;
+          for (let i = 0; i < ws.length; i++) {
+            const b = ws[i], f = env ? fit(1 + p * (0.22 + 0.8 * ((env[i] - mean) / half))) : 1, x = b.px - wid / 2;
+            ctx.drawImage(gly, x * dpr, (b.mid - geo.size) * dpr, wid * dpr, 2 * geo.size * dpr, x, b.mid - geo.size * f, wid, 2 * geo.size * f);
           }
-          lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
-          lctx.drawImage(mask, (x0 - 4) * dpr, (y0 - 4) * dpr, (c.ww + 12) * dpr, (hh + 8) * dpr, x0 - 4, y0 - 4, c.ww + 12, hh + 8);
-          ctx.globalAlpha = 1;
-          ctx.drawImage(litCv, (x0 - 4) * dpr, (y0 - 4) * dpr, (c.ww + 12) * dpr, (hh + 8) * dpr, x0 - 4, y0 - 4, c.ww + 12, hh + 8);
+        }
+      } else {
+        // Mobile: el nombre va al costado de la onda angosta y respira con ella: se estira entero
+        // (no por renglón, que se leía como una falla) con el ancho que tiene la onda a su altura.
+        // El borde junto a la onda queda quieto y el nombre crece hacia afuera, sin pasar la pantalla.
+        for (const c of geo.parts) {
+          const p = S.hv[c.j], list = geo.bars[c.j], top = c.mid - geo.size * 0.62, hh = geo.size * 1.24, near = c.lx;
+          let sum = 0, n = 0;
+          for (const b of list) if (b.px >= top && b.px <= top + hh) { sum += (b.cur ?? b.h) / Math.max(1, b.cap); n++; }
+          const room = (c.anchor === "end" ? near : W - near) - 8;
+          const f = 1 + p * Math.max(0, Math.min(0.32, (n ? sum / n : 0.5) * 0.9 - 0.18));
+          const dw = Math.min(c.ww * f, Math.max(c.ww, room)), sx = c.anchor === "end" ? near - c.ww : near, dx = c.anchor === "end" ? near - dw : near;
+          ctx.globalAlpha = S.lit[c.j];
+          ctx.drawImage(gly, (sx - 2) * dpr, top * dpr, (c.ww + 4) * dpr, hh * dpr, dx - 2, top, dw + 4, hh);
         }
       }
+      ctx.globalAlpha = 1;
       if (!still && live) raf = requestAnimationFrame(frame);
       else S.last = 0;
     };
@@ -421,7 +403,7 @@ export function BassTrack({ events, todayKey, onCue }) {
   });
 
   return (
-    <section className="bl-btrack" data-titulo={TITULO || undefined} data-solo={solo || ""} data-orient={geo?.vert ? "v" : "h"} aria-label={t("track.aria")} ref={wrapRef}>
+    <section className="bl-btrack" data-solo={solo || ""} data-orient={geo?.vert ? "v" : "h"} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo && (
         <div className="btk-stage" style={{ height: geo.H }}>

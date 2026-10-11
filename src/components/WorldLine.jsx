@@ -7,49 +7,61 @@ import { readShape } from "../utils/worldShapes";
 // curva de Bitcoin, del naranja al celeste; de vuelta, la curva se abre en la
 // onda. Es una transición de elemento compartido: parte de la forma real de
 // pantalla y llega a la forma real, y el mundo nuevo aparece alrededor.
-// PROTOTIPO ?trans=b (oct 2026, Pablo: "más fluida"): viaje más corto, sin el
-// pliegue en "Z" (la ola casi simultánea) y el mundo nuevo empieza a entrar a
-// mitad de camino, en cascada, en vez de aparecer de golpe al final.
-export const TRANS_B = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("trans") === "b";
-const MS = TRANS_B ? 820 : 1000;          // viaje
-const OUT = TRANS_B ? 60 : 170;           // lo que tarda en apagarse el mundo que se va
-const STAGGER = TRANS_B ? 0.08 : 0.28;    // la ola: cada muestra arranca un poco después que la anterior
-const REVEAL = TRANS_B ? 0.5 : 0.86;      // en qué punto del viaje empieza a entrar el mundo nuevo
+// Auditoría oct 2026 ("más fluida"): la línea es lo único continuo y arranca en
+// el toque; el mundo que se va se desvanece mientras ella sale, el fondo pasa
+// de un mundo al otro durante el viaje y el que llega entra desde la mitad.
+// Sin pliegue (la ola es casi simultánea), con simetría (la vuelta recorre el
+// camino al revés: la ola arranca del otro extremo) e interrumpible (un segundo
+// toque a mitad de camino la da vuelta desde donde está, sin reiniciar).
+const MS = 820;           // viaje
+const OUT = 60;           // lo que tarda en apagarse el mundo que se va
+const STAGGER = 0.08;     // la ola: cada muestra arranca apenas después que la anterior
+const REVEAL = 0.5;       // en qué punto del viaje empieza a entrar el mundo nuevo
 const io = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 const clamp = (x) => Math.max(0, Math.min(1, x));
 const hex = (s) => { const v = s.trim().replace("#", ""); const n = parseInt(v.length === 3 ? v.replace(/./g, "$&$&") : v, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
+const mixRgb = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const resample = (pts, n) => (pts?.length ? Array.from({ length: n }, (_, i) => pts[Math.round((i * (pts.length - 1)) / (n - 1))]) : null);
 
 export const WorldLine = forwardRef(function WorldLine(_, ref) {
   const cv = useRef(null);
-  const busy = useRef(false);
+  // El viaje en curso: sus puntos del último cuadro (de ahí sale un viaje interrumpido),
+  // su color y lo que hay que cancelar si llega otro toque.
+  const live = useRef(null);
   useImperativeHandle(ref, () => ({
     // from/to: "bass" | "layer". hide(): apaga el mundo que se va; swap():
     // cambia de panel sin deslizar; reveal(): enciende el que llega.
     run(from, to, { hide, swap, reveal }) {
       const c = cv.current;
-      if (!c || busy.current) { swap(); reveal(); return; }
-      busy.current = true;
+      if (!c) { swap(); reveal(); return; }
       const W = window.innerWidth, H = window.innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
-      c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
-      const ctx = c.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round";
       const css = getComputedStyle(document.documentElement);
       const colOf = (k) => hex(css.getPropertyValue(k === "bass" ? "--bl-accent-bass" : "--bl-accent-layer") || (k === "bass" ? "#d39a72" : "#6CB8C8"));
-      const ca = colOf(from), cb = colOf(to);
       // Sin la forma (otra sección abierta): la línea parte o llega al filo del encabezado.
       const edge = document.querySelector(".bl-header")?.getBoundingClientRect().bottom || 80;
       const flat = (n) => Array.from({ length: n }, (_, i) => [(i / (n - 1)) * W, edge, 0]);
-      const raw = readShape(from);
       const lw = W < 700 ? 1.5 : 1.8;
 
-      let src, dst, N;
+      // Interrupción: si hay un viaje en curso, el nuevo sale de donde está la línea ahora.
+      const prev = live.current;
+      if (prev) { prev.cancel(); }
+      const ctx = c.getContext("2d");
+      if (!prev) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round";
+      const ca = prev ? prev.color() : colOf(from), cb = colOf(to);
+
+      let src, dst, N, last = null;
+      // Simetría: la ola arranca del extremo por donde el mundo "sale" (Bass → Layer de izquierda a
+      // derecha; Layer → Bass de derecha a izquierda), así la vuelta es el mismo camino invertido.
+      const rev = to === "bass";
+      let tNow = 0;
       const draw = (p) => {
         ctx.clearRect(0, 0, W, H);
         const pts = new Array(N);
         for (let i = 0; i < N; i++) {
-          const local = clamp((p * (1 + STAGGER) - (STAGGER * i) / (N - 1)));
+          const k = rev ? N - 1 - i : i;
+          const local = clamp((p * (1 + STAGGER) - (STAGGER * k) / (N - 1)));
           const s = src[i], d = dst[i];
           // Primero se comprime (o al final se abre), en el medio viaja.
           const travel = io(clamp((local - 0.12) / 0.8)), early = io(clamp(local / 0.42)), late = io(clamp((local - 0.58) / 0.42));
@@ -57,6 +69,7 @@ export const WorldLine = forwardRef(function WorldLine(_, ref) {
           // La barra conserva la orientación de la onda de la que sale (o a la que llega).
           pts[i] = [s[0] + (d[0] - s[0]) * travel, s[1] + (d[1] - s[1]) * travel, h, travel, (local < 0.5 ? s[3] : d[3]) || 0];
         }
+        last = pts; tNow = p;
         // Barras (la onda) mientras tengan alto.
         ctx.lineWidth = lw;
         for (const [x, y, h, t, horiz] of pts) {
@@ -83,37 +96,49 @@ export const WorldLine = forwardRef(function WorldLine(_, ref) {
         ctx.globalAlpha = 1;
       };
 
-      // 1. La copia exacta de lo que se ve, encima; el mundo de abajo se apaga.
-      const pre = raw || flat(240);
+      let raf = 0, timer = 0, dead = false;
+      const me = {
+        cancel() { dead = true; cancelAnimationFrame(raf); clearTimeout(timer); },
+        color: () => mixRgb(ca, cb, tNow),
+      };
+      live.current = me;
+
+      // 1. La copia exacta de lo que se ve (o de la línea a mitad de camino), encima; el mundo de abajo se apaga.
+      const pre = prev?.points() || readShape(from) || flat(240);
       N = Math.min(600, Math.max(240, pre.length));
       src = resample(pre, N);
       dst = src.map(([x, y, , o]) => [x, y, 0, o]);
+      me.points = () => last && last.map(([x, y, h, , o]) => [x, y, h, o]);
       c.style.transition = "none"; c.style.opacity = "1";
       draw(0);
       hide();
       // 2. Cambio de panel por debajo; se espera a que el destino tenga forma.
-      setTimeout(() => {
+      timer = setTimeout(() => {
+        if (dead) return;
         swap();
         let tries = 0;
         const wait = () => {
+          if (dead) return;
           const d = readShape(to);
-          if (!d && tries++ < 45) { requestAnimationFrame(wait); return; }
+          if (!d && tries++ < 45) { raf = requestAnimationFrame(wait); return; }
           dst = resample(d || flat(N), N);
           // 3. El viaje.
           const t0 = performance.now();
           let revealed = false;
           const tick = (now) => {
+            if (dead) return;
             const p = Math.min(1, (now - t0) / MS);
             draw(p);
             if (!revealed && p > REVEAL) { revealed = true; reveal(); }
-            if (p < 1) { requestAnimationFrame(tick); return; }
+            if (p < 1) { raf = requestAnimationFrame(tick); return; }
             // 4. Aterrizó sobre la forma real: la capa se retira.
+            live.current = null;
             c.style.transition = "opacity .28s ease-out"; c.style.opacity = "0";
-            setTimeout(() => { ctx.clearRect(0, 0, W, H); busy.current = false; }, 300);
+            timer = setTimeout(() => { if (!live.current) ctx.clearRect(0, 0, W, H); }, 300);
           };
-          requestAnimationFrame(tick);
+          raf = requestAnimationFrame(tick);
         };
-        requestAnimationFrame(() => requestAnimationFrame(wait));
+        raf = requestAnimationFrame(() => { raf = requestAnimationFrame(wait); });
       }, OUT);
     },
   }), []);
