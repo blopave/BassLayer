@@ -218,15 +218,17 @@ async function run(vp) {
       });
       const isEven = (r) => r && r[1] - r[0] <= 14;
       if (!vp.isMobile) { await page.mouse.move(2, vp.viewport.height - 2); await page.waitForTimeout(900); const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `la onda en reposo no es de un solo color (alfa de barras ${r?.join("–")})`); }
-      // La palabra elegida toma la forma de la onda (auditoría B1, oct 2026): sus columnas
-      // se completan y se estiran con el sonido. Se mide la tinta dentro de la caja de la
-      // palabra y la que se estira por encima y por debajo de ella (en reposo, casi nada).
+      // La palabra elegida sigue hecha de los rectangulitos de la onda (oct 2026, Pablo: que no
+      // quede plana): nunca se rellena. Una línea que cruza la palabra por el medio tiene que
+      // seguir cortando barra / aire / barra, y la palabra no puede quedar más apagada que en reposo.
       const inkOf = (i) => page.locator(".bl-btrack").evaluate((el, i) => {
-        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, r = el.querySelectorAll(".btk-name")[i].getBoundingClientRect(), ext = r.height * 0.6;
-        const cuenta = (y0, h) => { const d = cv.getContext("2d").getImageData(Math.round((r.left - cr.left) * k), Math.max(0, Math.round((y0 - cr.top) * k)), Math.round(r.width * k), Math.max(1, Math.round(h * k))).data; let n = 0; for (let q = 0; q < d.length; q += 4) if (d[q] > 200 && d[q + 1] > 190 && d[q + 2] > 180) n++; return n; };
-        // la letra ocupa ~±0,36 del tamaño: la franja de la caja es "adentro"; arriba y abajo, lo estirado
-        const mid = r.top + r.height / 2, core = r.height * 0.4;
-        return { total: cuenta(r.top - ext, r.height + 2 * ext), fuera: cuenta(r.top - ext, ext + r.height / 2 - core) + cuenta(mid + core, r.height / 2 - core + ext) };
+        const cv = el.querySelector(".btk-canvas"), cr = cv.getBoundingClientRect(), k = cv.width / cr.width, r = el.querySelectorAll(".btk-name")[i].getBoundingClientRect();
+        const d = cv.getContext("2d").getImageData(Math.round((r.left - cr.left) * k), Math.round((r.top - cr.top) * k), Math.round(r.width * k), Math.round(r.height * k));
+        const blanco = (q) => d.data[q] > 200 && d.data[q + 1] > 190 && d.data[q + 2] > 180;
+        let total = 0; for (let q = 0; q < d.data.length; q += 4) if (blanco(q)) total++;
+        let cortes = 0, prev = false; const y = Math.round(d.height / 2);
+        for (let x = 0; x < d.width; x++) { const on = blanco((y * d.width + x) * 4); if (on !== prev) cortes++; prev = on; }
+        return { total, cortes };
       }, i);
       const lastIdx = (await page.locator(".btk-cue").count()) - 1;
       const inkRest = vp.isMobile ? null : await inkOf(lastIdx);
@@ -235,7 +237,7 @@ async function run(vp) {
       if (!(await page.locator(".bl-btrack").getAttribute("data-solo"))) fail(vp.name, "índice", "el foco en un cue no hace solo de su parte de la onda");
       await page.waitForTimeout(1200);
       { const r = await evenInk(); if (!isEven(r)) fail(vp.name, "diseño", `en solo la onda cambia de color (alfa de barras ${r?.join("–")})`); }
-      if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (!(inkOn.total > inkRest.total * 1.08 && inkOn.fuera > inkRest.fuera + 40)) fail(vp.name, "índice", `la palabra elegida no toma la forma de la onda (tinta ${inkRest.total} → ${inkOn.total}; estirada ${inkRest.fuera} → ${inkOn.fuera})`); }
+      if (inkRest != null) { const inkOn = await inkOf(lastIdx); if (inkOn.cortes < inkRest.cortes * 0.6 || inkOn.total < inkRest.total * 0.98) fail(vp.name, "índice", `la palabra elegida deja de ser de barras (cortes ${inkRest.cortes} → ${inkOn.cortes}; tinta ${inkRest.total} → ${inkOn.total})`); }
       const vert = (await page.locator(".bl-btrack").getAttribute("data-orient")) === "v";
       if (vp.viewport.width <= 768 && !vert) fail(vp.name, "índice", "mobile: la onda de Bass no es una sola frecuencia vertical (como el tronco de Layer)");
       if (vert) {

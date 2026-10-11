@@ -5819,8 +5819,11 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-header-half-bass { justify-content:flex-end; padding:0 8px 0 16px; }
 .bl-header-half-layer { justify-content:flex-start; padding:0 16px 0 8px; }
 .bl-header-half-bass.is-active .bl-header-cluster, .bl-header-half-layer.is-active .bl-header-cluster { transform:none; }
-.bl-header-half-bass .bl-header-cluster { flex-direction:row-reverse; }   /* la firma (eq) del lado de afuera */
-.bl-header-half-bass .bl-tab-eq { margin:0 8px 0 0; }
+/* Las firmas (eq de Bass, cursor de LAYER) van fuera del flujo, del lado de afuera: no corren el
+   centro del par "Bass LAYER". */
+.bl-header-cluster { position:relative; }
+.bl-header-half-bass .bl-tab-eq { position:absolute; right:calc(100% + 12px); top:50%; transform:translateY(-50%); margin:0; }
+.bl-header-half-layer .bl-tab-cursor { position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%); }
 .bl-header-half-bass .bl-header-world-name, .bl-header-half-bass.is-active .bl-header-world-name, .bl-header-half-bass:not(.is-active) .bl-header-world-name { font-size:40px; font-weight:700; }
 .bl-header-half-layer .bl-header-world-name, .bl-header-half-layer.is-active .bl-header-world-name, .bl-header-half-layer:not(.is-active) .bl-header-world-name { font-size:calc(40px * .805); font-weight:300; letter-spacing:var(--tr-1); }   /* la proporción del logotipo */
 .bl-header-half:not(.is-active) .bl-header-world-name { opacity:1; color:var(--bl-text-sec); text-shadow:none; }
@@ -5864,7 +5867,11 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-mpulse-body { display:none; padding:0 16px 16px; }
 .bl-mpulse.is-open .bl-mpulse-body { display:block; }
 .bl-mpulse-grid { margin-top:0; }
-@media (min-width:769px) { .bl-mpulse.is-open .bl-mpulse-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:0 32px; } }
+/* Desplegado en escritorio: tres columnas — indicadores · dólar · tendencia —, alineadas arriba. */
+@media (min-width:769px) {
+  .bl-mpulse.is-open .bl-mpulse-body { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr); gap:0 40px; align-items:start; }
+  .bl-mpulse-col > .bl-mpulse-sec:first-child { margin-top:0; }
+}
 @media (max-width:768px) { .bl-layer-aside { margin:16px 16px 4px; } }
 /* L1: el abanico de proyecciones un paso más tenue que la curva real: el "hoy" manda. */
 .blc-fan .blc-walk { opacity:.6; }

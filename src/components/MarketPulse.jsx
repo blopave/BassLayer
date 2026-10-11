@@ -108,7 +108,7 @@ export function MarketPulse() {
         </div>
 
         {dolar && (
-          <>
+          <div className="bl-mpulse-col">
             <div className="bl-mpulse-sec">{t("pulse.dollar")}</div>
             <div className="bl-mpulse-rows">
               {D.blue && <div>{t("pulse.blue")}<b>${nf(D.blue.venta)}</b></div>}
@@ -129,11 +129,11 @@ export function MarketPulse() {
                 </tbody>
               </table>
             )}
-          </>
+          </div>
         )}
 
         {dash.trending?.length > 0 && (
-          <>
+          <div className="bl-mpulse-col">
             <div className="bl-mpulse-sec">{t("pulse.trending")}</div>
             <div className="bl-mpulse-trend">
               {dash.trending.slice(0, 6).map((c) => (
@@ -143,7 +143,7 @@ export function MarketPulse() {
                 </span>
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
 
