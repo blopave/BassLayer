@@ -38,9 +38,6 @@ const BED = 0.95;                              // media altura del lecho de la p
 const PAD = 0.9;                               // aire a cada lado de la palabra dentro del lecho, en tamaños de letra
 const WORD_SHARE = 0.46;                      // la palabra ocupa ~46 % de su parte: aire a los costados
 
-// PROTOTIPO ?titulo=barras|segmentos|suenan (ver "Las letras" en el motor). Por defecto, barras.
-const TITULO = (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("titulo")) || "barras";
-
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
 // Textura determinística (0..1): transientes barra a barra sobre un pulso más
@@ -286,20 +283,14 @@ export function BassTrack({ events, todayKey, onCue }) {
       if (geo.vert) { gctx.textAlign = c.anchor === "end" ? "right" : "left"; gctx.fillText(c.name, c.lx, c.mid); }
       else gctx.fillText(c.name, c.wx, c.mid);
     }
-    // Dónde hay letra en cada columna (escritorio) o renglón (mobile): de ahí salen las barras que suenan.
-    const gdata = gctx.getImageData(0, 0, gly.width, gly.height).data, GW = gly.width;
-    const hay = (x, y) => gdata[(Math.round(y * dpr) * GW + Math.round(x * dpr)) * 4 + 3] > 60;
-    const ext = geo.vert
-      ? geo.parts.map((c) => { const out = []; const x0 = c.anchor === "end" ? c.lx - c.ww : c.lx; for (let y = c.mid - geo.size * 0.62; y < c.mid + geo.size * 0.62; y += geo.step) { let a = -1, b = -1; for (let x = x0; x <= x0 + c.ww; x += 0.5) if (hay(x, y + geo.step / 2)) { if (a < 0) a = x; b = x; } out.push({ y, a, b }); } return out; })
-      : geo.parts.map((c) => geo.words[c.j].map((bar) => { let a = -1, b = -1; for (let y = bar.mid - geo.size; y <= bar.mid + geo.size; y += 0.5) if (hay(bar.px, y)) { if (a < 0) a = y; b = y; } return { a, b }; }));
-    gfx.current = { dpr, ctx, gly, ext, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c", ink: css.getPropertyValue("--bl-text").trim() || "#f1ece4" };
+    gfx.current = { dpr, ctx, gly, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c" };
   }, [geo, w]);
 
   // El motor: cuadro a cuadro mientras está en pantalla; quieto con "reducir movimiento".
   useEffect(() => {
     const G = gfx.current;
     if (!G || !geo) return undefined;
-    const { dpr, ctx, gly, ext, ink, color } = G;
+    const { dpr, ctx, gly, color } = G;
     const W = w, H = geo.H, S = motor.current;
     // Perfil de movimiento. Mobile a medio tiempo (oct 2026): un golpe cada dos,
     // suave, y una ondulación lenta que recorre la pista como agua (antes
@@ -342,63 +333,24 @@ export function BassTrack({ events, todayKey, onCue }) {
         }
         ctx.stroke();
       });
-      // Las letras, hechas de los mismos rectangulitos que la onda (oct 2026, Pablo: que no
-      // queden planas). En reposo, barras finas recortadas a la letra. Al elegirla nunca se
-      // rellena: PROTOTIPO ?titulo=
-      //   barras    — la letra sigue de barras, del ancho de las de la onda y con su aire, a plena luz;
-      //   segmentos — cada barra partida en bloques apilados (ecualizador) que se encienden con el golpe;
-      //   suenan    — barras como en "barras" que además se extienden arriba y abajo con el sonido.
-      const T = TITULO;
+      // Las letras, hechas de los mismos rectangulitos que la onda (oct 2026, Pablo: que no queden
+      // planas): cada columna de la palabra es una barra sobre la misma grilla, con su aire. En
+      // reposo, barras finas; al elegirla, del ancho de las de la onda y a plena luz — nunca se rellena.
       if (!geo.vert) {
-        const full = Math.min(geo.step - 0.9, geo.lw + 0.7);   // el ancho de una barra de la onda, con su aire
+        const full = Math.min(geo.step - 0.9, geo.lw + 0.7), y0 = (c) => c.mid - geo.size, hh = 2 * geo.size;
         for (const c of geo.parts) {
-          const p = S.hv[c.j], ws = geo.words[c.j], ex = ext[c.j];
-          const wid = geo.lw + (full - geo.lw) * p, y0 = c.mid - geo.size, hh = 2 * geo.size;
+          const p = S.hv[c.j], wid = geo.lw + (full - geo.lw) * p;
           ctx.globalAlpha = S.lit[c.j] * (0.92 + 0.08 * p);
-          for (let i = 0; i < ws.length; i++) {
-            const b = ws[i], x = b.px - wid / 2, e = ex[i];
-            if (e.a < 0) continue;
-            const pulse = Math.max(0, Math.min(1, ((b.mod || 1) - 0.9) * 2.5));
-            if (T === "segmentos" && p > 0.01) {
-              // bloques de 4 px con 1 px de aire (un ecualizador); el golpe enciende del centro hacia afuera
-              const seg = 4, lit = 0.45 + 0.55 * pulse;
-              for (let y = e.a; y <= e.b; y += seg) {
-                const d = Math.abs(y + seg / 2 - b.mid) / Math.max(1, (e.b - e.a) / 2);
-                ctx.globalAlpha = S.lit[c.j] * (1 - p + p * (d <= lit ? 1 : 0.55));
-                ctx.drawImage(gly, x * dpr, y * dpr, wid * dpr, (seg - 1) * dpr, x, y, wid, seg - 1);
-              }
-              continue;
-            }
-            ctx.drawImage(gly, x * dpr, y0 * dpr, wid * dpr, hh * dpr, x, y0, wid, hh);
-            if (T === "suenan" && p > 0.01) {
-              // la barra de la letra sigue más allá de la letra con el sonido de esa columna
-              // solo con el golpe, fina y tenue: la letra se prolonga como una barra más de la onda
-              const tail = p * geo.size * 0.32 * Math.max(0, pulse - 0.35) / 0.65, tw = Math.max(1, wid * 0.55);
-              if (tail > 0.8) { ctx.fillStyle = ink; ctx.globalAlpha = S.lit[c.j] * 0.55; ctx.fillRect(b.px - tw / 2, e.a - tail - 1, tw, tail); ctx.fillRect(b.px - tw / 2, e.b + 2, tw, tail); ctx.globalAlpha = S.lit[c.j]; }
-            }
-          }
+          for (const b of geo.words[c.j]) { const x = b.px - wid / 2; ctx.drawImage(gly, x * dpr, y0(c) * dpr, wid * dpr, hh * dpr, x, y0(c), wid, hh); }
         }
       } else {
         // Mobile: la onda es vertical y sus barras horizontales; el nombre, al costado, se arma
         // con renglones del mismo paso (los rectangulitos acostados).
+        const th = Math.max(0.8, geo.step - 1);
         for (const c of geo.parts) {
-          const p = S.hv[c.j], ex = ext[c.j], list = geo.bars[c.j], th = Math.max(0.8, geo.step - 1);
           const x0 = c.anchor === "end" ? c.lx - c.ww : c.lx;
           ctx.globalAlpha = S.lit[c.j];
-          for (const r of ex) {
-            if (r.a < 0) continue;
-            const bar = list[Math.max(0, Math.min(list.length - 1, Math.round((r.y - list[0].px) / geo.step)))];
-            const pulse = Math.max(0, Math.min(1, ((bar.cur ?? bar.h) / Math.max(1, bar.cap)) * 1.6 - 0.3));
-            if (T === "segmentos" && p > 0.01) {
-              for (let x = r.a; x <= r.b; x += 5) { ctx.globalAlpha = S.lit[c.j] * (1 - p + p * (0.55 + 0.45 * pulse)); ctx.drawImage(gly, x * dpr, r.y * dpr, 4 * dpr, th * dpr, x, r.y, 4, th); }
-              continue;
-            }
-            ctx.drawImage(gly, x0 * dpr, r.y * dpr, c.ww * dpr, th * dpr, x0, r.y, c.ww, th);
-            if (T === "suenan" && p > 0.01) {
-              const tail = p * c.ww * 0.18 * pulse;
-              if (tail > 0.6) { ctx.fillStyle = ink; ctx.globalAlpha = S.lit[c.j] * 0.85; if (c.anchor === "end") ctx.fillRect(r.a - tail, r.y, tail, th); else ctx.fillRect(r.b + 1, r.y, tail, th); ctx.globalAlpha = S.lit[c.j]; }
-            }
-          }
+          for (let y = c.mid - geo.size * 0.62; y < c.mid + geo.size * 0.62; y += geo.step) ctx.drawImage(gly, x0 * dpr, y * dpr, c.ww * dpr, th * dpr, x0, y, c.ww, th);
         }
       }
       ctx.globalAlpha = 1;
