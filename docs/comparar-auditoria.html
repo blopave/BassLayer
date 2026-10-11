@@ -30,6 +30,9 @@
   <button data-u="/">Home</button><button data-u="/eventos/hoy">Agenda</button><button data-u="/?view=layer">Layer</button>
   <span class="sep"></span>
   <button id="re">↻ recargar</button>
+  <span class="sep"></span>
+  <span style="color:var(--ter)">Títulos de Bass:</span>
+  <button data-t="barras" class="on">Barras</button><button data-t="segmentos">Segmentos</button><button data-t="suenan">Suenan</button>
 </div>
 <div class="stage" id="st">
   <div class="col" id="c1"><span><em>Hoy</em> · producción (main)</span><div class="box"><iframe id="f1"></iframe></div></div>
@@ -37,12 +40,12 @@
 </div>
 <script>
   const HOY = "http://localhost:3000", NUEVO = location.origin;
-  let modo = "d", ruta = "/";
+  let modo = "d", ruta = "/", titulo = "barras";
   const dims = () => (modo === "d" ? [1440, 900] : [390, 844]);
   function carga() {
     const [w, h] = dims();
     for (const f of [f1, f2]) { f.width = w; f.height = h; }
-    f1.src = HOY + ruta; f2.src = NUEVO + ruta; fit();
+    f1.src = HOY + ruta; f2.src = NUEVO + ruta + (ruta.includes("?") ? "&" : "?") + "titulo=" + titulo; fit();
   }
   // Los dos marcos se escalan para entrar enteros (la técnica de preview.html).
   function fit() {
@@ -52,6 +55,7 @@
   }
   document.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { modo = b.dataset.m; document.querySelectorAll("[data-m]").forEach((x) => x.classList.toggle("on", x === b)); carga(); });
   document.querySelectorAll("[data-u]").forEach((b) => b.onclick = () => { ruta = b.dataset.u; carga(); });
+  document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { titulo = b.dataset.t; document.querySelectorAll("[data-t]").forEach((x) => x.classList.toggle("on", x === b)); carga(); });
   re.onclick = carga;
   new ResizeObserver(fit).observe(st);
   carga();
