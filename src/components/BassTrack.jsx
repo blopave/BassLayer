@@ -39,6 +39,14 @@ const BED = 0.95;                              // media altura del lecho de la p
 const PAD = 0.9;                               // aire a cada lado de la palabra dentro del lecho, en tamaños de letra
 const WORD_SHARE = 0.46;                      // la palabra ocupa ~46 % de su parte: aire a los costados
 
+// PROTOTIPO ?titulo=late|forma (oct 2026, Pablo: que el título elegido no quede en
+// color plano, que se mimetice con la frecuencia). late: toma el cobre de la onda y
+// sus barras se engrosan con cada golpe; forma: cada columna de la letra sube y
+// baja con su barra. En mobile los nombres pasan a ser líneas de la frecuencia.
+const TITULO = typeof window !== "undefined" ? (["late", "forma"].includes(new URLSearchParams(window.location.search).get("titulo")) ? new URLSearchParams(window.location.search).get("titulo") : null) : null;
+const rgbOf = (c) => { const v = (c || "").trim(); if (v.startsWith("#")) { const h = v.slice(1).length === 3 ? v.slice(1).replace(/./g, "$&$&") : v.slice(1); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; } const m = v.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [200, 150, 110]; };
+const mezcla = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
+
 const minsAgo = (t) => { const m = /^(\d+)\s*([mhdw])/.exec(t || ""); return m ? Number(m[1]) * { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] : null; };
 
 // Textura determinística (0..1): transientes barra a barra sobre un pulso más
@@ -276,6 +284,7 @@ export function BassTrack({ events, todayKey, onCue }) {
     const ctx = mk(cv), mask = document.createElement("canvas"), mctx = mk(mask), litCv = document.createElement("canvas"), lctx = mk(litCv);
     mctx.font = geo.font; mctx.textBaseline = "middle"; mctx.fillStyle = "#000";
     if (!geo.vert) for (const c of geo.parts) mctx.fillText(c.name, c.wx, c.mid);   // mobile: los nombres van afuera de la onda
+    else if (TITULO) for (const c of geo.parts) { mctx.textAlign = c.anchor === "end" ? "right" : "left"; mctx.fillText(c.name, c.lx, c.mid); }
     const css = getComputedStyle(cv);
     gfx.current = { dpr, ctx, mask, litCv, lctx, color: css.getPropertyValue("--bl-accent-bass").trim() || "#c8956c", ink: css.getPropertyValue("--bl-text").trim() || "#f1ece4" };
   }, [geo, w]);
@@ -318,6 +327,7 @@ export function BassTrack({ events, todayKey, onCue }) {
           let m = 1 + o1[0] * Math.sin(tt * o1[1] - b.px * o1[2]) + o2[0] * Math.sin(tt * o2[1] + b.px * o2[2]) + o3[0] * Math.sin(tt * o3[1] + b.u * 1.7);
           const kick = b.gain && !still ? b.gain * hit((tt - b.dist / FLOW) / F.beat, mobile) * S.rate[j] : 0;
           m += F.kick * kick;
+          b.mod = m; b.kick = kick;   // el pulso de la barra (antes de calmarla en el lecho): lo usan los títulos
           m = 1 + (m - 1) * (1 - 0.6 * b.room);   // en el lecho la onda respira más quieta: la palabra no tiembla
           const h = Math.max(1, Math.min(b.cap, b.h * m));
           b.cur = h;   // el alto de este cuadro: la transición entre mundos parte de acá
@@ -336,14 +346,50 @@ export function BassTrack({ events, todayKey, onCue }) {
         lctx.globalCompositeOperation = "source-over";
         lctx.clearRect(x, y, bw, bh);
         lctx.globalAlpha = S.lit[c.j] * 0.92;
+        // Elegida, toma el color de la onda en un tono claro (cobre sobre cobre se perdía).
+        if (TITULO) lctx.fillStyle = mezcla(rgbOf(ink), mezcla(rgbOf(ink), rgbOf(color), 0.55).match(/\d+/g).map(Number), p);
+        const full = geo.step + 0.6 - geo.lw;
         for (const b of geo.words[c.j]) {
-          const q = p < 0.001 ? 0 : smooth((p * 1.35 - (b.px - c.wx) / c.ww) / 0.35), bwid = geo.lw + (geo.step + 0.6 - geo.lw) * q;
-          lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
+          if (TITULO === "late") {
+            // late: las barras de la letra se engrosan con cada golpe que pasa por ellas
+            const pulse = Math.max(0, Math.min(1, (b.kick || 0) * 2.6 + ((b.mod || 1) - 1) * 2.4));
+            const bwid = geo.lw + full * p * (0.15 + 0.85 * pulse);
+            lctx.globalAlpha = S.lit[c.j] * (0.92 - p * 0.42 * (1 - pulse));   // el golpe la enciende, la caída la apaga
+            lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
+          } else if (TITULO === "forma") {
+            // forma: cada columna de la letra mide lo que mide su barra en este cuadro
+            // la letra mide ±0,36 del tamaño: la columna va de un tercio a toda la letra según el golpe que pasa
+            const amp = Math.max(0, Math.min(1, ((b.mod || 1) - 0.85) * 2.2 + (b.kick || 0) * 2));
+            const hh = geo.size * (1 - p + p * 0.36 * (0.3 + 0.75 * amp)), bwid = geo.lw + full * 0.75 * p;
+            lctx.fillRect(b.px - bwid / 2, b.mid - hh, bwid, 2 * hh);
+          } else {
+            const q = p < 0.001 ? 0 : smooth((p * 1.35 - (b.px - c.wx) / c.ww) / 0.35), bwid = geo.lw + (geo.step + 0.6 - geo.lw) * q;
+            lctx.fillRect(b.px - bwid / 2, b.mid - geo.size, bwid, 2 * geo.size);
+          }
         }
         lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
         lctx.drawImage(mask, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
         ctx.globalAlpha = 1;
         ctx.drawImage(litCv, x * dpr, y * dpr, bw * dpr, bh * dpr, x, y, bw, bh);
+      }
+      if (geo.vert && TITULO) {
+        // Mobile: el nombre de cada parte, en líneas horizontales como las barras de su onda;
+        // el elegido toma el cobre y sus líneas laten con el golpe de su parte.
+        for (const c of geo.parts) {
+          const p = S.hv[c.j], x0 = c.anchor === "end" ? c.lx - c.ww - 2 : c.lx - 2, y0 = c.mid - geo.size * 0.75, hh = geo.size * 1.5;
+          const kick = still ? 0 : hit(S.time[c.j] / F.beat, true);
+          lctx.globalCompositeOperation = "source-over"; lctx.clearRect(x0 - 4, y0 - 4, c.ww + 12, hh + 8);
+          lctx.globalAlpha = S.lit[c.j]; lctx.fillStyle = mezcla(rgbOf(ink), rgbOf(color), p);
+          const th = geo.step * (1 - p * (TITULO === "late" ? 0.62 - 0.5 * kick : 0.45));
+          for (let y = y0; y < y0 + hh; y += geo.step) {
+            const dx = TITULO === "forma" ? p * c.ww * 0.18 * (1 - Math.min(1, kick * 1.4)) * (0.5 + 0.5 * Math.sin(y * 0.9 + S.time[c.j] * 6)) : 0;
+            lctx.fillRect(c.anchor === "end" ? x0 + dx : x0, y, c.ww + 4 - dx, Math.max(0.6, th));
+          }
+          lctx.globalAlpha = 1; lctx.globalCompositeOperation = "destination-in";
+          lctx.drawImage(mask, (x0 - 4) * dpr, (y0 - 4) * dpr, (c.ww + 12) * dpr, (hh + 8) * dpr, x0 - 4, y0 - 4, c.ww + 12, hh + 8);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(litCv, (x0 - 4) * dpr, (y0 - 4) * dpr, (c.ww + 12) * dpr, (hh + 8) * dpr, x0 - 4, y0 - 4, c.ww + 12, hh + 8);
+        }
       }
       if (!still && live) raf = requestAnimationFrame(frame);
       else S.last = 0;
@@ -375,7 +421,7 @@ export function BassTrack({ events, todayKey, onCue }) {
   });
 
   return (
-    <section className="bl-btrack" data-solo={solo || ""} data-orient={geo?.vert ? "v" : "h"} aria-label={t("track.aria")} ref={wrapRef}>
+    <section className="bl-btrack" data-titulo={TITULO || undefined} data-solo={solo || ""} data-orient={geo?.vert ? "v" : "h"} aria-label={t("track.aria")} ref={wrapRef}>
       <h2 className="bl-sr-only">{t("track.title")}</h2>
       {geo && (
         <div className="btk-stage" style={{ height: geo.H }}>

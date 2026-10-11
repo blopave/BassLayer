@@ -20,7 +20,7 @@ import { LayerFeed } from "./components/LayerFeed";
 import HomeFicha from "./components/HomeFicha";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
-import { WorldLine } from "./components/WorldLine";
+import { WorldLine, TRANS_B } from "./components/WorldLine";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -952,7 +952,7 @@ export default function App() {
   if (activePanel === 1) layerSeen.current = true;
 
   return (
-    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
+    <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}${TRANS_B ? " trans-b" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
       {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
       {!loaded && <Preloader done={finishPreload} />}

@@ -7,9 +7,14 @@ import { readShape } from "../utils/worldShapes";
 // curva de Bitcoin, del naranja al celeste; de vuelta, la curva se abre en la
 // onda. Es una transición de elemento compartido: parte de la forma real de
 // pantalla y llega a la forma real, y el mundo nuevo aparece alrededor.
-const MS = 1000;          // viaje
-const OUT = 170;          // lo que tarda en apagarse el mundo que se va
-const STAGGER = 0.28;     // la ola: cada muestra arranca un poco después que la anterior
+// PROTOTIPO ?trans=b (oct 2026, Pablo: "más fluida"): viaje más corto, sin el
+// pliegue en "Z" (la ola casi simultánea) y el mundo nuevo empieza a entrar a
+// mitad de camino, en cascada, en vez de aparecer de golpe al final.
+export const TRANS_B = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("trans") === "b";
+const MS = TRANS_B ? 820 : 1000;          // viaje
+const OUT = TRANS_B ? 60 : 170;           // lo que tarda en apagarse el mundo que se va
+const STAGGER = TRANS_B ? 0.08 : 0.28;    // la ola: cada muestra arranca un poco después que la anterior
+const REVEAL = TRANS_B ? 0.5 : 0.86;      // en qué punto del viaje empieza a entrar el mundo nuevo
 const io = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 const clamp = (x) => Math.max(0, Math.min(1, x));
 const hex = (s) => { const v = s.trim().replace("#", ""); const n = parseInt(v.length === 3 ? v.replace(/./g, "$&$&") : v, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -100,7 +105,7 @@ export const WorldLine = forwardRef(function WorldLine(_, ref) {
           const tick = (now) => {
             const p = Math.min(1, (now - t0) / MS);
             draw(p);
-            if (!revealed && p > 0.86) { revealed = true; reveal(); }
+            if (!revealed && p > REVEAL) { revealed = true; reveal(); }
             if (p < 1) { requestAnimationFrame(tick); return; }
             // 4. Aterrizó sobre la forma real: la capa se retira.
             c.style.transition = "opacity .28s ease-out"; c.style.opacity = "0";
