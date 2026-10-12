@@ -9,47 +9,91 @@
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait",
   "shortcuts": [
     {
       "name": "Hoy en la noche",
       "short_name": "Hoy",
       "url": "/eventos/hoy",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "El finde",
       "short_name": "Finde",
       "url": "/eventos/este-finde",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Layer · los mercados",
       "short_name": "Layer",
       "url": "/?view=layer",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "screenshots": [
     {
       "src": "/screenshot-mobile.png",
-      "sizes": "390x844",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "La ficha: elegí la noche o el mercado"
+    },
+    {
+      "src": "/screenshot-mobile-agenda.png",
+      "sizes": "780x1688",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "La agenda de la noche en Buenos Aires"
     },
     {
       "src": "/screenshot-desktop.png",
-      "sizes": "1280x800",
+      "sizes": "1440x900",
       "type": "image/png",
       "form_factor": "wide",
       "label": "BassLayer: la noche y el mercado"
     }
   ],
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

@@ -21,6 +21,8 @@ import HomeFicha from "./components/HomeFicha";
 import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 import { WorldLine } from "./components/WorldLine";
+import { InstalarApp } from "./components/InstalarApp";
+import { useInstalar, esApp } from "./hooks/useInstalar";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -132,6 +134,8 @@ export default function App() {
   const [selectedNews, setSelectedNews] = useState(null);
   const [selectedFestival, setSelectedFestival] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const app = useInstalar();                          // app instalable: modo, visitas, invitación
+  const [appPedida, setAppPedida] = useState(false); // la invitación abierta desde el menú ⋯
   const [showWeekendPicker, setShowWeekendPicker] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -689,7 +693,8 @@ export default function App() {
   // el timer de salida del preloader y lo dejaba colgado en pantalla.
   const finishPreload = useCallback(() => {
     setLoaded(true);
-    if (!storage.get("bl-onboarded")) setShowOnboarding(true);
+    // la app instalada en iPhone no comparte el storage de Safari: quien la instaló ya conoce el sitio
+    if (!storage.get("bl-onboarded") && !esApp()) setShowOnboarding(true);
   }, []);
 
   // ── Wipe circular ──────────────────────────────────────────
@@ -1074,6 +1079,8 @@ export default function App() {
 
       {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
       {/* Solo sobre el home (auditoría S3): en un interior al que se llega por un link, tapaba contenido. */}
+      <InstalarApp app={app} view={view} pedida={appPedida} onCerrar={() => setAppPedida(false)} />
+
       {showOnboarding && view === "home" && (
         <div className="bl-welcome-line" role="status">
           <span>{t("welcome.line")}</span>
@@ -1095,6 +1102,11 @@ export default function App() {
         <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
           about
         </button>
+        {app.modo && (
+          <button className="bl-util-toggle bl-util-app" onClick={() => (app.modo === "aviso" ? app.instalar() : setAppPedida(true))} aria-label={t("app.menuAria")}>
+            {t("app.menu")}
+          </button>
+        )}
         <button
           className="bl-lang-toggle"
           onClick={() => setLocale(locale === "es" ? "en" : "es")}

@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#000"/>
-  <text x="32" y="42" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="26" fill="#e5e5e5">BL</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 46 326 326"><defs><clipPath id="fi3f"><circle cx="200" cy="200" r="176"/></clipPath>
+    <clipPath id="fi3a"><rect x="-50" y="-50" width="500" height="273"/></clipPath>
+    <clipPath id="fi3v"><circle cx="124" cy="235.6" r="100"/></clipPath>
+    <clipPath id="fi3b"><rect x="-50" y="233" width="500" height="300"/></clipPath>
+    <radialGradient id="fi3g" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#121214"/><stop offset="1" stop-color="#050505"/></radialGradient><clipPath id="fi3q"><rect x="24" y="46" width="326" height="326" rx="65.2"/></clipPath></defs><g clip-path="url(#fi3q)"><rect x="-100" y="-100" width="600" height="600" fill="url(#fi3g)"/>
+    <g clip-path="url(#fi3f)">
+      
+      <g clip-path="url(#fi3a)"><circle cx="124" cy="220.4" r="100" fill="#1B1917" />
+    <path d="M124 220.4 L224 198.4 A100 100 0 0 1 224 242.4 Z" fill="rgba(237,234,228,.07)" transform="rotate(-38 124 220.4)"/>
+    <circle cx="124" cy="220.4" r="34" fill="#C49070"/><circle cx="124" cy="220.4" r="6" fill="#0E0E0F"/></g>
+      <rect x="234" y="169.4" width="8" height="42.6" fill="#6CB8C8"/><rect x="223" y="177.9" width="30" height="31.3" fill="#6CB8C8"/><rect x="281" y="152.3" width="8" height="31.3" fill="#6CB8C8"/><rect x="274" y="164.8" width="22" height="7" fill="#0E0E0F" stroke="#6CB8C8" stroke-width="8"/><rect x="328" y="104" width="8" height="39.8" fill="#6CB8C8"/><rect x="317" y="115.4" width="30" height="22.7" fill="#6CB8C8"/>
+      <g clip-path="url(#fi3b)"><g clip-path="url(#fi3v)"><path d="M24 252.3 L28 248.6 L32 244.7 L36 241.4 L40 239.4 L44 239.1 L48 240.4 L52 243.2 L56 246.9 L60 250.8 L64 254.2 L68 256.4 L72 257 L76 255.9 L80 253.3 L84 249.7 L88 245.7 L92 242.2 L96 239.8 L100 239 L104 239.9 L108 242.3 L112 245.8 L116 249.7 L120 253.3 L124 255.9 L128 257 L132 256.3 L136 254.1 L140 250.7 L144 246.8 L148 243.1 L152 240.4 L156 239.1 L160 239.5 L164 241.5 L168 244.7 L172 248.6 L176 252.4 L180 255.3 L184 256.9 L188 256.7 L192 254.9 L196 251.8 L200 247.9 L204 244.1 L208 241 L212 239.3 L216 239.2 L220 240.8 L224 243.7" fill="none" stroke="#C49070" stroke-width="16" stroke-linecap="round"/><path d="M24 286.6 L28 284.5 L32 284.1 L36 285.3 L40 288 L44 291.7 L48 295.6 L52 299 L56 301.3 L60 302 L64 301 L68 298.4 L72 294.8 L76 290.9 L80 287.4 L84 284.9 L88 284 L92 284.8 L96 287.2 L100 290.6 L104 294.6 L108 298.2 L112 300.8 L116 302 L120 301.4 L124 299.3 L128 295.9 L132 292 L136 288.3 L140 285.5 L144 284.1 L148 284.4 L152 286.4 L156 289.6 L160 293.5 L164 297.2 L168 300.2 L172 301.8 L176 301.7 L180 300 L184 296.9 L188 293.1 L192 289.3 L196 286.1 L200 284.3 L204 284.1 L208 285.7 L212 288.6 L216 292.3 L220 296.2 L224 299.5" fill="none" stroke="#C49070" stroke-width="16" stroke-linecap="round"/></g><rect x="223" y="242" width="30" height="14" fill="#6CB8C8" opacity="0.8"/><rect x="223" y="268.6" width="30" height="0.5" fill="#6CB8C8" opacity="0.7"/><rect x="270" y="242" width="30" height="14" fill="#6CB8C8" opacity="0.8"/><rect x="270" y="268.6" width="30" height="11" fill="#6CB8C8" opacity="0.7"/><rect x="317" y="242" width="30" height="14" fill="#6CB8C8" opacity="0.8"/><rect x="317" y="268.6" width="30" height="14" fill="#6CB8C8" opacity="0.7"/><rect x="317" y="295.2" width="30" height="12.6" fill="#6CB8C8" opacity="0.6"/></g>
+      <rect x="-50" y="223" width="500" height="10" fill="#EDEAE4" opacity="0.62"/>
+    </g></g></svg>

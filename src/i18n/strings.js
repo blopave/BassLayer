@@ -409,6 +409,12 @@ export const STRINGS = {
     "util.night": "Modo nocturno",
 
     "welcome.line": "Buenos Aires, en dos frecuencias: la noche y el mercado.",
+    "app.line": "Sumá BassLayer a tu inicio",
+    "app.install": "Instalar",
+    "app.how": "Cómo",
+    "app.ios": "Tocá Compartir (en el menú ⋯) y después «Agregar a inicio»",
+    "app.menu": "app",
+    "app.menuAria": "Instalar la app de BassLayer",
 
     "about.desc": "Tu radar en tiempo real para la escena de {electronic} y el mundo {crypto} en Buenos Aires.",
     "about.descElectronic": "música electrónica",
@@ -818,6 +824,12 @@ export const STRINGS = {
     "util.night": "Night mode",
 
     "welcome.line": "Buenos Aires, on two frequencies: the night and the market.",
+    "app.line": "Add BassLayer to your home screen",
+    "app.install": "Install",
+    "app.how": "How",
+    "app.ios": "Tap Share (in the ⋯ menu), then “Add to Home Screen”",
+    "app.menu": "app",
+    "app.menuAria": "Install the BassLayer app",
 
     "about.desc": "Your real-time radar for the {electronic} scene and the world of {crypto} in Buenos Aires.",
     "about.descElectronic": "electronic music",

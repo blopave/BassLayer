@@ -821,7 +821,8 @@
 
 /* ── Swipe Container ────────────────────── */
 .bl-swipe-wrap { position:fixed; inset:0; z-index:100; overflow:hidden; overflow:clip;   /* clip: no se puede desplazar por código (auditoría S2) */
-   visibility:hidden; opacity:0; display:flex; flex-direction:column; background:var(--bl-section-bg); }
+   visibility:hidden; opacity:0; display:flex; flex-direction:column; background:var(--bl-section-bg);
+   padding-top:env(safe-area-inset-top, 0px); }   /* app instalada en iPhone: el encabezado no va debajo del reloj */
 .bl-swipe-wrap.active { visibility:visible; opacity:1; }
 .bl-swipe-container { display:flex; width:200%; flex:1; min-height:0; transition:transform .5s var(--ease-out-expo); will-change:transform; }
 .bl-swipe-container.dragging { transition:none; }
@@ -5536,6 +5537,18 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 @keyframes bl-welcome-in { from { opacity:0; transform:translate(-50%, 10px); } }
 @media (max-width:768px) { .bl-welcome-line { white-space:normal; width:calc(100% - 48px); text-align:center; font-size:var(--fs-13); bottom:96px; } }
 @media (prefers-reduced-motion:reduce) { .bl-welcome-line { animation:none; } }
+
+/* ══ App instalable (oct 2026): la invitación es una línea, como la bienvenida, una sola vez ══ */
+.bl-app-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9750; transform:translateX(-50%);
+  display:flex; align-items:center; gap:16px; padding:8px 8px 8px 24px; border-radius:999px; border:1px solid var(--bl-border);
+  background:color-mix(in srgb, var(--bl-bg) 78%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  font:500 var(--fs-14) var(--font-sans); color:var(--bl-text); white-space:nowrap; animation:bl-welcome-in 1.1s var(--ease-out-expo) both; }
+.bl-app-go { background:none; border:0; padding:4px 0; border-bottom:1px solid currentColor; color:var(--bl-text); cursor:pointer;
+  font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; }
+.bl-app-x { width:32px; height:32px; border:0; border-radius:50%; background:none; color:var(--bl-text-muted, var(--bl-text)); font-size:var(--fs-22); line-height:1; cursor:pointer; }
+.bl-app-x:hover, .bl-app-go:hover { opacity:.7; }
+@media (max-width:768px) { .bl-app-line { white-space:normal; width:calc(100% - 48px); justify-content:space-between; font-size:var(--fs-13); bottom:96px; } }
+@media (prefers-reduced-motion:reduce) { .bl-app-line { animation:none; } }
 
 /* ══ Interiores de Bass (oct 2026, Pablo: "B+ · Afiche"): la agenda es una
    pared de flyers — el flyer es el diseño del show — y las noticias, una

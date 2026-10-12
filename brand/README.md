@@ -26,6 +26,7 @@ Las láminas `.html` se ven con el dev server corriendo (`npm run dev`), en `htt
 | 2026-10-05 | **Dirección final: el pase de la semana** (ronda 5, A + C). Cada semana BassLayer emite un pase numerado con la *línea de la semana*: el BTC de los últimos 7 días → HOY → las fiestas de los próximos 7 en el AMBA. El corte del boleto cae en HOY y la línea lo cruza entera. Isotipo: el boleto de papel con sus muescas y la *línea madre* (síntesis fija). Reemplaza al Horizonte como sistema; el logotipo queda simple (Geist 750). Sistema en `sistema/` (generador `pase.mjs`, exportador `exportar.mjs`, lámina `pase.html`). |
 | 2026-10-05 | **LA MARCA: el boleto** (ronda 6, opción B). Pablo: el pase tenía "demasiadas cosas"; la marca tiene que grabarse en la retina (la calco en la luneta). Una forma: boleto con dos muescas y *BassLayer* adentro (Geist 800). Las muescas caen entre "Bass" y "Layer". El color del boleto dice el mundo: hueso (general), cobre (Bass), celeste (Layer). Versiones: negro, un color calado, apilada, BL (≤64 px) e ícono de app. El pase de la semana pasa a ser una pieza coleccionable *dentro* del sistema, no la marca. Archivos: `logo/boleto.py` → `logo/boleto-*.svg`; lámina `logo/boleto.html`. |
 | 2026-10-05 | **El ".io" no va dentro del logo.** Existe una *versión de promoción* con `basslayer.io` en Geist Mono debajo, para piezas que se regalan (sticker, imán, tote). |
+| 2026-10-12 | **El ícono de la app es la ficha** (opción A de la ronda 2, `investigacion/app-2026-10/`). Pablo: lo más parecido al home, "que digan: esto es BassLayer". Misma geometría que `src/brand/ficha.js`, redibujada en escalones (completo ≥ 120 px, medio 48–96, mini ≤ 32 sin marco redondo). Fuente: `logo/ficha-icono.js`; `logo/web.mjs` exporta a `public/` (favicon, apple-touch, 96/192/512/1024, maskable). Sticker y pin: la ficha redonda. |
 
 ## Estado (2026-10-06)
 
@@ -77,4 +78,4 @@ Medidas (unidades de la fuente, 1000 = 1 em): peso 750, espaciado −18, horizon
 9. Movimiento: el corte del horizonte que se abre (2 s). Opcional: un sonido de 1 s.
 10. Manual de marca.
 11. Registro: buscar "BassLayer" en el INPI antes de imprimir en cantidad.
-12. Después: la app instalable con el isotipo como ícono (borrador en `aplicaciones/`).
+12. La app instalable: investigación completa en `investigacion/app-2026-10/` (2026-10-12); el ícono sale de la ficha, territorios I–IV. El borrador de `aplicaciones/` es anterior a la ficha y quedó viejo.

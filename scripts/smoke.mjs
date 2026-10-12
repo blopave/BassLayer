@@ -960,7 +960,97 @@ async function run(vp) {
   }
 }
 
+// App instalable (oct 2026): íconos de la ficha a sangre, manifest completo, zona
+// segura de iPhone, página sin conexión y la invitación (una línea, una vez).
+async function runApp() {
+  const F = (step, detail) => fail("app", step, detail);
+  const get = (u) => fetch(BASE + u).then(async (r) => (r.ok ? Buffer.from(await r.arrayBuffer()) : null)).catch(() => null);
+  const man = await fetch(BASE + "/manifest.json").then((r) => r.json()).catch(() => null);
+  if (!man) return F("manifest", "no carga /manifest.json");
+  if (man.orientation) F("manifest", `orientation "${man.orientation}" traba la app en desktop y tablet`);
+  const icon = (size, purpose) => man.icons?.find((i) => i.sizes === `${size}x${size}` && (i.purpose || "any").split(" ").includes(purpose));
+  for (const [size, purpose] of [[192, "any"], [512, "any"], [512, "maskable"]]) if (!icon(size, purpose)) F("manifest", `falta el ícono ${purpose} de ${size}`);
+  if (icon(512, "any")?.src === icon(512, "maskable")?.src) F("manifest", "el maskable reusa el ícono común (Android lo recorta)");
+  for (const it of [...(man.icons || []), ...(man.screenshots || []), ...(man.shortcuts || []).flatMap((s) => s.icons || [])]) {
+    const buf = await get(it.src);
+    if (!buf) { F("manifest", `no carga ${it.src}`); continue; }
+    if (it.type === "image/png") {
+      const m = await sharp(buf).metadata();
+      if (`${m.width}x${m.height}` !== it.sizes) F("manifest", `${it.src} mide ${m.width}x${m.height} y el manifest dice ${it.sizes}`);
+    }
+  }
+  // iOS pinta de negro lo transparente: el ícono va a sangre y opaco.
+  const apple = await get("/apple-touch-icon.png");
+  if (!apple) F("ícono", "no carga /apple-touch-icon.png");
+  else {
+    const { data, info } = await sharp(apple).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    if (info.width !== 180) F("ícono", `apple-touch-icon mide ${info.width} px (esperaba 180)`);
+    if (data[3] < 255) F("ícono", "apple-touch-icon tiene las esquinas transparentes");
+  }
+  const html = (await get("/"))?.toString() || "";
+  if (!/viewport-fit=cover/.test(html)) F("iPhone", "sin viewport-fit=cover el contenido de la app instalada queda debajo del reloj");
+  if (!(await get("/offline.html"))) F("sin conexión", "no carga /offline.html");
+  if (!/offline\.html/.test((await get("/sw.js"))?.toString() || "")) F("sin conexión", "el service worker no cae a la página sin conexión");
+
+  const browser = await chromium.launch();
+  const ctx = async (o) => { const c = await browser.newContext(o); const pg = await c.newPage(); pg.on("pageerror", (e) => F("js", e.message)); return [c, pg]; };
+  const falso = "window.__bip = () => { const e = new Event('beforeinstallprompt'); e.prompt = () => {}; e.userChoice = Promise.resolve({ outcome: 'dismissed' }); dispatchEvent(e); };";
+  try {
+    // Android, segunda visita y un rato adentro de un mundo: aparece; la ✕ la cierra para siempre.
+    let [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await pg.clock.install();
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1'); localStorage.setItem('bl-visitas','1');" + falso);
+    await pg.goto(BASE + "/eventos/este-finde", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(1500); await pg.evaluate(() => window.__bip());
+    await pg.clock.fastForward(16_000); await pg.waitForTimeout(500);
+    const linea = pg.locator(".bl-app-line");
+    if (!(await linea.isVisible().catch(() => false))) F("invitación", "en la segunda visita no aparece la línea para instalar");
+    else {
+      await pg.screenshot({ path: `${SHOTS}/smoke-app-invitacion.png` });
+      await pg.locator(".bl-app-x").click();
+      await pg.reload({ waitUntil: "domcontentloaded" }); await pg.waitForTimeout(1500); await pg.evaluate(() => window.__bip());
+      await pg.clock.fastForward(16_000); await pg.waitForTimeout(500);
+      if (await linea.count()) F("invitación", "después de la ✕ la invitación vuelve a aparecer");
+    }
+    await c.close();
+    // Primera visita: no se invita.
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await pg.clock.install();
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');" + falso);
+    await pg.goto(BASE + "/eventos/este-finde", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(1500); await pg.evaluate(() => window.__bip());
+    await pg.clock.fastForward(16_000); await pg.waitForTimeout(500);
+    if (await pg.locator(".bl-app-line").count()) F("invitación", "aparece en la primera visita");
+    await c.close();
+    // Adentro de la app instalada: ni invitación, ni entrada en el menú, ni bienvenida repetida.
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await pg.addInitScript("const mm = matchMedia.bind(window); window.matchMedia = (q) => /display-mode:\\s*standalone/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q);" + falso);
+    await pg.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(4000); await pg.evaluate(() => window.__bip());
+    if (await pg.locator(".bl-welcome-line").count()) F("app instalada", "repite la bienvenida (en iPhone no comparte lo guardado en Safari)");
+    if (await pg.locator(".bl-util-app").count()) F("app instalada", "ofrece instalar la app estando adentro de la app");
+    await c.close();
+    // iPhone: no hay instalación con un toque; el menú explica el camino.
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1" });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");
+    await pg.goto(BASE + "/eventos/este-finde", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(1500);
+    await pg.locator(".bl-util-fab").click(); await pg.waitForTimeout(300);
+    if (!(await pg.locator(".bl-util-app").count())) F("iPhone", "el menú ⋯ no ofrece la app");
+    else {
+      await pg.locator(".bl-util-app").click();
+      if (!/Agregar a inicio|Add to Home Screen/.test((await pg.locator(".bl-app-line").textContent().catch(() => "")) || "")) F("iPhone", "la app del menú no explica cómo agregarla al inicio");
+    }
+    await c.close();
+  } catch (e) {
+    F("flujo", e.message.split("\n")[0].slice(0, 200));
+  } finally {
+    await browser.close();
+  }
+}
+
 for (const vp of VIEWPORTS) await run(vp);
+await runApp();
 
 if (problems.length) {
   console.log(`✗ smoke ${BASE}: ${problems.length} problema(s)`);

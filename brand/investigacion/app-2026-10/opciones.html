@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ícono de la app · opciones</title>
+<style>
+  @font-face { font-family: Geist; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root { --bg: #0B0B0C; --tx: #EDEAE4; --mu: #8A8780; --ln: #26262A; --cu: #C49070; --cy: #6CB8C8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.5 Geist, system-ui, sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: clamp(26px, 4vw, 40px); font-weight: 600; letter-spacing: -.02em; margin: 0 0 8px; }
+  h2 { font: 500 12px/1 "Geist Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--mu); margin: 64px 0 6px; padding-top: 14px; border-top: 1px solid var(--ln); }
+  .lead { color: var(--mu); max-width: 760px; margin: 0; }
+  .nota { color: var(--mu); font-size: 13px; margin: 6px 0 20px; max-width: 760px; }
+  .mono { font-family: "Geist Mono", monospace; font-size: 12px; letter-spacing: .04em; }
+  .ico { display: block; overflow: hidden; border-radius: 22.37%; flex: none; }
+  .ico svg, .ico img { width: 100%; height: 100%; display: block; }
+
+  /* las cuatro en grande */
+  .grande { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px 20px; margin-top: 20px; }
+  .op { display: flex; flex-direction: column; gap: 12px; }
+  .op .ico { width: 100%; max-width: 220px; aspect-ratio: 1; }
+  .op h3 { margin: 4px 0 0; font-size: 18px; font-weight: 600; }
+  .op h3 b { font: 500 12px "Geist Mono", monospace; color: var(--mu); margin-right: 8px; }
+  .op p { margin: 0; color: #C9C5BD; font-size: 14px; }
+  .op .riesgo { color: var(--mu); font-size: 13px; }
+  .eq { display: flex; align-items: center; gap: 8px; }
+  .eq .bar { flex: 1; max-width: 160px; height: 4px; background: var(--cy); position: relative; }
+  .eq .bar i { position: absolute; inset: 0 auto 0 0; background: var(--cu); }
+  .eq .bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--tx); opacity: .5; }
+
+  /* pantalla de inicio */
+  .modos { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 4px 0 18px; }
+  .modos button { background: none; border: 0; padding: 4px 0; color: var(--mu); font: 500 12px "Geist Mono", monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid transparent; }
+  .modos button[aria-pressed="true"] { color: var(--tx); border-color: var(--tx); }
+  .telefonos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .tel { border-radius: 30px; padding: 34px 14px 26px; aspect-ratio: 9 / 15.5; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #2a2a2e; transition: background .3s; }
+  .tel .grilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 0; justify-items: center; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+  .app .ico { width: 46px; height: 46px; }
+  .app span { font: 500 9.5px system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); white-space: nowrap; }
+  .tel .dock { background: rgba(255,255,255,.18); border-radius: 22px; padding: 10px 6px; display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; backdrop-filter: blur(10px); }
+  .tel figcaption { text-align: center; }
+  [data-modo="claro"] .tel { background: linear-gradient(160deg, #F3EEE6, #D9DEE6 60%, #C9D3DA); }
+  [data-modo="claro"] .app span { color: #1b1b1b; text-shadow: none; }
+  [data-modo="oscuro"] .tel, [data-modo="tintado"] .tel { background: linear-gradient(160deg, #1d2333, #0c0f16 60%, #12100e); }
+  [data-modo="transparente"] .tel { background: linear-gradient(160deg, #2f4b6e, #6a5a7a 50%, #c0846a); }
+  [data-modo="tintado"] .tel .ico { filter: grayscale(1) contrast(1.05) sepia(1) saturate(2.6) hue-rotate(-12deg) brightness(.95); }
+  [data-modo="transparente"] .tel .ico { filter: grayscale(1) brightness(1.5) contrast(.8); opacity: .78; mix-blend-mode: screen; }
+  .tel-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .tel-wrap .mono { text-align: center; color: var(--mu); }
+
+  /* tamaños */
+  .tabla { display: grid; gap: 0; }
+  .fila { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--ln); }
+  .fila .tit { font-size: 14px; }
+  .fila .tit small { display: block; color: var(--mu); font: 11px "Geist Mono", monospace; }
+  .celdas { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 22px; }
+  .celda { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .celda .mono { color: var(--mu); font-size: 10.5px; }
+  .pest { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 8px 8px 0 0; font: 12px system-ui, sans-serif; width: 150px; }
+  .pest.cl { background: #fff; color: #222; } .pest.os { background: #35363A; color: #eee; }
+  .pest .ico { border-radius: 2px; width: 16px; height: 16px; }
+
+  /* pruebas */
+  .pruebas .celda .ico, .pruebas .celda .cir { width: 88px; height: 88px; }
+  .cir { border-radius: 50%; overflow: hidden; }
+  .cir svg, .cir img { width: 125%; height: 125%; margin: -12.5%; display: block; }
+  .gota { border-radius: 50% 50% 50% 14%; overflow: hidden; width: 88px; height: 88px; }
+  .gota svg, .gota img { width: 100%; height: 100%; display: block; }
+
+  /* objetos */
+  .objetos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .mesa { border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .mesa.kraft { background: radial-gradient(circle at 30% 20%, #d8c2a0, #b99d76); }
+  .mesa.tela { background: radial-gradient(circle at 70% 30%, #2b2d33, #17181b); }
+  .mesa .par { display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .mesa svg { width: 130px; height: 130px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.28)); }
+  .mesa .mono { color: rgba(0,0,0,.55); } .mesa.tela .mono { color: var(--mu); }
+
+  /* junto a la ficha */
+  .ficha-par { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; align-items: end; }
+  .ficha-par .f { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .ficha-par .f > div { width: 100%; max-width: 170px; aspect-ratio: 1; }
+  .ficha-par .f svg { width: 100%; height: 100%; display: block; }
+  .ficha-par .ico { width: 110px; height: 110px; }
+
+  .reco { margin-top: 18px; padding: 18px 0 0; border-top: 1px solid var(--ln); max-width: 820px; }
+  .reco p { margin: 0 0 10px; }
+  @media (max-width: 640px) {
+    main { padding-top: 28px; }
+    .fila { grid-template-columns: 1fr; }
+    .telefonos { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .tel { padding: 24px 8px 16px; border-radius: 22px; }
+    .app .ico { width: 34px; height: 34px; }
+    .app span { font-size: 8px; }
+    .tel .grilla { gap: 10px 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ícono de la app · cuatro territorios</h1>
+  <p class="lead">Cada opción sale de la investigación (<span class="mono">brand/investigacion/app-2026-10</span>). Todas son un solo ícono neutral, sin letras, sobre el fondo de la ficha, con el horizonte de borde a borde y el glifo dentro de la zona segura de Android. Abajo del todo, cada una al lado de la ficha del home: es la prueba que más importa.</p>
+
+  <h2>En grande</h2>
+  <p class="nota">Equilibrio medido: la luz de cada mundo (área × brillo) en un render de 512 px. La raya marca el 50/50.</p>
+  <div class="grande" id="grande"></div>
+
+  <h2>En la pantalla de inicio</h2>
+  <p class="nota">Oscuro, tintado y transparente son simulaciones: iOS 26 los genera solo a partir del ícono y no deja entregar versiones propias para una app instalada desde la web.</p>
+  <div class="modos" id="modos">
+    <button data-m="oscuro" aria-pressed="true">Fondo oscuro</button>
+    <button data-m="claro" aria-pressed="false">Fondo claro</button>
+    <button data-m="tintado" aria-pressed="false">Tintado (sim.)</button>
+    <button data-m="transparente" aria-pressed="false">Transparente (sim.)</button>
+  </div>
+  <div class="telefonos" id="telefonos" data-modo="oscuro"></div>
+
+  <h2>Tamaños</h2>
+  <p class="nota">De 29 px para arriba va el dibujo normal; en 24 y 16 px, el mini, redibujado y no achicado. La pestaña del navegador usa el de 16.</p>
+  <div class="tabla" id="tamanos"></div>
+
+  <h2>Pruebas</h2>
+  <p class="nota">Silueta negra (sin color, ¿se reconoce?), desenfoque (la prueba de la retina), grises (¿Bass y Layer se separan sin color?) y las máscaras de Android: círculo y gota, recortando el arte a sangre.</p>
+  <div class="tabla pruebas" id="pruebas"></div>
+
+  <h2>Como objeto</h2>
+  <p class="nota">Sticker troquelado (el contorno sigue al glifo) y pin esmaltado (dos colores planos con la línea de metal). Si funciona acá, funciona en un sello, un bordado o un grabado.</p>
+  <div class="objetos" id="objetos"></div>
+
+  <h2>Junto a la ficha</h2>
+  <p class="nota">La ficha del home (en reposo y encendida) y cada ícono al lado. La pregunta: ¿alguien que vio el home reconoce el ícono?</p>
+  <div class="ficha-par" id="ficha"></div>
+
+  <div class="reco" id="reco"></div>
+</main>
+
+<script type="module">
+import { medir } from "./iconos.js";
+const R2 = new URLSearchParams(location.search).get("r") === "2";
+const M = await import(R2 ? "./ficha-icono.js" : "./iconos.js");
+const { icono, objeto, NOMBRES } = M;
+import { ficha, objetivo, ESTADO_INICIAL } from "/src/brand/ficha.js";
+
+const T = M.T || ["I", "II", "III", "IV"];
+const IDEA = M.IDEA || {
+  I: "La ficha reducida a sus tres formas: el vinilo asomando, tres velas y el horizonte, a plena luz y parejos. La escena dormida.",
+  II: "El vinilo arriba del horizonte; en el agua, su reflejo vuelto bloques. Un mismo dibujo leído en analógico y en digital.",
+  III: "Un solo trazo: sube del horizonte como surco y, pasada la cima, sigue en velas. La transición entre mundos hecha signo.",
+  IV: "El horizonte es el signo; cada mundo es lo mínimo que lo toca. Es el control: lo más simple que todavía es BassLayer.",
+};
+const RIESGO = M.RIESGO || {
+  I: "Riesgo: lo más fiel y lo más cargado. A 16 px las velas se juntan.",
+  II: "Riesgo: los bloques pueden leerse como ecualizador, que en el sitio es de Bass.",
+  III: "Riesgo: el trazo solo no dice «vinilo»; lee como gráfico que sube.",
+  IV: "Riesgo: el más simple; puede volver a parecer «muy básico».",
+};
+
+const actual = (cls = "ico") => `<span class="${cls}"><img src="/icon-512.png" alt=""></span>`;
+const ico = (t, px, o = {}) => `<span class="ico" style="width:${px}px;height:${px}px">${icono(t, { px, mini: px <= 24, ...o })}</span>`;
+
+// Las cuatro en grande
+const grande = document.getElementById("grande");
+for (const t of T) {
+  const el = document.createElement("div");
+  el.className = "op";
+  el.innerHTML = `<span class="ico">${icono(t)}</span>
+    <h3><b>${t}</b>${NOMBRES[t]}</h3><p>${IDEA[t]}</p>
+    <div class="eq mono"><span style="color:var(--cu)">Bass <span data-b>…</span></span><span class="bar"><i data-bar></i></span><span style="color:var(--cy)">Layer <span data-l>…</span></span></div>
+    <p class="riesgo">${RIESGO[t]}</p>`;
+  grande.append(el);
+  medir(icono(t)).then((b) => {
+    el.querySelector("[data-b]").textContent = b;
+    el.querySelector("[data-l]").textContent = 100 - b;
+    el.querySelector("[data-bar]").style.width = b + "%";
+    document.body.dataset["eq" + t] = b;
+  });
+}
+
+// Pantalla de inicio
+const vecinos = [
+  ["#3478F6", "Mapas", "c"], ["#34C759", "Mensajes", "b"], ["#FF9F0A", "Notas", "l"], ["#8E8E93", "Ajustes", "g"],
+  ["#FF375F", "Música", "c"], ["#5E5CE6", "Podcasts", "b"], ["#30B0C7", "Clima", "s"], null,
+  ["#1C1C1E", "Bolsa", "l"], ["#FF453A", "Fotos", "g"], ["#64D2FF", "Archivos", "s"], ["#FFD60A", "Recordat.", "b"],
+];
+const glifo = (k) => ({
+  c: `<circle cx="50" cy="50" r="22" fill="#fff"/>`, b: `<rect x="28" y="30" width="44" height="34" rx="10" fill="#fff"/>`,
+  l: `<rect x="28" y="30" width="44" height="7" fill="#fff"/><rect x="28" y="46" width="44" height="7" fill="#fff"/><rect x="28" y="62" width="30" height="7" fill="#fff"/>`,
+  g: `<circle cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="9"/>`, s: `<path d="M24 68 L50 28 L76 68Z" fill="#fff"/>`,
+}[k]);
+const app = (bg, nombre, k) => `<div class="app"><span class="ico"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${bg}"/>${glifo(k)}</svg></span><span>${nombre}</span></div>`;
+const tel = (nuestro, rotulo) => `<div class="tel-wrap"><div class="tel"><div class="grilla">${vecinos.map((v) => v ? app(...v) : `<div class="app">${nuestro}<span>BassLayer</span></div>`).join("")}</div>
+  <div class="dock">${app("#34C759", "", "b")}${app("#3478F6", "", "c")}${app("#FF9F0A", "", "l")}${app("#8E8E93", "", "g")}</div></div><span class="mono">${rotulo}</span></div>`;
+const tels = document.getElementById("telefonos");
+tels.innerHTML = tel(actual(), "Actual") + T.map((t) => tel(`<span class="ico">${icono(t, { px: 60 })}</span>`, `${t} · ${NOMBRES[t]}`)).join("");
+document.getElementById("modos").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  tels.dataset.modo = b.dataset.m;
+  for (const x of e.currentTarget.children) x.setAttribute("aria-pressed", x === b);
+});
+
+// Tamaños
+const pest = (contenido, cls) => `<div class="pest ${cls}">${contenido}<span>BassLayer</span></div>`;
+const filaT = (titulo, sub, celdas) => `<div class="fila"><div class="tit">${titulo}<small>${sub}</small></div><div class="celdas">${celdas}</div></div>`;
+const celda = (html, rot) => `<div class="celda">${html}<span class="mono">${rot}</span></div>`;
+const tamActual = [180, 60, 48, 29, 24, 16].map((px) => celda(`<span class="ico" style="width:${px}px;height:${px}px"><img src="/icon-512.png" alt=""></span>`, px)).join("")
+  + celda(pest(`<span class="ico"><img src="/favicon.svg" alt=""></span>`, "cl"), "pestaña clara") + celda(pest(`<span class="ico"><img src="/favicon.svg" alt=""></span>`, "os"), "pestaña oscura");
+document.getElementById("tamanos").innerHTML = filaT("Actual", "BL genérico", tamActual) + T.map((t) =>
+  filaT(`${t} · ${NOMBRES[t]}`, "normal ≥ 29 · mini ≤ 24",
+    [180, 60, 48, 29, 24, 16].map((px) => celda(ico(t, px), px)).join("")
+    + celda(pest(`<span class="ico">${icono(t, { px: 16, mini: true })}</span>`, "cl"), "pestaña clara")
+    + celda(pest(`<span class="ico">${icono(t, { px: 16, mini: true })}</span>`, "os"), "pestaña oscura"))).join("");
+
+// Pruebas
+const prueba = (svgOImg, t) => [
+  celda(`<span class="ico">${t ? icono(t, { px: 96, tono: "#000", fondo: "#fff" }) : `<img src="/icon-512.png" style="filter:grayscale(1) contrast(9) invert(1)" alt="">`}</span>`, "silueta"),
+  celda(`<span class="ico" style="filter:blur(4px)">${svgOImg}</span>`, "desenfoque"),
+  celda(`<span class="ico" style="filter:grayscale(1)">${svgOImg}</span>`, "grises"),
+  celda(`<span class="cir">${svgOImg}</span>`, "Android círculo"),
+  celda(`<span class="gota">${svgOImg}</span>`, "Android gota"),
+].join("");
+document.getElementById("pruebas").innerHTML = filaT("Actual", "BL genérico", prueba(`<img src="/icon-512.png" alt="">`))
+  + T.map((t) => filaT(`${t} · ${NOMBRES[t]}`, "", prueba(icono(t, { px: 88 }), t))).join("");
+
+// Objetos
+document.getElementById("objetos").innerHTML = T.map((t) => `<div><div class="mesa kraft"><div class="par">${objeto(t)}</div><span class="mono">${t} · sticker troquelado</span></div>
+  <div class="mesa tela" style="margin-top:10px"><div class="par">${objeto(t, { pin: true, borde: "#C9A85A", r1: 3.2, r2: 5.2, contorno: ["#C9A85A", 0.9] })}</div><span class="mono">${t} · pin esmaltado</span></div></div>`).join("");
+
+// Junto a la ficha
+const st = { ...ESTADO_INICIAL, ...objetivo(""), time: 0, spin: 0, dimL: 1, dimB: 1 };
+document.getElementById("ficha").innerHTML = `<div class="f"><div>${ficha({ ...ESTADO_INICIAL, ...objetivo(""), time: 0, spin: 0 })}</div><span class="mono">El home en reposo</span></div>`
+  + `<div class="f"><div>${ficha(st)}</div><span class="mono">El home encendido</span></div>`
+  + `<div class="f">${actual()}<span class="mono">Actual</span></div>`.replace('class="ico"', 'class="ico" style="width:110px;height:110px"')
+  + T.map((t) => `<div class="f"><span class="ico">${icono(t, { px: 110 })}</span><span class="mono">${t} · ${NOMBRES[t]}</span></div>`).join("");
+
+if (R2) {
+  document.title = "Ícono de la app · la ficha";
+  document.querySelector("h1").textContent = "Ícono de la app · la ficha";
+  document.querySelectorAll(".nota")[2].textContent = "Tres escalones: completo (180), medio (60 y 48) y mini (29, 24 y 16, sin el marco redondo y con la escena acercada). La pestaña del navegador usa el mini.";
+  document.querySelectorAll(".nota")[4].textContent = "Como la ficha es un disco, el sticker y el pin son redondos: el objeto es la ficha misma.";
+  document.querySelector(".lead").innerHTML = "Ronda 2: el ícono es la ficha del home, con su misma geometría (<span class=\"mono\">src/brand/ficha.js</span>): el vinilo asomando sobre el horizonte, las velas del BTC, las ondas cobre y las luces celestes en el agua. No se achica: se redibuja en tres escalones (completo ≥ 120 px, medio 48–96, mini ≤ 32) para que en cada tamaño se lea lo mismo.";
+}
+document.getElementById("reco").innerHTML = R2 ? `<h2 style="margin-top:0;border:0;padding:0">Lectura</h2>
+  <p><b>A · La ficha</b> es la que más se parece al home: la misma ficha redonda, las mismas piezas, en el mismo lugar. Quien vio el sitio la reconoce al instante, y como sticker o pin redondo es directamente la ficha.</p>
+  <p><b>B · A sangre</b> gana tamaño (todo un 30 % más grande en el celular) a cambio de perder la silueta redonda del home.</p>
+  <p><b>C · Pareja</b> es A con Layer al mismo peso de luz que Bass (49/51 medido). Ojo: con la misma medición, el home encendido da 81/19 y A da 73/27. C es más justa con los dos mundos, pero se aleja un poco del home.</p>
+  <p>Debajo de 32 px ninguna se lee entera: en el mini se saca el marco redondo y queda la escena acercada (vinilo, horizonte, ondas y tres velas). Es el límite del tamaño, no del dibujo.</p>
+  <p>Recomendación: <b>A</b>, que es la ficha. Si querés los dos mundos más parejos sin perder el parecido, <b>C</b>.</p>` : `<h2 style="margin-top:0;border:0;padding:0">Lectura</h2>
+  <p><b>II · El reflejo traduce</b> es la más fuerte como ícono: una sola forma centrada, el 50/50 sale por construcción (es el mismo dibujo arriba y abajo), desenfocada sigue siendo «cobre sobre celeste», y es la mejor como sticker y como pin. Su riesgo: que los bloques se lean como ecualizador.</p>
+  <p><b>I · Fotograma destilado</b> es la más fiel a la ficha, pero la diagonal deja vacía la mitad del cuadrado y a 16 px las velas se juntan.</p>
+  <p><b>III</b> lee como «gráfico que sube» y el arco no dice vinilo; <b>IV</b> se lee perfecto pero es lo más básico.</p>
+  <p>Recomendación: seguir con <b>II</b> y afinarla (los bloques con algo de vela, el reflejo con el ritmo del agua de la ficha), con <b>I</b> como alternativa.</p>`;
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
-const CACHE_VERSION = "basslayer-v6";   // v6: manifest nuevo (capturas y textos)
-const STATIC_ASSETS = ["/", "/favicon.svg", "/icon-192.png"];
+const CACHE_VERSION = "basslayer-v7";   // v7: ícono de la ficha + página sin conexión
+const STATIC_ASSETS = ["/", "/offline.html", "/favicon.svg", "/icon-192.png", "/icon-512.png",
+  "/fonts/geist-latin-wght-normal.woff2", "/fonts/geist-mono-latin-wght-normal.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -38,7 +39,8 @@ self.addEventListener("fetch", (e) => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        // sin red: la página guardada; si nunca se visitó, la página sin conexión
+        .catch(() => caches.match(request).then((r) => r || caches.match("/offline.html")))
     );
     return;
   }
