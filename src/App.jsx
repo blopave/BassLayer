@@ -98,8 +98,10 @@ export default function App() {
     const path = window.location.pathname;
     const layer = new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path);
     const temporal = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
-    const deep = layer || /^\/(eventos|noticias|festivales)\//.test(path);
-    return { view: deep ? "sections" : "home", presetWhen: temporal ? (temporal[1] === "hoy" ? "hoy" : "finde") : "" };
+    // Las secciones de Bass tienen dirección propia (oct 2026): /agenda, /noticias, /festivales.
+    const sec = path.match(/^\/(agenda|noticias|festivales)\/?$/);
+    const deep = layer || !!sec || /^\/(eventos|noticias|festivales)\//.test(path);
+    return { view: deep ? "sections" : "home", presetWhen: temporal ? (temporal[1] === "hoy" ? "hoy" : "finde") : "", seccion: sec ? (sec[1] === "agenda" ? "eventos" : sec[1]) : "" };
   })();
   const [view, setView] = useState(initialRoute.view);
   const [circleStyle, setCircleStyle] = useState({});
@@ -323,6 +325,12 @@ export default function App() {
       return;
     }
     // /eventos/hoy · /eventos/este-finde → feed con el filtro temporal puesto
+    // /agenda · /noticias · /festivales → Bass en esa sección (la elige BassFeed con presetSection)
+    if (/^\/(agenda|noticias|festivales)\/?$/.test(path)) {
+      setView("sections");
+      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      return;
+    }
     const temporalMatch = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
     if (temporalMatch) {
       setPresetWhen(temporalMatch[1] === "hoy" ? "hoy" : "finde");
@@ -588,6 +596,9 @@ export default function App() {
   // /eventos/x) volvemos a /layer o a /, según dónde estemos. Va por ref para
   // que los callbacks de cierre (memoizados sin deps) lean el panel actual.
   const worldUrlRef = useRef(() => "/");
+  // La dirección de la sección de Bass abierta ("/" en la portada): al cerrar un
+  // modal o volver de un filtro, la URL vuelve a la sección y no al home.
+  const bassPathRef = useRef("/");
   const [activePanel, setActivePanel] = useState(() => (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(window.location.pathname)) ? 1 : 0);
   // Wipe flash trigger when switching worlds (header animation)
   const [wiping, setWiping] = useState(null); // null | "bass" | "layer"
@@ -915,7 +926,7 @@ export default function App() {
   // Render
   const swipeTransform = `translateX(${-(activePanel * 50)}%)`;
 
-  worldUrlRef.current = () => (view === "sections" && activePanel === 1 ? "/layer" : "/");
+  worldUrlRef.current = () => (view !== "sections" ? "/" : activePanel === 1 ? "/layer" : bassPathRef.current);
 
   // About y Onboarding con el mismo contrato que los modales: foco atrapado,
   // Escape cierra, fondo inert, scroll bloqueado.
@@ -1042,7 +1053,7 @@ export default function App() {
           <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" {...panelInert(0)} ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <LineupTicker events={localEvents} loading={eventsLoading} onSelect={openEvent} />
-            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} />
+            <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} presetSection={initialRoute.seccion} onSeccion={(p) => { bassPathRef.current = p; }} />
           </div>
 
           {/* Panel 1: LAYER */}

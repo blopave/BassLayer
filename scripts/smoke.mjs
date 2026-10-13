@@ -1042,6 +1042,24 @@ async function runApp() {
     if (await pg.locator(".bl-welcome-line").count()) F("app instalada", "repite la bienvenida (en iPhone no comparte lo guardado en Safari)");
     if (await pg.locator(".bl-util-app").count()) F("app instalada", "ofrece instalar la app estando adentro de la app");
     await c.close();
+    // Las secciones de Bass tienen dirección (oct 2026): /noticias, /festivales,
+    // /agenda; se puede entrar directo, recargar y el atrás vuelve a la portada.
+    [c, pg] = await ctx({ viewport: { width: 1440, height: 900 } });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");
+    const activa = () => pg.evaluate(() => document.querySelector(".bl-bass-section-btn.active")?.textContent?.trim() || (document.querySelector(".bl-btrack") ? "portada" : ""));
+    const ruta = () => new URL(pg.url()).pathname;
+    await pg.goto(BASE + "/noticias", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-bass-section-btn.active").first().waitFor({ timeout: 20_000 }).catch(() => {});
+    if (!/Noticias|News/.test(await activa())) F("secciones", `entrar a /noticias no abre Noticias (${await activa()})`);
+    await pg.locator(".bl-bass-section-btn", { hasText: /^Agenda$|^Listings$/ }).first().click().catch(() => {});
+    await pg.waitForTimeout(500);
+    if (ruta() !== "/agenda") F("secciones", `la Agenda no cambia la dirección a /agenda (${ruta()})`);
+    await pg.reload({ waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-bass-section-btn.active").first().waitFor({ timeout: 20_000 }).catch(() => {});
+    if (!/Agenda|Listings/.test(await activa())) F("secciones", "recargar /agenda no vuelve a la Agenda");
+    await pg.goBack(); await pg.waitForTimeout(800);
+    if (ruta() !== "/" || (await activa()) !== "portada") F("secciones", `el atrás no vuelve a la portada en "/" (${ruta()} · ${await activa()})`);
+    await c.close();
     // El salto a un día aguanta lo que llega después (oct 2026: el smoke "el día
     // elegido no queda debajo de la línea" fallaba a veces; los ciclos que llegan
     // tarde corrían la lista 540 px). Se demoran a propósito hasta después del salto.

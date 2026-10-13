@@ -282,7 +282,7 @@ function isThisWeekend(eventDate, bounds = weekendBounds()) {
 }
 
 
-export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival, presetWhen }) {
+export function BassFeed({ events, loading, error, onRetry, filter, onFilter, onSelect, search, onSearch, onOpenPicker, onSelectNews, onSelectFestival, presetWhen, presetSection, onSeccion }) {
   const { t, locale } = useLocale();
   const dayNames = DAYS_LONG[locale] || DAYS_LONG.es;
   const familyLabels = useMemo(() => ({
@@ -312,7 +312,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   const hoyOnly = when === "hoy";
   const esteFinde = when === "finde";
   // "track" (portada: solo el índice) | "eventos" (Agenda) | "noticias" | "festivales"
-  const [section, setSection] = useState(presetWhen ? "eventos" : "track");
+  const [section, setSection] = useState(presetWhen ? "eventos" : presetSection || "track");
   // "Mi agenda": filtro por eventos guardados (localStorage, sin login).
   const { saved } = useSavedEvents();
   const [savedOnly, setSavedOnly] = useState(false);
@@ -628,13 +628,36 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   };
   const resetRef = useRef(resetToTrack);
   resetRef.current = resetToTrack;
+  // Cada sección tiene su dirección (oct 2026): /agenda, /noticias, /festivales
+  // (con Hoy / Este finde, /eventos/hoy y /eventos/este-finde). Se puede
+  // compartir, recargar y volver; en la portada, "/".
+  const seccionPath = section === "noticias" ? "/noticias" : section === "festivales" ? "/festivales"
+    : section === "eventos" ? (when === "hoy" ? "/eventos/hoy" : when === "finde" ? "/eventos/este-finde" : "/agenda") : "/";
   useEffect(() => {
-    if (!atPortada && !window.history.state?.bassTrack) window.history.pushState({ bassTrack: 1 }, "", window.location.href);
+    onSeccion?.(seccionPath);
+    // Solo si la URL es de una sección (no pisar /eventos/<slug> de un modal abierto ni /layer).
+    const p = window.location.pathname;
+    const esSeccion = p === "/" || /^\/(agenda|noticias|festivales)\/?$/.test(p) || /^\/eventos\/(hoy|este-finde)\/?$/.test(p);
+    // Entre secciones se reemplaza; la primera salida de la portada la resuelve el efecto de abajo.
+    if (!atPortada && window.history.state?.bassTrack && esSeccion && p !== seccionPath) window.history.replaceState(window.history.state, "", seccionPath + window.location.search);
+  }, [seccionPath]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // La portada queda debajo en "/" (también si se entró directo a /noticias):
+    // el atrás vuelve a la portada con su dirección.
+    if (!atPortada && !window.history.state?.bassTrack) {
+      window.history.replaceState(window.history.state, "", "/" + window.location.search);
+      window.history.pushState({ bassTrack: 1 }, "", seccionPath + window.location.search);
+    }
     // Después del commit: el track recién montado ya está en el DOM.
     if (atPortada && scrollToTrack.current) { scrollToTrack.current = false; document.querySelector(".bl-btrack")?.scrollIntoView({ block: "start" }); }
   }, [atPortada]);
   useEffect(() => {
-    const onPop = () => { if (!window.history.state?.bassTrack) resetRef.current(); };
+    // Atrás → la portada. Adelante (o una sección del historial) → esa sección.
+    const onPop = () => {
+      if (!window.history.state?.bassTrack) return resetRef.current();
+      const m = window.location.pathname.match(/^\/(agenda|noticias|festivales)\/?$/);
+      if (m) setSection(m[1] === "agenda" ? "eventos" : m[1]);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

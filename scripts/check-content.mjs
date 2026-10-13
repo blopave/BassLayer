@@ -347,6 +347,13 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     [{ name: "Creamfields 2026", description: "los principales exponentes de la música electrónica" }, true],
     [{ name: "DEEP SESSION #20 en Niceto Bar", description: "un ciclo 100% underground de tech house" }, true],
   ];
+  // Un recital necesita vocabulario fuerte: "electrónica" sola no alcanza.
+  const recitales = [
+    [{ name: "ÇANTAMARTA en Niceto Club", description: "electrónica orgánica… Un concierto", event_type: "recital", day: "22", month: "Oct", time: "19:00" }, false],
+    [{ name: "Juan Elvadin", description: "referente del Melodic Techno", event_type: "recital", day: "7", month: "Nov", time: "23:59" }, true],
+  ];
+  const malRecital = recitales.filter(([ev, ok]) => esDeLaEscena(ev) !== ok).map(([ev]) => ev.name);
+  if (malRecital.length) fail("evidencia de escena", "recital", `mal clasificados: ${malRecital.join(" | ")}`);
   const mal = casos.filter(([ev, ok]) => hasElectronicEvidence(ev) !== ok).map(([ev]) => ev.name);
   stats.push({ path: "evidencia de escena", count: casos.length });
   if (mal.length) fail("evidencia de escena", "regla", `mal clasificados: ${mal.join(" | ")}`);
