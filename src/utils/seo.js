@@ -91,8 +91,8 @@ export function applyEventMeta(ev, slug) {
 // lo mismo; esto cubre el toggle Bass → Layer sin recarga).
 export function applyLayerMeta() {
   snapshotDefaults();
-  const title = "Bitcoin, ETFs y noticias crypto en español | BassLayer";
-  const description = "Precios en vivo, noticias crypto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin.";
+  const title = "Bitcoin, ETFs y noticias cripto en español | BassLayer";
+  const description = "Precios en vivo, noticias cripto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin.";
   document.title = title;
   setMeta("name", "description", description);
   setMeta("property", "og:title", title);

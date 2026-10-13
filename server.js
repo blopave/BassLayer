@@ -5924,8 +5924,8 @@ if (IS_PROD) {
 
     const lines = [`<main style="${wrapStyle}" aria-label="BassLayer">`, `<div style="${innerStyle}">`];
 
-    lines.push(`<h1 style="${h1Style}">Eventos de música electrónica en Buenos Aires + Crypto LATAM</h1>`);
-    lines.push(`<p style="${introStyle}">Agenda completa de fiestas, festivales y boliches de música electrónica en Buenos Aires — techno, house, drum &amp; bass, DJs locales e internacionales. Precios en vivo de Bitcoin, Ethereum y noticias crypto en español. Actualizado cada hora.</p>`);
+    lines.push(`<h1 style="${h1Style}">Eventos de música electrónica en Buenos Aires + cripto y mercados</h1>`);
+    lines.push(`<p style="${introStyle}">Agenda completa de fiestas, festivales y boliches de música electrónica en Buenos Aires — techno, house, drum &amp; bass, DJs locales e internacionales. Precios en vivo de Bitcoin, Ethereum y noticias cripto en español. Actualizado cada hora.</p>`);
 
     // Navegación semántica
     lines.push('<nav aria-label="Secciones" style="margin-bottom:2.5rem;display:flex;gap:1rem;flex-wrap:wrap">');
@@ -5972,7 +5972,7 @@ if (IS_PROD) {
 
     if (news.length > 0) {
       lines.push(`<section style="${sectionStyle}" aria-labelledby="seo-news">`);
-      lines.push(`<h2 id="seo-news" style="${h2Style}">Últimas noticias crypto y música electrónica</h2>`);
+      lines.push(`<h2 id="seo-news" style="${h2Style}">Últimas noticias cripto y música electrónica</h2>`);
       lines.push(`<ul style="${ulStyle}">`);
       for (const n of news.slice(0, 15)) {
         const titleMarkup = n.url
@@ -6771,8 +6771,8 @@ if (IS_PROD) {
     const prices = cached("prices") || [];
     const markets = cached("markets");
     const etfs = ((markets && markets.groups) || []).filter((g) => g.kind === "etf").flatMap((g) => g.items);
-    const h1 = "Bitcoin, ETFs y noticias crypto en español";
-    const intro = "Precios en vivo, noticias crypto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin. El mundo Layer de BassLayer, actualizado a cada hora.";
+    const h1 = "Bitcoin, ETFs y noticias cripto en español";
+    const intro = "Precios en vivo, noticias cripto y de mercados, ETFs de Bitcoin e índices, dólar cripto en Argentina y los ciclos de halving de Bitcoin. El mundo Layer de BassLayer, actualizado a cada hora.";
     const fmtUsd = (n) => n >= 1000 ? `$${Math.round(n).toLocaleString("en-US")}` : `$${Number(n).toFixed(2)}`;
     const li = (n) => `<li style="margin:0 0 .6rem"><a href="${escHtml(n.url || `/noticias/${newsSlug(n)}`)}" rel="noopener" style="color:#e5e5e5;text-decoration:none">${escHtml(n.title)}</a> <span style="color:#7a8b98;font-size:.85em">— ${escHtml(n.source || "")}</span></li>`;
     const body = `
