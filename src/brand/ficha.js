@@ -89,12 +89,16 @@ export function ficha(st, { en = false, minU = 0 } = {}) {
   //    como el borde de un disco; al elegir Layer, una lista de cotizaciones en el cielo del mercado.
   const mono = "'Geist Mono Variable', GeistMono, monospace";
   const oB = Math.max(0, Math.min(1, ((st.B ?? 0) - 0.55) / 0.35)), oL = Math.max(0, Math.min(1, ((st.L ?? 0) - 0.55) / 0.35));
-  let leyenda = "";
+  let leyenda = "", hueco = "";
   const fs = Math.max(8.6, minU);
   if (oB > 0.02) {
     // a 11 px reales el texto es más largo: el arco se abre un poco (sigue entero dentro de la ficha)
     const ancho = fs > 8.6, r = ancho ? 116 : 113, a0 = (ancho ? -122 : -116) * Math.PI / 180, a1 = (ancho ? -3 : -6) * Math.PI / 180;
-    leyenda += `<path id="${id}r" d="M${vx + r * Math.cos(a0)} ${vy + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${vx + r * Math.cos(a1)} ${vy + r * Math.sin(a1)}" fill="none"/>
+    const arco = (rr) => `M${vx + rr * Math.cos(a0)} ${vy + rr * Math.sin(a0)} A${rr} ${rr} 0 0 1 ${vx + rr * Math.cos(a1)} ${vy + rr * Math.sin(a1)}`;
+    // el final de la leyenda ("AGENDA") pasa sobre las velas: debajo de las letras se apagan,
+    // con borde difuso, para que el texto se lea limpio (oct 2026)
+    hueco = `<path d="${arco(r + fs * 0.3)}" fill="none" stroke="#000" stroke-width="${fs * 3.2}" stroke-linecap="round" stroke-opacity="${oB}" filter="url(#${id}d)"/>`;
+    leyenda += `<path id="${id}r" d="${arco(r)}" fill="none"/>
       <text font-family="${mono}" font-size="${fs}" letter-spacing="${ancho ? 0.5 : 1.8}" fill="${CU}" opacity="${oB}"><textPath href="#${id}r" startOffset="50%" text-anchor="middle">${en ? "MUSIC · FESTIVALS · LISTINGS" : "MÚSICA · FESTIVALES · AGENDA"}</textPath></text>`;
   }
   if (oL > 0.02) {
@@ -110,13 +114,15 @@ export function ficha(st, { en = false, minU = 0 } = {}) {
       <clipPath id="${id}a"><rect x="0" y="-10" width="400" height="${H + 10}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
       <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/><rect x="${xa - 10}" y="${H}" width="${xb - xa + 20}" height="66" fill="#000"/>${bandMask}</mask>
       <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/>${bandMask}</mask>
+      <filter id="${id}d" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${fs * 0.45}"/></filter>
+      <mask id="${id}t" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/>${hueco}</mask>
       <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6 + 16 * oB}" fill="#000"/><rect x="36" y="${126 - fs - 4}" width="182" height="${2 * Math.max(15, fs * 1.55) + fs + 10}" fill="#000" fill-opacity="${oL}"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
     <circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>
     <g clip-path="url(#${id}f)">
       <g fill="none" stroke="${cL}" stroke-width="${sw * 0.8}" opacity="${Math.min(1, (0.07 + 0.33 * st.L) * il) * (1 - 0.6 * st.B)}" mask="url(#${id}c)">${cielo}</g>
       <g clip-path="url(#${id}a)" opacity="${st.dimB}">${vinilo}</g>
       ${leyenda}
-      <g opacity="${st.dimL}">${velas}</g>
+      <g opacity="${st.dimL}"${hueco ? ` mask="url(#${id}t)"` : ""}>${velas}</g>
       <g fill="none" stroke="${cL}" stroke-width="${sw}" stroke-linecap="butt" mask="url(#${id}b)" opacity="${Math.min(1, (0.28 + 0.3 * st.L) * il) * (1 - 0.5 * st.B)}">${mar}</g>
       <g mask="url(#${id}e)" opacity="${st.dimL}">${luces}</g>
       <g mask="url(#${id}e)"><g fill="none" stroke="${cB}" stroke-width="${sw}" stroke-linecap="round" clip-path="url(#${id}v)" opacity="${st.dimB}">${eco}</g></g>

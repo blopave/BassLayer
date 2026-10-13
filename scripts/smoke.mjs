@@ -135,6 +135,9 @@ async function run(vp) {
     // Al elegir, la ficha dice qué hay en ese mundo, y "Entrar →" se lee (11 px como mínimo, también en el celular).
     await page.waitForTimeout(1500);
     if (!/M[ÚU]SICA|MUSIC/.test((await fichaSvg.textContent().catch(() => "")) || "")) fail(vp.name, "home", "al elegir Bass la ficha no dice qué hay (Música · Festivales · Agenda)");
+    // "AGENDA" cae sobre las velas: debajo de la leyenda las velas se apagan (oct 2026, Pablo: "no se lee claramente").
+    const limpia = await page.evaluate(() => [...document.querySelectorAll(".bhf-mk svg g[mask]")].some((g) => g.querySelector("rect[width]") && g.querySelector("line") && document.querySelector(g.getAttribute("mask").slice(4, -1))?.querySelector("path[filter]")));
+    if (!limpia) fail(vp.name, "home", "al elegir Bass la leyenda pisa las velas (\"AGENDA\" no se lee limpio)");
     const goPx = await page.locator(".bhf-w.b .go").evaluate((e) => parseFloat(getComputedStyle(e).fontSize)).catch(() => 0);
     if (goPx < 11) fail(vp.name, "home", `"Entrar →" mide ${goPx}px: no se lee`);
     if (!vp.isMobile) {
