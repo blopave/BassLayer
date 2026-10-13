@@ -132,6 +132,12 @@ async function checkEndpoint({ path, minItems, required }) {
     // electrónica" de la fuente no alcanza.
     const fueraDeEscena = items.filter((it) => it?.source === "quehacemos" && (it?.family !== "club" || !hasElectronicEvidence(it)));
     if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
+    // QuéHacemos más allá de la semana (oct 2026): un tope aplicado antes del
+    // filtro de escena dejaba solo lo de los próximos 3 días.
+    const enUnaSemana = Date.now() + 7 * 86400000;
+    const MES = { Ene: 0, Feb: 1, Mar: 2, Abr: 3, May: 4, Jun: 5, Jul: 6, Ago: 7, Sep: 8, Oct: 9, Nov: 10, Dic: 11 };
+    const qhLejos = items.filter((it) => { if (it?.source !== "quehacemos" || !(it.month in MES)) return false; const y = new Date().getFullYear(); let d = new Date(y, MES[it.month], +it.day); if (d < Date.now() - 180 * 86400000) d = new Date(y + 1, MES[it.month], +it.day); return d.getTime() > enUnaSemana; }).length;
+    if (items.some((it) => it?.source === "quehacemos") && qhLejos < 5) fail(path, "quehacemos", `solo ${qhLejos} eventos de QuéHacemos después de los próximos 7 días: ¿volvió un tope antes del filtro?`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);
   }
@@ -329,6 +335,15 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     [{ name: "Los Totora", description: "Waketon: sol, wakeboard y música con Los Totora." }, false],
     [{ name: "Olympo Sunset 03-10 | Dramer", description: "BA SUNSET 17 a 23HS Junto a Ivo Rubio Luna Picon" }, false],
     [{ name: "PIZZA RAVE 90 & 2000", description: "el auténtico sonido House + Techno de los 80s" }, true],
+    // oct 2026, con el tope de QuéHacemos corregido: el venue no es evidencia,
+    // y bandas, cantautores, ferias y fiestas para chicos no son la noche.
+    [{ name: "STICKY", description: "STICKY en THE BLACK HOUSE. Fiesta de reggaetón", venue: "THE BLACK HOUSE" }, false],
+    [{ name: "BABASONICOS", description: "Babasónicos es una banda argentina de rock alternativo" }, false],
+    [{ name: "RHYE Joy Tour", description: "su nuevo álbum, R&B y soul, con DJ set" }, false],
+    [{ name: "TECHNO KIDS EN LA PLATA", description: "La primera fiesta electrónica pensada para disfrutar en familia" }, false],
+    [{ name: "Halloween en Tacheles", description: "9 bandas, DJ sets, disfraces" }, false],
+    [{ name: "Creamfields 2026", description: "los principales exponentes de la música electrónica" }, true],
+    [{ name: "DEEP SESSION #20 en Niceto Bar", description: "un ciclo 100% underground de tech house" }, true],
   ];
   const mal = casos.filter(([ev, ok]) => hasElectronicEvidence(ev) !== ok).map(([ev]) => ev.name);
   stats.push({ path: "evidencia de escena", count: casos.length });

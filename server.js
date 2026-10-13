@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence, isStrongElectronic } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
@@ -2008,7 +2008,10 @@ const QH_MUSIC_TYPES = new Set(["recital", "electronica", "festival", "cuarteto"
 const QH_PROVINCES = new Set(["Buenos Aires"]);   // foco audiencia; ampliable
 const QH_WINDOW_DAYS = 75;
 const QH_MAX_PAGES = 8;
-const QH_MAX_EVENTS = 80;
+// Tope DESPUÉS del filtro de escena (oct 2026): antes cortaba los 80 primeros
+// de toda la cartelera musical y, con ~950 en 3 semanas, la agenda perdía todo
+// lo de QuéHacemos después del 3.er día (y con eso, los de lunes a jueves).
+const QH_MAX_EVENTS = 150;
 
 // ── Filtro anti-no-musical (QuéHacemos) ──
 // El `event_type` de la fuente no es confiable: obras de teatro, musicales,
@@ -2240,11 +2243,21 @@ async function fetchQueHacemos() {
     let skippedNonMusical = 0;
     const nonMusicTitles = qhNonMusicTitles(byId.values());
     for (const e of byId.values()) {
-      if (!QH_MUSIC_TYPES.has(e.event_type)) continue;
+      // "otro" y "fiesta" solo si son electrónica sin dudas (ver isStrongElectronic).
+      const tipo = QH_MUSIC_TYPES.has(e.event_type) ? e.event_type
+        : (e.event_type === "otro" || e.event_type === "fiesta") && isStrongElectronic({ ...e, venue: e.venue }) ? "electronica" : null;
+      if (!tipo) continue;
       if (QH_PROVINCES.size && !QH_PROVINCES.has(e.province)) continue;
       if (isNonMusicalQHEvent(e, nonMusicTitles)) { skippedNonMusical++; continue; }
-      const ev = mapQHEvent(e);
-      if (ev) mapped.push({ d: e.date || "", ev });
+      const ev = mapQHEvent({ ...e, event_type: tipo });
+      // Solo la escena llega a la agenda (sceneOnly lo vuelve a exigir con la familia):
+      // filtrar acá deja el tope para lo que importa.
+      if (!ev || !hasElectronicEvidence(ev)) continue;
+      // De lunes a jueves, lo que empieza antes de las 18 no es la noche (oct 2026:
+      // un congreso cannábico a las 10 pasaba por "house" en la descripción).
+      const dow = new Date(+e.date.slice(0, 4), +e.date.slice(5, 7) - 1, +e.date.slice(8, 10)).getDay();
+      if (dow >= 1 && dow <= 4 && ev.time && ev.time < "18:00") continue;
+      mapped.push({ d: e.date || "", ev });
     }
     if (skippedNonMusical > 0) console.log(`[events] QuéHacemos: ${skippedNonMusical} eventos no musicales descartados`);
     mapped.sort((a, b) => a.d.localeCompare(b.d));
