@@ -9,6 +9,9 @@
 
 const CU = "#C49070", CY = "#6CB8C8", PAPEL = "#EDEAE4", FONDO = "#0E0E0F";
 const R = 176;
+// La geometría y los colores de la ficha: también los usa el ícono de la app
+// (brand/logo/ficha-icono.js), para que sea siempre el mismo dibujo.
+export const FICHA = { H: 228, R, VX: 124, VR: 100, colores: { cobre: CU, celeste: CY, papel: PAPEL, fondo: FONDO } };
 export const IDLE = 0.65;   // altura del vinilo en reposo que deja cobre y celeste al 50 %
 const IL = 3;               // intensidad de Layer elegido, calibrada contra Bass
 export const KL = 0.8;      // energía de movimiento de Layer, calibrada contra Bass
@@ -32,8 +35,7 @@ function dash(i, k0) { const a = []; for (let k = 0; k < 14; k++) { const d = Ma
 // ── La ficha. El agua deja una franja para el nombre, que va encima en HTML como selector.
 // `minU`: tamaño mínimo de las leyendas en unidades del dibujo (11 px reales en el celular).
 export function ficha(st, { en = false, minU = 0 } = {}) {
-  const id = "bf" + uid++, H = 228;
-  const vx = 124, VR = 100;
+  const id = "bf" + uid++, { H, VX: vx, VR } = FICHA;
   const vy = H + 106 - st.rise * (VR + 42), ry = 2 * H - vy;
   const band = [292, 362];   // la franja del nombre y su "Entrar →"
   const cL = CY, cB = CU;
@@ -97,7 +99,9 @@ export function ficha(st, { en = false, minU = 0 } = {}) {
     const arco = (rr) => `M${vx + rr * Math.cos(a0)} ${vy + rr * Math.sin(a0)} A${rr} ${rr} 0 0 1 ${vx + rr * Math.cos(a1)} ${vy + rr * Math.sin(a1)}`;
     // el final de la leyenda ("AGENDA") pasa sobre las velas: debajo de las letras se apagan,
     // con borde difuso, para que el texto se lea limpio (oct 2026)
-    hueco = `<path d="${arco(r + fs * 0.3)}" fill="none" stroke="#000" stroke-width="${fs * 3.2}" stroke-linecap="round" stroke-opacity="${oB}" filter="url(#${id}d)"/>`;
+    // Borde difuso sin filtro (la ficha se redibuja en cada cuadro): tres trazos
+    // superpuestos, del más ancho y tenue al más angosto y pleno.
+    hueco = [[3.6, 0.3], [2.8, 0.45], [2, 1]].map(([w, o]) => `<path d="${arco(r + fs * 0.3)}" fill="none" stroke="#000" stroke-width="${fs * w}" stroke-linecap="round" stroke-opacity="${o * oB}"/>`).join("");
     leyenda += `<path id="${id}r" d="${arco(r)}" fill="none"/>
       <text font-family="${mono}" font-size="${fs}" letter-spacing="${ancho ? 0.5 : 1.8}" fill="${CU}" opacity="${oB}"><textPath href="#${id}r" startOffset="50%" text-anchor="middle">${en ? "MUSIC · FESTIVALS · LISTINGS" : "MÚSICA · FESTIVALES · AGENDA"}</textPath></text>`;
   }
@@ -114,7 +118,6 @@ export function ficha(st, { en = false, minU = 0 } = {}) {
       <clipPath id="${id}a"><rect x="0" y="-10" width="400" height="${H + 10}"/></clipPath><clipPath id="${id}v"><circle cx="${vx}" cy="${ry}" r="${VR}"/></clipPath>
       <mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/><circle cx="${vx}" cy="${ry}" r="${VR}" fill="#000"/><rect x="${xa - 10}" y="${H}" width="${xb - xa + 20}" height="66" fill="#000"/>${bandMask}</mask>
       <mask id="${id}e" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><rect x="0" y="0" width="400" height="${H + 6}" fill="#000"/>${bandMask}</mask>
-      <filter id="${id}d" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${fs * 0.45}"/></filter>
       <mask id="${id}t" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/>${hueco}</mask>
       <mask id="${id}c" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><rect width="400" height="400" fill="#fff"/><circle cx="${vx}" cy="${vy}" r="${VR + 6 + 16 * oB}" fill="#000"/><rect x="36" y="${126 - fs - 4}" width="182" height="${2 * Math.max(15, fs * 1.55) + fs + 10}" fill="#000" fill-opacity="${oL}"/><rect x="${xa - 12}" y="0" width="${xb - xa + 24}" height="${H}" fill="#000"/><rect x="0" y="${H}" width="400" height="200" fill="#000"/></mask></defs>
     <circle cx="200" cy="200" r="${R + 6}" fill="${FONDO}"/>

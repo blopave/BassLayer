@@ -5,6 +5,7 @@
 // puede abrir a mano en cualquier momento (`pedida`).
 import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
+import { useOnline } from "../hooks/useOnline";
 
 // tiempo adentro de un mundo antes de invitar (en el modo de prueba de desarrollo, 3 s)
 const espera = () => (import.meta.env.DEV && window.__blPrueba ? 3000 : 15000);
@@ -13,6 +14,7 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   const { t } = useLocale();
   const [madura, setMadura] = useState(false);
   const [como, setComo] = useState(false);
+  const online = useOnline();
 
   // la señal de interés: un rato en las secciones, en esta visita
   useEffect(() => {
@@ -22,7 +24,7 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   }, [view, madura]);
 
   const sola = app.modo && !app.descartada && app.visitas >= 2 && madura && view === "sections";
-  if (!app.modo || !(sola || pedida) || navigator.onLine === false) return null;
+  if (!app.modo || !(sola || pedida) || !online) return null;
 
   const cerrar = () => { if (!pedida) app.descartar(); setComo(false); onCerrar?.(); };
   const instalar = async () => {
@@ -33,7 +35,7 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   const ios = app.modo === "ios" && (como || pedida);
 
   return (
-    <div className="bl-app-line" role="status">
+    <div className="bl-pill-line bl-app-line" role="status">
       <span className="bl-app-txt">{ios ? t("app.ios") : t("app.line")}</span>
       {!ios && <button className="bl-app-go" onClick={instalar}>{app.modo === "ios" ? t("app.how") : t("app.install")}</button>}
       <button className="bl-app-x" onClick={cerrar} aria-label={t("common.close")}>×</button>

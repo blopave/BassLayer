@@ -5530,33 +5530,29 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-when-chip { display:inline-flex; align-items:center; gap:8px; margin-left:12px; padding:4px 12px; border:1px solid var(--bl-accent-bass); border-radius:999px; background:none; color:var(--bl-accent-bass); cursor:pointer; }
 .bl-when-chip:hover { background:color-mix(in srgb, var(--bl-accent-bass) 12%, transparent); }
 
-/* ══ Bienvenida (oct 2026): una línea sobre la home que se va con el primer gesto ══ */
-.bl-welcome-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9750; transform:translateX(-50%); pointer-events:none;
+/* ══ Las líneas de aviso (oct 2026): bienvenida, invitación a instalar y sin
+   conexión hablan igual — una píldora abajo, encima del contenido. ══ */
+.bl-pill-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9750; transform:translateX(-50%); pointer-events:none;
   padding:12px 24px; border-radius:999px; border:1px solid var(--bl-border); background:color-mix(in srgb, var(--bl-bg) 78%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  font:500 var(--fs-14) var(--font-sans); letter-spacing:0; color:var(--bl-text); white-space:nowrap; animation:bl-welcome-in 1.1s var(--ease-out-expo) .4s both; }
+  font:500 var(--fs-14) var(--font-sans); letter-spacing:0; color:var(--bl-text); white-space:nowrap; animation:bl-welcome-in 1.1s var(--ease-out-expo) both; }
 @keyframes bl-welcome-in { from { opacity:0; transform:translate(-50%, 10px); } }
-@media (max-width:768px) { .bl-welcome-line { white-space:normal; width:calc(100% - 48px); text-align:center; font-size:var(--fs-13); bottom:96px; } }
-@media (prefers-reduced-motion:reduce) { .bl-welcome-line { animation:none; } }
+@media (max-width:768px) { .bl-pill-line { white-space:normal; width:calc(100% - 48px); text-align:center; font-size:var(--fs-13); bottom:96px; } }
+@media (prefers-reduced-motion:reduce) { .bl-pill-line { animation:none; } }
 
-/* ══ App instalable (oct 2026): la invitación es una línea, como la bienvenida, una sola vez ══ */
-.bl-app-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9750; transform:translateX(-50%);
-  display:flex; align-items:center; gap:16px; padding:8px 8px 8px 24px; border-radius:999px; border:1px solid var(--bl-border);
-  background:color-mix(in srgb, var(--bl-bg) 78%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  font:500 var(--fs-14) var(--font-sans); color:var(--bl-text); white-space:nowrap; animation:bl-welcome-in 1.1s var(--ease-out-expo) both; }
+/* Bienvenida: sobre la home, se va con el primer gesto. */
+.bl-welcome-line { animation-delay:.4s; }
+
+/* Invitación a instalar: una sola vez, con el botón y la ✕. */
+.bl-app-line { pointer-events:auto; display:flex; align-items:center; gap:16px; padding:8px 8px 8px 24px; }
 .bl-app-go { background:none; border:0; padding:4px 0; border-bottom:1px solid currentColor; color:var(--bl-text); cursor:pointer;
   font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; }
 .bl-app-x { width:32px; height:32px; border:0; border-radius:50%; background:none; color:var(--bl-text-muted, var(--bl-text)); font-size:var(--fs-22); line-height:1; cursor:pointer; }
 .bl-app-x:hover, .bl-app-go:hover { opacity:.7; }
-@media (max-width:768px) { .bl-app-line { white-space:normal; width:calc(100% - 48px); justify-content:space-between; font-size:var(--fs-13); bottom:96px; } }
-@media (prefers-reduced-motion:reduce) { .bl-app-line { animation:none; } }
-/* Sin conexión: una línea abajo, como la bienvenida y la invitación (arriba tapaba el encabezado) */
-.bl-offline-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9760; transform:translateX(-50%); pointer-events:none;
-  padding:12px 24px; border-radius:999px; border:1px solid var(--bl-border); background:color-mix(in srgb, var(--bl-bg) 82%, transparent);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); font:500 var(--fs-13) var(--font-sans); color:var(--bl-text); white-space:nowrap;
-  animation:bl-welcome-in .6s var(--ease-out-expo) both; }
+@media (max-width:768px) { .bl-app-line { justify-content:space-between; text-align:left; } }
+
+/* Sin conexión (arriba tapaba el encabezado): por encima de la invitación. */
+.bl-offline-line { z-index:9760; font-size:var(--fs-13); background:color-mix(in srgb, var(--bl-bg) 82%, transparent); animation-duration:.6s; }
 .bl-offline-line.is-back { color:var(--bl-text-muted); }
-@media (max-width:768px) { .bl-offline-line { white-space:normal; width:calc(100% - 48px); text-align:center; bottom:96px; } }
-@media (prefers-reduced-motion:reduce) { .bl-offline-line { animation:none; } }
 
 /* ══ Interiores de Bass (oct 2026, Pablo: "B+ · Afiche"): la agenda es una
    pared de flyers — el flyer es el diseño del show — y las noticias, una

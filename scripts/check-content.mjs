@@ -15,10 +15,10 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence, esDeLaEscena, FUENTES_CON_EVIDENCIA } from "../lib/content-rules.js";
 import { namesOtherCity, detectCity } from "../lib/places.js";
 import { readFileSync } from "node:fs";
-import { weekendWindow } from "../lib/finde.js";
+import { weekendWindow, eventEpoch } from "../lib/finde.js";
 import { validarCiclos } from "../lib/ciclos.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
@@ -133,13 +133,12 @@ async function checkEndpoint({ path, minItems, required }) {
     // reggaetón, stand-up ni "festivales" como Burgerpalusa.
     // Y con evidencia propia (oct 2026): la plantilla "Evento de música
     // electrónica" de la fuente no alcanza.
-    const fueraDeEscena = items.filter((it) => (it?.source === "quehacemos" || it?.source === "venti") && (it?.family !== "club" || !hasElectronicEvidence(it)));
+    const fueraDeEscena = items.filter((it) => FUENTES_CON_EVIDENCIA.has(it?.source) && (it?.family !== "club" || !esDeLaEscena(it)));
     if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
     // QuéHacemos más allá de la semana (oct 2026): un tope aplicado antes del
     // filtro de escena dejaba solo lo de los próximos 3 días.
     const enUnaSemana = Date.now() + 7 * 86400000;
-    const MES = { Ene: 0, Feb: 1, Mar: 2, Abr: 3, May: 4, Jun: 5, Jul: 6, Ago: 7, Sep: 8, Oct: 9, Nov: 10, Dic: 11 };
-    const qhLejos = items.filter((it) => { if (it?.source !== "quehacemos" || !(it.month in MES)) return false; const y = new Date().getFullYear(); let d = new Date(y, MES[it.month], +it.day); if (d < Date.now() - 180 * 86400000) d = new Date(y + 1, MES[it.month], +it.day); return d.getTime() > enUnaSemana; }).length;
+    const qhLejos = items.filter((it) => it?.source === "quehacemos" && eventEpoch(it) > enUnaSemana).length;
     if (items.some((it) => it?.source === "quehacemos") && qhLejos < 5) fail(path, "quehacemos", `solo ${qhLejos} eventos de QuéHacemos después de los próximos 7 días: ¿volvió un tope antes del filtro?`);
     const amba = items.filter((it) => it?.area === "amba").length;
     if (amba < 30) fail(path, "amba", `solo ${amba} eventos AMBA: ¿se perdió la clasificación por ciudad?`);

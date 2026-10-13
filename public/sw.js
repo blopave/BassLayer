@@ -1,4 +1,4 @@
-const CACHE_VERSION = "basslayer-v8";   // v8: guarda el shell entero (index + /assets) al instalarse
+const CACHE_VERSION = "basslayer-v9";   // v9: sin red, solo los datos de la lista (no imágenes ni búsquedas)
 const STATIC_ASSETS = ["/", "/offline.html", "/favicon.svg", "/icon-192.png", "/icon-512.png",
   "/fonts/geist-latin-wght-normal.woff2", "/fonts/geist-mono-latin-wght-normal.woff2"];
 
@@ -10,6 +10,8 @@ async function guardarShell(cache) {
   const assets = [...new Set([...(html || "").matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]))];
   await cache.addAll(assets).catch(() => {});
 }
+
+const SIN_RED = new Set(["/api/events", "/api/bass-news", "/api/festivals", "/api/ciclos", "/api/prices", "/api/news", "/api/finance-news", "/api/semana"]);
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE_VERSION).then(guardarShell));
@@ -32,10 +34,11 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // API: red primero; si no hay red, la última respuesta guardada. Solo las públicas
-  // (el server marca lo privado con no-store / private, y eso no se guarda nunca).
+  // API: red primero; si no hay red, la última respuesta guardada. Solo lo que la
+  // app necesita para abrir sin red, y nunca lo privado (no-store / private): ni
+  // fotos de artista (las cubre la caché HTTP) ni consultas sueltas que se acumulan.
   if (url.pathname.startsWith("/api/")) {
-    if (request.method !== "GET") return;
+    if (request.method !== "GET" || !SIN_RED.has(url.pathname)) return;
     e.respondWith(
       fetch(request)
         .then((response) => {

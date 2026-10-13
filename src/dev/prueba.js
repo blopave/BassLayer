@@ -52,8 +52,8 @@ export function aplicarPrueba() {
       const barra = document.createElement("div");
       barra.setAttribute("style", "position:fixed;top:0;left:0;right:0;height:59px;z-index:99999;pointer-events:none;display:flex;justify-content:space-between;align-items:center;padding:8px 34px 0;font:600 15px system-ui;color:#fff");
       barra.innerHTML = '<span>21:41</span><span style="position:absolute;left:50%;top:12px;width:120px;height:34px;transform:translateX(-50%);background:#000;border-radius:999px"></span><span style="letter-spacing:1px">●●● ▮</span>';
-      addEventListener("DOMContentLoaded", () => document.body.append(barra));
       if (document.body) document.body.append(barra);
+      else addEventListener("DOMContentLoaded", () => document.body.append(barra));
     }
   }
 }

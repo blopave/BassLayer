@@ -11,7 +11,7 @@ const avisar = () => oyentes.forEach((fn) => fn());
 
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); aviso = e; avisar(); });
-  window.addEventListener("appinstalled", () => { aviso = null; storage.set("bl-app", "instalada"); avisar(); });
+  window.addEventListener("appinstalled", () => { aviso = null; storage.set("bl-app", "instalada"); if (est) est.instalada = true; avisar(); });
 }
 
 export const esApp = () =>
@@ -33,6 +33,16 @@ function contarVisita() {
 
 if (typeof window !== "undefined") contarVisita();
 
+// Lo que no cambia en la sesión se lee una vez (App se re-renderiza al scrollear):
+// recién en el primer uso, así el modo de prueba de desarrollo llega antes.
+let est = null;
+const estado = () => (est ??= {
+  adentro: esApp(), ios: esIOS(),
+  visitas: Number(storage.get("bl-visitas")) || 0,
+  descartada: storage.get("bl-app-no") === "1",
+  instalada: storage.get("bl-app") === "instalada",
+});
+
 export function useInstalar() {
   const [, refrescar] = useState(0);
   useEffect(() => {
@@ -41,20 +51,19 @@ export function useInstalar() {
     return () => oyentes.delete(fn);
   }, []);
 
-  const adentro = esApp();
-  const modo = adentro || storage.get("bl-app") === "instalada" ? null : aviso ? "aviso" : esIOS() ? "ios" : null;
+  const e0 = estado();
+  const modo = e0.adentro || e0.instalada ? null : aviso ? "aviso" : e0.ios ? "ios" : null;
   return {
     modo,                                         // "aviso" | "ios" | null (no se puede o ya está)
-    adentro,
-    visitas: Number(storage.get("bl-visitas")) || 0,
-    descartada: storage.get("bl-app-no") === "1",
-    descartar: () => { storage.set("bl-app-no", "1"); refrescar((n) => n + 1); },
+    visitas: e0.visitas,
+    descartada: e0.descartada,
+    descartar: () => { storage.set("bl-app-no", "1"); e0.descartada = true; refrescar((n) => n + 1); },
     instalar: async () => {
       if (!aviso) return false;
       const e = aviso;
       e.prompt();
       const { outcome } = await e.userChoice.catch(() => ({ outcome: "dismissed" }));
-      if (outcome === "accepted") { aviso = null; storage.set("bl-app", "instalada"); }
+      if (outcome === "accepted") { aviso = null; storage.set("bl-app", "instalada"); e0.instalada = true; }
       refrescar((n) => n + 1);
       return outcome === "accepted";
     },

@@ -1078,13 +1078,15 @@ export default function App() {
         />
       )}
 
-      {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
-      {/* Solo sobre el home (auditoría S3): en un interior al que se llega por un link, tapaba contenido. */}
+      {/* App instalable: la invitación (una línea, una vez) y el aviso sin conexión */}
       <InstalarApp app={app} view={view} pedida={appPedida} onCerrar={() => setAppPedida(false)} />
       <SinConexion />
 
+      {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
+      {/* Solo sobre el home (auditoría S3): en un interior al que se llega por un link, tapaba contenido. */}
+
       {showOnboarding && view === "home" && (
-        <div className="bl-welcome-line" role="status">
+        <div className="bl-pill-line bl-welcome-line" role="status">
           <span>{t("welcome.line")}</span>
         </div>
       )}

@@ -50,6 +50,32 @@ const FAMILY_FILTER_ITEMS = ["All", "club", "festival"];   // solo escena electr
 // Agenda con el contenido primero (auditoría B4, oct 2026): De gira y El finde ya no van
 // antes de la lista sino adentro, después del primer día — el primer evento entra en la
 // primera pantalla. Si hay un solo día, al final. Antes de un cambio de mes, antes del divisor.
+// Ciclos fijos en la lista agrupada, en orden de fecha: el día que ya tiene
+// encabezado los suma después de sus eventos; el que no, lo crea (antes del
+// divisor de mes si corresponde).
+function mezclarCiclos(groups, extras, header) {
+  const fecha = (key) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m, d); };
+  const out = [];
+  let k = 0;
+  const antesDe = (d) => { while (k < extras.length && extras[k].d < d) { out.push(header(extras[k].d), ...extras[k].filas); k++; } };
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    if (g.type === "month") { const prox = groups.slice(i + 1).find((x) => x.type === "header"); if (prox) antesDe(fecha(prox.key)); }
+    if (g.type === "header") {
+      antesDe(fecha(g.key));
+      out.push(g);
+      if (extras[k]?.key === g.key) {
+        while (groups[i + 1]?.type === "event") out.push(groups[++i]);
+        out.push(...extras[k++].filas);
+      }
+      continue;
+    }
+    out.push(g);
+  }
+  antesDe(new Date(8.64e15));   // los que quedan, al final
+  return out;
+}
+
 function intercalar(grouped, bloque, nodos) {
   let vistos = 0;
   let i = grouped.findIndex((it) => it.type === "header" && ++vistos === 2);
@@ -414,37 +440,28 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       groups.push({ type: "event", data: ev, lead, date });
     }
     // Ciclos fijos de la semana (oct 2026, Pablo eligió "en cada día"): cada uno
-    // en su martes o jueves de las próximas 3 semanas, como fila punteada ("todos
+    // en su día de las próximas 3 semanas, como fila punteada ("todos
     // los martes") — sin inventar una fecha —, salvo que ese día ya esté su fecha
     // real. Son de CABA y de la escena: no con búsqueda, Mi agenda, otra ciudad o
     // solo festivales.
     const conCiclos = ciclos.length && !search && !savedOnly && filter !== "festival" && (cityFilter === "Todas" || cityFilter === "CABA");
     if (conCiclos) {
-      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-      const keyOf = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const hoy = todayInBA();
       // "Hoy" mira solo hoy; "Este finde", de viernes a domingo; si no, 3 semanas.
       const dias = when === "hoy" ? 1 : when === "finde" ? 7 - ((hoy.getDay() + 6) % 7) : 21;
+      const extras = [];
       for (let i = 0; i < dias; i++) {
         const d = new Date(hoy); d.setDate(hoy.getDate() + i);
         if (when === "finde" && ![5, 6, 0].includes(d.getDay())) continue;
-        const delDia = ciclos.filter((c) => c.dia === d.getDay());
-        if (!delDia.length) continue;
-        const key = keyOf(d);
-        const yaEsta = (c) => groups.some((g) => g.type === "event" && g.date && keyOf(g.date) === key && g.data.name.toLowerCase().includes(c.nombre.toLowerCase().split(" ")[0]));
-        const filas = delDia.filter((c) => !yaEsta(c)).map((c) => ({ type: "ciclo", c, key: `${key}-${c.id}` }));
-        if (!filas.length) continue;
-        const h = groups.findIndex((g) => g.type === "header" && g.key === key);
-        if (h >= 0) {
-          let j = h + 1; while (j < groups.length && groups[j].type === "event") j++;
-          groups.splice(j, 0, ...filas);
-        } else {
-          const at = groups.findIndex((g) => g.type === "header" && (() => { const [y, m, dd] = g.key.split("-").map(Number); return new Date(y, m, dd) > d; })());
-          const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-          const nuevo = [{ type: "header", label: getDayLabel(d, t, dayNames), key, day: String(d.getDate()).padStart(2, "0"), month: MES[d.getMonth()] }, ...filas];
-          let pos = at < 0 ? groups.length : at;
-          if (pos > 0 && groups[pos - 1].type === "month") pos--;
-          groups.splice(pos, 0, ...nuevo);
-        }
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        // El server dice qué días ya tienen la fecha real publicada (c.publicadas).
+        const filas = ciclos.filter((c) => c.dia === d.getDay() && !(c.publicadas || []).includes(iso)).map((c) => ({ type: "ciclo", c, key: `${key}-${c.id}` }));
+        if (filas.length) extras.push({ d, key, filas });
+      }
+      if (extras.length) {
+        const header = (d) => ({ type: "header", label: getDayLabel(d, t, dayNames), key: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, day: String(d.getDate()).padStart(2, "0"), month: MONTHS_ABBR.es[d.getMonth()] });
+        return mezclarCiclos(groups, extras, header);
       }
     }
     return groups;

@@ -5,9 +5,12 @@
 // redibujada para cada tamaño: lo que se afina es el grosor y la cantidad, nunca la composición.
 // Escalera: completo (≥ 120 px) · medio (48–96 px) · mini (≤ 32 px).
 
-export const C = { fondo: "#0E0E0F", afuera: "#000000", cobre: "#C49070", celeste: "#6CB8C8", papel: "#EDEAE4", cuerpo: "#1B1917" };
+import { FICHA } from "../../src/brand/ficha.js";
 
-const H = 228, R = 176, VX = 124, VR = 100;
+// Colores y geometría de la ficha del home (src/brand/ficha.js): el ícono es el mismo dibujo.
+export const C = { ...FICHA.colores, afuera: "#000000", cuerpo: "#1B1917" };
+
+const { H, R, VX, VR } = FICHA;
 const f = (n) => +n.toFixed(1);
 let uid = 0;
 

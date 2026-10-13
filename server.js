@@ -18,8 +18,8 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence, isStrongElectronic } from "./lib/content-rules.js";
-import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, isStrongElectronic, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe } from "./lib/content-rules.js";
+import { detectCity, isAmbaCity, namesOtherCity, enCABA } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
 import { ciclosVigentes } from "./lib/ciclos.js";
@@ -85,10 +85,8 @@ app.use(cors({
     : ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
 }));
 
-// JSON de 10 kB para todo, salvo la carga de la cartelera del Movistar Arena
-// (GitHub Actions, ~25 kB): esa ruta trae su propio parser.
-const jsonSmall = express.json({ limit: "10kb" });
-app.use(jsonSmall);
+// JSON de 10 kB para todo.
+app.use(express.json({ limit: "10kb" }));
 
 // Rate limiter — sliding window, per IP, bounded map size
 const RATE_LIMIT_WINDOW = 60_000;
@@ -325,7 +323,7 @@ function inferBaMonth(weekday, day, now = new Date()) {
 // De QuéHacemos solo la escena: lo que la fuente clasifica como club Y que
 // lo dice con sus palabras (ver hasElectronicEvidence).
 function sceneOnly(events) {
-  return events.filter((ev) => ev.source !== "quehacemos" || (ev.family === "club" && hasElectronicEvidence(ev)));
+  return events.filter((ev) => !FUENTES_CON_EVIDENCIA.has(ev.source) || (ev.family === "club" && esDeLaEscena(ev)));
 }
 
 function loadSnapshots() {
@@ -772,7 +770,7 @@ const NEWS_TITLE_BRANDS = [
   "CriptoTendencia", "Cripto Tendencia",
 ];
 const NEWS_TITLE_BRAND_RE = NEWS_TITLE_BRANDS
-  .map((b) => b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  .map(escRe)
   .join("|");
 const NEWS_TITLE_PREFIX = new RegExp(`^(?:${NEWS_TITLE_BRAND_RE})\\s*[:\\-–—|]\\s*`, "i");
 const NEWS_TITLE_SUFFIX = new RegExp(`\\s*[\\-–—|]\\s*(?:${NEWS_TITLE_BRAND_RE})\\s*$`, "i");
@@ -2248,18 +2246,14 @@ async function fetchQueHacemos() {
     for (const e of byId.values()) {
       // "otro" y "fiesta" solo si son electrónica sin dudas (ver isStrongElectronic).
       const tipo = QH_MUSIC_TYPES.has(e.event_type) ? e.event_type
-        : (e.event_type === "otro" || e.event_type === "fiesta") && isStrongElectronic({ ...e, venue: e.venue }) ? "electronica" : null;
+        : (e.event_type === "otro" || e.event_type === "fiesta") && isStrongElectronic(e) ? "electronica" : null;
       if (!tipo) continue;
       if (QH_PROVINCES.size && !QH_PROVINCES.has(e.province)) continue;
       if (isNonMusicalQHEvent(e, nonMusicTitles)) { skippedNonMusical++; continue; }
       const ev = mapQHEvent({ ...e, event_type: tipo });
       // Solo la escena llega a la agenda (sceneOnly lo vuelve a exigir con la familia):
       // filtrar acá deja el tope para lo que importa.
-      if (!ev || !hasElectronicEvidence(ev)) continue;
-      // De lunes a jueves, lo que empieza antes de las 18 no es la noche (oct 2026:
-      // un congreso cannábico a las 10 pasaba por "house" en la descripción).
-      const dow = new Date(+e.date.slice(0, 4), +e.date.slice(5, 7) - 1, +e.date.slice(8, 10)).getDay();
-      if (dow >= 1 && dow <= 4 && ev.time && ev.time < "18:00") continue;
+      if (!ev || !esDeLaEscena(ev)) continue;
       mapped.push({ d: e.date || "", ev });
     }
     if (skippedNonMusical > 0) console.log(`[events] QuéHacemos: ${skippedNonMusical} eventos no musicales descartados`);
@@ -2280,14 +2274,14 @@ async function fetchQueHacemos() {
 // las reglas nuevas se aplican sin volver a pedir).
 const VENTI_API = "https://venti.com.ar/api/event/search?searchQuery=";
 const VENTI_TTL = 6 * 60 * 60_000, VENTI_DELAY = 10_500, VENTI_MAX_PAGES = 20;
-const VENTI_FILE = join(SNAPSHOT_DIR, "venti.json");
-let venti = { ts: 0, raw: [] }, ventiLoading = false;
-try { if (existsSync(VENTI_FILE)) venti = JSON.parse(readFileSync(VENTI_FILE, "utf8")); } catch { venti = { ts: 0, raw: [] }; }
+let venti = { ts: 0, raw: [] }, ventiLoading = false, ventiMapeado = { ts: -1, list: [] };
+// El último lote, con el mismo formato que los snapshots ({ ts, data }).
+try {
+  const f = join(SNAPSHOT_DIR, "venti.json");
+  // Sin eventos (o un archivo de otro formato) cuenta como vacío: se vuelve a leer.
+  if (existsSync(f)) { const { ts, data } = JSON.parse(readFileSync(f, "utf8")); venti = Array.isArray(data) && data.length ? { ts, raw: data } : { ts: 0, raw: [] }; }
+} catch (e) { console.warn("[cache] snapshot venti:", e.message); }
 
-// Venti da la calle sin la ciudad ("Cnel. Niceto Vega 5507"): si el texto no
-// alcanza, las coordenadas del venue dentro del rectángulo de CABA dicen CABA
-// (el GBA viene con la localidad: ", San Miguel", ", City Bell").
-const enCABA = (lat, lon) => lat > -34.706 && lat < -34.526 && lon > -58.532 && lon < -58.334;
 const BA_PARTES = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 function mapVenti(e) {
   // Solo fiestas: los "conciertos" de Venti son casi todos bandas.
@@ -2304,10 +2298,7 @@ function mapVenti(e) {
     description: String(e.description || "").replace(/\s+/g, " ").trim().slice(0, 600),
   };
   // Las mismas reglas de escena que QuéHacemos (lib/content-rules.js).
-  if (!hasElectronicEvidence(ev)) return null;
-  const dow = new Date(+p.year, +p.month - 1, +p.day).getDay();
-  if (dow >= 1 && dow <= 4 && ev.time < "18:00") return null;
-  return ev;
+  return esDeLaEscena(ev) ? ev : null;
 }
 
 async function refreshVenti() {
@@ -2319,13 +2310,14 @@ async function refreshVenti() {
       const r = await fetchSafe(`${VENTI_API}&page=${page}`, { headers: { "User-Agent": "BassLayer/1.0 (+https://basslayer.io)", Accept: "application/json" } }, 15000);
       if (!r.ok) { console.error(`[events] Venti ${r.status}`); break; }
       const d = JSON.parse(await safeText(r, 3 * 1024 * 1024));
-      for (const e of d.events || []) raw.push({ name: e.name, startDate: e.startDate, category: e.category, description: e.description, urlName: e.urlName, bannerImg: e.bannerImg, promoImg: e.promoImg, placeName: e.placeName, venue: e.venue && { placeName: e.venue.placeName, readableAddress: e.venue.readableAddress, latitude: e.venue.latitude, longitude: e.venue.longitude, city: e.venue.city && { name: e.venue.city.name } } });
+      // Solo lo que puede entrar (fiestas en Buenos Aires), con la descripción acotada.
+      for (const e of d.events || []) if (e.category === "party" && e.venue?.city?.name === "Buenos Aires") raw.push({ name: e.name, startDate: e.startDate, category: e.category, description: String(e.description || "").slice(0, 1000), urlName: e.urlName, bannerImg: e.bannerImg, promoImg: e.promoImg, placeName: e.placeName, venue: e.venue && { placeName: e.venue.placeName, readableAddress: e.venue.readableAddress, latitude: e.venue.latitude, longitude: e.venue.longitude, city: e.venue.city && { name: e.venue.city.name } } });
       if (page >= (d.totalPages || 1)) break;
       await new Promise((res) => setTimeout(res, VENTI_DELAY));
     }
     if (raw.length) {
       venti = { ts: Date.now(), raw };
-      try { mkdirSync(SNAPSHOT_DIR, { recursive: true }); writeFileSync(VENTI_FILE, JSON.stringify(venti)); } catch {}
+      saveSnapshot("venti", raw);
       cache.events.ts = 0;   // la próxima consulta rearma la agenda con lo nuevo
       console.log(`[events] Venti: ${raw.length} leídos`);
     }
@@ -2339,7 +2331,9 @@ async function refreshVenti() {
 // Lo que haya ya (sin esperar); si está viejo, se renueva en segundo plano.
 function ventiEvents() {
   if (Date.now() - (venti.ts || 0) > VENTI_TTL) refreshVenti();
-  return (venti.raw || []).map(mapVenti).filter(Boolean);
+  // Se mapea una vez por lote, no en cada build.
+  if (ventiMapeado.ts !== venti.ts) ventiMapeado = { ts: venti.ts, list: (venti.raw || []).map(mapVenti).filter(Boolean) };
+  return ventiMapeado.list;
 }
 
 // ── Strategy 1: Buenos Aliens HTML scraper ──
@@ -2739,9 +2733,12 @@ function deduplicateEvents(events) {
   const normArtist = (a) => (a || "").toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .trim();
-  const artistSet = (ev) => new Set(
-    (ev.artists || []).map(normArtist).filter(a => a && !TRIVIAL_ARTISTS.has(a))
-  );
+  // Una vez por evento (los pases 2 y 2b comparan pares del mismo día).
+  const sets = new Map();
+  const artistSet = (ev) => {
+    if (!sets.has(ev)) sets.set(ev, new Set((ev.artists || []).map(normArtist).filter(a => a && !TRIVIAL_ARTISTS.has(a))));
+    return sets.get(ev);
+  };
   // Score: prefer entries with a clean venue/name (BA-style local naming)
   // over RA's noisy placeholders ("TBA - X Club, Zone", "X & MORE ARTISTS").
   // Image and url are still rewarded but only as tie-breakers — they're
@@ -2795,8 +2792,9 @@ function deduplicateEvents(events) {
   // ciudad y HORA EXACTA, uno sin line-up y un artista del line-up del otro
   // (de 4 letras o más, palabra entera) en su título: es la misma fiesta.
   const enTitulo = (nombre, artistas) => {
-    const n = ` ${normArtist(nombre).replace(/[^a-z0-9]+/g, " ")} `;
-    return [...artistas].some((a) => a.length >= 4 && n.includes(` ${a.replace(/[^a-z0-9]+/g, " ").trim()} `));
+    const n = ` ${mbNorm(nombre)} `;
+    for (const a of artistas) if (a.length >= 4 && n.includes(` ${mbNorm(a)} `)) return true;
+    return false;
   };
   const unidos2b = [];
   for (const evs of byDay.values()) {
@@ -3323,17 +3321,20 @@ async function buildEvents() {
 
 // ─────────────────────────────────────────────
 //  GET /api/ciclos — los ciclos fijos de la semana (data/recurrentes.json,
-//  lib/ciclos.js): "todos los martes" + la próxima fecha real si ya está
-//  publicada. Sin fechas inventadas.
+//  lib/ciclos.js): "todos los martes" + los días en que la fecha real ya
+//  está publicada. Sin fechas inventadas.
 // ─────────────────────────────────────────────
-const RECURRENTES_FILE = join(__dirname, "data", "recurrentes.json");
+// El archivo es curado y llega con el deploy: se lee una vez. El resultado se
+// rearma solo cuando cambia la agenda.
+let recurrentes = { ciclos: [] };
+try { recurrentes = JSON.parse(readFileSync(join(__dirname, "data", "recurrentes.json"), "utf8")); }
+catch (e) { console.error("[ciclos] data/recurrentes.json:", e.message); }
+let ciclosMemo = { ts: -1, data: [] };
 app.get("/api/ciclos", async (req, res) => {
-  let data;
-  try { data = JSON.parse(readFileSync(RECURRENTES_FILE, "utf8")); }
-  catch { return res.status(500).json({ error: "Ciclos unavailable" }); }
   let events = [];
-  try { events = notPast(await swr("events", buildEvents)).filter((e) => e.area === "amba"); } catch {}
-  res.json(ciclosVigentes(data, events));
+  try { events = await swr("events", buildEvents); } catch {}
+  if (ciclosMemo.ts !== cache.events.ts) ciclosMemo = { ts: cache.events.ts, data: ciclosVigentes(recurrentes, notPast(events).filter((e) => e.area === "amba")) };
+  res.json(ciclosMemo.data);
 });
 
 app.get("/api/events", async (req, res) => {
@@ -6965,6 +6966,9 @@ setTimeout(() => {
 }, 2500);
 
 loadSnapshots();
+// Venti se lee en segundo plano; si la última lectura está vieja, arranca ya
+// (con la agenda guardada, la próxima build puede tardar hasta una hora).
+if (Date.now() - (venti.ts || 0) > VENTI_TTL) refreshVenti();
 const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────────┐
   │  BassLayer API v${PKG_VERSION}${" ".repeat(Math.max(0, 26 - PKG_VERSION.length))}│
