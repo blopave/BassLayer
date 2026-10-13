@@ -8,6 +8,7 @@ import { OnTour } from "./OnTour";
 import { SectionHead } from "./SectionHead";
 import { BassTrack } from "./BassTrack";
 import { Finde, SemanaLinea } from "./Finde";
+import { useCiclos, CicloFila } from "./Ciclos";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api, shared } from "../utils/api";
@@ -385,6 +386,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
 
   // Group events by day, with month dividers when month changes
+  const ciclos = useCiclos();
   const grouped = useMemo(() => {
     const groups = [];
     let currentKey = null;
@@ -411,8 +413,42 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       }
       groups.push({ type: "event", data: ev, lead, date });
     }
+    // Ciclos fijos de la semana (oct 2026, Pablo eligió "en cada día"): cada uno
+    // en su martes o jueves de las próximas 3 semanas, como fila punteada ("todos
+    // los martes") — sin inventar una fecha —, salvo que ese día ya esté su fecha
+    // real. Son de CABA y de la escena: no con búsqueda, Mi agenda, otra ciudad o
+    // solo festivales.
+    const conCiclos = ciclos.length && !search && !savedOnly && filter !== "festival" && (cityFilter === "Todas" || cityFilter === "CABA");
+    if (conCiclos) {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const keyOf = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      // "Hoy" mira solo hoy; "Este finde", de viernes a domingo; si no, 3 semanas.
+      const dias = when === "hoy" ? 1 : when === "finde" ? 7 - ((hoy.getDay() + 6) % 7) : 21;
+      for (let i = 0; i < dias; i++) {
+        const d = new Date(hoy); d.setDate(hoy.getDate() + i);
+        if (when === "finde" && ![5, 6, 0].includes(d.getDay())) continue;
+        const delDia = ciclos.filter((c) => c.dia === d.getDay());
+        if (!delDia.length) continue;
+        const key = keyOf(d);
+        const yaEsta = (c) => groups.some((g) => g.type === "event" && g.date && keyOf(g.date) === key && g.data.name.toLowerCase().includes(c.nombre.toLowerCase().split(" ")[0]));
+        const filas = delDia.filter((c) => !yaEsta(c)).map((c) => ({ type: "ciclo", c, key: `${key}-${c.id}` }));
+        if (!filas.length) continue;
+        const h = groups.findIndex((g) => g.type === "header" && g.key === key);
+        if (h >= 0) {
+          let j = h + 1; while (j < groups.length && groups[j].type === "event") j++;
+          groups.splice(j, 0, ...filas);
+        } else {
+          const at = groups.findIndex((g) => g.type === "header" && (() => { const [y, m, dd] = g.key.split("-").map(Number); return new Date(y, m, dd) > d; })());
+          const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+          const nuevo = [{ type: "header", label: getDayLabel(d, t, dayNames), key, day: String(d.getDate()).padStart(2, "0"), month: MES[d.getMonth()] }, ...filas];
+          let pos = at < 0 ? groups.length : at;
+          if (pos > 0 && groups[pos - 1].type === "month") pos--;
+          groups.splice(pos, 0, ...nuevo);
+        }
+      }
+    }
     return groups;
-  }, [filtered, t, dayNames]);
+  }, [filtered, t, dayNames, ciclos, search, savedOnly, filter, cityFilter, when]);
 
 
   // Riel de días: el calendario entero de hoy a la última fiesta
@@ -422,7 +458,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     let last = null;
     for (const g of grouped) {
       if (g.type === "header") { counts.set(g.key, 0); labels.set(g.key, g.label); last = g.key; }
-      else if (g.type === "event" && last) counts.set(last, counts.get(last) + 1);
+      else if ((g.type === "event" || g.type === "ciclo") && last) counts.set(last, counts.get(last) + 1);
     }
     if (!last) return [];
     const [ly, lm, ld] = last.split("-").map(Number), end = new Date(ly, lm, ld);
@@ -731,7 +767,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       )}
       {loading ? <EventSkeleton />
         : error ? <div className="bl-ev-list"><div className="bl-error" onClick={onRetry} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onRetry())}>{error}</div></div>
-        : filtered.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
+        // con un ciclo en el día (Hoy, un martes sin fechas) la lista no está vacía
+        : grouped.length === 0 ? <div className="bl-ev-list"><div className="bl-empty">{emptyMessage()}</div></div>
         : <div className="bl-ev-list bl-ev-wall" role="region" aria-label={t("section.events")} ref={listRef}>
             {intercalar(grouped, (
               <div className="bl-agenda-intermedio" key="intermedio">
@@ -759,6 +796,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   </h2>
                 );
               }
+              if (item.type === "ciclo") return <div className="bl-ciclo-en-dia" key={item.key}><CicloFila c={item.c} /></div>;
               const ev = item.data;
               const idx = itemIdx++;
               const isLead = item.lead;

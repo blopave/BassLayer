@@ -22,6 +22,7 @@ import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, prot
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
+import { ciclosVigentes } from "./lib/ciclos.js";
 import { armarSemana } from "./lib/semana.js";
 import { marked } from "marked";
 import matter from "gray-matter";
@@ -175,6 +176,7 @@ const API_PUBLIC_TTL = {
   "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
   "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000, "/api/meta": 24 * 60 * 60_000,
   "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
+  "/api/ciclos": 30 * 60_000,
 };
 app.use("/api", (req, res, next) => {
   if (req.method !== "GET") return next();
@@ -3239,6 +3241,21 @@ async function buildEvents() {
   registerImages(events);
   return events;
 }
+
+// ─────────────────────────────────────────────
+//  GET /api/ciclos — los ciclos fijos de la semana (data/recurrentes.json,
+//  lib/ciclos.js): "todos los martes" + la próxima fecha real si ya está
+//  publicada. Sin fechas inventadas.
+// ─────────────────────────────────────────────
+const RECURRENTES_FILE = join(__dirname, "data", "recurrentes.json");
+app.get("/api/ciclos", async (req, res) => {
+  let data;
+  try { data = JSON.parse(readFileSync(RECURRENTES_FILE, "utf8")); }
+  catch { return res.status(500).json({ error: "Ciclos unavailable" }); }
+  let events = [];
+  try { events = notPast(await swr("events", buildEvents)).filter((e) => e.area === "amba"); } catch {}
+  res.json(ciclosVigentes(data, events));
+});
 
 app.get("/api/events", async (req, res) => {
   const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;

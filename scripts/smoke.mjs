@@ -616,6 +616,27 @@ async function run(vp) {
       await page.locator(".bl-bass-section-btn", { hasText: /Agenda|Listings/ }).first().click();
     }
 
+    // 5e2. Ciclos fijos de la semana (oct 2026, Pablo: "clásicos de la noche
+    // durante la semana"): si hay ciclos curados, la Agenda los muestra en su
+    // día como fila punteada, sin fecha inventada, y nunca dos veces el mismo día.
+    {
+      const ciclos = await page.request.get(BASE + "/api/ciclos").then((r) => r.json()).catch(() => []);
+      if (Array.isArray(ciclos) && ciclos.length) {
+        await page.locator(".bl-ciclo-en-dia").first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+        const filas = await page.evaluate(() => [...document.querySelectorAll(".bl-ciclo-en-dia")].map((f) => {
+          let h = f.previousElementSibling; while (h && !h.matches(".bl-day-header")) h = h.previousElementSibling;
+          return { dia: h?.dataset.day || "", txt: f.textContent, borde: getComputedStyle(f.querySelector(".bl-ciclo")).borderTopStyle };
+        }));
+        if (!filas.length) fail(vp.name, "ciclos", "hay ciclos fijos y la Agenda no muestra ninguno en su día");
+        else {
+          if (!filas.every((f) => /Todos los|Casi todos|Every|Most/.test(f.txt))) fail(vp.name, "ciclos", "una fila de ciclo no dice \"todos los…\" (parece una fecha confirmada)");
+          if (!filas.every((f) => f.borde === "dashed")) fail(vp.name, "ciclos", "la fila de ciclo no va punteada: se confunde con un evento");
+          const dobles = filas.filter((f, i) => filas.findIndex((g) => g.dia === f.dia && g.txt === f.txt) !== i);
+          if (dobles.length) fail(vp.name, "ciclos", "un ciclo aparece dos veces el mismo día");
+        }
+      }
+    }
+
     // 5f. El finde en tu calendario (oct 2026): si el calendario suscribible
     // tiene elegidos, la Agenda los muestra con el botón para suscribirse.
     {

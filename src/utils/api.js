@@ -68,6 +68,7 @@ export const api = {
   financeNews: () => fetch("/api/finance-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   markets:   () => fetch("/api/markets").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   events:    () => fetch("/api/events").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+  ciclos:    () => fetch("/api/ciclos").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   semana:    () => fetch("/api/semana").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   bassNews:  () => fetch("/api/bass-news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   festivals: (region) => fetch(`/api/festivals${region && region !== "All" ? `?region=${encodeURIComponent(region)}` : ""}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),

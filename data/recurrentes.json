@@ -1,0 +1,102 @@
+{
+  "_doc": "Ciclos fijos de la semana (oct 2026, Pablo: 'hay eventos que son clásicos de la noche durante la semana y que no pueden faltar'). Solo ciclos de electrónica con 2+ fuentes independientes y evidencia reciente. No se inventan fechas: el ciclo se muestra como 'todos los martes'; la fecha concreta aparece cuando la publica una fuente. 'verificado' se renueva al re-chequear: con más de 60 días el server lo oculta y check:content avisa desde los 45. dia: 0 domingo … 6 sábado. patron: reconoce las fechas reales del ciclo en la agenda (nombre o venue).",
+  "ciclos": [
+    {
+      "id": "minelek-sessions",
+      "nombre": "Minelek Sessions",
+      "dia": 2,
+      "frecuencia": "semanal",
+      "hora": "22:00",
+      "venue": "La Cigale",
+      "direccion": "25 de Mayo 597, Microcentro",
+      "estilo": "Techno y house",
+      "desde": "2011",
+      "link": "https://lacigalebar.wixsite.com/microcentro/ciclos",
+      "patron": "minelek",
+      "verificado": "2026-10-13",
+      "fuentes": [
+        {
+          "nombre": "La Cigale",
+          "url": "https://lacigalebar.wixsite.com/microcentro/ciclos",
+          "dice": "Todos los martes desde las 22 hs",
+          "visto": "2026-10-13"
+        },
+        {
+          "nombre": "Resident Advisor",
+          "url": "https://ra.co/promoters/115336",
+          "dice": "Última fecha: martes 06/10/2026",
+          "visto": "2026-10-13"
+        },
+        {
+          "nombre": "Passline",
+          "url": "https://www.passline.com/eventos/minelek-x-707-day",
+          "dice": "Martes 07/07/2026",
+          "visto": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "deep-session",
+      "nombre": "Deep Session",
+      "dia": 4,
+      "frecuencia": "casi semanal",
+      "hora": "23:30",
+      "venue": "Niceto Bar",
+      "direccion": "Niceto Vega 5507, Palermo",
+      "estilo": "Tech house",
+      "desde": "2026",
+      "link": "https://nicetoclub.com/agenda/",
+      "patron": "deep sessions?",
+      "verificado": "2026-10-13",
+      "fuentes": [
+        {
+          "nombre": "Niceto",
+          "url": "https://nicetoclub.com/agenda/",
+          "dice": "DEEP SESSION #20 en Niceto Bar, jueves 15/10/2026 23:30",
+          "visto": "2026-10-13"
+        },
+        {
+          "nombre": "Venti",
+          "url": "https://venti.com.ar/evento/deep-sessions-edicion-2-en-niceto-bar",
+          "dice": "Edición 2, jueves 09/04/2026",
+          "visto": "2026-10-13"
+        }
+      ]
+    },
+    {
+      "id": "not-welcome",
+      "nombre": "Not Welcome",
+      "dia": 4,
+      "frecuencia": "semanal",
+      "hora": "23:00",
+      "venue": "Tokyo Club",
+      "direccion": "Av. Costanera Rafael Obligado 6666, Costanera",
+      "estilo": "Tech house y melodic",
+      "desde": "2025",
+      "link": "https://morfar.ar/tokyo-club-el-nuevo-epicentro-de-la-escena-nocturna-internacional-en-buenos-aires/",
+      "patron": "not welcome",
+      "nota": "También hay ediciones de sábado ('Not Welcome Saturdays'); el ciclo de semana sigue los jueves (jueves 15/10/2026 en Venti).",
+      "verificado": "2026-10-13",
+      "fuentes": [
+        {
+          "nombre": "Venti",
+          "url": "https://venti.com.ar/evento/not-welcome-presents-martyno-dowsha",
+          "dice": "NOT WELCOME PRESENTS MARTYNO DOWSHA, jueves 15/10/2026 23:00, Tokyo Club",
+          "visto": "2026-10-13"
+        },
+        {
+          "nombre": "Morfar",
+          "url": "https://morfar.ar/tokyo-club-el-nuevo-epicentro-de-la-escena-nocturna-internacional-en-buenos-aires/",
+          "dice": "Not Welcome se celebra los jueves (11/05/2026)",
+          "visto": "2026-10-13"
+        },
+        {
+          "nombre": "Gastronomique",
+          "url": "https://www.gastronomique.com.ar/post/not-welcome-x-belvedere-en-tokyo-club-dos-noches-de-m%C3%BAsica-electr%C3%B3nica-cocteler%C3%ADa-y-una-in%C3%A9dita-ca",
+          "dice": "Edición del jueves 30/07/2026",
+          "visto": "2026-10-13"
+        }
+      ]
+    }
+  ]
+}

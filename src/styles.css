@@ -5677,6 +5677,15 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 
 /* El finde en tu calendario (oct 2026): una línea entre la apertura y el
    primer día — los elegidos en miniatura, una frase y un botón. */
+/* Ciclos fijos de la semana (oct 2026): una fila punteada en su día — "todos los
+   martes" —, distinta de un evento confirmado (que es un afiche). */
+.bl-ciclo { display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:16px; padding:12px 16px; border:1px dashed var(--bl-border); border-radius:var(--r-8); color:var(--bl-text); text-decoration:none; }
+.bl-ciclo:hover .bl-ciclo-name { color:var(--bl-accent-bass); }
+.bl-ciclo:focus-visible { outline:2px solid var(--bl-accent-bass); outline-offset:2px; }
+.bl-ciclo-body { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.bl-ciclo-name { font:600 var(--fs-16) var(--font-sans); transition:color var(--duration-fast); }
+.bl-ciclo-meta { font:400 var(--fs-13) var(--font-sans); color:var(--bl-text-sec); }
+.bl-ciclo-cuando { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); white-space:nowrap; }
 .bl-finde { margin:8px 32px 0; }
 .bl-finde .bl-day-header { padding-top:16px; }
 .bl-finde-row { display:flex; align-items:center; gap:20px; padding:4px 0 16px; border-bottom:1px solid var(--bl-border-sub); }

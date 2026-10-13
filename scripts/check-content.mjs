@@ -19,6 +19,7 @@ import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, n
 import { namesOtherCity, detectCity } from "../lib/places.js";
 import { readFileSync } from "node:fs";
 import { weekendWindow } from "../lib/finde.js";
+import { validarCiclos } from "../lib/ciclos.js";
 
 const BASE = process.argv.find((a) => a.startsWith("http")) || "http://localhost:3001";
 const JSON_OUT = process.argv.includes("--json");
@@ -42,6 +43,8 @@ const ENDPOINTS = [
   // Predicciones y Finanzas por tema (sept 2026).
   { path: "/api/prediction-markets", minItems: 5, required: ["title", "group", "url"] },
   { path: "/api/finance-news",  minItems: 10, required: ["title", "tag", "url"] },
+  // Ciclos fijos de la semana (oct 2026): curados en data/recurrentes.json.
+  { path: "/api/ciclos",        minItems: 1,  required: ["nombre", "dia", "venue", "link"] },
 ];
 
 const problems = [];
@@ -282,7 +285,7 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
 // del origen. Lo público tiene que salir "public"; lo privado, "no-store" —
 // si no, una respuesta con datos de alguien quedaría servida a todos.
 {
-  const casos = [["/api/events", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
+  const casos = [["/api/events", /public/], ["/api/ciclos", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
   const mal = [];
   for (const [path, re] of casos) {
     const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) }).catch(() => null);
@@ -348,6 +351,18 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   const mal = casos.filter(([ev, ok]) => hasElectronicEvidence(ev) !== ok).map(([ev]) => ev.name);
   stats.push({ path: "evidencia de escena", count: casos.length });
   if (mal.length) fail("evidencia de escena", "regla", `mal clasificados: ${mal.join(" | ")}`);
+}
+
+// Ciclos fijos de la semana (oct 2026): cada uno con 2 fuentes de sitios
+// distintos y re-verificado a tiempo (a los 60 días el server lo oculta).
+{
+  const data = JSON.parse(readFileSync(new URL("../data/recurrentes.json", import.meta.url), "utf8"));
+  const malos = validarCiclos(data);
+  // La regla misma: un ciclo con una sola fuente o vencido tiene que saltar.
+  const prueba = validarCiclos({ ciclos: [{ id: "x", nombre: "Prueba", dia: 2, patron: "x", link: "https://a.com", verificado: "2020-01-01", fuentes: [{ url: "https://a.com/1" }, { url: "https://www.a.com/2" }] }] });
+  stats.push({ path: "ciclos (curados)", count: (data.ciclos || []).length });
+  if (malos.length) fail("ciclos (curados)", "verificación", malos.join(" | "));
+  if (prueba.length < 2) fail("ciclos (curados)", "regla", "la validación no detecta una sola fuente o un ciclo vencido");
 }
 
 // La noche (oct 2026): la fiesta del viernes 2/10 sigue a las 21:30 y a las
