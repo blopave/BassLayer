@@ -633,6 +633,9 @@ async function run(vp) {
           if (!filas.every((f) => f.borde === "dashed")) fail(vp.name, "ciclos", "la fila de ciclo no va punteada: se confunde con un evento");
           const dobles = filas.filter((f, i) => filas.findIndex((g) => g.dia === f.dia && g.txt === f.txt) !== i);
           if (dobles.length) fail(vp.name, "ciclos", "un ciclo aparece dos veces el mismo día");
+          // El número de arriba cuenta lo que se ve, ciclos incluidos ("Hoy" un martes decía 0).
+          const c = await page.evaluate(() => ({ n: +(document.querySelector(".bl-feed-head-n")?.textContent || -1), visto: document.querySelectorAll(".bl-ev-wall > .bl-ev-item, .bl-ev-wall > .bl-ciclo-en-dia").length }));
+          if (c.n !== c.visto) fail(vp.name, "ciclos", `el encabezado dice ${c.n} y la lista muestra ${c.visto}`);
         }
       }
     }

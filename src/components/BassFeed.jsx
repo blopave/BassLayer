@@ -412,7 +412,32 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
 
   // Group events by day, with month dividers when month changes
+  // Ciclos fijos de la semana (oct 2026, Pablo eligió "en cada día"): cada uno
+  // en su día de las próximas 3 semanas, como fila punteada ("todos los
+  // martes") — sin inventar una fecha —, salvo los días en que la fecha real ya
+  // está publicada (c.publicadas, del server). Son de CABA y de la escena: no con
+  // búsqueda, Mi agenda u otra ciudad (ni con "solo festivales", en grouped).
+  // Cuentan en "Todos", "Club" y el número del encabezado.
   const ciclos = useCiclos();
+  const filasCiclo = useMemo(() => {
+    if (!ciclos.length || search || savedOnly || !(cityFilter === "Todas" || cityFilter === "CABA")) return [];
+    const hoy = todayInBA();
+    // "Hoy" mira solo hoy; "Este finde", de viernes a domingo; si no, 3 semanas.
+    const dias = when === "hoy" ? 1 : when === "finde" ? 7 - ((hoy.getDay() + 6) % 7) : 21;
+    const out = [];
+    for (let i = 0; i < dias; i++) {
+      const d = new Date(hoy); d.setDate(hoy.getDate() + i);
+      if (when === "finde" && ![5, 6, 0].includes(d.getDay())) continue;
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const filas = ciclos.filter((c) => c.dia === d.getDay() && !(c.publicadas || []).includes(iso)).map((c) => ({ type: "ciclo", c, key: `${key}-${c.id}` }));
+      if (filas.length) out.push({ d, key, filas });
+    }
+    return out;
+  }, [ciclos, search, savedOnly, cityFilter, when]);
+  const nCiclos = filasCiclo.reduce((n, x) => n + x.filas.length, 0);
+  const nVisibles = filtered.length + (filter !== "festival" ? nCiclos : 0);
+  const conteos = useMemo(() => (nCiclos ? { ...familyCounts, all: (familyCounts.all || 0) + nCiclos, club: (familyCounts.club || 0) + nCiclos } : familyCounts), [familyCounts, nCiclos]);
   const grouped = useMemo(() => {
     const groups = [];
     let currentKey = null;
@@ -439,33 +464,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       }
       groups.push({ type: "event", data: ev, lead, date });
     }
-    // Ciclos fijos de la semana (oct 2026, Pablo eligió "en cada día"): cada uno
-    // en su día de las próximas 3 semanas, como fila punteada ("todos
-    // los martes") — sin inventar una fecha —, salvo que ese día ya esté su fecha
-    // real. Son de CABA y de la escena: no con búsqueda, Mi agenda, otra ciudad o
-    // solo festivales.
-    const conCiclos = ciclos.length && !search && !savedOnly && filter !== "festival" && (cityFilter === "Todas" || cityFilter === "CABA");
-    if (conCiclos) {
-      const hoy = todayInBA();
-      // "Hoy" mira solo hoy; "Este finde", de viernes a domingo; si no, 3 semanas.
-      const dias = when === "hoy" ? 1 : when === "finde" ? 7 - ((hoy.getDay() + 6) % 7) : 21;
-      const extras = [];
-      for (let i = 0; i < dias; i++) {
-        const d = new Date(hoy); d.setDate(hoy.getDate() + i);
-        if (when === "finde" && ![5, 6, 0].includes(d.getDay())) continue;
-        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-        // El server dice qué días ya tienen la fecha real publicada (c.publicadas).
-        const filas = ciclos.filter((c) => c.dia === d.getDay() && !(c.publicadas || []).includes(iso)).map((c) => ({ type: "ciclo", c, key: `${key}-${c.id}` }));
-        if (filas.length) extras.push({ d, key, filas });
-      }
-      if (extras.length) {
-        const header = (d) => ({ type: "header", label: getDayLabel(d, t, dayNames), key: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, day: String(d.getDate()).padStart(2, "0"), month: MONTHS_ABBR.es[d.getMonth()] });
-        return mezclarCiclos(groups, extras, header);
-      }
+    if (filter !== "festival" && filasCiclo.length) {
+      const header = (d) => ({ type: "header", label: getDayLabel(d, t, dayNames), key: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, day: String(d.getDate()).padStart(2, "0"), month: MONTHS_ABBR.es[d.getMonth()] });
+      return mezclarCiclos(groups, filasCiclo, header);
     }
     return groups;
-  }, [filtered, t, dayNames, ciclos, search, savedOnly, filter, cityFilter, when]);
+  }, [filtered, t, dayNames, filasCiclo, filter]);
 
 
   // Riel de días: el calendario entero de hoy a la última fiesta
@@ -695,7 +699,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       {/* Filtros en una sola fila en escritorio (auditoría B4): género · dónde · buscar. */}
       <div className={isMobile ? "bl-agenda-filtros-m" : "bl-agenda-filtros"}>
       {/* Filtro PRIMARIO: género, con conteos por familia (transparencia) */}
-      <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={familyCounts} />
+      <FilterBar items={FAMILY_FILTER_ITEMS} active={filter} onChange={onFilter} className="bass-filters" labels={familyLabels} counts={conteos} />
 
       {/* Barra unificada de contexto: Cuándo · Dónde · Buscar (una sola forma) */}
       {isMobile ? (
@@ -738,7 +742,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   {whereSeg}
                 </div>
                 <button type="button" className="bl-sheet-apply" onClick={() => setSheetOpen(false)}>
-                  {t("filter.apply", { n: filtered.length })}
+                  {t("filter.apply", { n: nVisibles })}
                 </button>
               </div>
             </div>,
@@ -758,9 +762,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
       {/* Header editorial del listado. Con savedOnly activo se muestra aunque
           haya 0 resultados: el toggle tiene que seguir visible para salir. */}
-      {!loading && !error && (filtered.length > 0 || savedOnly) && (
+      {!loading && !error && (nVisibles > 0 || savedOnly) && (
         <div className="bl-feed-head">
-          <span className="bl-feed-head-n">{filtered.length}</span>
+          <span className="bl-feed-head-n">{nVisibles}</span>
           <span className="bl-feed-head-ctx">{t("feed.eventsWord")}{cityFilter !== "Todas" ? ` · ${cityFilter}` : ""}</span>
           {when && (
             <button type="button" className="bl-when-chip bl-bass-t-label" onClick={() => setWhen("")} aria-label={`${whenLabels[when]} — ${t("filter.clear")}`}>
