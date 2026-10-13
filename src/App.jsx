@@ -22,6 +22,7 @@ import { PriceModal } from "./components/PriceModal";
 import { WeekendPicker } from "./components/WeekendPicker";
 import { WorldLine } from "./components/WorldLine";
 import { InstalarApp } from "./components/InstalarApp";
+import { SinConexion } from "./components/SinConexion";
 import { useInstalar, esApp } from "./hooks/useInstalar";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
@@ -1080,6 +1081,7 @@ export default function App() {
       {/* BIENVENIDA: primera visita, una línea que no tapa la home */}
       {/* Solo sobre el home (auditoría S3): en un interior al que se llega por un link, tapaba contenido. */}
       <InstalarApp app={app} view={view} pedida={appPedida} onCerrar={() => setAppPedida(false)} />
+      <SinConexion />
 
       {showOnboarding && view === "home" && (
         <div className="bl-welcome-line" role="status">

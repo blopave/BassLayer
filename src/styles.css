@@ -5549,6 +5549,14 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-app-x:hover, .bl-app-go:hover { opacity:.7; }
 @media (max-width:768px) { .bl-app-line { white-space:normal; width:calc(100% - 48px); justify-content:space-between; font-size:var(--fs-13); bottom:96px; } }
 @media (prefers-reduced-motion:reduce) { .bl-app-line { animation:none; } }
+/* Sin conexión: una línea abajo, como la bienvenida y la invitación (arriba tapaba el encabezado) */
+.bl-offline-line { position:fixed; left:50%; bottom:max(28px, env(safe-area-inset-bottom)); z-index:9760; transform:translateX(-50%); pointer-events:none;
+  padding:12px 24px; border-radius:999px; border:1px solid var(--bl-border); background:color-mix(in srgb, var(--bl-bg) 82%, transparent);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); font:500 var(--fs-13) var(--font-sans); color:var(--bl-text); white-space:nowrap;
+  animation:bl-welcome-in .6s var(--ease-out-expo) both; }
+.bl-offline-line.is-back { color:var(--bl-text-muted); }
+@media (max-width:768px) { .bl-offline-line { white-space:normal; width:calc(100% - 48px); text-align:center; bottom:96px; } }
+@media (prefers-reduced-motion:reduce) { .bl-offline-line { animation:none; } }
 
 /* ══ Interiores de Bass (oct 2026, Pablo: "B+ · Afiche"): la agenda es una
    pared de flyers — el flyer es el diseño del show — y las noticias, una

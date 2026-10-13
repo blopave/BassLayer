@@ -993,7 +993,9 @@ async function runApp() {
   const html = (await get("/"))?.toString() || "";
   if (!/viewport-fit=cover/.test(html)) F("iPhone", "sin viewport-fit=cover el contenido de la app instalada queda debajo del reloj");
   if (!(await get("/offline.html"))) F("sin conexión", "no carga /offline.html");
-  if (!/offline\.html/.test((await get("/sw.js"))?.toString() || "")) F("sin conexión", "el service worker no cae a la página sin conexión");
+  const sw = (await get("/sw.js"))?.toString() || "";
+  if (!/offline\.html/.test(sw)) F("sin conexión", "el service worker no cae a la página sin conexión");
+  if (!/no-store\|private/.test(sw)) F("sin conexión", "el service worker no guarda la API pública para usarla sin red (o guarda la privada)");
 
   const browser = await chromium.launch();
   const ctx = async (o) => { const c = await browser.newContext(o); const pg = await c.newPage(); pg.on("pageerror", (e) => F("js", e.message)); return [c, pg]; };
@@ -1032,6 +1034,16 @@ async function runApp() {
     await pg.waitForTimeout(4000); await pg.evaluate(() => window.__bip());
     if (await pg.locator(".bl-welcome-line").count()) F("app instalada", "repite la bienvenida (en iPhone no comparte lo guardado en Safari)");
     if (await pg.locator(".bl-util-app").count()) F("app instalada", "ofrece instalar la app estando adentro de la app");
+    await c.close();
+    // Sin red adentro de la app: una línea lo dice (oct 2026, Pablo: "no me muestra el aviso"); al volver, se va.
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");
+    await pg.goto(BASE + "/eventos/este-finde", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(1500);
+    await c.setOffline(true); await pg.waitForTimeout(500);
+    if (!/Sin conexión|offline/i.test((await pg.locator(".bl-offline-line").textContent().catch(() => "")) || "")) F("sin conexión", "sin red, la app no avisa");
+    await c.setOffline(false); await pg.waitForTimeout(3500);
+    if (await pg.locator(".bl-offline-line").count()) F("sin conexión", "al volver la red, el aviso no se va");
     await c.close();
     // iPhone: no hay instalación con un toque; el menú explica el camino.
     [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1" });

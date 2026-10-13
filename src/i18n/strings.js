@@ -409,6 +409,8 @@ export const STRINGS = {
     "util.night": "Modo nocturno",
 
     "welcome.line": "Buenos Aires, en dos frecuencias: la noche y el mercado.",
+    "offline.line": "Sin conexión · lo que ves es lo último guardado",
+    "offline.back": "De nuevo en línea",
     "app.line": "Sumá BassLayer a tu inicio",
     "app.install": "Instalar",
     "app.how": "Cómo",
@@ -824,6 +826,8 @@ export const STRINGS = {
     "util.night": "Night mode",
 
     "welcome.line": "Buenos Aires, on two frequencies: the night and the market.",
+    "offline.line": "You're offline · this is the last saved version",
+    "offline.back": "Back online",
     "app.line": "Add BassLayer to your home screen",
     "app.install": "Install",
     "app.how": "How",

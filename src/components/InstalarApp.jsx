@@ -22,7 +22,7 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   }, [view, madura]);
 
   const sola = app.modo && !app.descartada && app.visitas >= 2 && madura && view === "sections";
-  if (!app.modo || !(sola || pedida)) return null;
+  if (!app.modo || !(sola || pedida) || navigator.onLine === false) return null;
 
   const cerrar = () => { if (!pedida) app.descartar(); setComo(false); onCerrar?.(); };
   const instalar = async () => {
