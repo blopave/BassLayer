@@ -6,7 +6,8 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 
-const ESPERA_MS = 15000;   // tiempo adentro de un mundo antes de invitar
+// tiempo adentro de un mundo antes de invitar (en el modo de prueba de desarrollo, 3 s)
+const espera = () => (import.meta.env.DEV && window.__blPrueba ? 3000 : 15000);
 
 export function InstalarApp({ app, view, pedida, onCerrar }) {
   const { t } = useLocale();
@@ -16,7 +17,7 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   // la señal de interés: un rato en las secciones, en esta visita
   useEffect(() => {
     if (view !== "sections" || madura) return undefined;
-    const id = setTimeout(() => setMadura(true), ESPERA_MS);
+    const id = setTimeout(() => setMadura(true), espera());
     return () => clearTimeout(id);
   }, [view, madura]);
 

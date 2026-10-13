@@ -12,6 +12,10 @@ import { LocaleProvider } from "./hooks/useLocale";
 // el sitio pide) con nombres estables para poder precargarlas desde index.html.
 // Las @font-face viven al principio de styles.css.
 import "./styles.css";
+import { aplicarPrueba } from "./dev/prueba";
+
+// Solo en desarrollo: ?prueba=invitar|iphone|app simula los estados de la app instalable.
+if (import.meta.env.DEV) aplicarPrueba();
 
 // /semana es una página aparte (el resumen semanal): su propio chunk, sin el home.
 const Semana = lazyNamed(() => import("./components/Semana"), "Semana");
