@@ -1052,13 +1052,25 @@ async function runApp() {
     await pg.locator(".bl-bass-section-btn.active").first().waitFor({ timeout: 20_000 }).catch(() => {});
     if (!/Noticias|News/.test(await activa())) F("secciones", `entrar a /noticias no abre Noticias (${await activa()})`);
     await pg.locator(".bl-bass-section-btn", { hasText: /^Agenda$|^Listings$/ }).first().click().catch(() => {});
-    await pg.waitForTimeout(500);
+    await pg.waitForURL("**/agenda", { timeout: 5000 }).catch(() => {});
     if (ruta() !== "/agenda") F("secciones", `la Agenda no cambia la dirección a /agenda (${ruta()})`);
     await pg.reload({ waitUntil: "domcontentloaded" });
     await pg.locator(".bl-bass-section-btn.active").first().waitFor({ timeout: 20_000 }).catch(() => {});
     if (!/Agenda|Listings/.test(await activa())) F("secciones", "recargar /agenda no vuelve a la Agenda");
-    await pg.goBack(); await pg.waitForTimeout(800);
+    await pg.goBack();
+    await pg.waitForFunction(() => location.pathname === "/" && document.querySelector(".bl-btrack"), null, { timeout: 5000 }).catch(() => {});
     if (ruta() !== "/" || (await activa()) !== "portada") F("secciones", `el atrás no vuelve a la portada en "/" (${ruta()} · ${await activa()})`);
+    // Abrir y cerrar un evento no le hace perder la dirección a la sección
+    // (antes el cierre borraba la marca del historial y Noticias quedaba en /agenda).
+    await pg.goto(BASE + "/agenda", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-ev-open").first().click({ timeout: 20_000 }).catch(() => {});
+    await pg.locator("[role=dialog]").first().waitFor({ timeout: 5000 }).catch(() => {});
+    await pg.waitForTimeout(400);   // el modal engancha el teclado al terminar de abrir
+    await pg.keyboard.press("Escape");
+    await pg.waitForURL("**/agenda", { timeout: 5000 }).catch(() => {});
+    await pg.locator(".bl-bass-section-btn", { hasText: /^Noticias$|^News$/ }).first().click().catch(() => {});
+    await pg.waitForURL("**/noticias", { timeout: 5000 }).catch(() => {});
+    if (ruta() !== "/noticias") F("secciones", `después de abrir y cerrar un evento, Noticias no cambia la dirección (${ruta()})`);
     await c.close();
     // El salto a un día aguanta lo que llega después (oct 2026: el smoke "el día
     // elegido no queda debajo de la línea" fallaba a veces; los ciclos que llegan

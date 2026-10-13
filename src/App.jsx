@@ -25,6 +25,7 @@ import { InstalarApp } from "./components/InstalarApp";
 import { SinConexion } from "./components/SinConexion";
 import { useInstalar, esApp } from "./hooks/useInstalar";
 import { metrica } from "./utils/app";
+import { seccionDeRuta, esRutaDeBass, navegar } from "./utils/rutas";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -94,15 +95,14 @@ export default function App() {
   // de abajo sigue resolviendo slugs y carga de datos). Antes cada deep-link
   // pintaba el home y recién después cambiaba de vista: un layout shift
   // entero por visita desde Google o desde un link compartido.
-  const initialRoute = (() => {
+  const [initialRoute] = useState(() => {
     const path = window.location.pathname;
     const layer = new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path);
-    const temporal = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
     // Las secciones de Bass tienen dirección propia (oct 2026): /agenda, /noticias, /festivales.
-    const sec = path.match(/^\/(agenda|noticias|festivales)\/?$/);
+    const sec = seccionDeRuta(path);
     const deep = layer || !!sec || /^\/(eventos|noticias|festivales)\//.test(path);
-    return { view: deep ? "sections" : "home", presetWhen: temporal ? (temporal[1] === "hoy" ? "hoy" : "finde") : "", seccion: sec ? (sec[1] === "agenda" ? "eventos" : sec[1]) : "" };
-  })();
+    return { view: deep ? "sections" : "home", presetWhen: sec?.when || "", seccion: sec?.seccion || "" };
+  });
   const [view, setView] = useState(initialRoute.view);
   const [circleStyle, setCircleStyle] = useState({});
   const [circleExpand, setCircleExpand] = useState(false);
@@ -232,7 +232,7 @@ export default function App() {
       if (slug) {
         const url = `/eventos/${slug}`;
         if (window.location.pathname !== url) {
-          window.history.pushState({}, "", url);
+          navegar(url);
         }
       }
       applyEventMeta(ev, slug);
@@ -245,7 +245,7 @@ export default function App() {
     // replaceState (no pushState): evita dejar una entrada "/" fantasma que
     // haría que el botón Atrás reabra el modal recién cerrado.
     if (window.location.pathname.startsWith("/eventos/")) {
-      window.history.replaceState({}, "", worldUrlRef.current());
+      navegar(worldUrlRef.current(), true);
     }
     resetMeta();
     removeEventJsonLd();
@@ -258,7 +258,7 @@ export default function App() {
       if (slug) {
         const url = `/noticias/${slug}`;
         if (window.location.pathname !== url) {
-          window.history.pushState({}, "", url);
+          navegar(url);
         }
       }
     }
@@ -267,7 +267,7 @@ export default function App() {
   const closeNews = useCallback(() => {
     setSelectedNews(null);
     if (window.location.pathname.startsWith("/noticias/")) {
-      window.history.replaceState({}, "", worldUrlRef.current());
+      navegar(worldUrlRef.current(), true);
     }
   }, []);
 
@@ -278,7 +278,7 @@ export default function App() {
       if (slug) {
         const url = `/festivales/${slug}`;
         if (window.location.pathname !== url) {
-          window.history.pushState({}, "", url);
+          navegar(url);
         }
       }
     }
@@ -287,7 +287,7 @@ export default function App() {
   const closeFestival = useCallback(() => {
     setSelectedFestival(null);
     if (window.location.pathname.startsWith("/festivales/")) {
-      window.history.replaceState({}, "", worldUrlRef.current());
+      navegar(worldUrlRef.current(), true);
     }
   }, []);
 
@@ -300,12 +300,12 @@ export default function App() {
       if (slug) {
         const url = `/eventos/genero/${slug}`;
         if (window.location.pathname !== url) {
-          window.history.pushState({}, "", url);
+          navegar(url);
         }
       }
     } else {
       if (window.location.pathname.startsWith("/eventos/genero/")) {
-        window.history.pushState({}, "", worldUrlRef.current());
+        navegar(worldUrlRef.current());
       }
     }
   }, []);
@@ -319,21 +319,16 @@ export default function App() {
       setView("sections");
       setActivePanel(1);
       // La URL canónica del mundo es /layer (indexable, prerenderizada).
-      if (path !== "/layer") window.history.replaceState({}, "", "/layer");
+      if (path !== "/layer") navegar("/layer", true);
       if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
       if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
       return;
     }
-    // /eventos/hoy · /eventos/este-finde → feed con el filtro temporal puesto
     // /agenda · /noticias · /festivales → Bass en esa sección (la elige BassFeed con presetSection)
-    if (/^\/(agenda|noticias|festivales)\/?$/.test(path)) {
-      setView("sections");
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-      return;
-    }
-    const temporalMatch = path.match(/^\/eventos\/(hoy|este-finde)\/?$/);
-    if (temporalMatch) {
-      setPresetWhen(temporalMatch[1] === "hoy" ? "hoy" : "finde");
+    // /eventos/hoy · /eventos/este-finde → la Agenda con el filtro temporal puesto
+    const sec = seccionDeRuta(path);
+    if (sec) {
+      if (sec.when) setPresetWhen(sec.when);
       setView("sections");
       if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
       return;
@@ -381,9 +376,9 @@ export default function App() {
 
     const onPopState = () => {
       const p = window.location.pathname;
-      // /layer ↔ / son los dos mundos: back/forward cambia de panel.
+      // /layer ↔ Bass ("/" o una sección) son los dos mundos: back/forward cambia de panel.
       if (/^\/layer\/?$/.test(p)) { setView("sections"); setActivePanel(1); }
-      else if (p === "/" && view === "sections") setActivePanel(0);
+      else if (esRutaDeBass(p) && view === "sections") setActivePanel(0);
       const em = p.match(/^\/eventos\/([^/]+)\/?$/);
       const nm = p.match(/^\/noticias\/([^/]+)\/?$/);
       const fm = p.match(/^\/festivales\/([^/]+)\/?$/);
@@ -452,7 +447,7 @@ export default function App() {
       } else {
         // Link viejo o compartido de un evento que ya pasó: la agenda sola,
         // sin explicación, parecía un error del sitio.
-        window.history.replaceState({}, "", "/");
+        navegar("/", true);
         setToast(t("event.notFound"));
       }
       pendingEventSlugRef.current = null;
@@ -953,10 +948,10 @@ export default function App() {
     if (view !== "sections") return;
     const p = window.location.pathname;
     if (activePanel === 1) {
-      if (p === "/") window.history.replaceState({}, "", "/layer");
+      if (esRutaDeBass(p)) navegar("/layer", true);
       applyLayerMeta();
     } else {
-      if (/^\/layer\/?$/.test(p)) window.history.replaceState({}, "", worldUrlRef.current());
+      if (/^\/layer\/?$/.test(p)) navegar(worldUrlRef.current(), true);
       if (!selectedEvent) resetMeta();
     }
   }, [view, activePanel, selectedEvent]);

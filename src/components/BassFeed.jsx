@@ -17,6 +17,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate, eventStamp } from "../i18n/strings";
 import { useSavedEvents } from "../hooks/useSavedEvents";
 import { eventSlug } from "../utils/slug";
+import { seccionDeRuta, rutaDeSeccion, esRutaDeBass, navegar } from "../utils/rutas";
 import { noOrphanSep } from "../utils/format";
 
 // Señalador de guardado — vive en cada card y en el modal. Para el feed con
@@ -53,11 +54,12 @@ const FAMILY_FILTER_ITEMS = ["All", "club", "festival"];   // solo escena electr
 // Ciclos fijos en la lista agrupada, en orden de fecha: el día que ya tiene
 // encabezado los suma después de sus eventos; el que no, lo crea (antes del
 // divisor de mes si corresponde).
+const SIN_CICLOS = [];   // estable: no rehace grouped en cada render
 function mezclarCiclos(groups, extras, header) {
   const fecha = (key) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m, d); };
   const out = [];
   let k = 0;
-  const antesDe = (d) => { while (k < extras.length && extras[k].d < d) { out.push(header(extras[k].d), ...extras[k].filas); k++; } };
+  const antesDe = (d) => { while (k < extras.length && extras[k].d < d) { out.push(header(extras[k]), ...extras[k].filas); k++; } };
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
     if (g.type === "month") { const prox = groups.slice(i + 1).find((x) => x.type === "header"); if (prox) antesDe(fecha(prox.key)); }
@@ -411,7 +413,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return { filtered: list, familyCounts: counts };
   }, [regionEvents, cityFilter, hoyOnly, esteFinde, search, filter, savedOnly, saved]);
 
-  // Group events by day, with month dividers when month changes
   // Ciclos fijos de la semana (oct 2026, Pablo eligió "en cada día"): cada uno
   // en su día de las próximas 3 semanas, como fila punteada ("todos los
   // martes") — sin inventar una fecha —, salvo los días en que la fecha real ya
@@ -436,8 +437,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return out;
   }, [ciclos, search, savedOnly, cityFilter, when]);
   const nCiclos = filasCiclo.reduce((n, x) => n + x.filas.length, 0);
-  const nVisibles = filtered.length + (filter !== "festival" ? nCiclos : 0);
+  const ciclosEnLista = filter !== "festival" ? filasCiclo : SIN_CICLOS;
+  const nVisibles = filtered.length + (ciclosEnLista.length ? nCiclos : 0);
   const conteos = useMemo(() => (nCiclos ? { ...familyCounts, all: (familyCounts.all || 0) + nCiclos, club: (familyCounts.club || 0) + nCiclos } : familyCounts), [familyCounts, nCiclos]);
+  // Group events by day, with month dividers when month changes
   const grouped = useMemo(() => {
     const groups = [];
     let currentKey = null;
@@ -464,12 +467,10 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       }
       groups.push({ type: "event", data: ev, lead, date });
     }
-    if (filter !== "festival" && filasCiclo.length) {
-      const header = (d) => ({ type: "header", label: getDayLabel(d, t, dayNames), key: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, day: String(d.getDate()).padStart(2, "0"), month: MONTHS_ABBR.es[d.getMonth()] });
-      return mezclarCiclos(groups, filasCiclo, header);
-    }
-    return groups;
-  }, [filtered, t, dayNames, filasCiclo, filter]);
+    if (!ciclosEnLista.length) return groups;
+    const header = ({ d, key }) => ({ type: "header", label: getDayLabel(d, t, dayNames), key, day: String(d.getDate()).padStart(2, "0"), month: MONTHS_ABBR.es[d.getMonth()] });
+    return mezclarCiclos(groups, ciclosEnLista, header);
+  }, [filtered, t, dayNames, ciclosEnLista]);
 
 
   // Riel de días: el calendario entero de hoy a la última fiesta
@@ -532,12 +533,22 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     // fijo y lo que llegaba después dejaba el día corrido).
     const lista = h.closest(".bl-ev-wall") || h.parentElement;
     // Si la persona se pone a desplazar, se suelta (no se le pelea el scroll).
+    // Un salto nuevo suelta el anterior (si no, dos observadores se pelean la lista).
+    soltarSalto.current();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => go("auto")) : null;
     const zona = sc && sc !== document.body ? sc : window;
-    const soltar = () => { ro?.disconnect(); zona.removeEventListener("wheel", soltar); zona.removeEventListener("touchstart", soltar); };
-    setTimeout(() => { go("auto"); ro?.observe(lista); zona.addEventListener("wheel", soltar, { passive: true }); zona.addEventListener("touchstart", soltar, { passive: true }); }, 650);
-    setTimeout(soltar, 3000);
+    const timers = [];
+    const soltar = () => {
+      timers.forEach(clearTimeout); ro?.disconnect();
+      zona.removeEventListener("wheel", soltar); zona.removeEventListener("touchstart", soltar);
+      soltarSalto.current = () => {};
+    };
+    zona.addEventListener("wheel", soltar, { passive: true }); zona.addEventListener("touchstart", soltar, { passive: true });
+    timers.push(setTimeout(() => { go("auto"); ro?.observe(lista); }, 650), setTimeout(soltar, 3000));
+    soltarSalto.current = soltar;
   };
+  const soltarSalto = useRef(() => {});
+  useEffect(() => () => soltarSalto.current(), []);
 
   // Pass `section` as dep so the observer re-attaches when toggling back from
   // noticias → eventos (the events list unmounts and remounts in that flow).
@@ -631,21 +642,19 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   // Cada sección tiene su dirección (oct 2026): /agenda, /noticias, /festivales
   // (con Hoy / Este finde, /eventos/hoy y /eventos/este-finde). Se puede
   // compartir, recargar y volver; en la portada, "/".
-  const seccionPath = section === "noticias" ? "/noticias" : section === "festivales" ? "/festivales"
-    : section === "eventos" ? (when === "hoy" ? "/eventos/hoy" : when === "finde" ? "/eventos/este-finde" : "/agenda") : "/";
+  const seccionPath = rutaDeSeccion(section, when);
   useEffect(() => {
     onSeccion?.(seccionPath);
     // Solo si la URL es de una sección (no pisar /eventos/<slug> de un modal abierto ni /layer).
     const p = window.location.pathname;
-    const esSeccion = p === "/" || /^\/(agenda|noticias|festivales)\/?$/.test(p) || /^\/eventos\/(hoy|este-finde)\/?$/.test(p);
     // Entre secciones se reemplaza; la primera salida de la portada la resuelve el efecto de abajo.
-    if (!atPortada && window.history.state?.bassTrack && esSeccion && p !== seccionPath) window.history.replaceState(window.history.state, "", seccionPath + window.location.search);
+    if (!atPortada && window.history.state?.bassTrack && esRutaDeBass(p) && p !== seccionPath) navegar(seccionPath + window.location.search, true);
   }, [seccionPath]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // La portada queda debajo en "/" (también si se entró directo a /noticias):
     // el atrás vuelve a la portada con su dirección.
     if (!atPortada && !window.history.state?.bassTrack) {
-      window.history.replaceState(window.history.state, "", "/" + window.location.search);
+      navegar("/" + window.location.search, true);
       window.history.pushState({ bassTrack: 1 }, "", seccionPath + window.location.search);
     }
     // Después del commit: el track recién montado ya está en el DOM.
@@ -655,8 +664,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     // Atrás → la portada. Adelante (o una sección del historial) → esa sección.
     const onPop = () => {
       if (!window.history.state?.bassTrack) return resetRef.current();
-      const m = window.location.pathname.match(/^\/(agenda|noticias|festivales)\/?$/);
-      if (m) setSection(m[1] === "agenda" ? "eventos" : m[1]);
+      const r = seccionDeRuta(window.location.pathname);
+      if (r) { setSection(r.seccion); setWhen(r.when); }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);

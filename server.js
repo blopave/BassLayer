@@ -603,12 +603,14 @@ function withCity(venue, address, title) {
   return city ? { city } : { city: "CABA", cityGuessed: true };
 }
 function isAmba(ev) { return ev.region === "AR" && isAmbaCity(ev.city); }
+// Venue sin confirmar de RA: "TBA - Palermo", "TBC: …".
+const VENUE_TBA = /^(tba|tbd|tbc)\s*[-:|–—]\s*/i;
 
 // Un show que una fuente ubica sin decir la ciudad (CABA supuesto) y otra
 // fuente ubica explícitamente en otra ciudad el mismo día, con algún artista
 // en común o el mismo venue, es ese show: gana la ciudad explícita.
 function reconcileGuessedCities(events) {
-  const firstWord = (v) => normalizeArtistName(String(v || "").replace(/^(tba|tbd|tbc)\s*[-:|–—]\s*/i, "").split(/[ ,@]/)[0]);
+  const firstWord = (v) => normalizeArtistName(String(v || "").replace(VENUE_TBA, "").split(/[ ,@]/)[0]);
   // Índice por día de los shows con otra ciudad explícita (artistas y primera
   // palabra del venue ya normalizados).
   const byDay = new Map();
@@ -2592,7 +2594,7 @@ function formatRAEvent(ev, areaMeta = { region: "AR" }) {
   // Los eventos que RA recibe de ALLMusicParties ("TBA - AMK Club") llegan sin
   // line-up y con los artistas en el título ("Nick Warren + Kevin Di Serna"):
   // se leen de ahí, así el line-up se ve y el cruce entre fuentes los encuentra.
-  if (!artists.length && /^(tba|tbd|tbc)\s*[-:|–—]/i.test(venueName)) artists.push(...artistasDelTitulo(ev.title));
+  if (!artists.length && VENUE_TBA.test(venueName)) artists.push(...artistasDelTitulo(ev.title));
   const areaName = ev.venue?.area?.name || "";
   const genre = detectGenre((ev.title || "") + " " + artists.join(" "));
   const fullAddress = areaName ? `${venueName}, ${areaName}` : venueName;
@@ -2697,7 +2699,7 @@ function deduplicateEvents(events) {
     const cleaned = v
       .toLowerCase()
       .normalize("NFD").replace(/[̀-ͯ]/g, "")
-      .replace(/^(tba|tbd|tbc)\s*[-:|–—]\s*/i, "")
+      .replace(VENUE_TBA, "")
       .replace(/[@,]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -2719,7 +2721,7 @@ function deduplicateEvents(events) {
   // (multi-área RA) no son el mismo evento. Gana la primera que llega, salvo
   // que su venue esté sin confirmar ("TBA - …") y la otra no (oct 2026: se
   // veía "TBA - Area Costanera, Quilmes" en vez de "Área Costanera").
-  const tba = (ev) => /^(tba|tbd|tbc)\s*[-:|–—]/i.test(ev.venue || "");
+  const tba = (ev) => VENUE_TBA.test(ev.venue || "");
   const byVenue = new Map();
   for (const ev of events) {
     const key = `${ev.day}-${ev.month}-${ev.city || ""}-${normVenue(ev.venue)}`;
@@ -2754,7 +2756,7 @@ function deduplicateEvents(events) {
     if (ev.image) s += 0.5;
     if (ev.url) s += 0.3;
     s += (ev.artists?.length || 0) / 100;
-    if (/^(tba|tbd|tbc)\s*[-:|–—]/i.test(ev.venue || "")) s -= 3;
+    if (VENUE_TBA.test(ev.venue || "")) s -= 3;
     if (/\bMORE ARTISTS\b/.test(ev.name || "")) s -= 2;
     return s;
   };
@@ -4248,94 +4250,94 @@ app.get("/api/btc-network", async (req, res) => {
 //  GET /api/dashboard — BTC dominance, Fear & Greed, ETH gas
 // ─────────────────────────────────────────────
 
+// JSON de una fuente externa, o null si falla (sin tirar).
+const fetchJson = (url) => fetchSafe(url).then((r) => (r.ok ? safeText(r).then(JSON.parse) : null)).catch(() => null);
+
+// Pasa por swr (oct 2026): con el dato vencido o el snapshot se responde ya y
+// la cadena CoinGecko → CoinPaprika corre atrás, una sola a la vez.
 app.get("/api/dashboard", async (req, res) => {
-  const hit = cached("dashboard");
-  if (hit) return res.json(hit);
-
   try {
-    const results = await Promise.allSettled([
-      fetchSafe("https://api.coingecko.com/api/v3/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-      fetchSafe("https://api.alternative.me/fng/?limit=30").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-      fetchSafe("https://api.etherscan.io/api?module=gastracker&action=gasoracle").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-      fetchSafe("https://api.coingecko.com/api/v3/search/trending").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
-    ]);
-
-    let globalData = results[0].status === "fulfilled" ? results[0].value : null;
-    // Respaldo (oct 2026): si CoinGecko no responde, CoinPaprika (sin key, el
-    // mismo que respalda los precios) da capitalización, variación y dominancia.
-    if (!globalData?.data?.market_cap_percentage?.btc) {
-      const [g, eth] = await Promise.all([
-        fetchSafe("https://api.coinpaprika.com/v1/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null).catch(() => null),
-        fetchSafe("https://api.coinpaprika.com/v1/tickers/eth-ethereum").then(r => r.ok ? safeText(r).then(JSON.parse) : null).catch(() => null),
-      ]);
-      if (g?.market_cap_usd) {
-        const ethCap = eth?.quotes?.USD?.market_cap;
-        globalData = { data: {
-          market_cap_percentage: { btc: g.bitcoin_dominance_percentage, eth: ethCap ? (ethCap / g.market_cap_usd) * 100 : null },
-          total_market_cap: { usd: g.market_cap_usd },
-          market_cap_change_percentage_24h_usd: g.market_cap_change_24h,
-        } };
-        console.log("[dashboard] global servido desde CoinPaprika");
-      }
-    }
-    const fngData = results[1].status === "fulfilled" ? results[1].value : null;
-    const gasData = results[2].status === "fulfilled" ? results[2].value : null;
-    const trendingData = results[3].status === "fulfilled" ? results[3].value : null;
-
-    const dashboard = {
-      btcDominance: globalData?.data?.market_cap_percentage?.btc
-        ? Math.round(globalData.data.market_cap_percentage.btc * 10) / 10
-        : null,
-      ethDominance: globalData?.data?.market_cap_percentage?.eth
-        ? Math.round(globalData.data.market_cap_percentage.eth * 10) / 10
-        : null,
-      totalMarketCap: globalData?.data?.total_market_cap?.usd || null,
-      marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd
-        ? Math.round(globalData.data.market_cap_change_percentage_24h_usd * 10) / 10
-        : null,
-      fearGreed: fngData?.data?.[0] ? {
-        value: parseInt(fngData.data[0].value),
-        label: fngData.data[0].value_classification,
-        // Últimos 30 días (más reciente primero) — usados por el sparkline en el
-        // dashboard de Layer. Invertimos a orden cronológico ascendente para que
-        // el SVG del cliente pueda dibujar en la dirección natural.
-        history: Array.isArray(fngData.data)
-          ? fngData.data.slice(0, 30).map(d => parseInt(d.value)).filter(v => !isNaN(v)).reverse()
-          : [],
-      } : null,
-      ethGas: gasData?.result?.ProposeGasPrice ? {
-        low: parseInt(gasData.result.SafeGasPrice) || null,
-        avg: parseInt(gasData.result.ProposeGasPrice) || null,
-        high: parseInt(gasData.result.FastGasPrice) || null,
-      } : null,
-      // Trending: monedas más buscadas ahora en CoinGecko (top 7).
-      trending: Array.isArray(trendingData?.coins)
-        ? trendingData.coins.slice(0, 7).map(c => ({
-            symbol: (c.item?.symbol || "").toUpperCase().slice(0, 8),
-            name: c.item?.name || "",
-            rank: c.item?.market_cap_rank ?? null,
-            change24h: typeof c.item?.data?.price_change_percentage_24h?.usd === "number"
-              ? Math.round(c.item.data.price_change_percentage_24h.usd * 10) / 10
-              : null,
-          })).filter(c => c.symbol)
-        : [],
-    };
-
-    // Lo que esta vez no llegó se completa con el último dato bueno (antes se
-    // cacheaban vacíos y el panel quedaba en blanco todo el TTL).
-    const prev = cache.dashboard?.data;
-    if (prev) for (const k of Object.keys(dashboard)) {
-      const vacio = dashboard[k] == null || (Array.isArray(dashboard[k]) && !dashboard[k].length);
-      if (vacio && prev[k] != null) dashboard[k] = prev[k];
-    }
-    setCache("dashboard", dashboard);
-    res.json(dashboard);
+    res.json(await swr("dashboard", buildDashboard));
   } catch (e) {
     console.error("[dashboard]", e.message);
-    if (cache.dashboard?.data) return res.json(cache.dashboard.data);
     res.status(500).json({ error: "Dashboard data unavailable" });
   }
 });
+
+async function buildDashboard() {
+  const [cgGlobal, fngData, gasData, trendingData] = await Promise.all([
+    fetchJson("https://api.coingecko.com/api/v3/global"),
+    fetchJson("https://api.alternative.me/fng/?limit=30"),
+    fetchJson("https://api.etherscan.io/api?module=gastracker&action=gasoracle"),
+    fetchJson("https://api.coingecko.com/api/v3/search/trending"),
+  ]);
+
+  let globalData = cgGlobal;
+  // Respaldo (oct 2026): si CoinGecko no responde, CoinPaprika (sin key, el
+  // mismo que respalda los precios) da capitalización, variación y dominancia.
+  if (!globalData?.data?.market_cap_percentage?.btc) {
+    const [g, eth] = await Promise.all([
+      fetchJson("https://api.coinpaprika.com/v1/global"),
+      fetchJson(`https://api.coinpaprika.com/v1/tickers/${PAPRIKA_ID.ethereum}`),
+    ]);
+    if (g?.market_cap_usd) {
+      const ethCap = eth?.quotes?.USD?.market_cap;
+      globalData = { data: {
+        market_cap_percentage: { btc: g.bitcoin_dominance_percentage, eth: ethCap ? (ethCap / g.market_cap_usd) * 100 : null },
+        total_market_cap: { usd: g.market_cap_usd },
+        market_cap_change_percentage_24h_usd: g.market_cap_change_24h,
+      } };
+      console.log("[dashboard] global servido desde CoinPaprika");
+    }
+  }
+  const dashboard = {
+    btcDominance: globalData?.data?.market_cap_percentage?.btc
+      ? Math.round(globalData.data.market_cap_percentage.btc * 10) / 10
+      : null,
+    ethDominance: globalData?.data?.market_cap_percentage?.eth
+      ? Math.round(globalData.data.market_cap_percentage.eth * 10) / 10
+      : null,
+    totalMarketCap: globalData?.data?.total_market_cap?.usd || null,
+    marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd
+      ? Math.round(globalData.data.market_cap_change_percentage_24h_usd * 10) / 10
+      : null,
+    fearGreed: fngData?.data?.[0] ? {
+      value: parseInt(fngData.data[0].value),
+      label: fngData.data[0].value_classification,
+      // Últimos 30 días (más reciente primero) — usados por el sparkline en el
+      // dashboard de Layer. Invertimos a orden cronológico ascendente para que
+      // el SVG del cliente pueda dibujar en la dirección natural.
+      history: Array.isArray(fngData.data)
+        ? fngData.data.slice(0, 30).map(d => parseInt(d.value)).filter(v => !isNaN(v)).reverse()
+        : [],
+    } : null,
+    ethGas: gasData?.result?.ProposeGasPrice ? {
+      low: parseInt(gasData.result.SafeGasPrice) || null,
+      avg: parseInt(gasData.result.ProposeGasPrice) || null,
+      high: parseInt(gasData.result.FastGasPrice) || null,
+    } : null,
+    // Trending: monedas más buscadas ahora en CoinGecko (top 7).
+    trending: Array.isArray(trendingData?.coins)
+      ? trendingData.coins.slice(0, 7).map(c => ({
+          symbol: (c.item?.symbol || "").toUpperCase().slice(0, 8),
+          name: c.item?.name || "",
+          rank: c.item?.market_cap_rank ?? null,
+          change24h: typeof c.item?.data?.price_change_percentage_24h?.usd === "number"
+            ? Math.round(c.item.data.price_change_percentage_24h.usd * 10) / 10
+            : null,
+        })).filter(c => c.symbol)
+      : [],
+  };
+
+  // Lo que esta vez no llegó se completa con el último dato bueno (antes se
+  // cacheaban vacíos y el panel quedaba en blanco todo el TTL).
+  const prev = cache.dashboard?.data;
+  if (prev) for (const k of Object.keys(dashboard)) {
+    const vacio = dashboard[k] == null || (Array.isArray(dashboard[k]) && !dashboard[k].length);
+    if (vacio && prev[k] != null) dashboard[k] = prev[k];
+  }
+  return dashboard;
+}
 
 // ─────────────────────────────────────────────
 //  GET /api/btc-cycles — Dashboard de ciclos de halving
