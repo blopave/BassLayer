@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { useOnline } from "../hooks/useOnline";
+import { metrica } from "../utils/app";
 
 // tiempo adentro de un mundo antes de invitar (en el modo de prueba de desarrollo, 3 s)
 const espera = () => (import.meta.env.DEV && window.__blPrueba ? 3000 : 15000);
@@ -24,11 +25,15 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
   }, [view, madura]);
 
   const sola = app.modo && !app.descartada && app.visitas >= 2 && madura && view === "sections";
-  if (!app.modo || !(sola || pedida) || !online) return null;
+  const visible = !!app.modo && (sola || pedida) && online;
+  // Una vista por vez que aparece (no por render).
+  useEffect(() => { if (visible) metrica("inv_vista"); }, [visible]);
+  if (!visible) return null;
 
-  const cerrar = () => { if (!pedida) app.descartar(); setComo(false); onCerrar?.(); };
+  const cerrar = () => { metrica("inv_cerrar"); if (!pedida) app.descartar(); setComo(false); onCerrar?.(); };
   const instalar = async () => {
-    if (app.modo === "ios") { setComo(true); return; }
+    if (app.modo === "ios") { metrica("ios_como"); setComo(true); return; }
+    metrica("inv_instalar");
     await app.instalar();
     onCerrar?.();
   };

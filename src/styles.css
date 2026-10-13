@@ -3951,6 +3951,10 @@ select.bl-venue-input { cursor:pointer; }
   color:var(--bl-text-ter); margin:16px 0 8px; padding:0 4px;
 }
 .bl-admin-section-label:first-of-type { margin-top:0; }
+.bl-admin-metricas { width:100%; border-collapse:collapse; margin:16px 0; font:400 var(--fs-14) var(--font-sans); }
+.bl-admin-metricas th, .bl-admin-metricas td { padding:8px 12px; border-bottom:1px solid var(--bl-border-sub); text-align:right; }
+.bl-admin-metricas th { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-admin-metricas td:first-child { text-align:left; color:var(--bl-text-sec); }
 .bl-admin-tabs {
   display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--bl-border); padding-bottom:8px;
 }

@@ -993,6 +993,10 @@ async function runApp() {
   const html = (await get("/"))?.toString() || "";
   if (!/viewport-fit=cover/.test(html)) F("iPhone", "sin viewport-fit=cover el contenido de la app instalada queda debajo del reloj");
   if (!(await get("/offline.html"))) F("sin conexión", "no carga /offline.html");
+  // Métricas sin datos personales (oct 2026): solo valores de una lista cerrada.
+  // Se prueba el rechazo, nunca un valor válido (contra prod ensuciaría los números).
+  const metrica = await fetch(BASE + "/api/m", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ e: "cualquiera", p: "ios", m: "web" }) }).then((r) => r.status).catch(() => 0);
+  if (metrica !== 400) F("métricas", `/api/m acepta un evento fuera de la lista o no existe (HTTP ${metrica})`);
   const sw = (await get("/sw.js"))?.toString() || "";
   if (!/offline\.html/.test(sw)) F("sin conexión", "el service worker no cae a la página sin conexión");
   if (!/no-store\|private/.test(sw)) F("sin conexión", "el service worker no guarda la API pública para usarla sin red (o guarda la privada)");

@@ -4,6 +4,9 @@
 // iPhone no tiene evento ni API: ahí solo se puede explicar el camino (⋯ → Compartir → Agregar a inicio).
 import { useEffect, useState } from "react";
 import { storage } from "../utils/storage";
+import { esApp, esIOS, metrica } from "../utils/app";
+
+export { esApp };
 
 let aviso = null;                 // el evento guardado (Chrome, Edge, Samsung)
 const oyentes = new Set();
@@ -11,16 +14,8 @@ const avisar = () => oyentes.forEach((fn) => fn());
 
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); aviso = e; avisar(); });
-  window.addEventListener("appinstalled", () => { aviso = null; storage.set("bl-app", "instalada"); if (est) est.instalada = true; avisar(); });
+  window.addEventListener("appinstalled", () => { aviso = null; storage.set("bl-app", "instalada"); if (est) est.instalada = true; metrica("instalada"); avisar(); });
 }
-
-export const esApp = () =>
-  typeof window !== "undefined" &&
-  (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
-
-const esIOS = () =>
-  typeof navigator !== "undefined" &&
-  (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
 // Visitas: se cuentan una vez por sesión del navegador.
 function contarVisita() {
@@ -29,6 +24,8 @@ function contarVisita() {
     sessionStorage.setItem("bl-visita", "1");
   } catch { return; }
   storage.set("bl-visitas", String((Number(storage.get("bl-visitas")) || 0) + 1));
+  // Abrir desde el ícono es la vuelta que importa (una vez por sesión).
+  if (esApp()) metrica("abre_app");
 }
 
 if (typeof window !== "undefined") contarVisita();

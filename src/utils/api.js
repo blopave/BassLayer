@@ -59,6 +59,7 @@ export const adminApi = {
   rejectAnn:        (id, note) => authFetch(`/api/admin/announcements/${id}/reject`, { method: "PUT", body: JSON.stringify({ note }) }),
   pinAnn:           (id) => authFetch(`/api/admin/announcements/${id}/pin`, { method: "PUT" }),
   getBtcCycles:     () => authFetch("/api/admin/btc-cycles"),
+  getMetricas:      () => authFetch("/api/admin/metricas"),
   updateBtcCycles:  (data) => authFetch("/api/admin/btc-cycles", { method: "PUT", body: JSON.stringify({ data }) }),
 };
 

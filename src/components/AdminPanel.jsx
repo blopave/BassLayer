@@ -13,6 +13,7 @@ export function AdminPanel({ onBack }) {
   const [cyclesData, setCyclesData] = useState(null);
   const [cyclesSaving, setCyclesSaving] = useState(false);
   const [cyclesMsg, setCyclesMsg] = useState("");
+  const [metricas, setMetricas] = useState([]);
 
   const loadEvents = useCallback(async (status) => {
     setLoading(true);
@@ -51,12 +52,19 @@ export function AdminPanel({ onBack }) {
     setLoading(false);
   }, []);
 
+  const loadMetricas = useCallback(async () => {
+    setLoading(true);
+    try { setMetricas(await adminApi.getMetricas()); } catch { setMetricas([]); }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    if (tab === "venues") loadVenues();
+    if (tab === "metricas") loadMetricas();
+    else if (tab === "venues") loadVenues();
     else if (tab === "cycles") loadCycles();
     else if (tab.startsWith("ann_")) loadAnnouncements(tab.replace("ann_", ""));
     else loadEvents(tab);
-  }, [tab, loadEvents, loadVenues, loadAnnouncements, loadCycles]);
+  }, [tab, loadEvents, loadVenues, loadAnnouncements, loadCycles, loadMetricas]);
 
   function setCur(field, value) {
     setCyclesData((d) => ({ ...d, current: { ...d.current, [field]: value } }));
@@ -163,6 +171,11 @@ export function AdminPanel({ onBack }) {
         ))}
       </div>
 
+      <div className="bl-admin-section-label">App instalable</div>
+      <div className="bl-admin-tabs">
+        <button className={`bl-admin-tab${tab === "metricas" ? " active" : ""}`} onClick={() => setTab("metricas")}>Métricas (30 días)</button>
+      </div>
+
       <div className="bl-admin-section-label">Ciclos BTC (Layer)</div>
       <div className="bl-admin-tabs">
         <button
@@ -175,6 +188,8 @@ export function AdminPanel({ onBack }) {
 
       {loading ? (
         <div className="bl-venue-loading">Cargando...</div>
+      ) : tab === "metricas" ? (
+        <MetricasApp filas={metricas} />
       ) : tab === "venues" ? (
         <div className="bl-venue-event-list">
           {venues.map(v => (
@@ -331,5 +346,33 @@ export function AdminPanel({ onBack }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Métricas de la app instalable (oct 2026): contadores diarios sin datos
+// personales. Totales de los últimos 30 días por plataforma, en el orden del
+// recorrido: ver la invitación → instalar → abrir desde el ícono.
+const EVENTOS = [
+  ["inv_vista", "Vieron la invitación"],
+  ["inv_cerrar", "La cerraron (✕)"],
+  ["inv_instalar", "Tocaron Instalar"],
+  ["ios_como", "iPhone: tocaron Cómo"],
+  ["menu_app", "Tocaron «app» en el menú"],
+  ["instalada", "Instalaron (Android y desktop)"],
+  ["abre_app", "Abrieron desde el ícono (sesiones)"],
+];
+const PLATAFORMAS = ["android", "ios", "desktop"];
+function MetricasApp({ filas }) {
+  const suma = (e, p) => filas.filter((f) => f.evento === e && (!p || f.plataforma === p)).reduce((a, f) => a + f.n, 0);
+  if (!filas.length) return <div className="bl-venue-empty">Todavía no hay datos.</div>;
+  return (
+    <table className="bl-admin-metricas">
+      <thead><tr><th /> {PLATAFORMAS.map((p) => <th key={p}>{p === "ios" ? "iPhone" : p === "android" ? "Android" : "Desktop"}</th>)}<th>Total</th></tr></thead>
+      <tbody>
+        {EVENTOS.map(([e, label]) => (
+          <tr key={e}><td>{label}</td>{PLATAFORMAS.map((p) => <td key={p}>{suma(e, p)}</td>)}<td><b>{suma(e)}</b></td></tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -24,6 +24,7 @@ import { WorldLine } from "./components/WorldLine";
 import { InstalarApp } from "./components/InstalarApp";
 import { SinConexion } from "./components/SinConexion";
 import { useInstalar, esApp } from "./hooks/useInstalar";
+import { metrica } from "./utils/app";
 // Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
 // las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
 // aparte para sacarlos del bundle crítico del home.
@@ -1107,7 +1108,7 @@ export default function App() {
           about
         </button>
         {app.modo && (
-          <button className="bl-util-toggle bl-util-app" onClick={() => (app.modo === "aviso" ? app.instalar() : setAppPedida(true))} aria-label={t("app.menuAria")}>
+          <button className="bl-util-toggle bl-util-app" onClick={() => { metrica("menu_app"); if (app.modo === "aviso") app.instalar(); else setAppPedida(true); }} aria-label={t("app.menuAria")}>
             {t("app.menu")}
           </button>
         )}
