@@ -17,7 +17,6 @@
 
 import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence } from "../lib/content-rules.js";
 import { namesOtherCity, detectCity } from "../lib/places.js";
-import { NOT_MUSIC, NOT_MUSIC_TITLES } from "../lib/salas.js";
 import { readFileSync } from "node:fs";
 import { weekendWindow } from "../lib/finde.js";
 
@@ -43,8 +42,6 @@ const ENDPOINTS = [
   // Predicciones y Finanzas por tema (sept 2026).
   { path: "/api/prediction-markets", minItems: 5, required: ["title", "group", "url"] },
   { path: "/api/finance-news",  minItems: 10, required: ["title", "tag", "url"] },
-  // Carteleras de las salas (oct 2026): la fuente es la cartelera oficial.
-  { path: "/api/salas",         minItems: 100, required: ["title", "date", "sala", "salaName"] },
 ];
 
 const problems = [];
@@ -59,27 +56,13 @@ function walkStrings(value, path, visit) {
   }
 }
 
-// Salas: todas las carteleras leídas (una que falla es una web que cambió),
-// nada pasado y nada que no sea música.
-function checkSalas(body) {
-  const path = "/api/salas";
-  const caidas = (body.salas || []).filter((s) => !s.ok || !s.count).map((s) => s.name);
-  if (caidas.length) fail(path, "cartelera", `sin datos: ${caidas.join(", ")} (¿cambió la web o no llegó la carga?)`);
-  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(Date.now() - 7 * 36e5)).split("-");
-  const pasados = (body.shows || []).filter((s) => s.date < `${y}-${m}-${d}`);
-  if (pasados.length) fail(path, "pasado", `${pasados.length} shows ya pasados: ${pasados.slice(0, 3).map((s) => `${s.title} (${s.date})`).join(" | ")}`);
-  const noMusica = (body.shows || []).filter((s) => NOT_MUSIC.test(s.title) || NOT_MUSIC_TITLES.test(s.title));
-  if (noMusica.length) fail(path, "no-musica", noMusica.slice(0, 3).map((s) => s.title).join(" | "));
-}
-
 async function checkEndpoint({ path, minItems, required }) {
   let items;
   try {
     const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok) return fail(path, "http", `HTTP ${res.status}`);
     const body = await res.json();
-    items = Array.isArray(body) ? body : (body.items ?? body.data ?? body.shows ?? []);
-    if (path === "/api/salas") checkSalas(body);
+    items = Array.isArray(body) ? body : (body.items ?? body.data ?? []);
   } catch (e) {
     return fail(path, "fetch", e.message);
   }
@@ -293,7 +276,7 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
 // del origen. Lo público tiene que salir "public"; lo privado, "no-store" —
 // si no, una respuesta con datos de alguien quedaría servida a todos.
 {
-  const casos = [["/api/events", /public/], ["/api/salas", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
+  const casos = [["/api/events", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
   const mal = [];
   for (const [path, re] of casos) {
     const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) }).catch(() => null);

@@ -20,7 +20,6 @@ import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
 import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, hasElectronicEvidence } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
-import { SALAS, SALAS_INGESTED, NOT_MUSIC, NOT_MUSIC_TITLES } from "./lib/salas.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
 import { armarSemana } from "./lib/semana.js";
@@ -88,7 +87,7 @@ app.use(cors({
 // JSON de 10 kB para todo, salvo la carga de la cartelera del Movistar Arena
 // (GitHub Actions, ~25 kB): esa ruta trae su propio parser.
 const jsonSmall = express.json({ limit: "10kb" });
-app.use((req, res, next) => (req.path === "/api/salas/ingest" ? next() : jsonSmall(req, res, next)));
+app.use(jsonSmall);
 
 // Rate limiter — sliding window, per IP, bounded map size
 const RATE_LIMIT_WINDOW = 60_000;
@@ -176,9 +175,6 @@ const API_PUBLIC_TTL = {
   "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
   "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000, "/api/meta": 24 * 60 * 60_000,
   "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
-  // Salas: corto a propósito. Cada deploy vacía la carga de Movistar/Passline
-  // hasta que vuelve el ingest; el borde no debe retener la cartelera a medias.
-  "/api/salas": 20 * 60_000,
 };
 app.use("/api", (req, res, next) => {
   if (req.method !== "GET") return next();
@@ -226,7 +222,6 @@ const cache = {
   financeNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — noticias financieras generales (RSS macro/mercados)
   markets:     { data: null, ts: 0, ttl: 15 * 60_000 },  // 15min — quotes ETFs + acciones (Twelve Data / Finnhub)
   events:      { data: null, ts: 0, ttl: 60 * 60_000 },
-  salas:       { data: null, ts: 0, ttl: 6 * 60 * 60_000 }, // 6h — carteleras oficiales de las salas
   bassNews:    { data: null, ts: 0, ttl: 30 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
   cryptoEvents:{ data: null, ts: 0, ttl: 60 * 60_000 },  // 1h — crypto events
@@ -252,7 +247,7 @@ function setCache(key, data) {
 // sirve ya y se refresca en background, con una sola build en vuelo. El
 // último dato bueno se persiste en data/cache/<key>.json para que un
 // reinicio arranque servido y no en frío.
-const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices", "salas"]);
+const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices"]);
 const SNAPSHOT_DIR = join(__dirname, "data", "cache");
 const swrInflight = new Map();
 
@@ -355,7 +350,9 @@ function loadSnapshots() {
     } catch (e) { console.warn(`[cache] snapshot ${key} ilegible:`, e.message); }
   }
 }
-loadSnapshots();
+// Se llama recién antes de escuchar (abajo de todo): la reclasificación de
+// QuéHacemos usa reglas definidas más adelante en el archivo (mbNorm…), y
+// llamarla acá las encontraba sin inicializar y descartaba la agenda guardada.
 
 // Devuelve el dato de `key`: fresco → directo; vencido → el viejo ya, refresh
 // atrás; sin nada → espera la build. `build` debe devolver el dato final (o
@@ -2211,7 +2208,6 @@ function mapQHEvent(e) {
   };
 }
 
-let qhRaw = { ts: 0, list: [] };   // último lote crudo de QuéHacemos (todas las categorías)
 async function fetchQueHacemos() {
   try {
     const pad = (n) => String(n).padStart(2, "0");
@@ -2240,7 +2236,6 @@ async function fetchQueHacemos() {
       if (cursor > dateTo) break;
     }
 
-    qhRaw = { ts: Date.now(), list: [...byId.values()] };   // crudo: también lo usa el cruce de las salas
     const mapped = [];
     let skippedNonMusical = 0;
     const nonMusicTitles = qhNonMusicTitles(byId.values());
@@ -2707,6 +2702,34 @@ function deduplicateEvents(events) {
       }
     }
   }
+  // Pass 2b (oct 2026): RA publica algunos eventos sin line-up y con los
+  // artistas solo en el título ("Nick Warren + Kevin Di Serna" en "TBA - AMK
+  // Club", que Buenos Aliens tiene como "Fragment @ Amerika"). Mismo día,
+  // ciudad y HORA EXACTA, uno sin line-up y un artista del line-up del otro
+  // (de 4 letras o más, palabra entera) en su título: es la misma fiesta.
+  const enTitulo = (nombre, artistas) => {
+    const n = ` ${normArtist(nombre).replace(/[^a-z0-9]+/g, " ")} `;
+    return [...artistas].some((a) => a.length >= 4 && n.includes(` ${a.replace(/[^a-z0-9]+/g, " ").trim()} `));
+  };
+  const unidos2b = [];
+  for (const evs of byDay.values()) {
+    for (let i = 0; i < evs.length; i++) {
+      if (dropped.has(evs[i]) || !evs[i].time) continue;
+      for (let j = i + 1; j < evs.length; j++) {
+        if (dropped.has(evs[j]) || evs[j].time !== evs[i].time) continue;
+        const [a, b] = [evs[i], evs[j]];
+        // Solo cuando uno de los dos no trae line-up (el caso de RA): dos fiestas con line-up ya las compara el pass 2.
+        const sinA = !artistSet(a).size, sinB = !artistSet(b).size;
+        if (!((sinB && enTitulo(b.name, artistSet(a))) || (sinA && enTitulo(a.name, artistSet(b))))) continue;
+        const [keep, drop] = score(a) >= score(b) ? [a, b] : [b, a];
+        mergeFields(keep, drop);
+        dropped.add(drop);
+        unidos2b.push(`${keep.day} ${keep.month} ${keep.name} = ${drop.name}`);
+        if (drop === a) break;
+      }
+    }
+  }
+  if (unidos2b.length) console.log(`[events] ${unidos2b.length} unidos por artista en el título: ${unidos2b.slice(0, 8).join(" | ")}`);
   // Pass 3: el mismo evento publicado por dos ticketeras, sin line-up y con la
   // sala escrita distinto (sept 2026: "Espresso Club Session 11 @ Llama Café"
   // en "Puerto Madero" y "ESPRESSO SESSION 011 — PRIMAVERA BRUTAL" en "LLAMA
@@ -3204,101 +3227,6 @@ async function buildEvents() {
   return events;
 }
 
-// ─────────────────────────────────────────────
-//  Salas (oct 2026, Pablo): la cartelera completa de salas emblemáticas, de
-//  cualquier estilo. Fuente: la cartelera OFICIAL de cada sala (lib/salas.js;
-//  Movistar Arena llega por /api/salas/ingest desde GitHub Actions). QuéHacemos
-//  se usa como cruce: confirma el show y su tipo (si lo tiene como teatro,
-//  stand up o familia, no es música). No se mezcla con la agenda electrónica:
-//  se busca y se elige por sala.
-// ─────────────────────────────────────────────
-const SALAS_INGEST_FILE = join(SNAPSHOT_DIR, "salas-ingest.json");
-const SALAS_INGEST_MAX_AGE = 36 * 60 * 60_000;   // una lectura de Movistar vale 36 h (corre cada 6)
-let salasIngest = {};
-try { if (existsSync(SALAS_INGEST_FILE)) salasIngest = JSON.parse(readFileSync(SALAS_INGEST_FILE, "utf8")) || {}; } catch { salasIngest = {}; }
-const QH_NOT_MUSIC_TYPES = new Set(["teatro", "stand up", "familia", "charla", "cine", "arte", "expo", "deporte", "gastronomia"]);
-const salaNorm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-// Saca del título la sala en la que ya se está (y su sala interna): "en Niceto
-// Club", "en Humboldt | Niceto Club", "@ Café Berlín", "en CC Matienzo".
-const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-function salaTitle(title, sala, room) {
-  const names = [sala.name, room, sala.name.replace(/^(club cultural|ciudad cultural|teatro)\s+/i, ""), sala.name.replace(/^club cultural/i, "CC"), ...(sala.aliases || [])].filter(Boolean);
-  const alt = [...new Set(names)].map((n) => escRe(n).replace(/\s+/g, "\\s+")).join("|");
-  const t = title
-    // "@ 25.10.2026" o "10/10" pegado al final (Passline)
-    .replace(/\s*@?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/, "")
-    // "en (el) Groove", "@ C ART MEDIA", "@ Groove, Palermo"
-    .replace(new RegExp(`\\s+(?:en(?:\\s+el)?|@)\\s+(?:(?:${alt})\\s*\\|\\s*)*(?:${alt})(?:,\\s*[A-ZÁÉÍÓÚ][\\wáéíóú]+)?(?=\\s*(?:\\(|$|[-–|·@]))`, "i"), "")
-    .replace(/\s*@?\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*$/, "")
-    .replace(/\s{2,}/g, " ").trim();
-  return t.length >= 2 ? t : title;
-}
-
-async function buildSalas() {
-  const get = (url, opts = {}) => fetchSafe(url, opts, 20000);
-  const now = Date.now(), [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(now - 7 * 36e5)).split("-").map(Number);
-  const today = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  if (!qhRaw.list.length || now - qhRaw.ts > 6 * 60 * 60_000) await fetchQueHacemos().catch(() => {});
-  const qhAt = (sala, date) => qhRaw.list.filter((e) => sala.qh.test(e.venue_name || e.venue || "") && /buenos aires|caba|palermo/i.test(e.city || "") && String(e.date || "").slice(0, 10) === date);
-  const read = await Promise.all(SALAS.map(async (sala) => {
-    try { return { sala, shows: await sala.read(get) }; }
-    catch (e) { console.error(`[salas] ${sala.name}:`, e.message); return { sala, shows: [], error: true }; }
-  }));
-  for (const sala of SALAS_INGESTED) {
-    const ing = salasIngest[sala.slug];
-    read.push({ sala, shows: ing && now - Date.parse(ing.scrapedAt) < SALAS_INGEST_MAX_AGE ? ing.shows : [], error: !ing });
-  }
-  const shows = [], salas = [];
-  for (const { sala, shows: list, error } of read) {
-    let n = 0;
-    for (const s of list) {
-      if (!s.date || s.date < today || !s.title) continue;
-      if (NOT_MUSIC.test(s.title) || NOT_MUSIC_TITLES.test(s.title) || NOT_A_SHOW_TITLE.test(s.title)) continue;
-      // Cruce con QuéHacemos el mismo día en la misma sala.
-      const words = salaNorm(s.title).split(" ").filter((w) => w.length > 3);
-      const qh = qhAt(sala, s.date).find((e) => { const t = salaNorm(e.title); return words.some((w) => t.includes(w)); });
-      if (qh && QH_NOT_MUSIC_TYPES.has(qh.event_type)) continue;
-      // Dentro de la sala no hace falta repetirla: "AMBKOR en Niceto Club (+16 años)" → "AMBKOR (+16 años)".
-      const title = salaTitle(s.title, sala, s.room);
-      shows.push({ id: crypto.createHash("sha1").update(`${sala.slug}|${s.date}|${s.time}|${s.title}`).digest("hex").slice(0, 12), sala: sala.slug, salaName: sala.name, address: sala.address, date: s.date, time: s.time || "", title, room: s.room && s.room !== sala.name ? s.room : "", url: s.url || "", image: s.image || "", qh: !!qh });
-      n++;
-    }
-    salas.push({ slug: sala.slug, name: sala.name, address: sala.address, count: n, ok: !error });
-  }
-  shows.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  // Si todas las carteleras fallan (red caída), no se pisa el último dato bueno.
-  if (!shows.length && cache.salas.data?.shows?.length) return cache.salas.data;
-  return { updated: new Date(now).toISOString(), salas, shows };
-}
-
-app.get("/api/salas", async (req, res) => {
-  let data;
-  try { data = await swr("salas", buildSalas); }
-  catch { return res.status(502).json({ error: "Salas unavailable" }); }
-  res.json(data);
-});
-
-// Carga de una cartelera leída afuera (Movistar Arena, GitHub Actions). Protegida
-// con SALAS_INGEST_TOKEN; valida forma, sala y dominio de cada link.
-app.post("/api/salas/ingest", express.json({ limit: "300kb" }), (req, res) => {
-  const token = process.env.SALAS_INGEST_TOKEN || "";
-  const got = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  if (!token) return res.status(503).json({ error: "ingest disabled" });
-  const a = Buffer.from(got), b = Buffer.from(token);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ error: "unauthorized" });
-  const { venue, scrapedAt, shows } = req.body || {};
-  const sala = SALAS_INGESTED.find((s) => s.slug === venue);
-  if (!sala || !Array.isArray(shows) || shows.length > 400 || isNaN(Date.parse(scrapedAt))) return res.status(400).json({ error: "bad payload" });
-  const clean = shows.filter((s) => s && /^\d{4}-\d{2}-\d{2}$/.test(s.date) && /^(\d{2}:\d{2})?$/.test(s.time || "") && typeof s.title === "string" && s.title.length <= 200 && String(s.url || "").startsWith(sala.urlPrefix) && (!s.image || /^https:\/\//.test(s.image)))
-    .map((s) => ({ date: s.date, time: s.time || "", title: s.title.trim(), url: s.url, image: s.image || "" }));
-  if (!clean.length) return res.status(400).json({ error: "no valid shows" });
-  salasIngest[sala.slug] = { scrapedAt, shows: clean };
-  try { writeFileSync(SALAS_INGEST_FILE, JSON.stringify(salasIngest)); } catch {}
-  cache.salas.ts = 0;   // la próxima consulta rearma con lo nuevo
-  res.json({ ok: true, venue: sala.slug, shows: clean.length });
-});
-
 app.get("/api/events", async (req, res) => {
   const genreFilter = Array.isArray(req.query.genre) ? req.query.genre[0] : req.query.genre;
   const regionFilter = Array.isArray(req.query.region) ? req.query.region[0] : req.query.region;
@@ -3360,7 +3288,7 @@ app.get("/finde.ics", async (req, res) => {
 // ─────────────────────────────────────────────
 //  GET /api/semana — el resumen de la semana (lib/semana.js): lo que viene en
 //  la noche y lo que hizo el mercado. Arma con lo que el server ya tiene
-//  cacheado (agenda, precios, festivales, eventos cripto, salas).
+//  cacheado (agenda, precios, festivales, eventos cripto).
 // ─────────────────────────────────────────────
 async function semanaData() {
   const events = notPast(await swr("events", buildEvents));
@@ -3368,9 +3296,7 @@ async function semanaData() {
   const festivals = loadFestivals().map((f) => ({ ...f, status: festivalStatus(f) })).filter((f) => f.status !== "past");
   const manual = (loadCryptoIrl().events || []).filter((e) => e.status === "approved");
   const cryptoEvents = [...manual, ...loadCuratedEvents()];
-  let salas = [];
-  try { salas = (await swr("salas", buildSalas)).shows || []; } catch {}
-  return armarSemana({ events, prices, festivals, cryptoEvents, salas });
+  return armarSemana({ events, prices, festivals, cryptoEvents });
 }
 
 app.get("/api/semana", async (req, res) => {
@@ -6929,6 +6855,7 @@ setTimeout(() => {
   }
 }, 2500);
 
+loadSnapshots();
 const server = app.listen(PORT, () => console.log(`
   ┌──────────────────────────────────────────┐
   │  BassLayer API v${PKG_VERSION}${" ".repeat(Math.max(0, 26 - PKG_VERSION.length))}│

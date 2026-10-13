@@ -5336,7 +5336,7 @@ select.bl-venue-input { cursor:pointer; }
   content:""; flex:none; width:9px; height:9px; border-radius:50%;
   border:2.5px solid var(--bl-accent-bass); box-shadow:0 0 0 5px color-mix(in srgb, var(--bl-accent-bass) 13%, transparent);
 }
-@media (max-width:768px) { .bl-bass-sections .bl-bass-section-label { font-size:var(--fs-16); } .bl-bass-sections { gap:16px; } }   /* cuatro pestañas (con Salas) entran en 390 px */
+@media (max-width:768px) { .bl-bass-sections .bl-bass-section-label { font-size:var(--fs-16); } .bl-bass-sections { gap:16px; } }
 
 /* Agenda (mobile): Cuándo a la vista, debajo de los géneros. Pastillas en
    cobre para que no se confundan con el índice de géneros de arriba. */
@@ -5645,38 +5645,16 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .btk-tick { stroke:var(--bl-text-ter); stroke-width:1; opacity:.6; transition:stroke .35s, opacity .35s; }
 .btk-cue.is-hot .btk-tick { stroke:var(--bl-accent-bass); opacity:1; }
 
-/* ── Salas (oct 2026): la cartelera completa de salas emblemáticas ─────── */
-.bl-sala-hits { display:flex; flex-direction:column; gap:8px; margin:12px 0; }
-.bl-sala-hit { display:flex; align-items:baseline; gap:12px; padding:12px 16px; border:1px solid var(--bl-accent-bass); border-radius:var(--r-12); background:color-mix(in srgb, var(--bl-accent-bass) 8%, transparent); color:var(--bl-text); cursor:pointer; text-align:left; }
-.bl-sala-hit-name { font:700 var(--fs-16) var(--font-sans); flex:1; }
-.bl-sala-hit-meta { font:500 var(--fs-11) var(--font-mono); color:var(--bl-text-sec); }
-.bl-sala { padding:24px 32px 40px; }
-.bl-sala-back { background:none; border:0; padding:0; margin-bottom:16px; color:var(--bl-text-sec); font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-04); cursor:pointer; }
-.bl-sala-back:hover { color:var(--bl-text); }
-.bl-sala-head { margin-bottom:4px; }
-.bl-sala-name { margin:0; font:800 var(--fs-34)/1.05 var(--font-sans); letter-spacing:var(--tr-n03); }
-.bl-sala-meta { margin:8px 0 0; font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text-sec); }
-.bl-sala-meta-sm { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); text-transform:uppercase; color:var(--bl-text-ter); }
-.bl-sala-show-cta { font:600 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
-.bl-sala-wall { padding-bottom:40px; }
-.bl-sala .bl-ev-list { padding:8px 0 0; }
-.bl-sala .bl-feed-head { margin:24px 0 2px; }
-@media (max-width:768px) {
-  .bl-sala { padding:16px 16px 40px; }
-  .bl-sala-name { font-size:var(--fs-28); }
-  .bl-sala .bl-feed-head { margin:20px 0 2px; }
-}
-
-/* ══ Interiores unificados (oct 2026, Pablo): Noticias, Festivales y Salas
+/* ══ Interiores unificados (oct 2026, Pablo): Noticias y Festivales
    hablan el idioma de la Agenda — número de apertura, filtros de texto,
    rótulos con filete, pared de afiches y afiche de la casa cuando no hay
-   imagen. Salas y la cartelera de una sala usan <button>/<a> como tarjeta. ══ */
+   imagen. ══ */
 .bl-root .bl-ev-wall .bl-ev-item { color:var(--bl-text); text-decoration:none; text-align:left; font:inherit; cursor:pointer; }
 .bl-ev-wall span.bl-ev-body, .bl-ev-wall span.bl-ev-meta-row { display:flex; }
 .bl-ev-wall span.bl-ev-body { flex-direction:column; gap:8px; }
 .bl-ev-wall span.bl-ev-name { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
 .bl-root .bl-ev-wall .bl-ev-venue-line { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-.bl-fest-wall .bl-ev-item::before, .bl-sala-wall .bl-ev-item::before { text-transform:uppercase; }
+.bl-fest-wall .bl-ev-item::before { text-transform:uppercase; }
 /* Noticias: la primera es tapa (dos columnas) y sin foto va el afiche de la casa. */
 .bl-root .bl-bass-news-list { padding-top:24px; }
 .bl-root .bl-bass-news-item .bl-thumb { box-shadow:0 18px 40px rgba(0,0,0,.35); }

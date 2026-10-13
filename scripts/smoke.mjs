@@ -575,8 +575,8 @@ async function run(vp) {
     if (!toastOk) fail(vp.name, "deep-link", "un evento inexistente no muestra aviso");
     if (new URL(page.url()).pathname !== "/") fail(vp.name, "deep-link", `la URL rota queda en la barra (${new URL(page.url()).pathname})`);
 
-    // 5d. Interiores unificados (oct 2026, Pablo): Noticias, Festivales y
-    // Salas hablan el idioma de la Agenda — número de apertura, filtros de
+    // 5d. Interiores unificados (oct 2026, Pablo): Noticias y Festivales
+    // hablan el idioma de la Agenda — número de apertura, filtros de
     // texto, pared de afiches y afiche de la casa cuando no hay imagen.
     await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
     // En el celular la ficha pide dos toques: el primero elige, el segundo entra.
@@ -604,37 +604,16 @@ async function run(vp) {
       if (fest.heads.length && (!fest.chips || !fest.head)) fail(vp.name, "festivales", "faltan los filtros de texto o el número de apertura de la Agenda");
     }
 
-    // 5e. Salas (oct 2026, Pablo): una pestaña propia con las salas y la
-    // cartelera completa de cada una; la sala también aparece en el buscador.
+    // 5e. Bass es Agenda · Noticias · Festivales (oct 2026, Pablo sacó Salas:
+    // "con la agenda es más que suficiente"). Las pestañas entran en el ancho.
     {
-      const tab = page.locator(".bl-bass-section-btn", { hasText: /^Salas$|^Venues$/ });
-      if (!(await tab.count())) fail(vp.name, "salas", "falta la pestaña Salas");
+      const tabs = (await page.locator(".bl-bass-section-btn").allTextContents()).map((x) => x.trim());
+      if (tabs.some((x) => /^(Salas|Venues)$/.test(x))) fail(vp.name, "secciones", "volvió la pestaña Salas");
+      if (tabs.length !== 3) fail(vp.name, "secciones", `Bass tiene ${tabs.length} pestañas (${tabs.join(" · ")}); esperaba Agenda · Noticias · Festivales`);
       const bar = await page.locator(".bl-bass-sections").first().evaluate((b) => b.scrollWidth - b.clientWidth).catch(() => 0);
-      if (bar > 1) fail(vp.name, "salas", `las pestañas no entran: se pasan ${bar}px del ancho`);
-      else {
-        await tab.first().click();
-        await page.locator(".bl-sala-poster").first().waitFor({ state: "visible", timeout: 60_000 }).catch(() => {});
-        const cards = await page.locator(".bl-sala-poster").count();
-        if (cards < 8) fail(vp.name, "salas", `la pestaña muestra ${cards} salas como afiche (esperaba al menos 8)`);
-        if (cards && !(await page.locator(".bl-sala-poster .bl-thumb-img").count())) fail(vp.name, "salas", "ninguna sala tiene portada con el flyer de un show");
-        if (cards) {
-          await page.locator(".bl-sala-poster").first().click();
-          await page.locator(".bl-sala-show").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-          const sala = await page.evaluate(() => ({ name: document.querySelector(".bl-sala-name")?.textContent, shows: document.querySelectorAll(".bl-sala-show").length, top: document.querySelector(".bl-sala-name")?.getBoundingClientRect().top, left: Math.min(...[...document.querySelectorAll(".bl-sala-name, .bl-sala-show")].map((e) => e.getBoundingClientRect().left)) - (document.querySelector(".bl-sala")?.closest(".bl-swipe-panel")?.getBoundingClientRect().left || 0) }));
-          if (!(sala.left >= 12)) fail(vp.name, "salas", `la cartelera de la sala va pegada al borde (${Math.round(sala.left)}px de margen)`);
-          if (!sala.name || sala.shows < 1) fail(vp.name, "salas", "la sala no muestra su cartelera");
-          if (!(sala.top >= 0 && sala.top < vp.viewport.height)) fail(vp.name, "salas", "la sala no abre desde arriba (el nombre queda fuera de pantalla)");
-          await page.locator(".bl-sala-back").click();
-          if ((await page.locator(".bl-sala-poster").count()) < 8) fail(vp.name, "salas", "volver desde una sala no vuelve a la lista de salas");
-        }
-        // Desde el buscador de la Agenda.
-        await page.locator(".bl-bass-section-btn", { hasText: /Agenda|Listings/ }).first().click();
-        await page.locator(".bl-ctrl-search").first().fill("niceto");
-        await page.locator(".bl-sala-hit").first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-        if (!(await page.locator(".bl-sala-hit", { hasText: /Niceto/ }).count())) fail(vp.name, "salas", "buscar \"niceto\" en la Agenda no ofrece la sala");
-        if (await page.locator(".bl-sala-hit ~ .bl-ev-list .bl-empty").count()) fail(vp.name, "salas", "con la sala como resultado, igual dice que no hay coincidencias");
-        await page.locator(".bl-ctrl-search").first().fill("");
-      }
+      if (bar > 1) fail(vp.name, "secciones", `las pestañas no entran: se pasan ${bar}px del ancho`);
+      // los pasos que siguen miran la Agenda
+      await page.locator(".bl-bass-section-btn", { hasText: /Agenda|Listings/ }).first().click();
     }
 
     // 5f. El finde en tu calendario (oct 2026): si el calendario suscribible

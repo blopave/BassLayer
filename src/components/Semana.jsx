@@ -107,17 +107,6 @@ export function Semana() {
                 </section>
               )}
 
-              {N.salas.length > 0 && (
-                <section className="bl-sem-sec">
-                  <h2 className="bl-sem-h c">{t("semana.salas")}</h2>
-                  <div className="bl-sem-rows">
-                    {N.salas.map((s) => (
-                      <div className="bl-sem-row" key={`${s.titulo}-${s.fecha}`}><span className="a">{fd(s.fecha)}</span><span className="b">{s.titulo}<small>{s.sala}{s.hora ? ` · ${s.hora}` : ""}</small></span><span className="c" /></div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
               {M.activos.length > 0 && (
                 <section className="bl-sem-sec">
                   <h2 className="bl-sem-h y">{t("semana.market")}</h2>
