@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App instalable · presentación</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  @font-face { font-family: Geist; src: url(/fonts/geist-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url(/fonts/geist-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; }
+  :root { --bg: #0B0B0C; --tx: #EDEAE4; --mu: #8A8780; --ln: #26262A; --cu: #C49070; --cy: #6CB8C8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.5 Geist, system-ui, sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 40px 16px 96px; }
+  h1 { font-size: clamp(28px, 4.4vw, 44px); font-weight: 600; letter-spacing: -.02em; margin: 0 0 10px; }
+  h2 { font-size: 22px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 6px; }
+  section { margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--ln); }
+  .num { font: 500 12px "Geist Mono", monospace; letter-spacing: .14em; color: var(--mu); text-transform: uppercase; margin-bottom: 10px; }
+  .lead { color: #C9C5BD; max-width: 780px; margin: 0; }
+  .nota { color: var(--mu); font-size: 13.5px; max-width: 780px; margin: 6px 0 24px; }
+  .tag { display: inline-block; font: 500 10.5px "Geist Mono", monospace; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--ln); color: var(--mu); }
+  .tag.real { color: var(--cy); border-color: color-mix(in srgb, var(--cy) 40%, transparent); }
+  .fila { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; }
+  .pieza { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .pieza > span:last-child { font: 12px "Geist Mono", monospace; color: var(--mu); text-align: center; }
+  .sq { border-radius: 22.37%; display: block; }
+
+  /* marcos */
+  .tel { width: 300px; max-width: 100%; border-radius: 42px; padding: 10px; background: #1a1a1d; border: 1px solid #2c2c30; box-shadow: 0 30px 60px -30px #000; }
+  .tel .pant { border-radius: 33px; overflow: hidden; position: relative; aspect-ratio: 390 / 844; background: #000; }
+  .tel img.cap { width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; }
+  .nav { width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #2c2c30; background: #1a1a1d; box-shadow: 0 30px 60px -30px #000; }
+  .nav .barra { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #202024; }
+  .nav .barra i { width: 11px; height: 11px; border-radius: 50%; background: #3a3a3e; }
+  .nav .barra .url { margin-left: 12px; flex: 1; max-width: 420px; background: #121214; border-radius: 7px; padding: 4px 12px; font: 12px system-ui; color: #aaa; display: flex; gap: 8px; align-items: center; }
+  .nav .barra .url img { width: 14px; height: 14px; border-radius: 3px; }
+  .nav img.cap { width: 100%; display: block; }
+  .grilla2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px 28px; align-items: start; }
+  .grilla2 .pieza { align-items: stretch; }
+  .grilla2 .pieza > span:last-child { text-align: left; }
+
+  /* ícono */
+  .icono-hero { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 40px; align-items: center; }
+  .icono-hero img.sq { width: 100%; }
+  .tamanos { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; }
+  .pest { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 10px 10px 0 0; font: 13px system-ui; width: 190px; }
+  .pest.cl { background: #fff; color: #222; } .pest.os { background: #35363A; color: #eee; }
+  .pest img { width: 16px; height: 16px; }
+
+  /* pantallas de inicio (simuladas) */
+  .inicio { width: 260px; border-radius: 34px; padding: 30px 14px 18px; aspect-ratio: 9 / 16; display: flex; flex-direction: column; gap: 18px; }
+  .inicio .g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 0; justify-items: center; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .app .ic { width: 50px; height: 50px; border-radius: 22.37%; overflow: hidden; display: block; }
+  .app .ic.c { border-radius: 50%; }
+  .app .ic img, .app .ic svg { width: 100%; height: 100%; display: block; }
+  .app b { font: 500 10px system-ui; color: #fff; white-space: nowrap; }
+  .inicio.claro { background: linear-gradient(160deg, #F3EEE6, #D9DEE6 60%, #C9D3DA); } .inicio.claro .app b { color: #1b1b1b; }
+  .inicio.oscuro { background: linear-gradient(160deg, #1d2333, #0c0f16 60%, #12100e); }
+  .inicio.android { background: linear-gradient(170deg, #20262f, #0d0f13); border-radius: 26px; }
+  .inicio.tint .ic img { filter: grayscale(1) sepia(1) saturate(2.6) hue-rotate(-12deg) brightness(.95); }
+  .inicio.tint { background: linear-gradient(160deg, #1d2333, #0c0f16 60%, #12100e); }
+  .dock { margin-top: auto; display: flex; gap: 10px; padding: 10px 14px; border-radius: 20px; background: rgba(255,255,255,.14); backdrop-filter: blur(10px); justify-content: center; }
+  .mac { width: 100%; max-width: 520px; border-radius: 14px; aspect-ratio: 16 / 9; background: linear-gradient(160deg, #3b4a66, #1f2533 60%, #3a2c26); position: relative; overflow: hidden; }
+  .mac .dock { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); margin: 0; }
+  .mac .dock .ic { width: 46px; height: 46px; }
+
+  /* instalación (simulada) */
+  .hoja { background: #1E1F22; border-radius: 22px 22px 0 0; padding: 22px 20px 24px; position: absolute; left: 0; right: 0; bottom: 0; color: #eee; font-family: system-ui; }
+  .hoja .cab { display: flex; gap: 14px; align-items: center; }
+  .hoja .cab img { width: 52px; height: 52px; border-radius: 12px; }
+  .hoja .cab b { display: block; font-size: 17px; } .hoja .cab small { color: #9aa; font-size: 12px; }
+  .hoja p { font-size: 12.5px; color: #bbb; margin: 14px 0; }
+  .hoja .caps { display: flex; gap: 8px; overflow: hidden; }
+  .hoja .caps img { height: 150px; border-radius: 8px; }
+  .hoja .bot { display: flex; justify-content: flex-end; gap: 18px; margin-top: 16px; font-size: 14px; font-weight: 600; }
+  .hoja .bot span:last-child { background: #A8C7FA; color: #062e6f; padding: 8px 18px; border-radius: 999px; }
+  .velo { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+  .splash { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .splash img { width: 120px; height: 120px; border-radius: 22.37%; }
+  .splash b { font: 500 14px system-ui; color: #ddd; }
+  .ios-hoja { position: absolute; left: 0; right: 0; bottom: 0; top: 18%; background: #1C1C1E; border-radius: 14px 14px 0 0; padding: 14px 16px; font-family: system-ui; color: #fff; }
+  .ios-hoja .top { display: flex; justify-content: space-between; font-size: 15px; } .ios-hoja .top span:first-child { color: #0A84FF; } .ios-hoja .top span:last-child { color: #0A84FF; font-weight: 600; }
+  .ios-hoja .top b { font-weight: 600; }
+  .ios-hoja .card { margin-top: 22px; background: #2C2C2E; border-radius: 10px; padding: 12px; display: flex; gap: 12px; align-items: center; }
+  .ios-hoja .card img { width: 58px; height: 58px; border-radius: 13px; }
+  .ios-hoja .card div { flex: 1; } .ios-hoja .card b { display: block; font-weight: 400; padding-bottom: 8px; border-bottom: 1px solid #3a3a3c; } .ios-hoja .card small { display: block; color: #8e8e93; padding-top: 8px; font-size: 13px; }
+  .ios-hoja p { color: #8e8e93; font-size: 12px; margin: 10px 4px; }
+
+  /* barra de estado simulada del iPhone */
+  .estado { position: absolute; left: 0; right: 0; top: 0; height: 7%; display: flex; justify-content: space-between; align-items: center; padding: 6% 9% 0; font: 600 13px system-ui; color: #fff; pointer-events: none; }
+  .estado .isla { position: absolute; left: 50%; top: 28%; width: 30%; height: 38%; transform: translateX(-50%); background: #000; border-radius: 999px; }
+  .mal { outline: 2px solid #E5484D; outline-offset: -2px; }
+
+  .objetos { display: flex; flex-wrap: wrap; gap: 24px; }
+  .mesa { border-radius: 16px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 260px; }
+  .mesa.kraft { background: radial-gradient(circle at 30% 20%, #d8c2a0, #b99d76); } .mesa.tela { background: radial-gradient(circle at 70% 30%, #2b2d33, #17181b); }
+  .mesa svg { width: 150px; height: 150px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
+  .mesa span { font: 12px "Geist Mono", monospace; color: rgba(0,0,0,.55); } .mesa.tela span { color: var(--mu); }
+
+  ol.pend { color: #C9C5BD; padding-left: 20px; max-width: 820px; } ol.pend li { margin-bottom: 8px; } ol.pend b { color: var(--tx); }
+  @media (max-width: 720px) { .icono-hero { grid-template-columns: 1fr; } .tel { width: 100%; } .inicio { width: 100%; max-width: 300px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="num">BassLayer · app instalable · rama app-instalable</div>
+  <h1>Todo lo que cambia, antes de seguir</h1>
+  <p class="lead">El ícono es la ficha del home. Abajo está cada lugar donde aparece y cada pantalla nueva de la app. Las capturas marcadas <span class="tag real">captura real</span> salen del sitio corriendo con esta rama; las marcadas <span class="tag">simulación</span> son pantallas del sistema (el celular, la tienda, el dock) que un navegador no puede capturar, dibujadas con los archivos reales.</p>
+
+  <section>
+    <div class="num">1 · El ícono</div>
+    <div class="icono-hero">
+      <img class="sq" src="/icon-1024.png" alt="El ícono de BassLayer">
+      <div>
+        <h2>La ficha, redibujada para cada tamaño</h2>
+        <p class="nota">Misma geometría que el home: el vinilo asomando, el horizonte, las velas del BTC y el agua. No se achica: en el inicio del celular va el dibujo medio (menos surcos, líneas más gruesas) y en la pestaña del navegador, el mini, sin el marco redondo y con la escena acercada.</p>
+        <div class="tamanos">
+          <div class="pieza"><img class="sq" src="/apple-touch-icon.png" width="120" height="120" alt=""><span>iPhone · 180</span></div>
+          <div class="pieza"><img class="sq" src="/icon-192.png" width="72" height="72" alt=""><span>Android · 192</span></div>
+          <div class="pieza"><img class="sq" src="/icon-96.png" width="48" height="48" alt=""><span>accesos · 96</span></div>
+          <div class="pieza"><img src="/favicon.svg" width="32" height="32" alt=""><span>favicon · 32</span></div>
+          <div class="pieza"><img src="/favicon.svg" width="16" height="16" alt=""><span>16</span></div>
+        </div>
+        <div class="fila" style="margin-top:26px;gap:16px">
+          <div class="pest cl"><img src="/favicon.svg" alt=""><span>BassLayer</span></div>
+          <div class="pest os"><img src="/favicon.svg" alt=""><span>BassLayer</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num">2 · En el celular y en la compu</div>
+    <h2>Dónde vive el ícono</h2>
+    <p class="nota"><span class="tag">simulación</span> iPhone con fondo oscuro, claro y en modo tintado (iOS 26 lo genera solo a partir del ícono), Android con su máscara redonda (usa el ícono maskable, que deja la ficha entera adentro) y el dock de una Mac.</p>
+    <div class="fila" id="inicios"></div>
+    <div class="mac" style="margin-top:28px"><div class="dock" id="dock"></div></div>
+  </section>
+
+  <section>
+    <div class="num">3 · Al instalar</div>
+    <h2>Lo que ve la persona cuando la instala</h2>
+    <p class="nota"><span class="tag">simulación</span> En Android, Chrome muestra una hoja con el ícono, la descripción y las capturas nuevas (antes eran del home viejo, con Instagram); al abrir la app, la pantalla de arranque es el ícono sobre negro. En iPhone, "Agregar a inicio" muestra el ícono y el nombre.</p>
+    <div class="fila">
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/invitacion-mobile.png" alt=""><div class="velo"></div>
+        <div class="hoja"><div class="cab"><img src="/icon-192.png" alt=""><div><b>BassLayer</b><small>basslayer.io</small></div></div>
+          <p>La noche y el mercado de Buenos Aires: la agenda de música electrónica y los mercados, cripto incluida.</p>
+          <div class="caps"><img src="/screenshot-mobile.png" alt=""><img src="/screenshot-mobile-agenda.png" alt=""></div>
+          <div class="bot"><span>Cancelar</span><span>Instalar</span></div></div></div></div><span>Android · instalar</span></div>
+      <div class="pieza"><div class="tel"><div class="pant"><div class="splash"><img src="/icon-512.png" alt=""><b>BassLayer</b></div></div></div><span>Android · al abrir</span></div>
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/iphone-instrucciones.png" alt=""><div class="velo"></div>
+        <div class="ios-hoja"><div class="top"><span>Cancelar</span><b>Agregar a inicio</b><span>Agregar</span></div>
+          <div class="card"><img src="/apple-touch-icon.png" alt=""><div><b>BassLayer</b><small>basslayer.io</small></div></div>
+          <p>Se agregará un ícono a tu pantalla de inicio para que puedas acceder rápidamente a este sitio web.</p></div></div></div><span>iPhone · agregar a inicio</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num">4 · La invitación</div>
+    <h2>Una línea, una sola vez</h2>
+    <p class="nota"><span class="tag real">captura real</span> Aparece en la segunda visita, después de 15 segundos adentro de un mundo. La ✕ la cierra para siempre. En el menú ⋯ queda "app" para instalarla cuando quieras. En iPhone no se puede instalar con un toque, así que la línea explica el camino. Adentro de la app instalada no aparece nunca.</p>
+    <div class="fila">
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/invitacion-mobile.png" alt=""></div></div><span>Android · segunda visita</span></div>
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/iphone-menu.png" alt=""></div></div><span>menú ⋯ · "app"</span></div>
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/iphone-instrucciones.png" alt=""></div></div><span>iPhone · cómo agregarla</span></div>
+    </div>
+    <div class="grilla2" style="margin-top:32px">
+      <div class="pieza"><div class="nav"><div class="barra"><i></i><i></i><i></i><div class="url"><img src="/favicon.svg" alt="">basslayer.io/eventos/este-finde</div></div><img class="cap" src="presentacion/invitacion-desktop.png" alt=""></div><span>Desktop (Chrome / Edge) · segunda visita</span></div>
+      <div class="pieza"><div class="nav"><div class="barra"><i></i><i></i><i></i><div class="url"><img src="/favicon.svg" alt="">basslayer.io/eventos/este-finde</div></div><img class="cap" src="presentacion/menu-desktop.png" alt=""></div><span>Desktop · "app" en el menú</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num">5 · Adentro de la app, en iPhone</div>
+    <h2>El encabezado ya no queda debajo del reloj</h2>
+    <p class="nota"><span class="tag">simulación</span> sobre <span class="tag real">captura real</span>: la app instalada en iPhone dibuja el sitio debajo de la barra de estado. Antes, el encabezado "Bass LAYER" quedaba tapado por la hora y la isla. Ahora la sección arranca debajo. La app instalada tampoco repite la bienvenida.</p>
+    <div class="fila">
+      <div class="pieza"><div class="tel"><div class="pant mal"><img class="cap" src="presentacion/antes-iphone.png" alt=""><div class="estado"><span>21:41</span><span class="isla"></span><span>●●● 5G ▮</span></div></div></div><span>antes</span></div>
+      <div class="pieza"><div class="tel"><div class="pant"><img class="cap" src="presentacion/app-iphone.png" alt=""><div class="estado"><span>21:41</span><span class="isla"></span><span>●●● 5G ▮</span></div></div></div><span>ahora</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num">6 · Sin conexión</div>
+    <h2>Una página propia en vez del error del navegador</h2>
+    <p class="nota"><span class="tag real">captura real</span> Si no hay señal y la página no estaba guardada, aparece esto. Se recarga sola cuando vuelve la conexión. Va en el idioma que la persona eligió en el sitio.</p>
+    <div class="grilla2">
+      <div class="pieza" style="align-items:center"><div class="tel"><div class="pant"><img class="cap" src="presentacion/offline-mobile.png" alt=""></div></div><span>mobile</span></div>
+      <div class="pieza"><div class="nav"><div class="barra"><i></i><i></i><i></i><div class="url"><img src="/favicon.svg" alt="">basslayer.io</div></div><img class="cap" src="presentacion/offline-desktop.png" alt=""></div><span>desktop</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num">7 · Como objeto</div>
+    <h2>La ficha también es el sticker y el pin</h2>
+    <p class="nota"><span class="tag">simulación</span> Como la ficha es redonda, el troquel es redondo: el objeto es la ficha misma.</p>
+    <div class="objetos" id="objetos"></div>
+  </section>
+
+  <section>
+    <div class="num">8 · Lo que falta</div>
+    <ol class="pend">
+      <li><b>Probarlo en tu iPhone antes de publicar.</b> Ver el ícono en los modos normal, oscuro, transparente y tintado: una vez que alguien lo instala, el ícono no se puede cambiar.</li>
+      <li><b>La página sin conexión</b> funciona solo con el sitio publicado: se prueba después del deploy.</li>
+      <li><b>Después:</b> medir instalaciones sin cuentas, el aviso de los viernes, y que "Mi agenda" pase de Safari a la app instalada en iPhone (hoy no pasa).</li>
+    </ol>
+  </section>
+</main>
+<script type="module">
+import { objeto } from "./ficha-icono.js";
+const vec = [["#3478F6", "Mapas"], ["#34C759", "Mensajes"], ["#FF9F0A", "Notas"], ["#8E8E93", "Ajustes"], ["#FF375F", "Música"], ["#5E5CE6", "Podcasts"], ["#30B0C7", "Clima"], null, ["#1C1C1E", "Bolsa"], ["#FF453A", "Fotos"], ["#64D2FF", "Archivos"], ["#FFD60A", "Recordat."]];
+const vecino = ([c, n], circ) => `<div class="app"><span class="ic${circ ? " c" : ""}"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${c}"/><circle cx="50" cy="50" r="20" fill="#fff"/></svg></span><b>${n}</b></div>`;
+const nuestro = (src, circ) => `<div class="app"><span class="ic${circ ? " c" : ""}"><img src="${src}" alt=""></span><b>BassLayer</b></div>`;
+const inicio = (cls, rot, src, circ) => `<div class="pieza"><div class="inicio ${cls}"><div class="g">${vec.map((v) => (v ? vecino(v, circ) : nuestro(src, circ))).join("")}</div>
+  <div class="dock">${vecino(["#34C759", ""], circ)}${vecino(["#3478F6", ""], circ)}${vecino(["#FF9F0A", ""], circ)}</div></div><span>${rot}</span></div>`;
+document.getElementById("inicios").innerHTML =
+  inicio("oscuro", "iPhone · fondo oscuro", "/apple-touch-icon.png") +
+  inicio("claro", "iPhone · fondo claro", "/apple-touch-icon.png") +
+  inicio("tint", "iPhone · tintado", "/apple-touch-icon.png") +
+  inicio("android", "Android · máscara redonda", "/icon-maskable-512.png", true);
+document.getElementById("dock").innerHTML = ["#3478F6", "#34C759", "#FF9F0A"].map((c) => `<div class="app"><span class="ic"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="${c}"/><circle cx="50" cy="50" r="20" fill="#fff"/></svg></span></div>`).join("")
+  + `<div class="app"><span class="ic"><img src="/icon-1024.png" alt=""></span></div>`;
+document.getElementById("objetos").innerHTML = `<div class="mesa kraft">${objeto("A")}<span>sticker</span></div><div class="mesa tela">${objeto("A", { pin: true })}<span>pin esmaltado</span></div>`;
+</script>
+</body>
+</html>
