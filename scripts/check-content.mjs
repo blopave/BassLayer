@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence, esDeLaEscena, FUENTES_CON_EVIDENCIA } from "../lib/content-rules.js";
+import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence, esDeLaEscena, FUENTES_CON_EVIDENCIA, artistasDelTitulo } from "../lib/content-rules.js";
 import { namesOtherCity, detectCity } from "../lib/places.js";
 import { readFileSync } from "node:fs";
 import { weekendWindow, eventEpoch } from "../lib/finde.js";
@@ -350,6 +350,21 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   const mal = casos.filter(([ev, ok]) => hasElectronicEvidence(ev) !== ok).map(([ev]) => ev.name);
   stats.push({ path: "evidencia de escena", count: casos.length });
   if (mal.length) fail("evidencia de escena", "regla", `mal clasificados: ${mal.join(" | ")}`);
+}
+
+// Line-up desde el título (oct 2026): RA recibe de ALLMusicParties eventos sin
+// line-up y con los artistas en el título; nombres de fiesta no son artistas.
+{
+  const casos = [
+    ["Nick Warren + Kevin Di Serna", ["Nick Warren", "Kevin Di Serna"]],
+    ["Hernan Cattaneo b2b Nick Warren", ["Hernan Cattaneo", "Nick Warren"]],
+    ["Fragment pres. Nick Warren", []],
+    ["Space 2000", []],
+    ["Sunset Club del Tomate", []],
+  ];
+  const mal = casos.filter(([t, ok]) => JSON.stringify(artistasDelTitulo(t)) !== JSON.stringify(ok)).map(([t]) => t);
+  stats.push({ path: "line-up del título", count: casos.length });
+  if (mal.length) fail("line-up del título", "regla", `mal leídos: ${mal.join(" | ")}`);
 }
 
 // Ciclos fijos de la semana (oct 2026): cada uno con 2 fuentes de sitios

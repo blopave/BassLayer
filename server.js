@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, isStrongElectronic, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, isStrongElectronic, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe, artistasDelTitulo } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity, enCABA } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
@@ -247,7 +247,7 @@ function setCache(key, data) {
 // sirve ya y se refresca en background, con una sola build en vuelo. El
 // último dato bueno se persiste en data/cache/<key>.json para que un
 // reinicio arranque servido y no en frío.
-const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices"]);
+const SNAPSHOT_KEYS = new Set(["events", "bassNews", "prices", "dashboard"]);
 const SNAPSHOT_DIR = join(__dirname, "data", "cache");
 const swrInflight = new Map();
 
@@ -337,15 +337,16 @@ function loadSnapshots() {
       // puede ser de antes de un arreglo).
       if (key === "events" && Array.isArray(raw)) for (const ev of raw) if (ev.source === "quehacemos") { ev.genre = ""; ev.family = classifyFamily(ev); ev.genre = FAMILY_GENRE_LABEL[ev.family] || "En vivo"; }
       const data = key === "events" && Array.isArray(raw) ? sceneOnly(raw).filter((ev) => new RegExp(`^(${BA_MONTHS})$`, "i").test(ev.month || "")) : raw;
-      if (Array.isArray(data) && data.length) {
+      const hayDatos = Array.isArray(data) ? data.length > 0 : !!data && typeof data === "object";
+      if (hayDatos) {
         if (key === "events") tidyEvents(data);
-        registerImages(data);
+        if (Array.isArray(data)) registerImages(data);
         // Noticias de Bass guardadas antes de que tuvieran idioma: se sirven igual
         // pero se rearman en el primer pedido (así llegan traducidas).
         const stale = key === "bassNews" && data.some((n) => !n.lang || (n.titleEs && n.trV !== TITLE_TR_V));
         cache[key] = { ...cache[key], data, ts: stale ? 0 : ts || 0 };
         const age = Math.round((Date.now() - (ts || 0)) / 60000);
-        console.log(`[cache] ${key}: snapshot cargado (${data.length} items, ${age} min)`);
+        console.log(`[cache] ${key}: snapshot cargado (${Array.isArray(data) ? `${data.length} items` : "objeto"}, ${age} min)`);
       }
     } catch (e) { console.warn(`[cache] snapshot ${key} ilegible:`, e.message); }
   }
@@ -2586,8 +2587,12 @@ function extractRATime(t) {
 function formatRAEvent(ev, areaMeta = { region: "AR" }) {
   const date = new Date(ev.date);
   // RA desambigua homónimos con " (2)": en pantalla es ruido y rompe el cruce entre fuentes.
-  const artists = (ev.artists || []).map(a => String(a.name || "").replace(/\s*\(\d+\)$/, ""));
   const venueName = (ev.venue?.name || "TBA").slice(0, 50);
+  const artists = (ev.artists || []).map(a => String(a.name || "").replace(/\s*\(\d+\)$/, ""));
+  // Los eventos que RA recibe de ALLMusicParties ("TBA - AMK Club") llegan sin
+  // line-up y con los artistas en el título ("Nick Warren + Kevin Di Serna"):
+  // se leen de ahí, así el line-up se ve y el cruce entre fuentes los encuentra.
+  if (!artists.length && /^(tba|tbd|tbc)\s*[-:|–—]/i.test(venueName)) artists.push(...artistasDelTitulo(ev.title));
   const areaName = ev.venue?.area?.name || "";
   const genre = detectGenre((ev.title || "") + " " + artists.join(" "));
   const fullAddress = areaName ? `${venueName}, ${areaName}` : venueName;
@@ -4255,7 +4260,24 @@ app.get("/api/dashboard", async (req, res) => {
       fetchSafe("https://api.coingecko.com/api/v3/search/trending").then(r => r.ok ? safeText(r).then(JSON.parse) : null),
     ]);
 
-    const globalData = results[0].status === "fulfilled" ? results[0].value : null;
+    let globalData = results[0].status === "fulfilled" ? results[0].value : null;
+    // Respaldo (oct 2026): si CoinGecko no responde, CoinPaprika (sin key, el
+    // mismo que respalda los precios) da capitalización, variación y dominancia.
+    if (!globalData?.data?.market_cap_percentage?.btc) {
+      const [g, eth] = await Promise.all([
+        fetchSafe("https://api.coinpaprika.com/v1/global").then(r => r.ok ? safeText(r).then(JSON.parse) : null).catch(() => null),
+        fetchSafe("https://api.coinpaprika.com/v1/tickers/eth-ethereum").then(r => r.ok ? safeText(r).then(JSON.parse) : null).catch(() => null),
+      ]);
+      if (g?.market_cap_usd) {
+        const ethCap = eth?.quotes?.USD?.market_cap;
+        globalData = { data: {
+          market_cap_percentage: { btc: g.bitcoin_dominance_percentage, eth: ethCap ? (ethCap / g.market_cap_usd) * 100 : null },
+          total_market_cap: { usd: g.market_cap_usd },
+          market_cap_change_percentage_24h_usd: g.market_cap_change_24h,
+        } };
+        console.log("[dashboard] global servido desde CoinPaprika");
+      }
+    }
     const fngData = results[1].status === "fulfilled" ? results[1].value : null;
     const gasData = results[2].status === "fulfilled" ? results[2].value : null;
     const trendingData = results[3].status === "fulfilled" ? results[3].value : null;
@@ -4299,6 +4321,13 @@ app.get("/api/dashboard", async (req, res) => {
         : [],
     };
 
+    // Lo que esta vez no llegó se completa con el último dato bueno (antes se
+    // cacheaban vacíos y el panel quedaba en blanco todo el TTL).
+    const prev = cache.dashboard?.data;
+    if (prev) for (const k of Object.keys(dashboard)) {
+      const vacio = dashboard[k] == null || (Array.isArray(dashboard[k]) && !dashboard[k].length);
+      if (vacio && prev[k] != null) dashboard[k] = prev[k];
+    }
     setCache("dashboard", dashboard);
     res.json(dashboard);
   } catch (e) {
@@ -5018,7 +5047,7 @@ app.put(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
   const allowed = [
     "display_name", "slug", "description", "venue_type", "address",
     "barrio", "city", "capacity", "logo_url", "cover_url",
-    "instagram", "website", "ra_url", "whatsapp"
+    "instagram", "website", "ra_url",   // sin WhatsApp: Pablo no quiere nada de WhatsApp (sept 2026)
   ];
   const updates = {};
   for (const key of allowed) {

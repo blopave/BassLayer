@@ -31,7 +31,6 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
     instagram: profile?.instagram || "",
     website: profile?.website || "",
     ra_url: profile?.ra_url || "",
-    whatsapp: profile?.whatsapp || "",
   });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(profile?.logo_url || null);
@@ -167,11 +166,6 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
           <label className="bl-venue-label">
             Resident Advisor
             <input className="bl-venue-input" type="url" value={form.ra_url} onChange={(e) => update("ra_url", e.target.value)} placeholder="https://ra.co/clubs/..." />
-          </label>
-
-          <label className="bl-venue-label">
-            WhatsApp
-            <input className="bl-venue-input" type="text" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} placeholder="+54 9 11..." />
           </label>
 
           {error && <div className="bl-venue-error">{error}</div>}

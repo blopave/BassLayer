@@ -226,8 +226,12 @@ export function LayerCurve({ news = [], onEnter }) {
       // el tronco, y cada rama SUBE hacia su nombre, como en una lámina de
       // botánica. Abajo, la historia anterior a 2012 sigue el tronco hasta el
       // pie y se funde: la curva viene de algún lado, no flota.
-      const Hfit = Math.max(460, Math.min(VT + VFAN + 7 * VROW + VB, fit || 692));
-      const row = Math.max(46, Math.min(VROW, (VROW * (Hfit - VT - VB)) / (VFAN + 7 * VROW))), fan = Hfit - VT - VB - 7 * row;
+      // En pantallas bajas (≤ 700 px) las ramas se juntan hasta 38 px y el abanico
+      // conserva 80: entra sin desplazar desde ~640 px de alto (antes, un mínimo
+      // fijo de 460 hacía sobrar 20–90 px).
+      const ROW_MIN = 38, FAN_MIN = 80;
+      const Hfit = Math.max(VT + VB + 7 * ROW_MIN + FAN_MIN, Math.min(VT + VFAN + 7 * VROW + VB, fit || 692));
+      const row = Math.max(ROW_MIN, Math.min(VROW, (VROW * (Hfit - VT - VB)) / (VFAN + 7 * VROW))), fan = Math.max(FAN_MIN, Hfit - VT - VB - 7 * row);
       // De arriba (cerca de hoy) hacia abajo, en el mismo orden de uso.
       const times = spread(1.2).reverse();
       const T0 = SPREAD_FROM, yToday = VT + fan, yBot = yToday + 7 * row, Hh = yBot + VB;
