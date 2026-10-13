@@ -1042,6 +1042,24 @@ async function runApp() {
     if (await pg.locator(".bl-welcome-line").count()) F("app instalada", "repite la bienvenida (en iPhone no comparte lo guardado en Safari)");
     if (await pg.locator(".bl-util-app").count()) F("app instalada", "ofrece instalar la app estando adentro de la app");
     await c.close();
+    // El salto a un día aguanta lo que llega después (oct 2026: el smoke "el día
+    // elegido no queda debajo de la línea" fallaba a veces; los ciclos que llegan
+    // tarde corrían la lista 540 px). Se demoran a propósito hasta después del salto.
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");
+    let soltarCiclos; const ciclosTarde = new Promise((ok) => { soltarCiclos = ok; });
+    await pg.route("**/api/ciclos", async (r) => { await ciclosTarde; r.continue(); });
+    await pg.goto(BASE + "/eventos/este-finde", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-when-chip").first().click({ timeout: 20_000 }).catch(() => {});
+    await pg.waitForTimeout(1200);
+    const dias = pg.locator(".bl-day-rail button.bl-day-rail-day");
+    if ((await dias.count()) > 2) {
+      await dias.nth(Math.min(5, (await dias.count()) - 1)).click();
+      await pg.waitForTimeout(1300); soltarCiclos(); await pg.waitForTimeout(1500);
+      const lejos = await pg.evaluate(() => { const rb = document.querySelector(".bl-day-rail").getBoundingClientRect().bottom; const key = document.querySelector(".bl-day-rail .is-on")?.dataset.rail; const h = document.querySelector(`.bl-day-header[data-day="${key}"]`); return h ? Math.abs(h.getBoundingClientRect().top - rb) : 999; });
+      if (lejos > 24) F("agenda", `lo que llega después del salto corre el día elegido (${Math.round(lejos)} px de la línea)`);
+    } else soltarCiclos();
+    await c.close();
     // Sin red adentro de la app: una línea lo dice (oct 2026, Pablo: "no me muestra el aviso"); al volver, se va.
     [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");

@@ -526,10 +526,17 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       if (sc && sc !== document.body) sc.scrollBy({ top: delta, behavior }); else window.scrollBy({ top: delta, behavior });
     };
     go("smooth");
-    // Los flyers que terminan de cargar en el camino corren la lista: al
-    // llegar se corrige sin animación.
-    setTimeout(() => go("auto"), 650);
-    setTimeout(() => go("auto"), 1200);
+    // Lo que termina de cargar en el camino (flyers, los ciclos) corre la lista:
+    // terminada la animación, cada cambio de alto la vuelve a alinear, sin
+    // animación, durante unos segundos (antes eran dos correcciones a tiempo
+    // fijo y lo que llegaba después dejaba el día corrido).
+    const lista = h.closest(".bl-ev-wall") || h.parentElement;
+    // Si la persona se pone a desplazar, se suelta (no se le pelea el scroll).
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => go("auto")) : null;
+    const zona = sc && sc !== document.body ? sc : window;
+    const soltar = () => { ro?.disconnect(); zona.removeEventListener("wheel", soltar); zona.removeEventListener("touchstart", soltar); };
+    setTimeout(() => { go("auto"); ro?.observe(lista); zona.addEventListener("wheel", soltar, { passive: true }); zona.addEventListener("touchstart", soltar, { passive: true }); }, 650);
+    setTimeout(soltar, 3000);
   };
 
   // Pass `section` as dep so the observer re-attaches when toggling back from
