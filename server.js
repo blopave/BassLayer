@@ -1891,7 +1891,8 @@ function classifyFamily(ev) {
   const name = ev.name || "";
   if (ev.event_type === "festival" || ev.genre === "Festival" || /\bfestival\b/i.test(name)) return "festival";
   // Fuentes intrínsecamente electrónicas (Resident Advisor, Buenos Aliens) → club.
-  if (ev.source === "ra" || ev.source === "buenosaliens") return "club";
+  // Venti entra solo con evidencia de escena (ver mapVenti): también club.
+  if (ev.source === "ra" || ev.source === "buenosaliens" || ev.source === "venti") return "club";
   const elFam = familyFromGenreLabel(ev.genre);
   if (elFam === "club") return "club";
   // MusicBrainz (cache) — señal autoritativa sobre el artista; refina "recital".
@@ -2268,6 +2269,77 @@ async function fetchQueHacemos() {
     console.error("[events] QuéHacemos error:", e.message);
     return [];
   }
+}
+
+// ── Venti (oct 2026): boletera con JSON público ──
+// robots.txt permite /api/event/* y pide Crawl-delay 10. La búsqueda vacía
+// devuelve todo (≈14 páginas de 25, por fecha) con descripción y categoría.
+// Aporta fiestas de semana que RA publica tarde y que QuéHacemos trae sin datos
+// (Not Welcome, jueves en Tokyo Club). Se lee en segundo plano cada 6 h con 10 s
+// entre pedidos y la build usa el último lote (el crudo se guarda en disco, así
+// las reglas nuevas se aplican sin volver a pedir).
+const VENTI_API = "https://venti.com.ar/api/event/search?searchQuery=";
+const VENTI_TTL = 6 * 60 * 60_000, VENTI_DELAY = 10_500, VENTI_MAX_PAGES = 20;
+const VENTI_FILE = join(SNAPSHOT_DIR, "venti.json");
+let venti = { ts: 0, raw: [] }, ventiLoading = false;
+try { if (existsSync(VENTI_FILE)) venti = JSON.parse(readFileSync(VENTI_FILE, "utf8")); } catch { venti = { ts: 0, raw: [] }; }
+
+// Venti da la calle sin la ciudad ("Cnel. Niceto Vega 5507"): si el texto no
+// alcanza, las coordenadas del venue dentro del rectángulo de CABA dicen CABA
+// (el GBA viene con la localidad: ", San Miguel", ", City Bell").
+const enCABA = (lat, lon) => lat > -34.706 && lat < -34.526 && lon > -58.532 && lon < -58.334;
+const BA_PARTES = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+function mapVenti(e) {
+  // Solo fiestas: los "conciertos" de Venti son casi todos bandas.
+  if (e?.category !== "party" || e?.venue?.city?.name !== "Buenos Aires" || !e.name || !e.startDate) return null;
+  const p = Object.fromEntries(BA_PARTES.formatToParts(new Date(e.startDate)).map((x) => [x.type, x.value]));
+  if (!p.year) return null;
+  const venue = String(e.venue.placeName || e.placeName || "").trim().slice(0, 60) || "TBA";
+  const address = [e.venue.placeName, e.venue.readableAddress].filter(Boolean).join(", ");
+  const ev = {
+    day: p.day, month: MONTHS_ES[+p.month - 1], name: String(e.name).replace(/\s+/g, " ").trim().slice(0, 90),
+    venue, address, city: detectCity(venue, address, e.name) || (enCABA(e.venue.latitude, e.venue.longitude) ? "CABA" : ""), region: "AR", artists: [],
+    time: `${p.hour}:${p.minute}`, genre: "", url: `https://venti.com.ar/evento/${encodeURIComponent(e.urlName || "")}`,
+    image: sanitizeUrl(e.bannerImg || e.promoImg) || null, source: "venti",
+    description: String(e.description || "").replace(/\s+/g, " ").trim().slice(0, 600),
+  };
+  // Las mismas reglas de escena que QuéHacemos (lib/content-rules.js).
+  if (!hasElectronicEvidence(ev)) return null;
+  const dow = new Date(+p.year, +p.month - 1, +p.day).getDay();
+  if (dow >= 1 && dow <= 4 && ev.time < "18:00") return null;
+  return ev;
+}
+
+async function refreshVenti() {
+  if (ventiLoading) return;
+  ventiLoading = true;
+  try {
+    const raw = [];
+    for (let page = 1; page <= VENTI_MAX_PAGES; page++) {
+      const r = await fetchSafe(`${VENTI_API}&page=${page}`, { headers: { "User-Agent": "BassLayer/1.0 (+https://basslayer.io)", Accept: "application/json" } }, 15000);
+      if (!r.ok) { console.error(`[events] Venti ${r.status}`); break; }
+      const d = JSON.parse(await safeText(r, 3 * 1024 * 1024));
+      for (const e of d.events || []) raw.push({ name: e.name, startDate: e.startDate, category: e.category, description: e.description, urlName: e.urlName, bannerImg: e.bannerImg, promoImg: e.promoImg, placeName: e.placeName, venue: e.venue && { placeName: e.venue.placeName, readableAddress: e.venue.readableAddress, latitude: e.venue.latitude, longitude: e.venue.longitude, city: e.venue.city && { name: e.venue.city.name } } });
+      if (page >= (d.totalPages || 1)) break;
+      await new Promise((res) => setTimeout(res, VENTI_DELAY));
+    }
+    if (raw.length) {
+      venti = { ts: Date.now(), raw };
+      try { mkdirSync(SNAPSHOT_DIR, { recursive: true }); writeFileSync(VENTI_FILE, JSON.stringify(venti)); } catch {}
+      cache.events.ts = 0;   // la próxima consulta rearma la agenda con lo nuevo
+      console.log(`[events] Venti: ${raw.length} leídos`);
+    }
+  } catch (e) {
+    console.error("[events] Venti error:", e.message);
+  } finally {
+    ventiLoading = false;
+  }
+}
+
+// Lo que haya ya (sin esperar); si está viejo, se renueva en segundo plano.
+function ventiEvents() {
+  if (Date.now() - (venti.ts || 0) > VENTI_TTL) refreshVenti();
+  return (venti.raw || []).map(mapVenti).filter(Boolean);
 }
 
 // ── Strategy 1: Buenos Aliens HTML scraper ──
@@ -3098,6 +3170,13 @@ async function buildEvents() {
       console.log(`[events] RA HTML: ${raHtml.length} events loaded`);
       allEvents.push(...raHtml);
     }
+  }
+
+  // Venti — fiestas con evidencia de escena (último lote leído en segundo plano).
+  const ventiEvs = ventiEvents();
+  if (ventiEvs.length > 0) {
+    console.log(`[events] Venti: ${ventiEvs.length} events loaded`);
+    allEvents.push(...ventiEvs);
   }
 
   // QuéHacemos — agenda multi-género AR (rock, pop, urbano, jazz, cuarteto…),

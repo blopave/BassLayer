@@ -133,7 +133,7 @@ async function checkEndpoint({ path, minItems, required }) {
     // reggaetón, stand-up ni "festivales" como Burgerpalusa.
     // Y con evidencia propia (oct 2026): la plantilla "Evento de música
     // electrónica" de la fuente no alcanza.
-    const fueraDeEscena = items.filter((it) => it?.source === "quehacemos" && (it?.family !== "club" || !hasElectronicEvidence(it)));
+    const fueraDeEscena = items.filter((it) => (it?.source === "quehacemos" || it?.source === "venti") && (it?.family !== "club" || !hasElectronicEvidence(it)));
     if (fueraDeEscena.length) fail(path, "escena", `${fueraDeEscena.length} fuera de la escena electrónica: ${fueraDeEscena.slice(0, 3).map((it) => `${it.name} (${it.family})`).join(" | ")}`);
     // QuéHacemos más allá de la semana (oct 2026): un tope aplicado antes del
     // filtro de escena dejaba solo lo de los próximos 3 días.
