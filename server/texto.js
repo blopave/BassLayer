@@ -1,5 +1,6 @@
-// Texto de los feeds: entidades HTML, títulos limpios (sin la marca del medio)
-// y fechas relativas. Separado de server.js en oct 2026.
+// Texto de los feeds: entidades HTML, títulos limpios (sin la marca del medio),
+// fechas relativas, la imagen de cada ítem y el último dato bueno por fuente.
+// Separado de server.js en oct 2026.
 
 import { XMLParser } from "fast-xml-parser";
 import { escRe, stripTemplateTokens } from "../lib/content-rules.js";
@@ -146,4 +147,123 @@ export function timeToMins(t) {
   if (t.endsWith("h")) return n * 60;
   if (t.endsWith("d")) return n * 1440;
   return 99999;
+}
+
+export function sanitizeUrl(url) {
+  const str = decodeHtmlEntities(String(url || "").trim());
+  if (str.startsWith("https://") || str.startsWith("http://")) return str;
+  return "";
+}
+
+// Strip HTML, decode named entities, collapse whitespace.
+// Convierte HTML en texto plano. La decodificación de entidades la delega en
+// decodeHtmlEntities: antes tenía su propia tabla hardcodeada que no cubría las
+// entidades hex más allá de &#x27;, y por eso las comillas tipográficas
+// (&#x2019;, &#x201C;) salían literales en las descripciones de noticias.
+export function htmlToText(s) {
+  if (!s) return "";
+  return decodeHtmlEntities(
+    String(s)
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+  ).replace(/\s+/g, " ").trim();
+}
+
+function pickFirstImage(html) {
+  if (!html) return null;
+  const m = String(html).match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m ? sanitizeUrl(m[1]) || null : null;
+}
+
+// Different feeds expose the cover image differently:
+//   • <media:content url="..."/>            → object with @_url attr
+//   • <media:content>https://...</media:content>  → bare URL as text content
+//   • <enclosure url="..." type="image/jpeg"/>  → object with @_url + @_type
+//   • <content:encoded><![CDATA[https://...]]></content:encoded> → CDATA URL
+//   • <description>...<img src="..."/>...</description>          → first img
+// Important: some feeds (Attack Magazine) put audio MP3s in <enclosure> — we
+// must reject those by type, and handle arrays since a single item can have
+// multiple enclosures.
+function isImageType(t) {
+  if (!t) return true; // unknown type → assume image (most feeds omit it)
+  return /^image\//i.test(String(t));
+}
+
+function extractUrlIfImage(field) {
+  if (!field) return null;
+  // Array — try each
+  if (Array.isArray(field)) {
+    for (const f of field) {
+      const u = extractUrlIfImage(f);
+      if (u) return u;
+    }
+    return null;
+  }
+  // Plain string with bare URL
+  if (typeof field === "string" && /^https?:\/\//i.test(field.trim())) {
+    const url = field.trim();
+    return /\.(?:mp3|mp4|m4a|ogg|wav|webm)(?:\?|$)/i.test(url) ? null : url;
+  }
+  // Object (typical: { "@_url": "...", "@_type": "..." })
+  if (typeof field === "object") {
+    if (!isImageType(field["@_type"])) return null;
+    const url = field["@_url"] || (typeof field["#text"] === "string" ? field["#text"] : null);
+    if (url && /^https?:\/\//i.test(url)) {
+      return /\.(?:mp3|mp4|m4a|ogg|wav|webm)(?:\?|$)/i.test(url) ? null : url;
+    }
+  }
+  return null;
+}
+
+export function pickItemImage(item, descStr) {
+  for (const key of ["media:content", "media:thumbnail", "enclosure"]) {
+    const u = extractUrlIfImage(item[key]);
+    if (u) return u;
+  }
+  const ce = item["content:encoded"];
+  if (ce) {
+    const ceStr = typeof ce === "object" ? (ce["#text"] || "") : String(ce);
+    const fromImg = pickFirstImage(ceStr);
+    if (fromImg) return fromImg;
+    const bare = ceStr.match(/https?:\/\/\S+\.(?:jpg|jpeg|png|webp|gif)(?:\?\S*)?/i);
+    if (bare) return bare[0];
+  }
+  return pickFirstImage(descStr);
+}
+
+// Per-source last-good cache: si una fuente devuelve 0 ítems en un ciclo
+// (caída temporal, rate-limit, schema change), reutilizamos sus últimos ítems
+// buenos en lugar de borrarlos del feed durante 30min. Tiene techo: si la
+// fuente sigue caída, eventualmente sus ítems caerán fuera del cap de edad.
+const bassNewsLastGood = new Map(); // slug → { items, ts }
+const BASS_NEWS_LAST_GOOD_MAX_AGE_MS = 24 * 60 * 60 * 1000; // descartar fallback si lleva +24h sin éxito
+
+export async function fetchSourceWithFallback(slug, fetcher, label = "bass-news") {
+  let items = [];
+  try { items = await fetcher(); } catch (e) {
+    console.error(`[${label}] ${slug}: fetch threw — ${e.message}`);
+  }
+  if (Array.isArray(items) && items.length > 0) {
+    bassNewsLastGood.set(slug, { items, ts: Date.now() });
+    return items;
+  }
+  const last = bassNewsLastGood.get(slug);
+  if (last && (Date.now() - last.ts) < BASS_NEWS_LAST_GOOD_MAX_AGE_MS) {
+    const ageMin = Math.round((Date.now() - last.ts) / 60_000);
+    console.log(`[${label}] ${slug}: 0 ítems frescos, reutilizando últimos buenos (${last.items.length} ítems, hace ${ageMin}m)`);
+    return last.items;
+  }
+  return [];
+}
+
+// Recalcula time/_mins desde _pubDate. Necesario para fallbacks: ítems
+// cacheados pueden tener varias horas y la edad relativa debe reflejar ahora.
+export function refreshItemAges(items) {
+  return items.map((item) => {
+    if (!item._pubDate) return item;
+    const rel = relativeTime(item._pubDate);
+    if (!rel) return item;
+    return { ...item, time: rel, _mins: timeToMins(rel) };
+  });
 }

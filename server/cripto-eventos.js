@@ -4,9 +4,10 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { sanitizeUrl } from "./texto.js";
 
 export function montarCriptoEventos(app, d) {
-  const { rootDir, cached, fetchSafe, safeText, sanitizeUrl, setCache } = d;
+  const { rootDir, cached, fetchSafe, safeText, setCache } = d;
 
 // ═══════════════════════════════════════════════════════
 //  Crypto Events — scraped from Eventbrite + Meetup

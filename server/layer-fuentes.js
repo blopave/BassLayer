@@ -2,11 +2,11 @@
 // Separado de server.js en oct 2026: lo que necesita del server llega en `d`.
 
 import { COIN_IDS_STR, PAPRIKA_ID } from "./monedas.js";
-import { xmlParser, cleanNewsTitle, relativeTime, timeToMins } from "./texto.js";
+import { cleanNewsTitle, fetchSourceWithFallback, htmlToText, pickItemImage, refreshItemAges, relativeTime, sanitizeUrl, timeToMins, xmlParser } from "./texto.js";
 import { sameStoryOnce } from "../lib/content-rules.js";
 
 export function montarLayerFuentes(app, d) {
-  const { FINNHUB_KEY, TWELVEDATA_KEY, cache, cached, eachLimit, fetchSafe, fetchSourceWithFallback, htmlToText, pickItemImage, refreshItemAges, registerImages, safeText, sanitizeUrl, setCache, translateTitle } = d;
+  const { FINNHUB_KEY, TWELVEDATA_KEY, cache, cached, eachLimit, fetchSafe, registerImages, safeText, setCache, translateTitle } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/prices — CoinGecko
