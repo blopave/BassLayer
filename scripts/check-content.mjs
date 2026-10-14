@@ -368,6 +368,9 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     ["Fragment pres. Nick Warren", []],
     ["Space 2000", []],
     ["Sunset Club del Tomate", []],
+    ["Bresh", []],
+    ["Agustín Pietrocola", []],
+    ["Arte y Fuego", []],
   ];
   const mal = casos.filter(([t, ok]) => JSON.stringify(artistasDelTitulo(t)) !== JSON.stringify(ok)).map(([t]) => t);
   stats.push({ path: "line-up del título", count: casos.length });
