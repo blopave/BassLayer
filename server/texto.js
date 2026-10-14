@@ -267,3 +267,7 @@ export function refreshItemAges(items) {
     return { ...item, time: rel, _mins: timeToMins(rel) };
   });
 }
+
+export function normalizeArtistName(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+}

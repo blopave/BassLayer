@@ -2,6 +2,7 @@
 // Separado de server.js en oct 2026: lo que necesita del server llega en `d`;
 // devuelve los lectores que usa el resumen de la semana.
 
+import crypto from "node:crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { sanitizeUrl } from "./texto.js";

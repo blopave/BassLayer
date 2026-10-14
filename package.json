@@ -9,8 +9,9 @@
     "preview": "open preview.html || xdg-open preview.html",
     "check:content": "node scripts/check-content.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "check": "vite build && node scripts/check-content.mjs && node scripts/smoke.mjs",
-    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+    "check": "vite build && node scripts/check-modulos.mjs && node scripts/check-content.mjs && node scripts/smoke.mjs",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
+    "check:modulos": "node scripts/check-modulos.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
