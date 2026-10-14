@@ -5800,6 +5800,7 @@ app.get("/sitemap.xml", (req, res) => {
   // Páginas temporales — cambian a diario de verdad; lastmod=today es honesto
   // acá y solo acá (Google usa lastmod para programar recrawl).
   urls.push({ loc: `${PROD_ORIGIN}/layer`, lastmod: today, changefreq: "hourly", priority: "0.9" });
+  for (const p of ["agenda", "noticias", "festivales"]) urls.push({ loc: `${PROD_ORIGIN}/${p}`, lastmod: today, changefreq: "daily", priority: "0.9" });
   urls.push({ loc: `${PROD_ORIGIN}/eventos/hoy`, lastmod: today, changefreq: "daily", priority: "0.9" });
   urls.push({ loc: `${PROD_ORIGIN}/eventos/este-finde`, lastmod: today, changefreq: "daily", priority: "0.9" });
 
@@ -6668,7 +6669,7 @@ if (IS_PROD) {
     const all = (cached("events") || []).filter((e) => (e.region || "AR") === "AR");
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let from = today, to = new Date(today.getTime() + 86400000);
+    let from = today, to = new Date(today.getTime() + (kind === "agenda" ? 21 : 1) * 86400000);
     if (kind === "este-finde") {
       const dow = today.getDay();
       const fo = dow === 5 ? 0 : dow === 6 ? -1 : dow === 0 ? -2 : 5 - dow;
@@ -6791,6 +6792,42 @@ if (IS_PROD) {
       canonical: `${PROD_ORIGIN}/eventos/${kind}`,
       image: `${PROD_ORIGIN}/og-image.png`,
       body,
+    });
+  }
+
+  // ── /agenda · /noticias · /festivales (oct 2026): las secciones de Bass con
+  // dirección propia. Para buscadores y para la vista previa al compartir: su
+  // título, descripción y la lista real (los mismos caches que la API).
+  function renderSeccionPage(sec) {
+    const linkStyle = "color:#7ec8ff;text-decoration:none";
+    const lista = (h1, intro, items) => `<main style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0" aria-label="${escHtml(h1)}"><div style="max-width:880px;margin:0 auto;padding:2rem 1.25rem">`
+      + `<h1 style="font-size:2rem;font-weight:600;margin:0 0 0.75rem;color:#fff">${escHtml(h1)}</h1><p style="color:#bcbcbc;line-height:1.65;margin:0 0 2rem;max-width:65ch">${escHtml(intro)}</p>`
+      + `<ul style="list-style:none;padding:0;margin:0">${items.map(([href, t, m]) => `<li style="padding:0.7rem 0;border-bottom:1px solid #141414;line-height:1.5"><a href="${escHtml(href)}" style="${linkStyle};font-weight:500">${escHtml(t)}</a>${m ? ` <span style="color:#888;font-size:0.88em">${escHtml(m)}</span>` : ""}</li>`).join("")}</ul>`
+      + `<p style="margin-top:3rem"><a href="/" style="${linkStyle}">← BassLayer</a></p></div></main>`;
+    if (sec === "agenda") {
+      const events = temporalEvents("agenda");
+      const h1 = "Agenda de música electrónica en Buenos Aires";
+      const intro = "Fiestas, clubes y festivales de electrónica en Buenos Aires: las próximas tres semanas, día por día, actualizadas a diario.";
+      return renderHtmlWithMeta({
+        title: `${h1} | BassLayer`, description: intro, canonical: `${PROD_ORIGIN}/agenda`, image: `${PROD_ORIGIN}/og-image.png`,
+        body: buildListPageBody({ ariaLabel: h1, crumb: "Agenda", h1, intro, listTitle: "Próximas fechas", events, emptyMsg: "La agenda se actualiza todos los días." }),
+      });
+    }
+    if (sec === "noticias") {
+      const news = (cached("bassNews") || []).slice(0, 30);
+      const h1 = "Noticias de música electrónica";
+      const intro = "Lo que pasa en la escena electrónica, de Buenos Aires y del mundo: clubes, artistas, lanzamientos y festivales.";
+      return renderHtmlWithMeta({
+        title: `${h1} | BassLayer`, description: intro, canonical: `${PROD_ORIGIN}/noticias`, image: `${PROD_ORIGIN}/og-image.png`,
+        body: lista(h1, intro, news.map((n) => [`/noticias/${newsSlug(n)}`, n.title, n.source || ""])),
+      });
+    }
+    const fests = loadFestivals().filter((f) => festivalStatus(f) !== "past");
+    const h1 = "Festivales de música electrónica";
+    const intro = "Los festivales de electrónica de Argentina y la región, con fechas y lugar.";
+    return renderHtmlWithMeta({
+      title: `${h1} | BassLayer`, description: intro, canonical: `${PROD_ORIGIN}/festivales`, image: `${PROD_ORIGIN}/og-image.png`,
+      body: lista(h1, intro, fests.map((f) => [`/festivales/${festivalSlug(f)}`, f.name, [f.city, f.dates_start].filter(Boolean).join(" · ")])),
     });
   }
 
@@ -6932,6 +6969,13 @@ if (IS_PROD) {
       if (/^\/layer\/?$/.test(req.path)) {
         res.set("Content-Type", "text/html");
         return res.send(renderLayerPage());
+      }
+
+      // /agenda · /noticias · /festivales — las secciones de Bass
+      const seccionMatch = req.path.match(/^\/(agenda|noticias|festivales)\/?$/);
+      if (seccionMatch) {
+        res.set("Content-Type", "text/html");
+        return res.send(renderSeccionPage(seccionMatch[1]));
       }
 
       // /eventos/hoy · /eventos/este-finde — páginas temporales programáticas

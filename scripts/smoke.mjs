@@ -976,6 +976,14 @@ async function runApp() {
   if (man.orientation) F("manifest", `orientation "${man.orientation}" traba la app en desktop y tablet`);
   const icon = (size, purpose) => man.icons?.find((i) => i.sizes === `${size}x${size}` && (i.purpose || "any").split(" ").includes(purpose));
   for (const [size, purpose] of [[192, "any"], [512, "any"], [512, "maskable"]]) if (!icon(size, purpose)) F("manifest", `falta el ícono ${purpose} de ${size}`);
+  // Las secciones con dirección tienen su título y canonical para Google y al
+  // compartir (oct 2026). El prerender existe solo en producción: Vite no lo sirve.
+  if (!/localhost|127\.0\.0\.1/.test(BASE)) {
+    for (const p of ["agenda", "noticias", "festivales"]) {
+      const html = await fetch(`${BASE}/${p}?v=${Date.now()}`).then((r) => r.text()).catch(() => "");
+      if (!html.includes(`<link rel="canonical" href="https://basslayer.io/${p}"`)) F("secciones", `/${p} no tiene su canonical (se ve la vista previa del home)`);
+    }
+  }
   if (icon(512, "any")?.src === icon(512, "maskable")?.src) F("manifest", "el maskable reusa el ícono común (Android lo recorta)");
   for (const it of [...(man.icons || []), ...(man.screenshots || []), ...(man.shortcuts || []).flatMap((s) => s.icons || [])]) {
     const buf = await get(it.src);
