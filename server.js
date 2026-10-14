@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { generateEventOG, generateEventStory, generateFestivalOG, generateNewsOG, generateSemanaOG } from "./og.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, isStrongElectronic, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe, artistasDelTitulo } from "./lib/content-rules.js";
+import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe, artistasDelTitulo } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity, enCABA } from "./lib/places.js";
 import { slugify } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
@@ -2210,6 +2210,7 @@ function mapQHEvent(e) {
     image: sanitizeUrl(e.image_url) || null,
     source: "quehacemos",
     event_type: e.event_type,        // insumo para classifyFamily
+    ...(e.tipo_fuente ? { tipo_fuente: e.tipo_fuente } : {}),   // "otro"/"fiesta": ver esDeLaEscena
     description: qhCleanDescription(e.description, e.title),
     ticket_price: (isFinite(priceNum) && priceNum > 0) ? priceNum : null,
   };
@@ -2247,13 +2248,14 @@ async function fetchQueHacemos() {
     let skippedNonMusical = 0;
     const nonMusicTitles = qhNonMusicTitles(byId.values());
     for (const e of byId.values()) {
-      // "otro" y "fiesta" solo si son electrónica sin dudas (ver isStrongElectronic).
+      // "otro" y "fiesta" entran como electrónica; esDeLaEscena les exige
+      // vocabulario fuerte por su tipo original (tipo_fuente).
       const tipo = QH_MUSIC_TYPES.has(e.event_type) ? e.event_type
-        : (e.event_type === "otro" || e.event_type === "fiesta") && isStrongElectronic(e) ? "electronica" : null;
+        : e.event_type === "otro" || e.event_type === "fiesta" ? "electronica" : null;
       if (!tipo) continue;
       if (QH_PROVINCES.size && !QH_PROVINCES.has(e.province)) continue;
       if (isNonMusicalQHEvent(e, nonMusicTitles)) { skippedNonMusical++; continue; }
-      const ev = mapQHEvent({ ...e, event_type: tipo });
+      const ev = mapQHEvent({ ...e, event_type: tipo, tipo_fuente: tipo !== e.event_type ? e.event_type : undefined });
       // Solo la escena llega a la agenda (sceneOnly lo vuelve a exigir con la familia):
       // filtrar acá deja el tope para lo que importa.
       if (!ev || !esDeLaEscena(ev)) continue;

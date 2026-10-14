@@ -351,6 +351,8 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   const recitales = [
     [{ name: "ÇANTAMARTA en Niceto Club", description: "electrónica orgánica… Un concierto", event_type: "recital", day: "22", month: "Oct", time: "19:00" }, false],
     [{ name: "Juan Elvadin", description: "referente del Melodic Techno", event_type: "recital", day: "7", month: "Nov", time: "23:59" }, true],
+    [{ name: "Fiesta del sábado", description: "electrónica orgánica… Un concierto", event_type: "electronica", tipo_fuente: "fiesta", day: "8", month: "Nov", time: "23:00" }, false],
+    [{ name: "Techno all night", description: "techno hasta el amanecer", event_type: "electronica", tipo_fuente: "otro", day: "8", month: "Nov", time: "23:59" }, true],
   ];
   const malRecital = recitales.filter(([ev, ok]) => esDeLaEscena(ev) !== ok).map(([ev]) => ev.name);
   if (malRecital.length) fail("evidencia de escena", "recital", `mal clasificados: ${malRecital.join(" | ")}`);
