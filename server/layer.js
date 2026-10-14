@@ -3,9 +3,10 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { PAPRIKA_ID } from "./monedas.js";
 
 export function montarLayer(app, d) {
-  const { MONTHS_ES, PAPRIKA_ID, rootDir, cache, cached, eachLimit, fetchSafe, requireAdmin, requireAuth, safeText, setCache, supabase, swr, translateTitle } = d;
+  const { MONTHS_ES, rootDir, cache, cached, eachLimit, fetchSafe, requireAdmin, requireAuth, safeText, setCache, supabase, swr, translateTitle } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/dolar — USDT/ARS por exchange (CriptoYa) + dólares AR (DolarAPI)
