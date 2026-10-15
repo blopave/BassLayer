@@ -1038,7 +1038,7 @@ function cleanEventName(raw, source) {
   return n;
 }
 
-const { loadFestivals, festivalStatus, arFestivalsAsEvents } = montarFestivales(app, { BROWSER_HEADERS, MONTHS_ES, rootDir: __dirname, fetchSafe });
+const { loadFestivals, festivalStatus, arFestivalsAsEvents } = montarFestivales(app, { BROWSER_HEADERS, MONTHS_ES, rootDir: __dirname, fetchSafe, registerImages });
 // el último dato bueno mientras tanto.
 let lastEventsBuild = null;
 async function buildEvents() {

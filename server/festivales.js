@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { sanitizeUrl, extractOgImage, absolutizeUrl, readHead } from "./texto.js";
 
 export function montarFestivales(app, d) {
-  const { BROWSER_HEADERS, MONTHS_ES, rootDir, fetchSafe } = d;
+  const { BROWSER_HEADERS, MONTHS_ES, rootDir, fetchSafe, registerImages } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/festivals — Curaduría manual de festivales
@@ -185,6 +185,9 @@ app.get("/api/festivals", async (req, res) => {
     return da - db;
   });
 
+  // Las imágenes pasan por el proxy /img (más livianas, y el fondo desenfocado
+  // de la carta solo existe por ahí): hay que registrarlas como publicadas.
+  registerImages(enriched);
   res.json(enriched);
 });
 

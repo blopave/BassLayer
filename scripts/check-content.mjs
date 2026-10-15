@@ -379,6 +379,45 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   if (mal.length) fail("line-up del título", "regla", `mal leídos: ${mal.join(" | ")}`);
 }
 
+// Festivales (oct 2026): el link "oficial" tiene que ser del festival. El de
+// Creamfields llevaba a un casino y el de DGTL a un vendedor de dominios (los
+// dominios vencen y se revenden). Para los próximos: si la página carga, su
+// título o su nombre de sitio nombra al festival. Si no carga, solo avisa.
+{
+  const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const GENERICAS = new Set(["festival", "buenos", "aires", "argentina", "music", "musica", "the", "de", "la", "sound"]);
+  const hoy = new Date().toISOString().slice(0, 10);
+  const lista = JSON.parse(readFileSync("data/festivals.json", "utf8")).filter((x) => x.url && (x.dates_end || x.dates_start) >= hoy);
+  await Promise.all(lista.map(async (x) => {
+    let html = "";
+    try {
+      const r = await fetch(x.url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" }, redirect: "follow", signal: AbortSignal.timeout(12000) });
+      if (!r.ok) return console.log(`  aviso festivales: ${x.id} → ${r.status} (no se pudo comprobar el link)`);
+      html = (await r.text()).slice(0, 300000);
+    } catch { return console.log(`  aviso festivales: ${x.id} → no responde (no se pudo comprobar el link)`); }
+    const titulo = norm((html.match(/<title[^>]*>([^<]*)/i) || [])[1] + " " + (html.match(/og:site_name["'][^>]*content=["']([^"']+)/i) || [])[1]);
+    const claves = norm(x.name).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !GENERICAS.has(w));
+    // Un dominio revendido puede llevar el nombre en el título ("DGTL.COM | domain names…").
+    const ajeno = /casino|apuestas|domain names?|this domain|domain (?:is )?for sale|buy (?:this|the) domain|parked/i.test(titulo);
+    if (ajeno || (claves.length && !claves.some((w) => titulo.includes(w)))) fail("festivales (links)", "link", `${x.id}: el sitio "${x.url}" no es del festival (título: "${titulo.replace(/undefined/g, "").trim().slice(0, 80)}")`);
+  }));
+  stats.push({ path: "festivales (links)", count: lista.length });
+}
+
+// Las imágenes de los festivales pasan por el proxy /img (si no están
+// registradas, el fondo desenfocado de la carta queda vacío).
+{
+  const fests = await fetch(`${BASE}/api/festivals`).then((r) => r.json()).catch(() => []);
+  const conImg = fests.filter((x) => x.image);
+  const malas = [];
+  await Promise.all(conImg.map(async (x) => {
+    const r = await fetch(`${BASE}/img?u=${encodeURIComponent(x.image)}&w=320`).catch(() => null);
+    if (!r || r.status === 404) malas.push(x.id);
+  }));
+  if (malas.length) fail("festivales (imágenes)", "proxy", `sin registrar en /img: ${malas.join(", ")}`);
+  stats.push({ path: "festivales (imágenes)", count: conImg.length });
+}
+
 // Ciclos fijos de la semana (oct 2026): cada uno con 2 fuentes de sitios
 // distintos y re-verificado a tiempo (a los 60 días el server lo oculta).
 {

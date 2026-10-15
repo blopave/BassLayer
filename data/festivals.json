@@ -18,15 +18,15 @@
   },
   {
     "id": "creamfields-bsas-2026",
-    "name": "Creamfields Buenos Aires",
+    "name": "Creamfields Argentina",
     "country": "Argentina",
     "city": "Buenos Aires",
     "region": "BA",
     "dates_start": "2026-11-14",
-    "dates_end": "2026-11-15",
-    "url": "https://creamfieldsba.com",
-    "image": "https://upload.wikimedia.org/wikipedia/en/thumb/5/55/Creamfields_logo.svg/512px-Creamfields_logo.svg.png",
-    "description": "Marca histórica de la electrónica en Argentina. Techno, trance y house en formato mega-festival.",
+    "dates_end": "2026-11-14",
+    "url": "https://www.creamfields.ar",
+    "image": "https://networksites.livenationinternational.com/networksites/4fjnuzhy/sharing-link.jpg",
+    "description": "Marca histórica de la electrónica en Argentina: su 18ª edición, el sábado 14 de noviembre en el Parque de la Ciudad. Techno, trance y house en formato mega-festival.",
     "tags": [
       "Techno",
       "Trance",
@@ -97,56 +97,6 @@
       "House",
       "Melodic",
       "Open Air"
-    ]
-  },
-  {
-    "id": "dgtl-bsas-2026",
-    "name": "DGTL Buenos Aires",
-    "country": "Argentina",
-    "city": "Buenos Aires",
-    "region": "BA",
-    "dates_start": "2026-11-22",
-    "dates_end": "2026-11-22",
-    "url": "https://dgtl.com",
-    "image": null,
-    "description": "Edición porteña del festival holandés. Techno y house con foco en arte audiovisual y sostenibilidad.",
-    "tags": [
-      "Techno",
-      "House",
-      "Art"
-    ]
-  },
-  {
-    "id": "sonar-bogota-2026",
-    "name": "Sónar Bogotá",
-    "country": "Colombia",
-    "city": "Bogotá",
-    "region": "Sudamérica",
-    "dates_start": "2026-10-17",
-    "dates_end": "2026-10-18",
-    "url": "https://sonar.es",
-    "image": null,
-    "description": "El Sónar barcelonés en su versión latinoamericana: música avanzada, arte digital y conferencia.",
-    "tags": [
-      "Techno",
-      "Experimental",
-      "Conference"
-    ]
-  },
-  {
-    "id": "movement-ar-2026",
-    "name": "Movement Argentina",
-    "country": "Argentina",
-    "city": "Buenos Aires",
-    "region": "BA",
-    "dates_start": "2026-12-12",
-    "dates_end": "2026-12-13",
-    "url": "https://movement.us",
-    "image": null,
-    "description": "La franquicia argentina del festival de Detroit. Techno purista en cono sur.",
-    "tags": [
-      "Techno",
-      "Detroit"
     ]
   },
   {
@@ -223,7 +173,7 @@
     "region": "Europa",
     "dates_start": "2026-04-04",
     "dates_end": "2026-04-06",
-    "url": "https://dgtl.com",
+    "url": "https://dgtl-festival.com",
     "image": null,
     "description": "Festival sostenible en el puerto NDSM. Techno/house de alto calibre con foco circular.",
     "tags": [
