@@ -271,3 +271,70 @@ export function refreshItemAges(items) {
 export function normalizeArtistName(s) {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
 }
+
+// ── og:image: la imagen que el sitio declara para compartirse ──
+export function extractOgImage(html) {
+  if (!html) return null;
+  // Probar property="og:image", twitter:image, og:image:secure_url, etc.
+  const patterns = [
+    /<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image:secure_url["']/i,
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+  ];
+  for (const rx of patterns) {
+    const m = html.match(rx);
+    if (m && m[1]) return m[1].trim();
+  }
+  return null;
+}
+
+export function absolutizeUrl(maybeRelative, base) {
+  if (!maybeRelative) return null;
+  try { return new URL(maybeRelative, base).toString(); } catch { return null; }
+}
+
+// Lee los primeros N bytes de una respuesta y trunca el resto SIN tirar error.
+// Necesario para extraer og:image: la mayoría está en los primeros ~50KB (head),
+// pero algunos sitios sirven HTMLs de varios MB que el safeText rechaza entero.
+// Soporta tanto Web Streams (response.body.getReader) como Node Streams (node-fetch).
+export async function readHead(response, maxBytes = 256 * 1024) {
+  const chunks = [];
+  let total = 0;
+  const webReader = response.body?.getReader?.();
+  if (webReader) {
+    try {
+      while (true) {
+        const { done, value } = await webReader.read();
+        if (done) break;
+        total += value.length;
+        if (total > maxBytes) {
+          chunks.push(value.slice(0, value.length - (total - maxBytes)));
+          try { await webReader.cancel(); } catch {}
+          break;
+        }
+        chunks.push(value);
+      }
+    } catch {
+      try { await webReader.cancel(); } catch {}
+    }
+    return Buffer.concat(chunks).toString("utf-8");
+  }
+  // node-fetch: Node Stream con async iteration
+  try {
+    for await (const chunk of response.body) {
+      total += chunk.length;
+      if (total > maxBytes) {
+        chunks.push(chunk.slice(0, chunk.length - (total - maxBytes)));
+        response.body.destroy?.();
+        break;
+      }
+      chunks.push(chunk);
+    }
+  } catch {
+    response.body.destroy?.();
+  }
+  return Buffer.concat(chunks).toString("utf-8");
+}

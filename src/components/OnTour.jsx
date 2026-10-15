@@ -63,7 +63,7 @@ export function OnTour({ events, onSelect, compact = false }) {
             <button type="button" className="bl-tour-card" key={`${ev.day}-${ev.month}-${ev.venue}-${ev.name}`} onClick={() => onSelect(ev)}
               aria-label={`${tour.on.join(", ")} — ${venue(ev)}, ${dayNames[date.getDay()]} ${date.getDate()}`}>
               <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName}
-                poster={{ text: tour.on[0], family: ev.family }} width={320} />
+                poster={{ text: tour.on[0], family: ev.family, seed: ev.name }} width={320} />
               <span className="bl-tour-body">
                 <span className="bl-tour-who">{noOrphanSep(tour.on.slice(0, 2).join(" · "))}{tour.on.length > 2 && <small>{t("tour.more", { n: tour.on.length - 2 })}</small>}</span>
                 <span className="bl-tour-meta bl-bass-t-label"><b>{(dayNames[date.getDay()] || "").slice(0, 3)} {date.getDate()} {M[date.getMonth()]}</b> · {venue(ev)}</span>

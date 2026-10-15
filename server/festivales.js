@@ -4,7 +4,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { sanitizeUrl } from "./texto.js";
+import { sanitizeUrl, extractOgImage, absolutizeUrl, readHead } from "./texto.js";
 
 export function montarFestivales(app, d) {
   const { BROWSER_HEADERS, MONTHS_ES, rootDir, fetchSafe } = d;
@@ -72,7 +72,8 @@ function arFestivalsAsEvents() {
         time: "",
         genre: "Festival",
         url: f.url || "",
-        image: f.image || null,
+        // La misma imagen que muestra la sección Festivales (og:image del sitio oficial, si ya se resolvió).
+        image: f.image || festivalImageCache.get(f.id)?.image || null,
         source: "festival",
         description: f.description || null,
         festival_id: f.id,
@@ -93,72 +94,6 @@ const festivalImageCache = new Map();   // id → { image, ts }
 const festivalLinkCache  = new Map();   // id → { status, ts }
 const FESTIVAL_IMAGE_TTL = 7 * 24 * 60 * 60 * 1000;
 const FESTIVAL_LINK_TTL  = 12 * 60 * 60 * 1000;
-
-function extractOgImage(html) {
-  if (!html) return null;
-  // Probar property="og:image", twitter:image, og:image:secure_url, etc.
-  const patterns = [
-    /<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image:secure_url["']/i,
-    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
-    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
-  ];
-  for (const rx of patterns) {
-    const m = html.match(rx);
-    if (m && m[1]) return m[1].trim();
-  }
-  return null;
-}
-
-function absolutizeUrl(maybeRelative, base) {
-  if (!maybeRelative) return null;
-  try { return new URL(maybeRelative, base).toString(); } catch { return null; }
-}
-
-// Lee los primeros N bytes de una respuesta y trunca el resto SIN tirar error.
-// Necesario para extraer og:image: la mayoría está en los primeros ~50KB (head),
-// pero algunos sitios sirven HTMLs de varios MB que el safeText rechaza entero.
-// Soporta tanto Web Streams (response.body.getReader) como Node Streams (node-fetch).
-async function readHead(response, maxBytes = 256 * 1024) {
-  const chunks = [];
-  let total = 0;
-  const webReader = response.body?.getReader?.();
-  if (webReader) {
-    try {
-      while (true) {
-        const { done, value } = await webReader.read();
-        if (done) break;
-        total += value.length;
-        if (total > maxBytes) {
-          chunks.push(value.slice(0, value.length - (total - maxBytes)));
-          try { await webReader.cancel(); } catch {}
-          break;
-        }
-        chunks.push(value);
-      }
-    } catch {
-      try { await webReader.cancel(); } catch {}
-    }
-    return Buffer.concat(chunks).toString("utf-8");
-  }
-  // node-fetch: Node Stream con async iteration
-  try {
-    for await (const chunk of response.body) {
-      total += chunk.length;
-      if (total > maxBytes) {
-        chunks.push(chunk.slice(0, chunk.length - (total - maxBytes)));
-        response.body.destroy?.();
-        break;
-      }
-      chunks.push(chunk);
-    }
-  } catch {
-    response.body.destroy?.();
-  }
-  return Buffer.concat(chunks).toString("utf-8");
-}
 
 // Devuelve { image, linkStatus } para un festival.
 //   linkStatus: 'ok'        → el sitio respondió 2xx

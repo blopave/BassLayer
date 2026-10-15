@@ -35,7 +35,7 @@ export function Finde({ events, onSelect }) {
         <div className="bl-finde-thumbs">
           {picks.slice(0, 4).map((ev) => (
             <button type="button" key={eventSlug(ev)} className="bl-finde-thumb" onClick={() => onSelect(ev)} aria-label={ev.name}>
-              <BlThumb image={ev.image} artistImage={ev.artistImage} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+              <BlThumb image={ev.image} artistImage={ev.artistImage} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family, seed: ev.name }} />
             </button>
           ))}
         </div>

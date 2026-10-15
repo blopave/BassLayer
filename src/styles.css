@@ -4476,22 +4476,23 @@ select.bl-venue-input { cursor:pointer; }
   width:12px; height:2px;
   background:var(--poster-tint); opacity:0.9;
 }
-/* v1: primera palabra en outline — fill transparente, contorno de tinta */
-.bl-poster[data-variant="1"] .bl-poster-word:first-child {
-  color:transparent;
-  -webkit-text-stroke:1px var(--poster-ink);
-}
-/* v2: bloque arriba, guión abajo */
-.bl-poster[data-variant="2"] .bl-poster-words { justify-content:flex-start; }
-.bl-poster[data-variant="2"] .bl-poster-rule { top:auto; bottom:8px; }
 .bl-ev-item:hover .bl-poster-word,
 .bl-bass-news-item:hover .bl-poster-word { color:var(--bl-text); }
-.bl-ev-item:hover .bl-poster[data-variant="1"] .bl-poster-word:first-child {
-  color:transparent; -webkit-text-stroke-color:var(--bl-text);
-}
 /* Escala por contenedor: los anchos del thumb ya los fija cada contexto */
 .bl-ev-item[data-featured="true"] .bl-poster { font-size:var(--fs-16); }
 .bl-bass-news-item .bl-poster { font-size:var(--fs-11); }
+
+/* La onda del evento (oct 2026, "B"): barras de un color con la forma propia
+   de cada evento o nota; el nombre, claro, abajo y adentro de la onda. */
+.bl-onda { position:absolute; inset:0; width:100%; height:100%; fill:var(--poster-tint); pointer-events:none; }
+.bl-poster .bl-poster-words { position:relative; }
+.bl-poster .bl-poster-word { color:var(--bl-text); text-shadow:0 2px 14px rgba(0,0,0,.55); }
+.bl-poster-meta { position:absolute; top:6cqi; left:6cqi; right:6cqi; font-family:var(--font-mono); font-size:max(9px, 3.4cqi); font-weight:600; letter-spacing:var(--tr-12); text-transform:uppercase; color:var(--poster-tint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-poster[data-titular] { align-items:flex-end; }
+/* Las notas de Bass son de Bass: su onda va en cobre, como la de los eventos. */
+.bl-bass-news-item .bl-poster { --poster-tint:var(--bl-accent-bass); }
+.bl-poster-titular { position:relative; margin:0; font-family:var(--font-sans); font-weight:700; font-size:max(12px, 6.2cqi); line-height:1.08; letter-spacing:var(--tr-n015); color:var(--bl-text); text-shadow:0 2px 14px rgba(0,0,0,.55); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.bl-root.day-mode .bl-poster .bl-poster-word, .bl-root.day-mode .bl-poster-titular { text-shadow:none; }
 
 /* ── Foto de artista como afiche — fallback cuando no hay flyer ──
    Duotono: la foto de prensa (Deezer) en grises, tintada por familia con
@@ -5590,10 +5591,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 
 /* 1 · Sin flyer: afiche de la casa — cobre, textura de onda y el nombre grande. */
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster {
-  background:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--poster-tint, #C49070) 26%, transparent) 0 1.5px, transparent 1.5px 5px),
-    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--poster-tint, #C49070) 30%, transparent) 0%, transparent 65%),
-    linear-gradient(180deg, color-mix(in srgb, var(--poster-tint, #C49070) 14%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--poster-tint, #C49070) 8%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
   -webkit-mask-image:none;
 }
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster { container-type:inline-size; }
@@ -5659,10 +5657,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root .bl-bass-news-list { padding-top:24px; }
 .bl-root .bl-bass-news-item .bl-thumb { box-shadow:0 18px 40px rgba(0,0,0,.35); }
 .bl-root .bl-bass-news-item .bl-thumb-poster {
-  background:
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--poster-tint, #C49070) 26%, transparent) 0 1.5px, transparent 1.5px 5px),
-    radial-gradient(120% 90% at 20% 0%, color-mix(in srgb, var(--poster-tint, #C49070) 30%, transparent) 0%, transparent 65%),
-    linear-gradient(180deg, color-mix(in srgb, var(--poster-tint, #C49070) 14%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
+  background:linear-gradient(180deg, color-mix(in srgb, #C49070 8%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
   -webkit-mask-image:none; container-type:inline-size;
 }
 .bl-root .bl-bass-news-item .bl-thumb-poster .bl-poster { font-size:clamp(15px, 9cqi, 34px); padding:7cqi 6cqi; align-items:flex-end; background:linear-gradient(0deg, color-mix(in srgb, var(--bl-bg) 85%, transparent) 0%, transparent 55%); }
@@ -5843,7 +5838,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 
 /* ── El afiche de la casa en el modal de evento sin flyer (auditoría B6) ── */
 .bl-em-afiche { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:flex-end; gap:12px; padding:72px 28px 28px; background:radial-gradient(90% 70% at 30% 40%, rgba(196,144,112,.10), transparent 70%), var(--bl-surface); }
-.bl-em-afiche-onda { position:absolute; left:0; right:0; top:22%; height:38%; width:100%; fill:var(--bl-accent-bass); opacity:.32; }
+.bl-em-afiche-onda { position:absolute; left:0; right:0; top:14%; height:58%; width:100%; fill:var(--bl-accent-bass); opacity:.6; }
 .bl-em-afiche-lineup { position:relative; display:flex; flex-direction:column; gap:4px; }
 .bl-em-afiche-lineup span { font-family:var(--font-sans); font-weight:800; font-size:var(--fs-34); letter-spacing:var(--tr-n03); line-height:1.02; color:var(--bl-text); overflow-wrap:anywhere; }
 .bl-em-afiche-lineup span + span { font-size:var(--fs-22); color:var(--bl-text-sec); }

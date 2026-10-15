@@ -2,7 +2,7 @@
 // Separado de server.js en oct 2026: lo que necesita del server llega en `d`;
 // devuelve buildBassNews para mantenerlas calientes.
 
-import { cleanNewsTitle, fetchSourceWithFallback, htmlToText, pickItemImage, refreshItemAges, relativeTime, sanitizeUrl, timeToMins, xmlParser } from "./texto.js";
+import { cleanNewsTitle, fetchSourceWithFallback, htmlToText, pickItemImage, refreshItemAges, relativeTime, sanitizeUrl, timeToMins, xmlParser, extractOgImage, absolutizeUrl, readHead } from "./texto.js";
 
 export function montarBassNoticias(app, d) {
   const { BROWSER_HEADERS, MONTH_MAP, TITLE_TR_V, eachLimit, fetchSafe, registerImages, safeText, swr, translateTitle } = d;
@@ -190,6 +190,25 @@ async function fetchBuenosAliensNotas() {
   }
 }
 
+const fotoNotaCache = new Map();   // url → { image, ts }
+const FOTO_NOTA_TTL = 24 * 60 * 60_000;
+// Un logo o una imagen por defecto del medio no es la foto de la nota.
+const FOTO_GENERICA = /(?:^|[\/_-])(?:logo|lgo|default|placeholder|favicon|fallback|share)(?:[_-][\w-]*)?\.(?:png|jpe?g|webp|svg)$/i;
+async function fotoDeLaNota(url) {
+  const hit = fotoNotaCache.get(url);
+  if (hit && Date.now() - hit.ts < FOTO_NOTA_TTL) return hit.image;
+  let image = null;
+  try {
+    const r = await fetchSafe(url, { headers: BROWSER_HEADERS }, 6000);
+    if (r.ok) {
+      const og = sanitizeUrl(absolutizeUrl(extractOgImage(await readHead(r)), url) || "");
+      if (og && !FOTO_GENERICA.test(new URL(og).pathname)) image = og;
+    }
+  } catch {}
+  fotoNotaCache.set(url, { image, ts: Date.now() });
+  return image;
+}
+
 async function buildBassNews() {
   const [notas, ...rssResults] = await Promise.all([
     fetchSourceWithFallback("buenosaliens", fetchBuenosAliensNotas),
@@ -221,6 +240,13 @@ async function buildBassNews() {
   await eachLimit(news.filter((n) => n.lang !== "es"), 4, async (n) => {
     const es = await translateTitle(n.title, n.lang, "es");
     if (es) { n.titleEs = es; n.trV = TITLE_TR_V; }
+  });
+  // Notas sin imagen en el feed (oct 2026: 13 de 40): casi todas tienen la
+  // foto real en su página (og:image). Se lee el principio de la página una vez
+  // por nota (cache 24 h, también el "no tiene") y se descartan los logos.
+  await eachLimit(news.filter((n) => !n.image && n.url), 4, async (n) => {
+    const img = await fotoDeLaNota(n.url);
+    if (img) n.image = img;
   });
   // No cachear vacío como hit válido (taparía el último cache bueno); si el
   // scrape volvió vacío, servimos el último bueno disponible.

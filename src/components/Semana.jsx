@@ -72,7 +72,7 @@ export function Semana() {
                   <div className="bl-sem-picks">
                     {N.finde.map((e) => (
                       <div className="bl-sem-pick" key={`${e.nombre}-${e.dia}`}>
-                        <div className="bl-sem-flyer"><BlThumb image={e.imagen} artistImage={e.imagenArtista} poster={{ text: e.artistas[0] || e.nombre, family: e.familia }} width={200} /></div>
+                        <div className="bl-sem-flyer"><BlThumb image={e.imagen} artistImage={e.imagenArtista} poster={{ text: e.artistas[0] || e.nombre, family: e.familia, seed: e.nombre }} width={200} /></div>
                         <div className="nm">{e.nombre}</div>
                         <div className="mt">{e.dia} {e.mes}{e.hora ? ` · ${e.hora}` : ""} · {e.venue}</div>
                       </div>

@@ -878,7 +878,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   {/* El flyer es diseño gráfico hecho para este show: va de
                       portada, no de miniatura. La fecha no se repite acá —
                       la dice el encabezado del día, una sola vez. */}
-                  <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family }} />
+                  <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family, seed: ev.name }} />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{noOrphanSep(ev.name)}</div>
                     {isLead && ev.artists && ev.artists.length >= 2 && (
@@ -979,7 +979,7 @@ function BassNewsItem({ item, idx, onSelect }) {
       aria-label={`${tr.title}${item.tag ? ` — ${item.tag}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
-      <BlThumb image={item.image} poster={{ text: item.source || item.tag || item.title, family: "news" }} onImgFail={() => setImgFailed(true)} />
+      <BlThumb image={item.image} poster={{ text: tr.title, titular: true, meta: [item.source, item.tag].filter(Boolean).join(" · "), seed: item.url || item.title, family: "news" }} onImgFail={() => setImgFailed(true)} />
       <div className="bl-bass-news-body">
         <h3 className="bl-bass-news-title bl-bass-t-heading" lang={tr.lang}>{tr.title}</h3>
         {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}

@@ -362,13 +362,19 @@ async function run(vp) {
         const cols = getComputedStyle(w).gridTemplateColumns.split(" ").length;
         const posters = [...w.querySelectorAll(".bl-ev-item .bl-thumb-poster")];
         const emptyPoster = posters.filter((p) => !p.querySelector(".bl-poster-word")?.textContent.trim()).length;
+        // La onda del evento (oct 2026, "B"): cada afiche lleva su onda, y dos eventos distintos no la comparten.
+        const ondas = posters.map((p) => [...p.querySelectorAll(".bl-onda rect")].slice(0, 12).map((r) => r.getAttribute("height")).join(","));
+        const sinOnda = ondas.filter((o) => !o).length;
+        const repetidas = ondas.length - new Set(ondas).size;
         const badge = [...w.querySelectorAll('.bl-ev-item:not([data-time=""])')].slice(0, 6).every((it) => getComputedStyle(it, "::before").content.replace(/"/g, "").trim().length > 0);
-        return { cols, emptyPoster, badge };
+        return { cols, emptyPoster, badge, sinOnda, repetidas, n: posters.length };
       });
       if (!wall) fail(vp.name, "agenda", "la agenda no es la pared de afiches");
       else {
         if (vp.isMobile ? wall.cols !== 2 : wall.cols < 3) fail(vp.name, "agenda", `la pared tiene ${wall.cols} columnas`);
         if (wall.emptyPoster) fail(vp.name, "agenda", `${wall.emptyPoster} eventos sin flyer sin nombre en su afiche`);
+        if (wall.sinOnda) fail(vp.name, "agenda", `${wall.sinOnda} afiches sin la onda del evento`);
+        if (wall.n > 2 && wall.repetidas > wall.n / 3) fail(vp.name, "agenda", `la onda se repite entre eventos (${wall.repetidas} de ${wall.n}): no sale del nombre`);
         if (!wall.badge) fail(vp.name, "agenda", "la hora no aparece sobre el flyer");
       }
       // Dentro de cada día, por hora como se vive la noche (la madrugada al final).
@@ -588,6 +594,9 @@ async function run(vp) {
       // Una nota sin foto no puede quedar como caja oscura con un rótulo chiquito.
       const tiny = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => parseFloat(getComputedStyle(p).fontSize) < 15).length);
       if (tiny) fail(vp.name, "noticias", `${tiny} notas sin foto se ven como cajas vacías (sin afiche de la casa)`);
+      // Sin foto: la onda y el titular entero (no el nombre del medio).
+      const malas = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => !p.querySelector(".bl-onda rect") || !p.querySelector(".bl-poster-titular")?.textContent.trim()).length);
+      if (malas) fail(vp.name, "noticias", `${malas} notas sin foto sin la onda o sin el titular en su afiche`);
     }
     await page.locator(".bl-bass-section-btn", { hasText: /^Festivales$|^Festivals$/ }).first().click().catch(() => {});
     await page.locator(".bl-fest-wall").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
