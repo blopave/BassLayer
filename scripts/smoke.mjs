@@ -594,9 +594,27 @@ async function run(vp) {
       // Una nota sin foto no puede quedar como caja oscura con un rótulo chiquito.
       const tiny = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => parseFloat(getComputedStyle(p).fontSize) < 15).length);
       if (tiny) fail(vp.name, "noticias", `${tiny} notas sin foto se ven como cajas vacías (sin afiche de la casa)`);
-      // Sin foto: la onda y el titular entero (no el nombre del medio).
-      const malas = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => !p.querySelector(".bl-onda rect") || !p.querySelector(".bl-poster-titular")?.textContent.trim()).length);
-      if (malas) fail(vp.name, "noticias", `${malas} notas sin foto sin la onda o sin el titular en su afiche`);
+      // Sin foto: la onda de la nota y su tema (el titular va abajo, como en la Agenda).
+      const malas = await page.evaluate(() => [...document.querySelectorAll(".bl-bass-news-item .bl-poster")].filter((p) => !p.querySelector(".bl-onda rect") || !p.textContent.trim()).length);
+      if (malas) fail(vp.name, "noticias", `${malas} notas sin foto sin la onda o sin texto en su afiche`);
+      // La pared de la Agenda (oct 2026, "A · Pared"): rótulo por día, el medio en la etiqueta de la foto y "tema · cuándo".
+      const pared = await page.evaluate(() => {
+        const w = document.querySelector(".bl-news-wall"); if (!w) return null;
+        const items = [...w.querySelectorAll(".bl-ev-item")];
+        return {
+          dias: w.querySelectorAll(".bl-day-header").length,
+          sinMedio: items.filter((it) => !getComputedStyle(it, "::before").content.replace(/"/g, "").trim()).length,
+          sinCuando: items.filter((it) => !/·/.test(it.querySelector(".bl-ev-venue-line")?.textContent || "")).length,
+          ingles: [...document.querySelectorAll(".bl-filters .bl-filter-chip")].map((b) => b.textContent).filter((x) => /Scene|Music\b|Tour\b/.test(x)).length,
+        };
+      });
+      if (!pared) fail(vp.name, "noticias", "Noticias no es la pared de la Agenda");
+      else {
+        if (!pared.dias) fail(vp.name, "noticias", "faltan los rótulos por día");
+        if (pared.sinMedio) fail(vp.name, "noticias", `${pared.sinMedio} notas sin el medio en la etiqueta`);
+        if (pared.sinCuando) fail(vp.name, "noticias", `${pared.sinCuando} notas sin "tema · cuándo"`);
+        if (pared.ingles) fail(vp.name, "noticias", "los temas siguen en inglés");
+      }
     }
     await page.locator(".bl-bass-section-btn", { hasText: /^Festivales$|^Festivals$/ }).first().click().catch(() => {});
     await page.locator(".bl-fest-wall").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});

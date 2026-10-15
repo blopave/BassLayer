@@ -4137,71 +4137,6 @@ select.bl-venue-input { cursor:pointer; }
 }
 
 /* ═══════════════════════════════════════════
-   Bass news list — cards with thumb + body
-   ═══════════════════════════════════════════ */
-
-.bl-bass-news-list {
-  display:flex; flex-direction:column;
-  gap:16px;
-  padding:8px 32px 24px;
-}
-.bl-bass-news-item {
-  display:flex; gap:16px;
-  padding:20px;
-  background:var(--bl-surface);
-  border:1px solid var(--bl-border-sub);
-  border-radius:var(--r-12);
-  cursor:pointer;
-  transition:transform .2s var(--ease-out-expo), border-color .2s, background .2s;
-  outline:none;
-}
-.bl-bass-news-item:hover {
-  border-color:var(--bl-accent-bass);
-  background:var(--bl-subtle);
-  transform:translateY(-1px);
-}
-.bl-bass-news-item:focus-visible {
-  border-color:var(--bl-accent-bass);
-  box-shadow:0 0 0 3px rgba(196,144,112,0.18);
-}
-.bl-bass-news-item { align-items:center; }
-.bl-bass-news-body {
-  flex:1; min-width:0;
-  display:flex; flex-direction:column; gap:12px;
-  align-items:flex-start;
-}
-.bl-bass-news-title {
-  color:var(--bl-text);
-  margin:0;
-  display:-webkit-box;
-  -webkit-line-clamp:3;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.bl-bass-news-tag-pill {
-  display:inline-block;
-  padding:0;
-  color:var(--bl-accent-bass);
-  background:transparent;
-  border:none;
-  border-radius:0;
-}
-
-/* News-only thumb scale-up — no afecta eventos ni festivales */
-.bl-bass-news-item .bl-thumb {
-  flex-basis:84px;
-  width:84px; height:84px;
-  border-radius:var(--r-12);
-}
-
-@media (max-width:768px) {
-  .bl-bass-news-list { padding:8px 16px 20px; gap:12px; }
-  .bl-bass-news-item { padding:16px; gap:16px; }
-  .bl-bass-news-title { font-size:var(--fs-16); -webkit-line-clamp:3; }
-  .bl-bass-news-item .bl-thumb { flex-basis:60px; width:60px; height:60px; border-radius:var(--r-8); }
-}
-
-/* ═══════════════════════════════════════════
    Layer news cards — mismas dimensiones que Bass,
    accent Layer (cyan/teal) y tipografía mono
    ═══════════════════════════════════════════ */
@@ -5577,16 +5512,11 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root .bl-ev-wall .bl-ev-venue-line { font-size:var(--fs-13); color:var(--bl-text-sec); }
 .bl-root .bl-ev-wall .bl-ev-time-inline { display:inline !important; }
 .bl-root .bl-ev-wall .bl-ev-item > .bl-save-btn { position:absolute; top:10px; right:10px; z-index:3; background:color-mix(in srgb, var(--bl-bg) 70%, transparent); border-radius:50%; backdrop-filter:blur(6px); }
-.bl-root .bl-bass-news-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:28px 20px; }
-.bl-root .bl-bass-news-item { display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:0; border:0; border-radius:0; background:none; }
-.bl-root .bl-bass-news-item .bl-thumb { flex:none !important; width:100% !important; height:auto !important; aspect-ratio:16/10; border-radius:var(--r-12); }
-.bl-root .bl-bass-news-title { font-size:var(--fs-16); line-height:1.3; }
 @media (max-width:768px) {
   .bl-ev-wall { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px 12px; }
   .bl-root .bl-ev-wall .bl-ev-item, .bl-root .bl-ev-wall .bl-ev-body { min-width:0; }
   .bl-root .bl-ev-wall .bl-ev-venue-line { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bl-root .bl-ev-wall .bl-ev-name { font-size:var(--fs-14); }
-  .bl-root .bl-bass-news-list { grid-template-columns:1fr; }
 }
 
 /* 1 · Sin flyer: afiche de la casa — cobre, textura de onda y el nombre grande. */
@@ -5653,22 +5583,18 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-ev-wall span.bl-ev-name { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
 .bl-root .bl-ev-wall .bl-ev-venue-line { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
 .bl-fest-wall .bl-ev-item::before { text-transform:uppercase; }
-/* Noticias: la primera es tapa (dos columnas) y sin foto va el afiche de la casa. */
-.bl-root .bl-bass-news-list { padding-top:24px; }
-.bl-root .bl-bass-news-item .bl-thumb { box-shadow:0 18px 40px rgba(0,0,0,.35); }
+/* Noticias (oct 2026, "A · Pared"): la pared de la Agenda con fotos apaisadas
+   (4:3, las de los medios lo son), el medio en la etiqueta de arriba y el
+   titular de hasta 3 líneas. */
+.bl-root .bl-news-wall .bl-ev-item .bl-thumb { aspect-ratio:4/3; }
+.bl-root .bl-news-wall .bl-ev-item::before { text-transform:uppercase; }
+.bl-root .bl-news-wall .bl-ev-name { -webkit-line-clamp:3; line-height:1.3; }
 .bl-root .bl-bass-news-item .bl-thumb-poster {
   background:linear-gradient(180deg, color-mix(in srgb, #C49070 8%, var(--bl-surface)) 0%, var(--bl-bg) 100%);
   -webkit-mask-image:none; container-type:inline-size;
 }
 .bl-root .bl-bass-news-item .bl-thumb-poster .bl-poster { font-size:clamp(15px, 9cqi, 34px); padding:7cqi 6cqi; align-items:flex-end; background:linear-gradient(0deg, color-mix(in srgb, var(--bl-bg) 85%, transparent) 0%, transparent 55%); }
 .bl-root .bl-bass-news-item .bl-thumb-poster .bl-poster-rule { display:none; }
-@media (min-width:769px) {
-  .bl-root .bl-bass-news-item:first-child { grid-column:span 2; }
-  .bl-root .bl-bass-news-item:first-child .bl-bass-news-title { font-size:var(--fs-22); line-height:1.2; letter-spacing:var(--tr-n015); }
-}
-@media (max-width:768px) {
-  .bl-root .bl-bass-news-list { padding-top:16px; }
-}
 
 /* El finde en tu calendario (oct 2026): una línea entre la apertura y el
    primer día — los elegidos en miniatura, una frase y un botón. */

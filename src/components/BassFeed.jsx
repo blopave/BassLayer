@@ -914,17 +914,42 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
   );
 }
 
-// La primera fila abre con imagen (auditoría B5): de las 8 notas más nuevas, las que tienen foto
-// pasan adelante (hasta 3); el resto sigue en su orden por hora.
-function conImagenArriba(news) {
-  const top = news.slice(0, 8), conFoto = top.filter((n) => n.image).slice(0, 3);
-  return conFoto.length ? [...conFoto, ...news.filter((n) => !conFoto.includes(n))] : news;
+
+// Noticias con la pared de la Agenda (oct 2026, Pablo eligió "A · Pared"):
+// filtros de tema en castellano, número de apertura, rótulo por día y la misma
+// carta — el medio sobre la foto donde la Agenda pone la hora; abajo, el
+// titular y "tema · cuándo". En mobile la primera de cada día va a lo ancho.
+const NEWS_TAGS = ["Scene", "Music", "Clubs", "Tour", "Mix", "Festival", "Local"];
+const minsDeNota = (time) => { const n = parseInt(time, 10) || 0; return /m$/.test(time) ? n : /h$/.test(time) ? n * 60 : /d$/.test(time) ? n * 1440 : 0; };
+function haceCuanto(time, t) {
+  const m = minsDeNota(time);
+  return m < 60 ? t("news.agoMin", { n: Math.max(1, m) }) : m < 1440 ? t("news.agoH", { n: Math.round(m / 60) }) : t("news.agoD", { n: Math.round(m / 1440) });
 }
 
 function BassNewsList({ news, loading, error, onRetry, onSelect }) {
-  const { t } = useLocale();
-  const listRef = useScrollReveal(loading);
-  const ordered = useMemo(() => (Array.isArray(news) ? conImagenArriba(news) : news), [news]);
+  const { t, locale } = useLocale();
+  const [tag, setTag] = useState("All");
+  const all = Array.isArray(news) ? news : [];
+  const tags = ["All", ...NEWS_TAGS.filter((x) => all.some((n) => n.tag === x))];
+  const counts = { all: all.length, ...Object.fromEntries(tags.slice(1).map((x) => [x, all.filter((n) => n.tag === x).length])) };
+  const labels = Object.fromEntries(NEWS_TAGS.map((x) => [x, t(`newsTag.${x}`)]));
+  const list = tag === "All" ? all : all.filter((n) => n.tag === tag);
+  const listRef = useScrollReveal(loading, tag);
+  // Por día, en hora de BA (la del lector, como en la Agenda).
+  const dias = useMemo(() => {
+    const out = [], hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    for (const n of list) {
+      const d = new Date(Date.now() - minsDeNota(n.time) * 60000);
+      const k = Math.round((hoy - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (!out.length || out[out.length - 1].key !== key) {
+        const label = k <= 0 ? t("day.today") : k === 1 ? t("day.yesterday") : (DAYS_LONG[locale] || DAYS_LONG.es)[d.getDay()];
+        out.push({ key, label, fecha: `${d.getDate()} ${(MONTHS_ABBR[locale] || MONTHS_ABBR.es)[d.getMonth()]}`, items: [] });
+      }
+      out[out.length - 1].items.push(n);
+    }
+    return out;
+  }, [list, locale, t]);
 
   if (loading) return <NewsSkeleton />;
   if (error) {
@@ -936,7 +961,7 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
       </div>
     );
   }
-  if (!news || news.length === 0) {
+  if (!all.length) {
     return (
       <div className="bl-feed">
         <div className="bl-empty">
@@ -946,43 +971,48 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
     );
   }
 
+  let idx = 0;
   return (
     <>
-    <SectionHead n={news.length} word={t("feed.newsWord")} />
-    <div className="bl-bass-news-list" role="region" aria-label={t("section.news")} ref={listRef}>
-      {ordered.map((item, idx) => (
-        <BassNewsItem
-          key={`${item.source_slug || item.source}-${item.url || idx}`}
-          item={item}
-          idx={idx}
-          onSelect={onSelect}
-        />
-      ))}
-      <EndOfSet />
-    </div>
+      {tags.length > 2 && <FilterBar items={tags} active={tag} onChange={setTag} className="bass-filters" counts={counts} labels={labels} />}
+      <SectionHead n={list.length} word={t("feed.newsWord")} />
+      <div className="bl-ev-list bl-ev-wall bl-news-wall" role="region" aria-label={t("section.news")} ref={listRef}>
+        {dias.flatMap((d) => [
+          <h3 className="bl-day-header" key={`h-${d.key}`}>
+            <span className="bl-day-label">{d.label}</span>
+            <span className="bl-day-date">{d.fecha}</span>
+            <span className="bl-day-line" aria-hidden="true" />
+          </h3>,
+          ...d.items.map((item, i) => (
+            <BassNewsItem key={`${item.source_slug || item.source}-${item.url || item.title}`} item={item} idx={idx++} lead={i === 0} onSelect={onSelect} labels={labels} />
+          )),
+        ])}
+        <EndOfSet />
+      </div>
     </>
   );
 }
 
-function BassNewsItem({ item, idx, onSelect }) {
-  const { locale } = useLocale();
+function BassNewsItem({ item, idx, lead, onSelect, labels }) {
+  const { t, locale } = useLocale();
   const tr = useTranslatedTitle(item, locale === "es");   // titulares en inglés/francés/alemán: traducidos y marcados
-  const [imgFailed, setImgFailed] = useState(false);
-  const showPill = !!(item.tag && item.image && !imgFailed);
+  const tema = labels[item.tag] || item.tag;
   return (
     <article
-      className="bl-bass-news-item bl-reveal"
+      className={`bl-ev-item bl-bass-news-item bl-reveal ${lead ? "bl-ev-lead" : "bl-ev-row"}`}
+      data-time={item.source || ""}
       onClick={() => onSelect?.(item)}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect?.(item))}
       tabIndex={0}
       role="button"
-      aria-label={`${tr.title}${item.tag ? ` — ${item.tag}` : ""}`}
+      aria-label={`${tr.title} — ${item.source}${tema ? `, ${tema}` : ""}`}
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
-      <BlThumb image={item.image} poster={{ text: tr.title, titular: true, meta: [item.source, item.tag].filter(Boolean).join(" · "), seed: item.url || item.title, family: "news" }} onImgFail={() => setImgFailed(true)} />
-      <div className="bl-bass-news-body">
-        <h3 className="bl-bass-news-title bl-bass-t-heading" lang={tr.lang}>{tr.title}</h3>
-        {showPill && <span className="bl-bass-news-tag-pill bl-bass-t-label">{item.tag}</span>}
+      {/* Sin foto: la onda de la nota y su tema (el medio ya va en la etiqueta y el titular, abajo). */}
+      <BlThumb image={item.image} width={480} poster={{ text: tema || item.source, seed: item.url || item.title, family: "news" }} />
+      <div className="bl-ev-body">
+        <div className="bl-ev-name bl-news-title" lang={tr.lang}>{tr.title}</div>
+        <div className="bl-ev-venue-line">{[tema, haceCuanto(item.time, t)].filter(Boolean).join(" · ")}</div>
       </div>
     </article>
   );

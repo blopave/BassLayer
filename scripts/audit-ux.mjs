@@ -147,7 +147,7 @@ async function run(vp) {
   await page.locator("input[type=search], .bl-search input, input[aria-label]").first().fill("").catch(() => {});
 
   await step("bass-noticias", async () => { await page.locator(".bl-bass-section-btn").nth(1).click(); await page.waitForTimeout(2500); });
-  await step("noticia-modal", async () => { await page.locator(".bl-bass-news-list a, .bl-bass-news-list [role=button], .bl-bass-news-list article").first().click(); await dialog.waitFor({ timeout: 8000 }); });
+  await step("noticia-modal", async () => { await page.locator(".bl-news-wall article").first().click(); await dialog.waitFor({ timeout: 8000 }); });
   await esc();
   await step("bass-festivales", async () => { await page.locator(".bl-bass-section-btn").nth(2).click(); await page.waitForTimeout(2500); });
   await step("festival-modal", async () => { await page.locator(".bl-ev-list article, .bl-ev-list [role=button], .bl-ev-list button").first().click(); await dialog.waitFor({ timeout: 8000 }); });
