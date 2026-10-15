@@ -128,16 +128,6 @@ export function AdminPanel({ onBack }) {
 
   const isAnnTab = tab.startsWith("ann_");
 
-  const TAB_LABELS = {
-    pending: "Eventos pendientes",
-    approved: "Eventos aprobados",
-    rejected: "Eventos rechazados",
-    venues: "Venues",
-    ann_pending: "Anuncios pendientes",
-    ann_approved: "Anuncios aprobados",
-    ann_rejected: "Anuncios rechazados",
-  };
-
   return (
     <div className="bl-venue-dashboard">
       <div className="bl-venue-dash-header">

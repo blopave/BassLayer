@@ -183,7 +183,7 @@ function EndOfSet() {
       {/* webcal: suscripción viva (iOS/macOS la abren en Calendario; Google
           Calendar la acepta como "agregar por URL"). Nadie más lo ofrece
           en la escena BA. */}
-      <a className="bl-end-of-set-ig" href={`webcal://${typeof window !== "undefined" ? window.location.host : "basslayer.io"}/agenda.ics`}>
+      <a className="bl-end-of-set-cal" href={`webcal://${typeof window !== "undefined" ? window.location.host : "basslayer.io"}/agenda.ics`}>
         {t("feed.subscribeCal")}
       </a>
     </div>

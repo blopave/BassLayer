@@ -6,7 +6,7 @@
     "dev": "concurrently \"node server.js\" \"vite\"",
     "build": "vite build",
     "start": "NODE_ENV=production node server.js",
-    "preview": "open preview.html || xdg-open preview.html",
+    "preview": "open http://localhost:3000/preview.html",
     "check:content": "node scripts/check-content.mjs",
     "smoke": "node scripts/smoke.mjs",
     "check": "vite build && node scripts/check-modulos.mjs && node scripts/check-content.mjs && node scripts/smoke.mjs",
@@ -14,7 +14,6 @@
     "check:modulos": "node scripts/check-modulos.mjs"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.3.0",
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.103.0",
     "compression": "^1.7.4",

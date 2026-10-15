@@ -64,7 +64,7 @@ app.get("/api/dolar", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  GET /api/onchain — métricas de ciclo (bitcoin-data.com, sin key, diarias)
+//  On-chain: métricas de ciclo (bitcoin-data.com, sin key, diarias) para el panel de ciclos
 // ─────────────────────────────────────────────
 
 async function loadOnchain() {
@@ -95,17 +95,6 @@ async function loadOnchain() {
   setCache("onchain", onchain);
   return onchain;
 }
-
-app.get("/api/onchain", async (req, res) => {
-  try {
-    const onchain = await loadOnchain();
-    if (!onchain) throw new Error("bitcoin-data vacío");
-    res.json(onchain);
-  } catch (e) {
-    console.error("[onchain] error:", e.message);
-    res.status(502).json({ error: "onchain unavailable" });
-  }
-});
 
 // ─────────────────────────────────────────────
 //  GET /api/btc-network — fees + ajuste de dificultad (mempool.space, sin key)

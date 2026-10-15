@@ -16,7 +16,6 @@ export function montarPrerender(app, d) {
     rootDir,
     cached,
     MONTH_MAP,
-    GENRE_BLURBS,
     GENRE_LIST,
     genreLabel,
     genreSlug,
@@ -571,7 +570,7 @@ export function montarPrerender(app, d) {
   function buildGenrePageBody(genre, events) {
     const slug = genreSlug(genre);
     const label = genreLabel(genre);
-    const blurb = GENRE_BLURBS[genre] || `${label} en Buenos Aires y Argentina: agenda de eventos, fiestas y festivales.`;
+    const blurb = `${label} en Buenos Aires y Argentina: agenda de eventos, fiestas y festivales.`;
     const wrapStyle = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#e5e5e5;background:#000;min-height:100vh;margin:0";
     const innerStyle = "max-width:880px;margin:0 auto;padding:2rem 1.25rem";
     const crumbStyle = "color:#888;font-size:0.85rem;margin-bottom:1.5rem";

@@ -75,7 +75,6 @@ export const api = {
   festivals: (region) => fetch(`/api/festivals${region && region !== "All" ? `?region=${encodeURIComponent(region)}` : ""}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   dashboard: () => fetch("/api/dashboard").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   dolar:     () => fetch("/api/dolar").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  onchain:   () => fetch("/api/onchain").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   btcNetwork:() => fetch("/api/btc-network").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   btcCycles: () => fetch("/api/btc-cycles").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   cryptoIrl: () => fetch("/api/crypto-irl").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
@@ -100,10 +99,3 @@ export function formatPrice(p) {
   return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 }
 
-export function timeAgo(ts) {
-  if (!ts) return "";
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return Math.floor(s / 60) + "m ago";
-  return Math.floor(s / 3600) + "h ago";
-}

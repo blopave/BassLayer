@@ -70,11 +70,6 @@ export function MarketPulse() {
 
   return (
     <section className={`bl-mpulse${open ? " is-open" : ""}`} aria-label={t("pulse.title")}>
-      <div className="bl-mpulse-head" aria-hidden="true">
-        <span>{t("pulse.title")}</span>
-        <span className="bl-mpulse-live">{t("pulse.live")}</span>
-      </div>
-
       {/* Mobile: una línea que abre el resto. */}
       <button type="button" className="bl-mpulse-sum" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <span className={`bl-mpulse-rd ${r.tone}`}>{r.text}</span>
@@ -86,11 +81,6 @@ export function MarketPulse() {
       </button>
 
       <div className="bl-mpulse-body">
-        <div className="bl-mpulse-read">
-          <b className={r.tone}>{r.text}</b>
-          {mc != null && <span>{t(mc < 0 ? "pulse.capDown" : "pulse.capUp", { n: nf(Math.abs(mc), 1) })}{r.flag ? ` · ${r.flag}` : ""}</span>}
-        </div>
-
         <div className="bl-mpulse-grid">
           {cells.map(([key, label, value, match]) => (
             <button key={key} type="button" className="bl-mpulse-c" onClick={() => openIndicator(key, value, match)} aria-label={`${t("dashboard.viewInfo")} ${label}`}>

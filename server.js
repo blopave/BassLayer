@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════
 //  BassLayer API — versión en package.json
-//  Bass: BA electronic events (Buenos Aliens + RA + fallback)
-//  Layer: Crypto news (16 RSS feeds) + prices (CoinGecko)
+//  Bass: agenda electrónica de Buenos Aires (RA, QuéHacemos, Venti, Buenos
+//        Aliens), noticias y festivales.
+//  Layer: cripto y mercados (precios con respaldo, noticias, ETFs, acciones,
+//         ciclos, predicciones). Los módulos están en server/.
 // ═══════════════════════════════════════════════════════
 
 import "dotenv/config";
@@ -12,7 +14,7 @@ import compression from "compression";
 import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -22,25 +24,23 @@ import { montarFestivales } from "./server/festivales.js";
 import { montarArtistas } from "./server/artistas.js";
 import { montarBassNoticias } from "./server/bass-noticias.js";
 import { montarLayerFuentes } from "./server/layer-fuentes.js";
-import { xmlParser, decodeHtmlEntities, cleanNewsTitle, relativeTime, timeToMins, normalizeDateString, sanitizeUrl, htmlToText, pickItemImage, fetchSourceWithFallback, refreshItemAges, normalizeArtistName } from "./server/texto.js";
+import { decodeHtmlEntities, normalizeArtistName } from "./server/texto.js";
 import { crearTraductor, eachLimit } from "./server/traducir.js";
-import { COIN_IDS_STR, COIN_IDS, PAPRIKA_ID } from "./server/monedas.js";
+import { COIN_IDS } from "./server/monedas.js";
 import { montarCriptoEventos } from "./server/cripto-eventos.js";
 import { montarLayer } from "./server/layer.js";
 import { montarMetricas } from "./server/metricas.js";
 import { montarFeeds } from "./server/feeds.js";
 import { montarVenues } from "./server/venues.js";
 import { crearAuth } from "./server/auth.js";
-import { cleanLineup, stripTemplateTokens, NOT_A_SHOW_TITLE, sameStoryOnce, protectNames, restoreNames, notPast, esDeLaEscena, FUENTES_CON_EVIDENCIA, escRe, artistasDelTitulo } from "./lib/content-rules.js";
-import { detectCity, isAmbaCity, namesOtherCity, enCABA } from "./lib/places.js";
-import { slugify } from "./lib/slug.js";
+import { cleanLineup, NOT_A_SHOW_TITLE, notPast, esDeLaEscena, FUENTES_CON_EVIDENCIA } from "./lib/content-rules.js";
+import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
+import { slugify, eventSlug, newsSlug, festivalSlug, GENRE_LIST, genreSlug, genreFromSlug } from "./lib/slug.js";
 import { findePicks, eventEpoch } from "./lib/finde.js";
 import { ciclosVigentes } from "./lib/ciclos.js";
 import { armarSemana } from "./lib/semana.js";
 import { marked } from "marked";
 import matter from "gray-matter";
-import { readdirSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
 
 const PKG_VERSION = (() => {
   try { return JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version; }
@@ -184,9 +184,9 @@ const API_PUBLIC_TTL = {
   "/api/prices": "prices", "/api/news": "news", "/api/finance-news": "financeNews",
   "/api/markets": "markets", "/api/events": "events", "/api/bass-news": "bassNews",
   "/api/dashboard": "dashboard", "/api/prediction-markets": "predictions",
-  "/api/btc-cycles": "btcCycles", "/api/dolar": "dolar", "/api/onchain": "onchain",
+  "/api/btc-cycles": "btcCycles", "/api/dolar": "dolar",
   "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
-  "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000, "/api/meta": 24 * 60 * 60_000,
+  "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000,
   "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
   "/api/ciclos": 30 * 60_000,
 };
@@ -468,31 +468,13 @@ const BROWSER_HEADERS = {
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTH_MAP = { ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11 };
 
-// ─── Slug helpers (SEO URLs) ─────────────────
-// Determinista: el mismo evento siempre produce el mismo slug en server y cliente.
-function eventSlug(ev) {
-  if (!ev || !ev.name) return "";
-  const namePart = slugify(ev.name);
-  const datePart = slugify(`${ev.day || ""}-${ev.month || ""}`);
-  return [namePart, datePart].filter(Boolean).join("-");
-}
+// ─── Buscar por dirección (los slugs viven en lib/slug.js) ───
 function findEventBySlug(slug) {
   const events = cached("events") || [];
   for (const ev of events) {
     if (eventSlug(ev) === slug) return ev;
   }
   return null;
-}
-function hash6(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h).toString(36).slice(0, 6);
-}
-function newsSlug(n) {
-  if (!n || !n.title) return "";
-  const titlePart = slugify(n.title).slice(0, 60);
-  const idPart = n.url ? hash6(n.url) : hash6(n.title + (n.source || ""));
-  return [titlePart, idPart].filter(Boolean).join("-");
 }
 function findNewsBySlug(slug) {
   // Buscar en ambos pools: crypto (news) y música (bassNews)
@@ -503,10 +485,6 @@ function findNewsBySlug(slug) {
     }
   }
   return null;
-}
-function festivalSlug(f) {
-  if (!f) return "";
-  return f.id || slugify(f.name);
 }
 function findFestivalBySlug(slug) {
   const list = loadFestivals();
@@ -565,46 +543,10 @@ function findGuiaBySlug(slug) {
   return loadGuias().find(g => g.slug === slug) || null;
 }
 
-// ─── Familias: slugs + descripciones evergreen ──
-// IDÉNTICO a src/utils/slug.js para que server (prerender SEO) y cliente coincidan.
-// El filtro usa la key de familia (club/live/festival/urbano/raiz), ya slug-safe.
-const GENRE_LIST = ["club", "live", "festival", "urbano", "raiz"];
-const FAMILY_SET = new Set(GENRE_LIST);
-// Compat SEO: URLs viejas de subgénero electrónico → familia "club".
-const LEGACY_SLUG_TO_FAMILY = {
-  "techno": "club", "house": "club", "deep-house": "club", "tech-house": "club",
-  "progressive": "club", "melodic": "club", "minimal": "club", "drum-and-bass": "club",
-  "trance": "club", "disco": "club", "ambient": "club", "electronic": "club",
-};
+// ─── Familias (las listas y slugs viven en lib/slug.js) ──
 // Label legible por familia para los hubs de género (prerender ES para SEO).
 const FAMILY_LABEL_ES = { club: "Club", live: "Música en vivo", festival: "Festivales", urbano: "Urbano", raiz: "Raíz" };
 function genreLabel(family) { return FAMILY_LABEL_ES[family] || family; }
-function genreSlug(filter) {
-  if (!filter || filter === "All") return "";
-  return slugify(filter);
-}
-function genreFromSlug(slug) {
-  if (!slug) return null;
-  if (FAMILY_SET.has(slug)) return slug;
-  return LEGACY_SLUG_TO_FAMILY[slug] || null;
-}
-// Blurbs evergreen — texto curado para SEO. Para géneros sin entrada explícita
-// se usa un template genérico ("X en Buenos Aires...").
-const GENRE_BLURBS = {
-  "Techno": "El techno tiene en Buenos Aires una de las escenas más fuertes de Latinoamérica. De los warehouses de Crobar y Mandarine al underground de Niceto, pasando por after-hours en zonas industriales, la ciudad respira beats 4x4 todo el año. Headliners internacionales como Adam Beyer, Charlotte de Witte, Sven Väth y Nina Kraviz visitan con regularidad; en el lado local, DJs como Hernán Cattáneo, Wehbba (BR), Pablo Bolivar y la nueva camada llenan las pistas semana tras semana.",
-  "House": "Buenos Aires ama el house en todas sus formas — del soulful clásico al deep contemporáneo. Sets que arrancan al atardecer en clubes con terraza, llenos en boliches como Bresh para el house más festivo, y residencias en venues como Crobar. Carl Cox, Solomun, Black Coffee y Damian Lazarus son visitas habituales; locales como Bárbara Boeing y Pablo Fierro empujan la escena.",
-  "Deep House": "Deep house en Buenos Aires: la versión más íntima del house, con líneas de bajo profundas y atmósferas elegantes. Se escucha en sesiones early-evening, en clubes boutique y rooftops, con DJs como Tale of Us, Mind Against y Mathame en los headliners; locales como Nicola Cruz y Sofia Kourtesis aportan la mirada sudamericana.",
-  "Tech House": "El tech house — esa mezcla de groove house con la energía mecánica del techno — es uno de los géneros más populares en la pista porteña. Solid Grooves, Hot Creations y todo el sello DC-10 aparecen en line-ups de Crobar, Jet y festivales como Creamfields. Fisher, Chris Lake, Patrick Topping y Cloonee son los nombres que mueven el público hoy.",
-  "Progressive": "Progressive en Buenos Aires tiene la firma de Hernán Cattáneo, el referente argentino que llevó al género a una escala global. Sets largos, narrativos, con climaxes lentos — se escucha en clubes como Mandarine Park, en eventos curados como Sudbeat y en festivales como Forja.",
-  "Melodic": "Melodic techno y house — el sonido emocional y atmosférico que define una era. Tale of Us, ARTBAT, Anyma, Cassian y Mathame son la columna vertebral del género; en Buenos Aires se escucha en eventos producidos por Sound Group, Polaroid y similar curaduría.",
-  "Minimal": "Minimal en Buenos Aires: la rama más purista y reducida del techno/house. Eventos chicos y curados, mucho énfasis en sound system y atmósfera. Ricardo Villalobos, Zip y Sonja Moonear son las referencias que orientan la escena local.",
-  "DnB": "Drum and bass en Buenos Aires tiene una escena fiel y de larga data — fiestas dedicadas en clubes como Liv Outside y eventos como Sun & Bass Argentina. Andy C, Sub Focus, Chase & Status, Camo & Krooked aparecen en festivales y line-ups; locales como Bratto y Sub Killaz empujan la cultura.",
-  "Trance": "Trance en Argentina: la escena más emocional y de mayor longevidad. Festivales como Forja y eventos producidos por Trance Argentina convocan a Above & Beyond, ATB, Aly & Fila y todo el universo Anjunabeats/Pure Trance. Una comunidad ferviente que llena venues con sets de 6+ horas.",
-  "Disco": "Disco y nu-disco en Buenos Aires — el groove de los 70s y 80s revisitado con producción contemporánea. Eventos como Sun & Sea, fiestas curadas en rooftops de Palermo y line-ups con Folamour, Honey Dijon, Dimitri From Paris.",
-  "Ambient": "Ambient y experimental en Buenos Aires: sesiones inmersivas, espacios alternativos, productores locales como Lucrecia Dalt y experimentación con instalaciones audio-visuales.",
-  "Electronic": "Música electrónica en Buenos Aires en todas sus formas — techno, house, trance, drum & bass, disco, melodic. La ciudad tiene una de las escenas más activas y diversas de Latinoamérica, con clubes históricos, festivales de talla mundial y una comunidad que escucha todos los días de la semana.",
-};
-
 // ─── City detection ──────────────────────────
 // La regla vive en lib/places.js (compartida con el front y los chequeos).
 // Sin ciudad explícita: CABA por defecto, marcado `cityGuessed` para cruzarlo
@@ -744,7 +686,7 @@ function classifyFamily(ev) {
 const MB_CACHE_FILE = join(__dirname, "data", "mb-family-cache.json");
 let mbCache = {};
 try { if (existsSync(MB_CACHE_FILE)) mbCache = JSON.parse(readFileSync(MB_CACHE_FILE, "utf8")) || {}; } catch { mbCache = {}; }
-const MB_HEADERS = { "User-Agent": "BassLayerWorld/1.0 ( https://www.instagram.com/basslayerworld )" };
+const MB_HEADERS = { "User-Agent": "BassLayer/1.0 ( https://basslayer.io )" };
 const mbSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const mbNorm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 function mbCacheGet(name) { const k = mbNorm(name); return k ? (mbCache[k] || null) : null; }
@@ -1289,7 +1231,7 @@ app.get("/finde.ics", async (req, res) => {
   ];
   for (const ev of picks) {
     const start = eventEpoch(ev, now);
-    const slug = [slugify(ev.name), slugify(`${ev.day || ""}-${ev.month || ""}`)].filter(Boolean).join("-");
+    const slug = eventSlug(ev);
     const url = `https://basslayer.io/eventos/${slug}`;
     const lineup = (ev.artists || []).slice(0, 8).join(", ");
     lines.push(
@@ -1424,13 +1366,8 @@ montarLayer(app, { MONTHS_ES, rootDir: __dirname, cache, cached, eachLimit, fetc
 const { guardarMetricas } = montarMetricas(app, { requireAdmin, requireAuth, supabase });
 
 // ─────────────────────────────────────────────
-//  Meta + Health
+//  Health
 // ─────────────────────────────────────────────
-
-app.get("/api/meta", (req, res) => res.json({
-  newsTags: ["All","BTC","ETH","SOL","XRP","DeFi","L2","NFT","Reg","AI","Stable","Mining","Crypto"],
-  eventGenres: ["All","Techno","House","Deep House","Tech House","Progressive","Melodic","Minimal","DnB","Trance","Disco","Ambient","Festival","Electronic"],
-}));
 
 app.get("/api/health", (req, res) => {
   // Edad de cada cache en segundos (null = nunca cargó) y estado de la última
@@ -1461,7 +1398,7 @@ app.all("/api/*", (req, res) => res.status(404).json({ error: "Endpoint not foun
 
 if (IS_PROD) {
   montarPrerender(app, {
-    PROD_ORIGIN, rootDir: __dirname, cached, MONTH_MAP, GENRE_BLURBS, GENRE_LIST, genreLabel, genreSlug, genreFromSlug,
+    PROD_ORIGIN, rootDir: __dirname, cached, MONTH_MAP, GENRE_LIST, genreLabel, genreSlug, genreFromSlug,
     eventSlug, newsSlug, festivalSlug, festivalStatus, findEventBySlug, findNewsBySlug, findFestivalBySlug, findGuiaBySlug,
     loadFestivals, icsDateParts, musicEventSchema, semanaData,
   });
@@ -1498,35 +1435,9 @@ loadSnapshots();
 // Venti se lee en segundo plano; si la última lectura está vieja, arranca ya
 // (con la agenda guardada, la próxima build puede tardar hasta una hora).
 refrescarVentiSiViejo();
-const server = app.listen(PORT, () => console.log(`
-  ┌──────────────────────────────────────────┐
-  │  BassLayer API v${PKG_VERSION}${" ".repeat(Math.max(0, 26 - PKG_VERSION.length))}│
-  │  http://localhost:${PORT}                  │
-  │                                          │
-  │  Layer ─────────────────────             │
-  │   /api/prices              30s           │
-  │   /api/news                5min          │
-  │   /api/dashboard           5min          │
-  │   /api/prediction-markets  5min          │
-  │   /api/crypto-events       1h            │
-  │   /api/crypto-irl          static        │
-  │                                          │
-  │  Bass ──────────────────────             │
-  │   /api/events              1h            │
-  │   /api/bass-news           30min         │
-  │   /api/festivals           1h            │
-  │                                          │
-  │  Sources:                                │
-  │   Events: Buenos Aliens (BA area 395)    │
-  │           + RA GraphQL + fallback        │
-  │   News:   BA Notas + Mixmag Latam +      │
-  │           DJ Mag + Crack + Bandcamp +    │
-  │           Attack + 5 Mag + Tsugi + Groove│
-  │   Festivals: 30 curados, og:image auto   │
-  │   Crypto: 16 RSS feeds (EN+ES)           │
-  │   Prices: CoinGecko                      │
-  └──────────────────────────────────────────┘
-`));
+// El detalle de fuentes y cachés vive en /api/health; acá, solo dónde escucha.
+const server = app.listen(PORT, () => console.log(`BassLayer API v${PKG_VERSION} · http://localhost:${PORT} · estado en /api/health`));
+
 
 // Graceful shutdown
 function shutdown(signal) {

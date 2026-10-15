@@ -251,7 +251,7 @@ app.get("/feed.xml", (req, res) => {
   res.send(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>BassLayer — Agenda BA</title><link>${PROD_ORIGIN}/</link><description>Eventos de música electrónica y más en Buenos Aires</description><language>es-AR</language><lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${items}</channel></rss>`);
 });
 
-// Story-card 1080×1920 para el share del cliente (stories IG / estados WA).
+// Story-card 1080×1920 para compartir desde el celular (sheet nativo).
 app.get("/og/story/event/:slug.png", async (req, res) => {
   try {
     const key = `story:${req.params.slug}`;

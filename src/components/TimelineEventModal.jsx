@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
