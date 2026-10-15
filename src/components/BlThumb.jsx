@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { hashStr } from "../utils/slug";
-import { imgUrl } from "../utils/img";
+import { imgUrl, imgSrcSet } from "../utils/img";
 
 // Miniatura de 60–120 px: pedimos 2× por el proxy; si el proxy no la tiene
 // (404/caída), un segundo intento con la URL original antes del fallback.
-function ProxiedImg({ src, width, className, onFail }) {
+function ProxiedImg({ src, width, sizes, className, onFail }) {
   const [direct, setDirect] = useState(false);
   const proxied = imgUrl(src, width);
   const useDirect = direct || proxied === src;
@@ -12,6 +12,8 @@ function ProxiedImg({ src, width, className, onFail }) {
     <img
       className={className}
       src={useDirect ? src : proxied}
+      srcSet={!useDirect && sizes ? imgSrcSet(src) : undefined}
+      sizes={!useDirect && sizes ? sizes : undefined}
       alt=""
       loading="lazy"
       decoding="async"
@@ -93,7 +95,7 @@ export function ArtistPhoto({ src, name, family, onFail }) {
 
 // fit="contain": el flyer entero sobre su propia copia desenfocada (bandas
 // apaisadas como "El finde", donde el recorte cortaba nombres y caras).
-export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail, fit, width = 120 }) {
+export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail, fit, width = 120, sizes }) {
   const [imgFailed, setImgFailed] = useState(false);
   const [artistImgFailed, setArtistImgFailed] = useState(false);
   const hasImage = image && !imgFailed;
@@ -106,6 +108,7 @@ export function BlThumb({ image, artistImage, artistImageName, poster, onImgFail
           className="bl-thumb-img"
           src={image}
           width={width}
+          sizes={sizes}
           onFail={() => { setImgFailed(true); onImgFail?.(); }}
         />
       </div>

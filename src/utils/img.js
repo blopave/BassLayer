@@ -10,3 +10,10 @@ export function imgUrl(url, displayWidth) {
   const w = WIDTHS.find((x) => x >= want) || 1000;
   return `/img?u=${encodeURIComponent(url)}&w=${w}`;
 }
+
+// Para fotos que cambian de tamaño según la pantalla (la pared de la Agenda y
+// de Noticias): el navegador elige del srcset el ancho justo para su densidad.
+export function imgSrcSet(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return undefined;
+  return [320, 640, 1000].map((w) => `/img?u=${encodeURIComponent(url)}&w=${w} ${w}w`).join(", ");
+}

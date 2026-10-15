@@ -365,15 +365,19 @@ async function run(vp) {
         // La onda del evento (oct 2026, "B"): cada afiche lleva su onda, y dos eventos distintos no la comparten.
         const ondas = posters.map((p) => [...p.querySelectorAll(".bl-onda rect")].slice(0, 12).map((r) => r.getAttribute("height")).join(","));
         const sinOnda = ondas.filter((o) => !o).length;
+        // Nitidez (oct 2026): la foto descargada alcanza para el tamaño en pantalla × la densidad.
+        const borrosas = [...w.querySelectorAll(".bl-ev-item .bl-thumb-img")].filter((im) => im.complete && im.naturalWidth && /\/img\?/.test(im.currentSrc)).slice(0, 8)
+          .filter((im) => +(im.currentSrc.match(/[?&]w=(\d+)/) || [])[1] < Math.min(im.clientWidth * devicePixelRatio * 0.9, 1000)).length;   // el ancho pedido, no el del original (puede ser chico)
         const repetidas = ondas.length - new Set(ondas).size;
         const badge = [...w.querySelectorAll('.bl-ev-item:not([data-time=""])')].slice(0, 6).every((it) => getComputedStyle(it, "::before").content.replace(/"/g, "").trim().length > 0);
-        return { cols, emptyPoster, badge, sinOnda, repetidas, n: posters.length };
+        return { cols, emptyPoster, badge, sinOnda, repetidas, n: posters.length, borrosas };
       });
       if (!wall) fail(vp.name, "agenda", "la agenda no es la pared de afiches");
       else {
         if (vp.isMobile ? wall.cols !== 2 : wall.cols < 3) fail(vp.name, "agenda", `la pared tiene ${wall.cols} columnas`);
         if (wall.emptyPoster) fail(vp.name, "agenda", `${wall.emptyPoster} eventos sin flyer sin nombre en su afiche`);
         if (wall.sinOnda) fail(vp.name, "agenda", `${wall.sinOnda} afiches sin la onda del evento`);
+        if (wall.borrosas) fail(vp.name, "agenda", `${wall.borrosas} flyers se descargan más chicos de lo que se muestran (se ven borrosos)`);
         if (wall.n > 2 && wall.repetidas > wall.n / 3) fail(vp.name, "agenda", `la onda se repite entre eventos (${wall.repetidas} de ${wall.n}): no sale del nombre`);
         if (!wall.badge) fail(vp.name, "agenda", "la hora no aparece sobre el flyer");
       }

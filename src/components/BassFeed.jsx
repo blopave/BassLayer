@@ -878,7 +878,8 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                   {/* El flyer es diseño gráfico hecho para este show: va de
                       portada, no de miniatura. La fecha no se repite acá —
                       la dice el encabezado del día, una sola vez. */}
-                  <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family, seed: ev.name }} />
+                  {/* El ancho justo para cada pantalla (oct 2026: en retina se veían pixelados a 320 px). */}
+                  <BlThumb image={ev.image} artistImage={ev.artistImage} artistImageName={ev.artistImageName} sizes={isLead ? "(max-width: 768px) 100vw, 240px" : "(max-width: 768px) 50vw, 240px"} poster={{ text: (ev.artists && ev.artists[0]) || ev.name, family: ev.family, seed: ev.name }} />
                   <div className="bl-ev-body">
                     <div className="bl-ev-name">{noOrphanSep(ev.name)}</div>
                     {isLead && ev.artists && ev.artists.length >= 2 && (
@@ -1009,7 +1010,7 @@ function BassNewsItem({ item, idx, lead, onSelect, labels }) {
       style={{ cursor: "pointer", transitionDelay: `${Math.min(idx * 0.04, 0.3)}s` }}
     >
       {/* Sin foto: la onda de la nota y su tema (el medio ya va en la etiqueta y el titular, abajo). */}
-      <BlThumb image={item.image} width={480} poster={{ text: tema || item.source, seed: item.url || item.title, family: "news" }} />
+      <BlThumb image={item.image} width={240} sizes={lead ? "(max-width: 768px) 100vw, 240px" : "(max-width: 768px) 50vw, 240px"} poster={{ text: tema || item.source, seed: item.url || item.title, family: "news" }} />
       <div className="bl-ev-body">
         <div className="bl-ev-name bl-news-title" lang={tr.lang}>{tr.title}</div>
         <div className="bl-ev-venue-line">{[tema, haceCuanto(item.time, t)].filter(Boolean).join(" · ")}</div>
