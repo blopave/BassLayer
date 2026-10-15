@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { flushSync } from "react-dom";
-import { api } from "./utils/api";
+import { api, shared } from "./utils/api";
 import { eventSlug, newsSlug, festivalSlug, genreSlug, genreFromSlug, slugify } from "./utils/slug";
 import { applyEventMeta, applyEventJsonLd, applyLayerMeta, resetMeta, removeEventJsonLd } from "./utils/seo";
 import { useIsMobile } from "./utils/constants";
@@ -311,74 +311,92 @@ export default function App() {
   }, []);
 
   // Detectar deep link al montar + responder a back/forward
+  // Las notas de Bass viven en /api/bass-news (no en las de Layer): un link a
+  // /noticias/<slug> se busca en las dos (oct 2026: el de Bass no abría nada).
+  const buscarNotaBass = useCallback((slug) => shared("bassNews", api.bassNews)
+    .then((list) => (Array.isArray(list) ? list.find((n) => newsSlug(n) === slug) : null))
+    .catch(() => null), []);
   useEffect(() => {
-    const path = window.location.pathname;
-    // /?view=layer — el link "Crypto" del prerender SEO y el shortcut del
-    // manifest aterrizan directo en el mundo Layer.
-    if (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path)) {
-      setView("sections");
-      setActivePanel(1);
-      // La URL canónica del mundo es /layer (indexable, prerenderizada).
-      if (path !== "/layer") navegar("/layer", true);
-      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-      return;
-    }
-    // /agenda · /noticias · /festivales → Bass en esa sección (la elige BassFeed con presetSection)
-    // /eventos/hoy · /eventos/este-finde → la Agenda con el filtro temporal puesto
-    const sec = seccionDeRuta(path);
-    if (sec) {
-      if (sec.when) setPresetWhen(sec.when);
-      setView("sections");
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-      return;
-    }
-    // /eventos/venue/[slug] → feed buscando por ese venue (se resuelve el
-    // nombre real cuando llegan los eventos)
-    const venueMatch = path.match(/^\/eventos\/venue\/([^/]+)\/?$/);
-    if (venueMatch) {
-      pendingVenueSlugRef.current = decodeURIComponent(venueMatch[1]);
-      setView("sections");
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-      return;
-    }
-    const evMatch = path.match(/^\/eventos\/([^/]+)\/?$/);
-    const newsMatch = path.match(/^\/noticias\/([^/]+)\/?$/);
-    const festMatch = path.match(/^\/festivales\/([^/]+)\/?$/);
-    const genreMatch = path.match(/^\/eventos\/genero\/([^/]+)\/?$/);
-
-    if (genreMatch) {
-      const slug = decodeURIComponent(genreMatch[1]);
-      const genre = genreFromSlug(slug);
-      if (genre) {
+    // Primero se resuelve el link de entrada; el "atrás" se registra SIEMPRE
+    // después (oct 2026: entrando por /agenda o /layer el return temprano lo
+    // salteaba y el atrás no cerraba el modal del evento).
+    const resolverEntrada = () => {
+      const path = window.location.pathname;
+      // /?view=layer — el link "Crypto" del prerender SEO y el shortcut del
+      // manifest aterrizan directo en el mundo Layer.
+      if (new URLSearchParams(window.location.search).get("view") === "layer" || /^\/layer\/?$/.test(path)) {
         setView("sections");
-        setEventsFilter(genre);
+        setActivePanel(1);
+        // La URL canónica del mundo es /layer (indexable, prerenderizada).
+        if (path !== "/layer") navegar("/layer", true);
+        if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
         if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+        return;
       }
-    } else if (evMatch) {
-      pendingEventSlugRef.current = decodeURIComponent(evMatch[1]);
-      setView("sections");
-      if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
-    } else if (newsMatch) {
-      pendingNewsSlugRef.current = decodeURIComponent(newsMatch[1]);
-      setView("sections");
-      if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
-    } else if (festMatch) {
-      const slug = decodeURIComponent(festMatch[1]);
-      setView("sections");
-      api.festivals("All")
-        .then((items) => {
-          const found = items.find((x) => festivalSlug(x) === slug);
-          if (found) setSelectedFestival(found);
-        })
-        .catch(() => {});
-    }
+      // /agenda · /noticias · /festivales → Bass en esa sección (la elige BassFeed con presetSection)
+      // /eventos/hoy · /eventos/este-finde → la Agenda con el filtro temporal puesto
+      const sec = seccionDeRuta(path);
+      if (sec) {
+        if (sec.when) setPresetWhen(sec.when);
+        setView("sections");
+        if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+        return;
+      }
+      // /eventos/venue/[slug] → feed buscando por ese venue (se resuelve el
+      // nombre real cuando llegan los eventos)
+      const venueMatch = path.match(/^\/eventos\/venue\/([^/]+)\/?$/);
+      if (venueMatch) {
+        pendingVenueSlugRef.current = decodeURIComponent(venueMatch[1]);
+        setView("sections");
+        if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+        return;
+      }
+      const evMatch = path.match(/^\/eventos\/([^/]+)\/?$/);
+      const newsMatch = path.match(/^\/noticias\/([^/]+)\/?$/);
+      const festMatch = path.match(/^\/festivales\/([^/]+)\/?$/);
+      const genreMatch = path.match(/^\/eventos\/genero\/([^/]+)\/?$/);
+
+      if (genreMatch) {
+        const slug = decodeURIComponent(genreMatch[1]);
+        const genre = genreFromSlug(slug);
+        if (genre) {
+          setView("sections");
+          setEventsFilter(genre);
+          if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+        }
+      } else if (evMatch) {
+        pendingEventSlugRef.current = decodeURIComponent(evMatch[1]);
+        setView("sections");
+        if (!eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
+      } else if (newsMatch) {
+        const slug = decodeURIComponent(newsMatch[1]);
+        pendingNewsSlugRef.current = slug;
+        setView("sections");
+        if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
+        buscarNotaBass(slug).then((nota) => {
+          if (nota && pendingNewsSlugRef.current === slug) { pendingNewsSlugRef.current = null; setSelectedNews(nota); }
+        });
+      } else if (festMatch) {
+        const slug = decodeURIComponent(festMatch[1]);
+        setView("sections");
+        api.festivals("All")
+          .then((items) => {
+            const found = items.find((x) => festivalSlug(x) === slug);
+            if (found) setSelectedFestival(found);
+          })
+          .catch(() => {});
+      }
+    };
+    resolverEntrada();
+    // Cualquier entrada a las secciones carga la agenda: sin esto, después de
+    // un link a un festival o a una nota la portada de Bass decía "0 por venir".
+    if (window.location.pathname !== "/" && !eventsLoadedRef.current) { eventsLoadedRef.current = true; loadEvents(); }
 
     const onPopState = () => {
       const p = window.location.pathname;
       // /layer ↔ Bass ("/" o una sección) son los dos mundos: back/forward cambia de panel.
       if (/^\/layer\/?$/.test(p)) { setView("sections"); setActivePanel(1); }
-      else if (esRutaDeBass(p) && view === "sections") setActivePanel(0);
+      else if (esRutaDeBass(p)) setView((v) => { if (v === "sections") setActivePanel(0); return v; });
       const em = p.match(/^\/eventos\/([^/]+)\/?$/);
       const nm = p.match(/^\/noticias\/([^/]+)\/?$/);
       const fm = p.match(/^\/festivales\/([^/]+)\/?$/);
@@ -407,6 +425,7 @@ export default function App() {
         setNews((curr) => {
           const item = curr.find((x) => newsSlug(x) === slug);
           if (item) setSelectedNews(item);
+          else buscarNotaBass(slug).then((nota) => nota && setSelectedNews(nota));
           return curr;
         });
         setSelectedEvent(null);
@@ -433,7 +452,7 @@ export default function App() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [loadEvents, loadNews]);
+  }, [loadEvents, loadNews, buscarNotaBass]);
 
   // Resolver pending event slug cuando llegan los eventos
   useEffect(() => {
@@ -470,8 +489,8 @@ export default function App() {
     const slug = pendingNewsSlugRef.current;
     if (slug && news.length > 0) {
       const found = news.find((n) => newsSlug(n) === slug);
-      if (found) setSelectedNews(found);
-      pendingNewsSlugRef.current = null;
+      // Una nota de Layer se abre con Layer de fondo (y al cerrarla queda en /layer).
+      if (found) { setSelectedNews(found); setActivePanel(1); pendingNewsSlugRef.current = null; }
     }
   }, [news]);
 

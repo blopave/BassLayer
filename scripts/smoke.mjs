@@ -1132,6 +1132,40 @@ async function runApp() {
       if (lejos > 24) F("agenda", `lo que llega después del salto corre el día elegido (${Math.round(lejos)} px de la línea)`);
     } else soltarCiclos();
     await c.close();
+    // Entrar por un link directo (oct 2026, revisión): por /agenda el "atrás" no
+    // cerraba el modal; el link a una nota de Bass no la abría; después de un
+    // link a un festival la portada decía "0 por venir".
+    [c, pg] = await ctx({ viewport: { width: 1440, height: 900 } });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');localStorage.setItem('bl-app-no','1');");
+    const dlg = () => pg.locator("[role=dialog]").count();
+    await pg.goto(BASE + "/agenda", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-ev-open").first().click({ timeout: 20_000 }).catch(() => {});
+    await pg.locator("[role=dialog]").first().waitFor({ timeout: 5000 }).catch(() => {});
+    await pg.goBack();
+    await pg.waitForFunction(() => !document.querySelector("[role=dialog]"), null, { timeout: 5000 }).catch(() => {});
+    if (await dlg()) F("links directos", "entrando por /agenda, el atrás no cierra el modal del evento");
+    const notas = await pg.evaluate(() => fetch("/api/bass-news").then((r) => r.json()).catch(() => []));
+    if (notas.length) {
+      // El slug sale de abrir la nota desde Noticias (la URL lo dice).
+      await pg.goto(BASE + "/noticias", { waitUntil: "domcontentloaded" });
+      await pg.locator(".bl-news-wall .bl-ev-item").first().click({ timeout: 20_000 }).catch(() => {});
+      await pg.waitForURL(/\/noticias\/.+/, { timeout: 5000 }).catch(() => {});
+      const linkNota = new URL(pg.url()).pathname;
+      if (/^\/noticias\/.+/.test(linkNota)) {
+        await pg.goto(BASE + linkNota, { waitUntil: "domcontentloaded" });
+        await pg.locator("[role=dialog]").first().waitFor({ timeout: 15_000 }).catch(() => {});
+        if (!(await dlg())) F("links directos", `el link a una nota de Bass (${linkNota}) no abre la nota`);
+      } else F("links directos", "abrir una nota de Bass no cambia la dirección");
+    }
+    await pg.goto(BASE + "/festivales/creamfields-bsas-2026", { waitUntil: "domcontentloaded" });
+    await pg.locator("[role=dialog]").first().waitFor({ timeout: 15_000 }).catch(() => {});
+    await pg.keyboard.press("Escape");
+    // La portada de Bass cuenta la agenda: "N hoy · M por venir" con M > 0.
+    await pg.waitForFunction(() => /[1-9]\d* por venir/.test(document.body.innerText), null, { timeout: 20_000 }).catch(() => {});
+    const porVenir = await pg.evaluate(() => (document.body.innerText.match(/(\d+) por venir/) || [])[1]);
+    if (!porVenir || porVenir === "0") F("links directos", `después de un link a un festival la portada dice "${porVenir ?? "?"} por venir"`);
+    await c.close();
+
     // Sin red adentro de la app: una línea lo dice (oct 2026, Pablo: "no me muestra el aviso"); al volver, se va.
     [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await pg.addInitScript("localStorage.setItem('bl-onboarded','1');");
