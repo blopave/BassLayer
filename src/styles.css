@@ -5527,6 +5527,11 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster { container-type:inline-size; }
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster { font-size:clamp(15px, 12cqi, 34px); padding:9cqi 8cqi; align-items:flex-end; background:linear-gradient(0deg, color-mix(in srgb, var(--bl-bg) 85%, transparent) 0%, transparent 55%); }
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster-rule { display:none; }
+/* El tope por ancho descuenta el margen del afiche (8cqi por lado) y la letra
+   ancha (W, M): "TOMORROWLAND" se pasaba 26 px (oct 2026). */
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster-word { font-size:min(1.6em, calc(82cqi / (var(--len, 6) * 0.74))); }
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster[data-size="m"] .bl-poster-word { font-size:min(1.25em, calc(82cqi / (var(--len, 6) * 0.74))); }
+.bl-root .bl-ev-wall .bl-ev-item .bl-thumb-poster .bl-poster[data-size="s"] .bl-poster-word { font-size:min(0.95em, calc(82cqi / (var(--len, 6) * 0.74))); }
 /* 2 · La hora sobre el flyer, arriba a la izquierda; abajo, nombre y lugar. */
 .bl-root .bl-ev-wall .bl-ev-item::before {
   content:attr(data-time); position:absolute; top:10px; left:10px; z-index:3; padding:4px 8px; border-radius:var(--r-8);

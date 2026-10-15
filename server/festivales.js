@@ -73,7 +73,7 @@ function arFestivalsAsEvents() {
         genre: "Festival",
         url: f.url || "",
         // La misma imagen que muestra la sección Festivales (og:image del sitio oficial, si ya se resolvió).
-        image: f.image || festivalImageCache.get(f.id)?.image || null,
+        image: f.image || (f.image === false ? null : festivalImageCache.get(f.id)?.image) || null,
         source: "festival",
         description: f.description || null,
         festival_id: f.id,
@@ -103,7 +103,9 @@ const FESTIVAL_LINK_TTL  = 12 * 60 * 60 * 1000;
 async function resolveFestivalMeta(festival) {
   // Si tiene image explícita en el JSON, no hacemos fetch — confiamos.
   // Pero igual chequeamos el link status si tiene url.
-  const hasExplicitImage = !!festival.image;
+  // "image": false = el sitio solo tiene un logo o una pieza vieja: no se toma
+  // su og:image y la carta lleva la onda (oct 2026).
+  const hasExplicitImage = !!festival.image || festival.image === false;
 
   // Sin URL: image como esté en JSON, status no_url.
   if (!festival.url) {
@@ -121,7 +123,7 @@ async function resolveFestivalMeta(festival) {
 
   if (imgResolved && linkFresh) {
     return {
-      image: hasExplicitImage ? festival.image : imgCached.image,
+      image: hasExplicitImage ? (festival.image || null) : imgCached.image,
       linkStatus: linkCached.status,
     };
   }
@@ -137,7 +139,7 @@ async function resolveFestivalMeta(festival) {
     if (!r.ok || hasExplicitImage) {
       // No parseamos imagen si la URL falló o si ya tenemos image explícita.
       if (!imgResolved) festivalImageCache.set(festival.id, { image: null, ts: now });
-      return { image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null), linkStatus };
+      return { image: hasExplicitImage ? (festival.image || null) : (imgFresh ? imgCached.image : null), linkStatus };
     }
 
     const html = await readHead(r, 256 * 1024);
@@ -151,7 +153,7 @@ async function resolveFestivalMeta(festival) {
     festivalLinkCache.set(festival.id, { status: "broken", ts: now });
     if (!imgResolved) festivalImageCache.set(festival.id, { image: null, ts: now });
     return {
-      image: hasExplicitImage ? festival.image : (imgFresh ? imgCached.image : null),
+      image: hasExplicitImage ? (festival.image || null) : (imgFresh ? imgCached.image : null),
       linkStatus: "broken",
     };
   }

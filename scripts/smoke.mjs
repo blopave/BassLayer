@@ -629,6 +629,13 @@ async function run(vp) {
       else if (fest.heads.length > 1 && !/buenos aires/i.test(fest.heads[0])) fail(vp.name, "festivales", `el primer bloque es "${fest.heads[0]}", no Buenos Aires`);
       if (fest.heads.length && !fest.posters) fail(vp.name, "festivales", "los festivales no van como afiches");
       if (fest.heads.length && (!fest.chips || !fest.head)) fail(vp.name, "festivales", "faltan los filtros de texto o el número de apertura de la Agenda");
+      // Ningún nombre cortado en un afiche (oct 2026: "TOMORROWLAND" no entraba).
+      const cortados = await page.evaluate(() => [...document.querySelectorAll(".bl-ev-wall .bl-poster-word")].filter((w) => {
+        const p = w.closest(".bl-poster"), lim = p.getBoundingClientRect().right - parseFloat(getComputedStyle(p).paddingRight);
+        const r = document.createRange(); r.selectNodeContents(w);
+        return r.getBoundingClientRect().right > lim + 1;
+      }).map((w) => w.textContent));
+      if (cortados.length) fail(vp.name, "festivales", `nombres cortados en el afiche: ${cortados.join(", ")}`);
     }
 
     // 5e. Bass es Agenda · Noticias · Festivales (oct 2026, Pablo sacó Salas:
