@@ -973,7 +973,10 @@ export default function App() {
       if (/^\/layer\/?$/.test(p)) navegar(worldUrlRef.current(), true);
       if (!selectedEvent) resetMeta();
     }
-  }, [view, activePanel, selectedEvent]);
+    // La meta para buscadores queda en castellano (el sitio se indexa así);
+    // la pestaña, en el idioma de quien lo lee.
+    if (locale === "en" && !(activePanel === 0 && selectedEvent)) document.title = t(activePanel === 1 ? "meta.tabLayer" : "meta.tabBass");
+  }, [view, activePanel, selectedEvent, locale, t]);
 
   // El panel que no se ve (trasladado a -100vw) no debe recibir foco ni aparecer
   // en el árbol accesible: sin esto el teclado recorre ~500 controles invisibles
@@ -1064,14 +1067,14 @@ export default function App() {
           onTouchEnd={onTouchEnd}
         >
           {/* Panel 0: BASS */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Bass - Eventos" {...panelInert(0)} ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
+          <div className="bl-swipe-panel" role="tabpanel" aria-label={t("aria.panelBass")} {...panelInert(0)} ref={bassPanelRef} onTouchStart={bassPtr.onTouchStart} onTouchMove={bassPtr.onTouchMove} onTouchEnd={bassPtr.onTouchEnd}>
             <div className="bl-ptr" ref={bassPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <LineupTicker events={localEvents} loading={eventsLoading} onSelect={openEvent} />
             <BassFeed events={events} loading={eventsLoading} error={eventsError} onRetry={loadEvents} filter={eventsFilter} onFilter={setEventsFilterAndUrl} onSelect={openEvent} search={eventsSearch} onSearch={setEventsSearch} onOpenPicker={() => setShowWeekendPicker(true)} onSelectNews={openNews} onSelectFestival={openFestival} presetWhen={presetWhen} presetSection={initialRoute.seccion} onSeccion={(p) => { bassPathRef.current = p; }} />
           </div>
 
           {/* Panel 1: LAYER */}
-          <div className="bl-swipe-panel" role="tabpanel" aria-label="Layer - Crypto" {...panelInert(1)} ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
+          <div className="bl-swipe-panel" role="tabpanel" aria-label={t("aria.panelLayer")} {...panelInert(1)} ref={layerPanelRef} onTouchStart={layerPtr.onTouchStart} onTouchMove={layerPtr.onTouchMove} onTouchEnd={layerPtr.onTouchEnd}>
             <div className="bl-ptr" ref={layerPtrRef}><div className="bl-ptr-inner">{"\u2193"} {t("common.refresh")}</div></div>
             <PriceTicker prices={prices} loading={prices === null} onSelect={setSelectedPrice} />
             {layerSeen.current && <LayerFeed news={news} loading={newsLoading} error={newsError} onRetry={loadNews} filter={newsFilter} onFilter={setNewsFilter} onSelectNews={openNews} />}

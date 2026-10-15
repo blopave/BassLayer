@@ -1077,6 +1077,9 @@ export function montarPrerender(app, d) {
   // Inserta el SEO block en el template con replacer de FUNCIÓN: evita que un "$"
   // en nombres de eventos/títulos active patrones de reemplazo ($&, $$, $n) y
   // rompa el HTML (mismo motivo que en renderHtmlWithMeta).
+  const sinIndexar = (html) => html.replace(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex, follow" />');
+  // Lo que no existe: 404 y noindex, con el sitio igual para quien llegó.
+  const noExiste = (res) => res.status(404).set("Content-Type", "text/html").send(sinIndexar(injectSeo(buildSeoHtml())));
   const injectSeo = (seoBlock) => seoBlock
     ? indexHtml.replace('<div id="root"></div>', () => `<div id="root">${seoBlock}</div>`)
     : indexHtml;
@@ -1092,7 +1095,7 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(renderGenrePage(genre));
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
       // /semana — el resumen de la semana (link fijo, se renueva cada lunes)
@@ -1129,7 +1132,7 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(page);
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
       // /eventos/[slug] — ficha individual indexable
@@ -1141,7 +1144,7 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(renderEventPage(ev));
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
       // /noticias/[slug] — ficha de noticia (noindex, canonical a la fuente)
@@ -1153,7 +1156,7 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(renderNewsPage(n));
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
       // /guias/[slug] — guía editorial long-form (SÍ indexable, Article JSON-LD)
@@ -1165,7 +1168,7 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(renderGuiaPage(g));
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
       // /festivales/[slug] — ficha de festival curado (SÍ indexable)
@@ -1177,12 +1180,16 @@ export function montarPrerender(app, d) {
           res.set("Content-Type", "text/html");
           return res.send(renderFestivalPage(f));
         }
-        return res.status(404).set("Content-Type", "text/html").send(injectSeo(buildSeoHtml()));
+        return noExiste(res);
       }
 
-      // Home + cualquier otra ruta SPA
+      // Home (y /admin, que es del cliente). Cualquier otra dirección no
+      // existe: 404 con noindex, pero con el sitio igual (oct 2026: devolvía
+      // 200 y Google la tomaba como una copia del home).
       res.set("Content-Type", "text/html");
-      res.send(injectSeo(buildSeoHtml()));
+      if (req.path === "/") return res.send(injectSeo(buildSeoHtml()));
+      if (req.path === "/admin") return res.send(sinIndexar(injectSeo(buildSeoHtml())));
+      return noExiste(res);
     } catch (e) {
       // Un fallo puntual (p.ej. fecha inválida en un item cacheado) no debe
       // tumbar el SSR de todo el sitio: servimos el shell SPA sin prerender.

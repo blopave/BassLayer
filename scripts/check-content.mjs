@@ -387,6 +387,8 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
     ['Alison Wonderland: "I think people will attend electronic shows until they\'re 80"', '"I think people will attend electronic shows until they\'re 80"', false],
     ["Listen to Mia Koden’s new EP, ‘Decode Vol.2’", "‘Decode Vol.2’", true],
   ];
+  // Proyectos cripto con nombre de palabra común: quedan como están.
+  if (!protectNames("Stacks reports around 735 BTC bonded in Bitcoin Staking").names.includes("Stacks")) fail("comillas (traducción)", "regla", "\"Stacks\" (el proyecto) se traduce como \"pilas\"");
   // En alemán los sustantivos van con mayúscula: no se toman como nombres.
   if (protectNames("Bitwig integriert rekordbox: So greift der DAW-Außenseiter das Live-Monopol von Ableton an", "de").names.some((n) => /Außenseiter|Monopol/.test(n))) fail("comillas (traducción)", "regla", "en alemán los sustantivos quedan sin traducir");
   // Meses, países y "AI" no son nombres de la escena: no se protegen.

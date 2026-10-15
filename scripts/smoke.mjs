@@ -1049,6 +1049,12 @@ async function runApp() {
   const sw = (await get("/sw.js"))?.toString() || "";
   if (!/offline\.html/.test(sw)) F("sin conexión", "el service worker no cae a la página sin conexión");
   if (!/no-store\|private/.test(sw)) F("sin conexión", "el service worker no guarda la API pública para usarla sin red (o guarda la privada)");
+  // Una dirección que no existe es 404 con noindex (no una copia del home). Solo en producción: Vite no tiene el prerender.
+  if (!/localhost|127\.0\.0\.1/.test(BASE)) {
+    const r404 = await fetch(`${BASE}/esto-no-existe-${Date.now()}`).catch(() => null);
+    const h404 = r404 ? await r404.text() : "";
+    if (!r404 || r404.status !== 404 || !/noindex/.test(h404)) F("404", `una dirección inexistente devuelve ${r404?.status ?? "?"}${/noindex/.test(h404) ? "" : " sin noindex"}`);
+  }
 
   const browser = await chromium.launch();
   const ctx = async (o) => { const c = await browser.newContext(o); const pg = await c.newPage(); pg.on("pageerror", (e) => F("js", e.message)); return [c, pg]; };

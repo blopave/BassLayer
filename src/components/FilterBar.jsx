@@ -5,7 +5,7 @@ export function FilterBar({ items, active, onChange, className, labels, counts }
   const display = (item) => (item === "All" ? t("common.all") : (labels && labels[item]) || item);
   const countFor = (item) => (counts ? counts[item === "All" ? "all" : item] : undefined);
   return (
-    <div className={`bl-filters ${className}`} role="tablist" aria-label="Filtros">
+    <div className={`bl-filters ${className}`} role="tablist" aria-label={t("aria.filters")}>
       {items.map((item) => {
         const isActive = active === item;
         const count = countFor(item);
