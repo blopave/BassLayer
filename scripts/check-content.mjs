@@ -15,7 +15,7 @@
 //   npm run check:content -- https://basslayer.io
 //   npm run check:content -- --json              # salida para CI
 
-import { isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence, esDeLaEscena, FUENTES_CON_EVIDENCIA, artistasDelTitulo } from "../lib/content-rules.js";
+import { protectNames, isNotArtist, TEMPLATE_TOKEN, NOT_A_SHOW_TITLE, storyWords, sameStory, notPast, hasElectronicEvidence, esDeLaEscena, FUENTES_CON_EVIDENCIA, artistasDelTitulo } from "../lib/content-rules.js";
 import { namesOtherCity, detectCity } from "../lib/places.js";
 import { readFileSync } from "node:fs";
 import { weekendWindow, eventEpoch } from "../lib/finde.js";
@@ -377,6 +377,25 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
   const mal = casos.filter(([t, ok]) => JSON.stringify(artistasDelTitulo(t)) !== JSON.stringify(ok)).map(([t]) => t);
   stats.push({ path: "line-up del título", count: casos.length });
   if (mal.length) fail("line-up del título", "regla", `mal leídos: ${mal.join(" | ")}`);
+}
+
+// Comillas al traducir (oct 2026): el título de un tema o disco queda como
+// está; una cita entera se traduce (Alison Wonderland quedaba en inglés).
+{
+  const casos = [
+    ['Witchthroat Serpent, “Demons Left To Roam”', "“Demons Left To Roam”", true],
+    ['Alison Wonderland: "I think people will attend electronic shows until they\'re 80"', '"I think people will attend electronic shows until they\'re 80"', false],
+    ["Listen to Mia Koden’s new EP, ‘Decode Vol.2’", "‘Decode Vol.2’", true],
+  ];
+  // En alemán los sustantivos van con mayúscula: no se toman como nombres.
+  if (protectNames("Bitwig integriert rekordbox: So greift der DAW-Außenseiter das Live-Monopol von Ableton an", "de").names.some((n) => /Außenseiter|Monopol/.test(n))) fail("comillas (traducción)", "regla", "en alemán los sustantivos quedan sin traducir");
+  // Meses, países y "AI" no son nombres de la escena: no se protegen.
+  for (const [t, palabra] of [["Six emerging artists you need to hear: October 2026", "October"], ["DJ Love featured in a documentary series on the Philippines", "Philippines"], ["YouTube Music will now tag AI-generated content", "AI-generated"]]) {
+    if (protectNames(t).names.some((n) => n.includes(palabra))) fail("comillas (traducción)", "regla", `"${palabra}" queda sin traducir en: ${t}`);
+  }
+  const mal = casos.filter(([t, q, protegida]) => protectNames(t).names.includes(q) !== protegida).map(([t]) => t);
+  stats.push({ path: "comillas (traducción)", count: casos.length });
+  if (mal.length) fail("comillas (traducción)", "regla", `mal resueltas: ${mal.join(" | ")}`);
 }
 
 // Festivales (oct 2026): el link "oficial" tiene que ser del festival. El de
