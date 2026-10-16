@@ -45,7 +45,7 @@ export function FestivalModal({ festival, onClose }) {
 
   return (
     <div
-      className="bl-modal-overlay open"
+      className="bl-modal-overlay bl-modal-overlay--sheet open"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -77,23 +77,13 @@ export function FestivalModal({ festival, onClose }) {
         </div>
 
         <div className="bl-festival-modal-body">
+          {/* Un antetítulo como el del modal de evento (oct 2026): cuándo y dónde,
+              una vez; antes eran etiquetas sueltas ("BA") y dos filas que lo repetían. */}
           <div className="bl-festival-modal-meta">
-            <span className="bl-festival-modal-region">{festival.region}</span>
-            {festival.country && <span className="bl-festival-modal-country">{festival.country}</span>}
+            {[dateRange, [festival.city, festival.country].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
           </div>
 
           <h2 className="bl-festival-modal-name bl-bass-t-display-title">{festival.name}</h2>
-
-          <div className="bl-festival-modal-info">
-            <div className="bl-festival-modal-info-row">
-              <span className="bl-festival-modal-info-key bl-bass-t-label">{locale === "en" ? "When" : "Cuándo"}</span>
-              <span className="bl-festival-modal-info-val bl-bass-t-body">{dateRange}</span>
-            </div>
-            <div className="bl-festival-modal-info-row">
-              <span className="bl-festival-modal-info-key bl-bass-t-label">{locale === "en" ? "Where" : "Dónde"}</span>
-              <span className="bl-festival-modal-info-val bl-bass-t-body">{festival.city}{festival.country ? `, ${festival.country}` : ""}</span>
-            </div>
-          </div>
 
           {festival.description && (
             <p className="bl-festival-modal-desc bl-bass-t-body">{festival.description}</p>

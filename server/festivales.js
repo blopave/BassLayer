@@ -133,7 +133,8 @@ async function resolveFestivalMeta(festival) {
       headers: { ...BROWSER_HEADERS, Accept: "text/html" },
     }, 8000);
 
-    const linkStatus = r.ok ? "ok" : "broken";
+    // 403/429: el sitio frena a los robots, no está caído (Lost Village).
+    const linkStatus = r.ok || r.status === 403 || r.status === 429 ? "ok" : "broken";
     festivalLinkCache.set(festival.id, { status: linkStatus, ts: now });
 
     if (!r.ok || hasExplicitImage) {

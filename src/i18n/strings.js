@@ -225,7 +225,7 @@ export const STRINGS = {
     "event.lineupPlural": "artistas",
     "event.priceFrom": "Desde",
     "event.where": "Dónde",
-    "event.viewOnMaps": "Ver en Maps",
+    "event.viewOnMaps": "Ver en el mapa",
     "event.directions": "Cómo llegar",
     "event.searchTickets": "Buscá entradas",
     "event.tickets": "Entradas",
@@ -399,11 +399,11 @@ export const STRINGS = {
     "app.menu": "app",
     "app.menuAria": "Instalar la app de BassLayer",
 
-    "about.desc": "Tu radar en tiempo real para la escena de {electronic} y el mundo {crypto} en Buenos Aires.",
+    "about.desc": "Dos mundos en un solo lugar: la escena de {electronic} de Buenos Aires y el mundo {crypto} y de los mercados.",
     "about.descElectronic": "música electrónica",
     "about.descCrypto": "cripto",
-    "about.bassText": "Eventos, fiestas, DJs y venues de la escena electrónica porteña. Filtrá por género, buscá por nombre o descubrí qué hay este finde.",
-    "about.layerText": "Precios cripto en vivo, noticias del mercado, eventos y cursos cripto IRL en Buenos Aires. Todo en un solo lugar.",
+    "about.bassText": "La agenda de la noche porteña día por día —clubes, fiestas, ciclos fijos y festivales—, las noticias de la escena y el finde en tu calendario.",
+    "about.layerText": "Precios en vivo, noticias cripto y de finanzas, ETFs y acciones, los ciclos de Bitcoin, predicciones, eventos y los hitos cripto de Argentina.",
   },
   en: {
     "common.close": "Close",
@@ -797,11 +797,11 @@ export const STRINGS = {
     "app.menu": "app",
     "app.menuAria": "Install the BassLayer app",
 
-    "about.desc": "Your real-time radar for the {electronic} scene and the world of {crypto} in Buenos Aires.",
+    "about.desc": "Two worlds in one place: Buenos Aires' {electronic} scene and the world of {crypto} and markets.",
     "about.descElectronic": "electronic music",
     "about.descCrypto": "crypto",
-    "about.bassText": "Events, parties, DJs and venues from Buenos Aires' electronic scene. Filter by genre, search by name or discover what's on this weekend.",
-    "about.layerText": "Live crypto prices, market news, crypto IRL events and courses in Buenos Aires. All in one place.",
+    "about.bassText": "Buenos Aires' night, day by day — clubs, parties, weekly nights and festivals —, scene news and the weekend in your calendar.",
+    "about.layerText": "Live prices, crypto and finance news, ETFs and stocks, Bitcoin cycles, predictions, events and Argentina's crypto milestones.",
   },
 };
 

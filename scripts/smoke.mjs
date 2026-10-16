@@ -1198,6 +1198,30 @@ async function runApp() {
     await pg.locator(".bl-empty-action").first().click({ timeout: 3000 }).catch(() => F("búsqueda", "sin resultados no hay forma de borrar la búsqueda"));
     await pg.waitForTimeout(600);
     if ((await pg.locator(".bl-ev-wall .bl-ev-item").count()) === 0) F("búsqueda", "borrar la búsqueda no vuelve a mostrar la agenda");
+    // Sin colofones (Pablo los sacó): ni "end of set" ni "EOF", con la agenda entera.
+    await pg.goto(BASE + "/agenda", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-ev-wall .bl-ev-item").first().waitFor({ timeout: 20_000 }).catch(() => {});
+    if (/end of set|EOF/i.test(await pg.evaluate(() => document.body.textContent))) F("pies", "volvió un colofón (\"end of set\" / \"EOF\")");
+    // Modal de noticia: el medio una sola vez y sin etiquetas en inglés.
+    await pg.goto(BASE + "/noticias", { waitUntil: "domcontentloaded" });
+    const carta = pg.locator(".bl-news-wall .bl-ev-item").first();
+    const medio = await carta.getAttribute("data-time", { timeout: 20_000 }).catch(() => "");
+    await carta.click({ timeout: 20_000 }).catch(() => {});
+    await pg.locator(".bl-news-modal").first().waitFor({ timeout: 5000 }).catch(() => {});
+    const modalNota = await pg.evaluate((medio) => { const m = document.querySelector(".bl-news-modal"); if (!m) return null; const txt = m.textContent; return { meta: m.querySelector(".bl-news-modal-meta")?.textContent || "", veces: medio ? txt.split(medio).length - 1 : 0, ingles: /(MUSIC|SCENE|INTL|CLUBS)/i.test(m.querySelector(".bl-news-modal-meta")?.textContent + [...m.querySelectorAll("span")].map((x) => x.textContent).join(" ")) }; }, medio);
+    if (!modalNota) F("modal de noticia", "no abre");
+    else {
+      if (modalNota.ingles) F("modal de noticia", `etiquetas en inglés: "${modalNota.meta}"`);
+      if (modalNota.veces > 1) F("modal de noticia", `el medio (${medio}) aparece ${modalNota.veces} veces`);
+    }
+    await c.close();
+    // En mobile, noticia y festival abren como hoja desde abajo (como el evento).
+    [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');localStorage.setItem('bl-app-no','1');");
+    await pg.goto(BASE + "/festivales/creamfields-bsas-2026", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-modal").first().waitFor({ timeout: 20_000 }).catch(() => {});
+    const hoja = await pg.evaluate(() => { const m = document.querySelector(".bl-modal"); if (!m) return null; const r = m.getBoundingClientRect(); return { abajo: Math.abs(innerHeight - r.bottom) < 2, ancho: Math.round(r.width) === innerWidth }; });
+    if (!hoja || !hoja.abajo || !hoja.ancho) F("modales", `en mobile el modal de festival no es una hoja desde abajo (${JSON.stringify(hoja)})`);
     await c.close();
 
     // Sin red adentro de la app: una línea lo dice (oct 2026, Pablo: "no me muestra el aviso"); al volver, se va.

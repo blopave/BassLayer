@@ -49,7 +49,7 @@ export function NewsModal({ item, onClose }) {
 
   return (
     <div
-      className="bl-modal-overlay open"
+      className="bl-modal-overlay bl-modal-overlay--sheet open"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"

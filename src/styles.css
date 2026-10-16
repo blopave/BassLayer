@@ -478,7 +478,7 @@
 }
 
 /* ── World-specific Empty/Error States ── */
-.bl-root[data-section="bass"] .bl-empty { font-family:var(--font-body); font-size:var(--fs-15); color:var(--bl-text-sec); padding:32px 0; display:flex; flex-direction:column; align-items:center; gap:14px; }
+.bl-root[data-section="bass"] .bl-empty { font-family:var(--font-body); font-size:var(--fs-15); color:var(--bl-text-sec); padding:32px 0; display:flex; flex-direction:column; align-items:center; gap:12px; }
 /* Salida del estado vacío: texto, como los filtros (oct 2026). */
 .bl-empty-action { background:none; border:0; padding:4px 0; cursor:pointer; font:600 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
 .bl-empty-action:hover, .bl-empty-action:focus-visible { color:var(--bl-text); outline:none; }
@@ -702,16 +702,16 @@
 .bl-about-sections {
   display:flex; flex-direction:column; gap:16px; margin-bottom:24px;
 }
-.bl-about-section {
-  padding:16px 16px; background:var(--bl-surface); border:1px solid var(--bl-border);
-  border-radius:var(--r-8);
-}
+/* Sin cajas (oct 2026): cada mundo con su rótulo y un filete, como los interiores. */
+.bl-about-section { padding:16px 0 0; border-top:1px solid var(--bl-border-sub); }
 .bl-about-section-title {
-  font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16);
-  text-transform:uppercase; color:var(--bl-text-ter); margin-bottom:8px;
+  font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16);
+  text-transform:uppercase; color:var(--bl-text-sec); margin-bottom:8px;
 }
+.bl-about-section:first-child .bl-about-section-title { color:var(--bl-accent-bass); }
+.bl-about-section:last-child .bl-about-section-title { color:var(--bl-accent-layer); }
 .bl-about-section-text {
-  font-family:var(--font-body); font-size:var(--fs-12); line-height:1.5;
+  font-family:var(--font-body); font-size:var(--fs-14); line-height:1.5;
   color:var(--bl-text-sec);
 }
 .bl-about-footer {
@@ -996,10 +996,10 @@
   from { opacity:0; transform:translateY(6px); }
   to   { opacity:1; transform:translateY(0); }
 }
-.bl-info { position:absolute; font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-700); z-index:50; transition:color .4s; opacity:0; }
+.bl-info { position:absolute; font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-text-ter); z-index:50; transition:color .4s; opacity:0; }   /* ≥11 px y legible (oct 2026: casi no se veía) */
 .bl-home.hero-entered .bl-info { animation:info-fade .8s var(--ease-out-expo) forwards; }
 .bl-info-bl { bottom:32px; left:32px; animation-delay:1.5s!important; }
-.bl-home:hover .bl-info { color:var(--bl-600); }
+.bl-home:hover .bl-info { color:var(--bl-text-sec); }
 @media (max-width:768px) {
   .bl-info-bl { left:20px; }
   .bl-info-bl { bottom:20px; }
@@ -1069,9 +1069,10 @@
 .bl-lineup-bar { position:sticky; top:0; z-index:899; display:flex; align-items:stretch; overflow:hidden; border-bottom:1px solid var(--bl-border); background:var(--bl-glass-light); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); white-space:nowrap; }
 .bl-lineup-sign { display:flex; align-items:center; gap:8px; padding:0 20px; border-right:1px solid var(--bl-border); flex-shrink:0; background:var(--bl-subtle-03); }
 .bl-lineup-dot { width:7px; height:7px; border-radius:50%; background:var(--bl-accent-bass); box-shadow:0 0 0 0 var(--bl-accent-bass); animation:bl-lineup-pulse 2s ease-out infinite; }
-.bl-lineup-sign-label { font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); font-weight:700; }
+.bl-lineup-sign-label { font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); font-weight:700; }
 @keyframes bl-lineup-pulse { 0%{box-shadow:0 0 0 0 rgba(196,144,112,0.5)} 70%{box-shadow:0 0 0 6px rgba(196,144,112,0)} 100%{box-shadow:0 0 0 0 rgba(196,144,112,0)} }
-.bl-lineup-viewport { flex:1; overflow:hidden; }
+/* Fundido en los bordes (oct 2026): las etiquetas se cortaban en seco ("MAÑAN"). */
+.bl-lineup-viewport { flex:1; overflow:hidden; -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%); }
 .bl-lineup-track { display:inline-flex; animation:bl-scroll 80s linear infinite; }
 .bl-lineup-track:hover, .bl-lineup-track:focus-within { animation-play-state:paused; }
 /* Placeholder de marquee: el item real, invisible, reserva la altura por estructura. */
@@ -1081,7 +1082,7 @@
 .bl-lineup-act { font-size:var(--fs-14); color:var(--bl-100); font-weight:700; letter-spacing:0; }
 .bl-lineup-at { font-family:var(--font-mono); font-size:var(--fs-12); color:var(--bl-300); }
 .bl-lineup-venue { font-family:var(--font-mono); font-size:var(--fs-12); color:var(--bl-300); letter-spacing:var(--tr-04); }
-.bl-lineup-when { font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-1); color:var(--bl-300); text-transform:uppercase; padding:2px 8px; border:1px solid var(--bl-border); border-radius:var(--r-4); }
+.bl-lineup-when { font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-1); color:var(--bl-300); text-transform:uppercase; padding:2px 8px; border:1px solid var(--bl-border); border-radius:var(--r-4); }
 .bl-lineup-when.is-live { color:var(--bl-accent-bass); border-color:var(--bl-accent-bass); }
 /* Ecualizador — energía viva aunque el scroll pause */
 .bl-lineup-eq { display:inline-flex; align-items:flex-end; gap:2px; height:14px; flex-shrink:0; }
@@ -2108,6 +2109,8 @@
 @media (max-width:768px) {
   /* Modificador genérico: cualquier modal puede pedir bottom-sheet en mobile. */
   .bl-modal-overlay--sheet { align-items:flex-end; padding:0; }
+  /* Noticia y festival salen como el evento: hoja desde abajo (oct 2026). */
+  .bl-modal-overlay--sheet .bl-modal:not(.bl-event-modal) { width:100%; max-width:100%; max-height:92vh; overflow-y:auto; border-radius:18px 18px 0 0; border-bottom:0; }
   .bl-modal.bl-event-modal {
     grid-template-columns:1fr; grid-template-rows:auto minmax(0, 1fr);
     max-width:100%; max-height:94vh; border-radius:18px 18px 0 0; border-bottom:0;
@@ -3944,11 +3947,10 @@ select.bl-venue-input { cursor:pointer; }
   display:flex; flex-direction:column; gap:16px;
 }
 .bl-news-modal-meta {
-  display:flex; gap:12px; align-items:center; flex-wrap:wrap;
   font-family:var(--font-mono);
-  font-size:var(--fs-10); letter-spacing:var(--tr-1);
+  font-size:var(--fs-11); letter-spacing:var(--tr-16);
   text-transform:uppercase;
-  color:var(--bl-text-ter);
+  color:var(--bl-accent, var(--bl-accent-bass));
 }
 .bl-news-modal-source {
   color:var(--bl-accent-bass);
@@ -4112,16 +4114,12 @@ select.bl-venue-input { cursor:pointer; }
   gap:16px;
 }
 .bl-festival-modal-meta {
-  display:flex;
-  gap:12px;
-  align-items:center;
   font-family:var(--font-mono);
-  font-size:var(--fs-10);
+  font-size:var(--fs-11);
   letter-spacing:var(--tr-16);
   text-transform:uppercase;
+  color:var(--bl-accent-bass);
 }
-.bl-festival-modal-region { color:var(--bl-accent-bass); font-weight:700; }
-.bl-festival-modal-country { color:var(--bl-text-ter); }
 .bl-festival-modal-name {
   color:var(--bl-text);
   margin:0;
@@ -4842,6 +4840,8 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-root .bl-ev-wall .bl-ev-item .bl-thumb { flex:none !important; width:100% !important; height:auto !important; aspect-ratio:4/5; border-radius:var(--r-12); box-shadow:0 18px 40px rgba(0,0,0,.35); }
 .bl-root .bl-ev-wall .bl-ev-item .bl-ev-time-block, .bl-root .bl-ev-wall .bl-ev-item [class*="countdown"], .bl-root .bl-ev-wall .bl-ev-lineup { display:none; }
 .bl-root .bl-ev-wall .bl-ev-name { font-size:var(--fs-16); -webkit-line-clamp:2; }
+/* El texto bajo el afiche arranca siempre a la misma altura (oct 2026: centrado en la fila, las de una línea quedaban más abajo). */
+.bl-root .bl-ev-wall .bl-ev-body { justify-content:flex-start; }
 .bl-root .bl-ev-wall .bl-ev-lead .bl-ev-name { font-size:var(--fs-16); }
 .bl-root .bl-ev-wall .bl-ev-venue-line { font-size:var(--fs-13); color:var(--bl-text-sec); }
 .bl-root .bl-ev-wall .bl-ev-item > .bl-save-btn { position:absolute; top:10px; right:10px; z-index:3; background:color-mix(in srgb, var(--bl-bg) 70%, transparent); border-radius:50%; backdrop-filter:blur(6px); }
@@ -4965,7 +4965,9 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 
 /* La semana (oct 2026, formato "Edición"): /semana, el resumen semanal. Página
    aparte con scroll normal (no vive dentro de .bl-root). */
-.bl-sem { min-height:100vh; background:var(--bl-bg); color:var(--bl-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+/* La semana usa la paleta de Bass (oct 2026: el negro puro la hacía ver de otro sitio). */
+.bl-sem { min-height:100vh; background:#181614; color:var(--bl-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased;
+  --bl-surface:#1C1A17; --bl-border:#302B25; --bl-border-sub:#26221D; --bl-text-sec:#8A827A; --bl-text-ter:#8A827A; }
 .bl-sem-wrap { max-width:1180px; margin:0 auto; padding:40px 32px 80px; }
 .bl-sem-k { font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-text-ter); }
 .bl-sem .c { color:var(--bl-accent-bass); }
@@ -4991,7 +4993,7 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 /* Afiche de tamaño tarjeta (el de base está pensado para miniaturas). */
 .bl-sem-flyer .bl-poster { font-size:40px; padding:16px; }
 .bl-sem-pick .nm { font-size:var(--fs-14); font-weight:600; line-height:1.3; margin-top:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.bl-sem-pick .mt { font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-1); color:var(--bl-text-ter); text-transform:uppercase; margin-top:4px; }
+.bl-sem-pick .mt { font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-1); color:var(--bl-text-ter); text-transform:uppercase; margin-top:4px; }
 .bl-sem-row { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:4px 16px; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--bl-border-sub); }
 .bl-sem-row .a { font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-1); color:var(--bl-text-ter); text-transform:uppercase; }
 .bl-sem-row .b { font-size:var(--fs-16); font-weight:600; min-width:0; }
@@ -5002,7 +5004,8 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-sem-btc .p { font-family:var(--font-mono); font-size:var(--fs-16); margin-top:8px; }
 .bl-sem-btc svg { width:100%; height:120px; }
 .bl-sem-acts { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:12px; }
-.bl-sem-act { border:1px solid var(--bl-border-sub); border-radius:var(--r-12); padding:12px; background:var(--bl-surface); }
+/* Sin caja: filete arriba, como los rótulos (oct 2026). */
+.bl-sem-act { border-top:1px solid var(--bl-border-sub); padding:12px 0 0; }
 .bl-sem-act .h { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:var(--fs-12); letter-spacing:var(--tr-1); }
 .bl-sem-act svg { display:block; width:100%; height:44px; margin-top:8px; }
 .bl-sem .up { color:var(--bl-up); }
