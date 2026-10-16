@@ -28,7 +28,6 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
     barrio: profile?.barrio || "",
     city: profile?.city || "CABA",
     capacity: profile?.capacity || "",
-    instagram: profile?.instagram || "",
     website: profile?.website || "",
     ra_url: profile?.ra_url || "",
   });
@@ -151,12 +150,7 @@ export function VenueProfileForm({ profile, user, onSave, onBack }) {
             </label>
           </div>
 
-          <div className="bl-venue-section-title">Redes y links</div>
-
-          <label className="bl-venue-label">
-            Instagram
-            <input className="bl-venue-input" type="text" value={form.instagram} onChange={(e) => update("instagram", e.target.value)} placeholder="@tucuenta" />
-          </label>
+          <div className="bl-venue-section-title">Links</div>
 
           <label className="bl-venue-label">
             Website

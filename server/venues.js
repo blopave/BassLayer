@@ -25,7 +25,7 @@ app.put("/api/venue/me", requireAuth, async (req, res) => {
   const allowed = [
     "display_name", "slug", "description", "venue_type", "address",
     "barrio", "city", "capacity", "logo_url", "cover_url",
-    "instagram", "website", "ra_url",   // sin WhatsApp: Pablo no quiere nada de WhatsApp (sept 2026)
+    "website", "ra_url",   // sin redes: Pablo no quiere WhatsApp ni Instagram en el sitio (sept 2026)
   ];
   const updates = {};
   for (const key of allowed) {
@@ -148,7 +148,7 @@ app.delete("/api/venue/events/:id", requireAuth, async (req, res) => {
 app.get("/api/venue/:slug", async (req, res) => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, slug, description, venue_type, address, barrio, city, capacity, logo_url, cover_url, instagram, website, ra_url, verified")
+    .select("display_name, slug, description, venue_type, address, barrio, city, capacity, logo_url, cover_url, website, ra_url, verified")
     .eq("slug", req.params.slug)
     .single();
 
