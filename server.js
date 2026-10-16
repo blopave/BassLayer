@@ -57,12 +57,6 @@ const supabase = SUPABASE_URL && SUPABASE_KEY
 if (!supabase) console.warn("⚠ SUPABASE_URL or SUPABASE_SERVICE_KEY missing — venue/project features disabled");
 const { requireAuth, requireAdmin } = crearAuth(supabase);
 
-// ── Datos de mercado (ETFs + acciones) ──
-// Principal: CNBC quote webservice (SIN key ni cuenta) — ver fetchMarketsCNBC.
-// Twelve Data / Finnhub son fallback OPCIONAL: si se define su key, dan
-// real-time de mayor calidad, pero /api/markets funciona sin ninguna key.
-const TWELVEDATA_KEY = process.env.TWELVEDATA_KEY;
-const FINNHUB_KEY = process.env.FINNHUB_KEY;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -234,7 +228,7 @@ const cache = {
   prices:      { data: null, ts: 0, ttl: 30_000 },
   news:        { data: null, ts: 0, ttl: 5 * 60_000 },
   financeNews: { data: null, ts: 0, ttl: 10 * 60_000 },  // 10min — noticias financieras generales (RSS macro/mercados)
-  markets:     { data: null, ts: 0, ttl: 15 * 60_000 },  // 15min — quotes ETFs + acciones (Twelve Data / Finnhub)
+  markets:     { data: null, ts: 0, ttl: 15 * 60_000 },  // 15min — cotizaciones de ETFs y acciones (CNBC)
   events:      { data: null, ts: 0, ttl: 60 * 60_000 },
   bassNews:    { data: null, ts: 0, ttl: 30 * 60_000 },
   dashboard:   { data: null, ts: 0, ttl: 5 * 60_000 },   // 5min — crypto dashboard
@@ -585,7 +579,7 @@ function reconcileGuessedCities(events) {
   if (fixed) console.log(`[events] ${fixed} eventos reubicados por cruce de fuentes (no eran de CABA)`);
 }
 
-montarLayerFuentes(app, { FINNHUB_KEY, TWELVEDATA_KEY, cache, cached, eachLimit, fetchSafe, registerImages, safeText, setCache, translateTitle });
+montarLayerFuentes(app, { cache, cached, eachLimit, fetchSafe, registerImages, safeText, setCache, translateTitle });
 
 const { buildBassNews } = montarBassNoticias(app, { BROWSER_HEADERS, MONTH_MAP, TITLE_TR_V, eachLimit, fetchSafe, registerImages, safeText, swr, translateTitle });
 

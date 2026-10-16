@@ -6,7 +6,7 @@ import { cleanNewsTitle, fetchSourceWithFallback, htmlToText, pickItemImage, ref
 import { sameStoryOnce } from "../lib/content-rules.js";
 
 export function montarLayerFuentes(app, d) {
-  const { FINNHUB_KEY, TWELVEDATA_KEY, cache, cached, eachLimit, fetchSafe, registerImages, safeText, setCache, translateTitle } = d;
+  const { cache, cached, eachLimit, fetchSafe, registerImages, safeText, setCache, translateTitle } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/prices — CoinGecko
@@ -549,7 +549,7 @@ app.get("/api/finance-news", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  GET /api/markets — Quotes ETFs + acciones (Twelve Data / Finnhub)
+//  GET /api/markets — cotizaciones de ETFs y acciones (CNBC, sin cuenta)
 //  Curaduría con sesgo tech/crypto (Layer = inversiones ancladas en crypto):
 //  ETFs de índices + BTC ETFs, tech mega-caps y ADRs LATAM (todos US-listed).
 // ─────────────────────────────────────────────
@@ -594,7 +594,6 @@ const MARKET_SYMBOLS = [
 ];
 const MARKET_GROUPS = [...new Set(MARKET_SYMBOLS.map((s) => s.group))];
 const GROUP_OF = Object.fromEntries(MARKET_SYMBOLS.map((s) => [s.symbol, s]));
-const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 // CNBC devuelve strings con separador de miles ("1,787.39") y % con signo
 // ("+6.28%"): hay que sacar comas/símbolos antes de parsear.
 const numLoose = (v) => { const n = parseFloat(String(v ?? "").replace(/[,%\s]/g, "")); return Number.isFinite(n) ? n : null; };
@@ -630,68 +629,16 @@ async function fetchMarketsCNBC() {
   return rows;
 }
 
-// Twelve Data — un solo batch para todos los símbolos (1 crédito por símbolo).
-async function fetchMarketsTwelveData() {
-  const symbols = MARKET_SYMBOLS.map((s) => s.symbol).join(",");
-  const url = `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${TWELVEDATA_KEY}`;
-  const r = await fetchSafe(url, {}, 12000);
-  if (!r.ok) throw new Error(`twelvedata HTTP ${r.status}`);
-  const j = JSON.parse(await safeText(r));
-  // Respuesta batch: objeto keyed por símbolo. Si mandó un error global viene
-  // { code, message, status:"error" } sin las claves de símbolo.
-  if (j && j.status === "error") throw new Error(`twelvedata: ${j.message || j.code}`);
-  const rows = [];
-  for (const { symbol, name, kind } of MARKET_SYMBOLS) {
-    const q = j[symbol];
-    if (!q || q.status === "error") continue;
-    const price = num(q.close);
-    if (price == null) continue;
-    rows.push({
-      symbol,
-      name: name || q.name,
-      price,
-      changePct: num(q.percent_change),
-      currency: q.currency || "USD",
-      kind,
-    });
-  }
-  return rows;
-}
-
-// Finnhub — fallback per-símbolo (sin nombre: usamos la curaduría local).
-async function fetchMarketsFinnhub() {
-  const results = await Promise.all(MARKET_SYMBOLS.map(async ({ symbol, name, kind }) => {
-    try {
-      const r = await fetchSafe(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`, {}, 10000);
-      if (!r.ok) return null;
-      const q = JSON.parse(await safeText(r));
-      const price = num(q.c);
-      if (price == null || price === 0) return null; // Finnhub devuelve c:0 para símbolos sin dato
-      return { symbol, name, price, changePct: num(q.dp), currency: "USD", kind };
-    } catch { return null; }
-  }));
-  return results.filter(Boolean);
-}
-
 app.get("/api/markets", async (req, res) => {
   const hit = cached("markets");
   if (hit) return res.json(hit);
 
-  // Cadena de fuentes: CNBC (sin key) primero; Twelve Data / Finnhub solo si
-  // hay key configurada (mejor calidad/real-time, opcional). La primera que
-  // devuelve filas gana.
+  // CNBC, sin cuenta (oct 2026: fuera los respaldos con clave, Twelve Data y
+  // Finnhub, que nunca estuvieron configurados). Si falla, el último dato bueno.
   let rows = [];
   const errors = [];
   try { rows = await fetchMarketsCNBC(); }
   catch (e) { errors.push(e.message); console.error("[markets] cnbc:", e.message); }
-  if (rows.length === 0 && TWELVEDATA_KEY) {
-    try { rows = await fetchMarketsTwelveData(); }
-    catch (e) { errors.push(e.message); console.error("[markets] twelvedata:", e.message); }
-  }
-  if (rows.length === 0 && FINNHUB_KEY) {
-    try { rows = await fetchMarketsFinnhub(); }
-    catch (e) { errors.push(e.message); console.error("[markets] finnhub:", e.message); }
-  }
 
   if (rows.length === 0) {
     if (cache.markets.data) return res.json(cache.markets.data); // último bueno aunque vencido
