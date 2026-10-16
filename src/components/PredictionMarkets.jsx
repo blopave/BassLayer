@@ -3,55 +3,46 @@ import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useLocale } from "../hooks/useLocale";
 import { api, shared } from "../utils/api";
 import { formatUsdCompact } from "../utils/format";
-import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
+import { useTranslatedTitle } from "./TranslatedTitle";
+import { FilterBar } from "./FilterBar";
+import { SectionHead } from "./SectionHead";
 
-// Predicciones (sept 2026): un evento de Polymarket por tarjeta con sus
-// resultados principales, agrupados por tema. Los títulos vienen traducidos
-// por máquina (marcado, con el original a un toque); las etiquetas de
-// resultado, por glosario en el server.
+// Predicciones (oct 2026, "B · Filas"): un evento de Polymarket por fila, con
+// sus resultados principales en barras finas, agrupados por tema. Los títulos
+// vienen traducidos por máquina (lo dice el pie); las etiquetas de resultado,
+// por glosario en el server.
 const GROUP_ORDER = ["crypto", "fed", "macro", "tech", "argentina"];
 
-function daysLeft(iso) {
-  const ms = iso ? new Date(iso).getTime() - Date.now() : NaN;
-  if (!(ms > 0)) return null;
-  const d = Math.ceil(ms / 86_400_000);
-  return d < 60 ? `${d} d` : `${Math.round(d / 30)} m`;
-}
-
-function PredictionCard({ ev, idx, es }) {
-  const { t } = useLocale();
+function Prediccion({ ev, idx }) {
+  const { t, locale } = useLocale();
+  const es = locale === "es";
   const tr = useTranslatedTitle(ev, es);
-  const left = daysLeft(ev.endDate);
+  const vence = ev.endDate ? new Date(ev.endDate).toLocaleDateString(es ? "es-AR" : "en-US", { day: "numeric", month: "short" }) : "";
   return (
-    <article className="bl-predict-card bl-reveal" style={{ transitionDelay: `${Math.min(idx * 0.03, 0.24)}s` }}>
-      <div className="bl-predict-top">
-        <h4 className="bl-predict-question" lang={tr.lang}>{tr.title}</h4>
-        {left && <span className="bl-predict-deadline" title={t("predict.closes")}>{left}</span>}
-      </div>
-      <ul className="bl-predict-outcomes">
+    <article className="bl-pm bl-reveal" style={{ transitionDelay: `${Math.min(idx * 0.03, 0.24)}s` }}>
+      <h4 className="bl-pm-t" lang={tr.lang}>{tr.title}</h4>
+      <ul className="bl-pm-out">
         {ev.outcomes.map((o) => (
-          <li key={o.label} className="bl-predict-row">
-            <span className="bl-predict-label">{o.binary ? t("predict.yes") : (es && o.labelEs) || o.label}</span>
-            <span className="bl-predict-bar" aria-hidden="true"><span className="bl-predict-fill" style={{ width: `${o.pct}%` }} /></span>
-            <span className="bl-predict-pct">{o.pct}%</span>
+          <li key={o.label}>
+            <span className="bl-pm-l">{o.binary ? t("predict.yes") : (es && o.labelEs) || o.label}<i style={{ width: `${o.pct}%` }} aria-hidden="true" /></span>
+            <span className="bl-pm-p">{o.pct}%</span>
           </li>
         ))}
       </ul>
-      <div className="bl-predict-foot">
-        {tr.translated ? <TranslateToggle tr={tr} /> : <span />}
-        <a className="bl-predict-link" href={ev.url} target="_blank" rel="noopener noreferrer">
-          <span className="bl-predict-vol">{formatUsdCompact(ev.volume24h)} {t("predict.vol24")} · </span>Polymarket <span aria-hidden="true">↗</span>
-        </a>
+      <div className="bl-pm-meta">
+        {[vence && t("predict.closesOn", { date: vence }), ev.volume24h > 0 && t("predict.volToday", { v: formatUsdCompact(ev.volume24h, locale) })].filter(Boolean).join(" · ")}
+        {" · "}<a href={ev.url} target="_blank" rel="noopener noreferrer">Polymarket <span aria-hidden="true">↗</span></a>
       </div>
     </article>
   );
 }
 
 export function PredictionMarkets() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [tema, setTema] = useState("All");
 
   const load = () => {
     setLoading(true);
@@ -64,10 +55,12 @@ export function PredictionMarkets() {
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const listRef = useScrollReveal(loading, "predictions");
+  const listRef = useScrollReveal(loading, tema);
   const groups = GROUP_ORDER
     .map((key) => ({ key, items: events.filter((e) => e.group === key) }))
     .filter((g) => g.items.length);
+  const visibles = tema === "All" ? groups : groups.filter((g) => g.key === tema);
+  const n = visibles.reduce((s, g) => s + g.items.length, 0);
 
   if (loading) {
     return <div className="bl-feed"><div className="bl-loading-text">{t("predict.loading")}<span>.</span><span>.</span><span>.</span></div></div>;
@@ -79,17 +72,32 @@ export function PredictionMarkets() {
     return <div className="bl-feed"><div className="bl-empty">{t("predict.empty")}</div></div>;
   }
 
+  let idx = 0;
   return (
-    <div className="bl-predict-feed" role="region" aria-label={t("predict.aria")} ref={listRef}>
-      <p className="bl-predict-sub">{t("predict.sub")}</p>
-      {groups.map((g) => (
-        <section key={g.key} className="bl-mkt-group bl-predict-group" data-group={g.key}>
-          <h3 className="bl-mkt-group-label">{t(`predict.group.${g.key}`)}</h3>
-          <div className="bl-predict-grid">
-            {g.items.map((ev, idx) => <PredictionCard key={ev.id} ev={ev} idx={idx} es={locale === "es"} />)}
-          </div>
-        </section>
-      ))}
-    </div>
+    <>
+      {groups.length > 1 && (
+        <FilterBar
+          items={["All", ...groups.map((g) => g.key)]}
+          active={tema}
+          onChange={setTema}
+          className="layer-filters"
+          labels={Object.fromEntries(groups.map((g) => [g.key, t(`predict.group.${g.key}`)]))}
+          counts={{ all: groups.reduce((s, g) => s + g.items.length, 0), ...Object.fromEntries(groups.map((g) => [g.key, g.items.length])) }}
+        />
+      )}
+      <SectionHead n={n} word={t("predict.word")} />
+      <div className="bl-pms" role="region" aria-label={t("predict.aria")} ref={listRef}>
+        {visibles.map((g) => (
+          <section key={g.key} className="bl-pm-group" data-group={g.key}>
+            <h3 className="bl-day-header">
+              <span className="bl-day-label">{t(`predict.group.${g.key}`)}</span>
+              <span className="bl-day-line" aria-hidden="true" />
+            </h3>
+            {g.items.map((ev) => <Prediccion key={ev.id} ev={ev} idx={idx++} />)}
+          </section>
+        ))}
+      </div>
+      <p className="bl-lpie">{t("predict.pie")}</p>
+    </>
   );
 }

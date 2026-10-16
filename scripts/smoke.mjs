@@ -900,18 +900,44 @@ async function run(vp) {
       if (!tab || tab.fs < 15 || tab.mono || !tab.dot) fail(vp.name, "layer", `pestañas: ${JSON.stringify(tab)} (esperaba sans ≥15px con el punto de la curva)`);
       else if (!tab.inView) fail(vp.name, "layer", "la pestaña activa queda fuera de la vista");
       // Dentro de una sección (sept 2026): "Volver" a la vista y sin taparse
-      // con el ticker; pestañas en todas las pantallas; Pulso del mercado
-      // (en mobile, tira que se despliega) en lugar de terminal + dólar.
+      // con el ticker; pestañas en todas las pantallas.
       const backFree = await page.locator(".bl-layer-back").evaluate((el) => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.left + 8, r.top + r.height / 2)); }).catch(() => false);
       if (!backFree) fail(vp.name, "layer", "\"Volver a la curva\" queda tapado al entrar a una sección");
       if (!(await page.locator(".bl-layer-tabs").isVisible())) fail(vp.name, "layer", "no se ven las pestañas de sección");
       const strayTop = await page.evaluate(() => { const back = document.querySelector(".bl-layer-back"); return [...document.querySelectorAll(".bl-terminal-header, .bl-dolar")].some((e) => e.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING); });
       if (strayTop) fail(vp.name, "layer", "volvió el terminal/dólar suelto arriba de la sección");
-      await page.locator(".bl-mpulse-body").waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
-      // Una sola vez y plegado (auditoría L2, oct 2026): tira que se despliega en todas las pantallas.
-      if (await page.locator(".bl-mpulse-body .bl-mpulse-c").first().isVisible().catch(() => false)) fail(vp.name, "pulso", "el pulso arranca desplegado: tiene que ser una línea que se abre");
-      await page.locator(".bl-mpulse-sum").click().catch(() => {});
-      if (!(await page.locator(".bl-mpulse-body .bl-mpulse-c").first().isVisible().catch(() => false))) fail(vp.name, "pulso", "el pulso del mercado no muestra sus indicadores");
+      // Interiores "B · Filas" (oct 2026): las pestañas en el orden de la curva,
+      // sin la barra "Día rojo" ni el disfraz de terminal, y cada sección con el
+      // idioma de la Agenda: apertura con el número, rótulos con filete, pie.
+      const curva = ["Noticias", "Finanzas", "Acciones", "ETFs", "Ciclos BTC", "Predicciones", "Eventos", "Hitos"];
+      const pest = (await page.locator(".bl-layer-tab").allTextContents()).map((x) => x.trim());
+      if (pest.join("|") !== curva.join("|")) fail(vp.name, "layer", `pestañas fuera del orden de la curva: ${pest.join(", ")}`);
+      await page.waitForTimeout(800);
+      if (await page.locator(".bl-mpulse, .bl-terminal-header").count()) fail(vp.name, "layer", "volvió la barra \"Día rojo\" o el disfraz de terminal");
+      for (const sec of curva) {
+        await page.locator(".bl-layer-tab", { hasText: sec }).first().click();
+        await page.locator(".bl-feed-head").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+        const r = await page.evaluate(() => {
+          const caja = (el) => { const s = getComputedStyle(el); return parseFloat(s.borderTopWidth) > 0 && parseFloat(s.borderLeftWidth) > 0 && parseFloat(s.borderRadius) > 0; };
+          return {
+            apertura: !!document.querySelector(".bl-layer-main .bl-feed-head"),
+            chips: [...document.querySelectorAll(".bl-layer-main .bl-filter-chip")].filter(caja).length,
+            cajas: [...document.querySelectorAll(".bl-layer-main .bl-lnota, .bl-layer-main .bl-cot, .bl-layer-main .bl-pm, .bl-layer-main .bl-cyc")].filter(caja).length,
+            chicos: [...document.querySelectorAll(".bl-layer-main *")].filter((el) => el.childElementCount === 0 && el.textContent.trim() && el.getClientRects().length && parseFloat(getComputedStyle(el).fontSize) < 11).map((el) => el.textContent.trim().slice(0, 20)),
+          };
+        });
+        if (!r.apertura) fail(vp.name, "layer", `${sec}: sin la apertura con el número`);
+        if (r.chips || r.cajas) fail(vp.name, "layer", `${sec}: ${r.chips} filtros con caja y ${r.cajas} filas con caja (tienen que ser texto y filas)`);
+        if (r.chicos.length) fail(vp.name, "layer", `${sec}: texto por debajo de 11 px (${[...new Set(r.chicos)].slice(0, 4).join(", ")})`);
+      }
+      // Números a la argentina (oct 2026): "US$ 1.846,20" y "+0,41%", no "$1,846.20".
+      await page.locator(".bl-layer-tab", { hasText: "Acciones" }).first().click();
+      await page.locator(".bl-cot-price").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      const precios = await page.locator(".bl-cot-price, .bl-cot-chg").allTextContents();
+      const mal = precios.filter((x) => !/^(US\$ [\d.]+,\d{2}|[+−]\d+,\d{2}%)$/.test(x.trim()));
+      if (!precios.length || mal.length) fail(vp.name, "layer", `cotizaciones fuera del formato argentino: ${mal.slice(0, 3).join(" / ") || "no hay"}`);
+      await page.locator(".bl-layer-tab", { hasText: "Ciclos BTC" }).first().click();
+      await page.waitForTimeout(400);
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);
       if ((await page.locator(".blc-node").count()) !== 8) fail(vp.name, "layer", "\"Volver a la curva\" no vuelve a la portada");
@@ -929,9 +955,9 @@ async function run(vp) {
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(500);
       await pill(/Eventos|Events/).click();
-      await page.locator(".bl-cirl-k").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-      const cirlHeads = await page.locator(".bl-cirl-k").allTextContents();
-      if (!cirlHeads.length && (await page.locator(".bl-cirl-item").count())) fail(vp.name, "eventos cripto", "sin bloques Buenos Aires / mundo");
+      await page.locator(".bl-cirl-lista .bl-day-label").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      const cirlHeads = await page.locator(".bl-cirl-lista .bl-day-label").allTextContents();
+      if (!cirlHeads.length && (await page.locator(".bl-cirl-fila").count())) fail(vp.name, "eventos cripto", "sin bloques Buenos Aires / mundo");
       if (cirlHeads.length > 1 && !/buenos aires/i.test(cirlHeads[0])) fail(vp.name, "eventos cripto", `el primer bloque es "${cirlHeads[0]}", no Buenos Aires`);
       // ETFs y Acciones agrupados por lo que son (sept 2026): varios grupos con
       // título y qué los junta; en Acciones está "Cripto en Wall Street".
@@ -939,50 +965,40 @@ async function run(vp) {
         await page.locator(".bl-layer-back").click();
         await page.waitForTimeout(400);
         await pill(re).click();
-        await page.locator(".bl-mkt-group-label").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-        const heads = await page.locator(".bl-mkt-group-label").allTextContents();
-        const subs = await page.locator(".bl-mkt-group-sub").count();
+        await page.locator(".bl-cot-group .bl-day-label").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        const heads = await page.locator(".bl-cot-group .bl-day-label").allTextContents();
+        const subs = await page.locator(".bl-cot-group .bl-day-date").count();
         if (heads.length < 3 || subs !== heads.length) fail(vp.name, sec, `${heads.length} grupos con ${subs} descripciones (esperaba ≥3, todos descriptos)`);
         if (must && !heads.some((h) => must.test(h))) fail(vp.name, sec, `falta el grupo ${must}`);
       }
-      // Predicciones por tema (sept 2026): grupos con título, cada tarjeta con
-      // resultados; si el título está traducido, "Original" lo alterna.
+      // Predicciones por tema (sept 2026): grupos con título, cada mercado con
+      // resultados; el pie avisa que los títulos son traducción automática.
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
       await pill(/Predicciones|Predictions/).click();
-      await page.locator(".bl-predict-card").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
-      const pHeads = await page.locator(".bl-predict-group .bl-mkt-group-label").count();
-      const pCards = await page.locator(".bl-predict-card").count();
-      const pRows = await page.locator(".bl-predict-card .bl-predict-row").count();
-      if (pHeads < 2 || pCards < 4 || pRows < pCards) fail(vp.name, "predicciones", `${pHeads} temas, ${pCards} tarjetas, ${pRows} resultados (esperaba ≥2 temas y resultados en cada tarjeta)`);
-      const tr = page.locator(".bl-predict-card .bl-predict-tr").first();
-      if (await tr.count()) {
-        const q = page.locator(".bl-predict-card").first().locator(".bl-predict-question");
-        const before = await q.textContent();
-        await tr.click();
-        if ((await q.textContent()) === before) fail(vp.name, "predicciones", "\"Original\" no muestra el título original");
-      }
+      await page.locator(".bl-pm").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+      const pHeads = await page.locator(".bl-pm-group .bl-day-label").count();
+      const pCards = await page.locator(".bl-pm").count();
+      const pRows = await page.locator(".bl-pm .bl-pm-out li").count();
+      if (pHeads < 2 || pCards < 4 || pRows < pCards) fail(vp.name, "predicciones", `${pHeads} temas, ${pCards} mercados, ${pRows} resultados (esperaba ≥2 temas y resultados en cada mercado)`);
+      // Etiquetas de resultado en castellano (oct 2026: "Decrease", "Below 4.7%", "1.9 to 2,1 %").
+      const outs = await page.locator(".bl-pm-l").allTextContents();
+      const ingles = outs.filter((x) => /\b(to|below|above|decrease|increase|no change)\b|\d\.\d{1,2}(?!\d)/i.test(x));
+      if (ingles.length) fail(vp.name, "predicciones", `resultados sin pasar al castellano: ${ingles.slice(0, 3).join(" / ")}`);
       // Finanzas: temas por contenido, con etiquetas traducidas (no "ECONOMY").
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
       await pill(/Finanzas|Finance/).click();
-      await page.locator(".bl-layer-news-item").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
-      const fTags = await page.locator(".bl-layer-news-tag-pill").allTextContents();
+      await page.locator(".bl-lnota").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+      const fTags = await page.locator(".bl-lnota-tag").allTextContents();
       const crudas = fTags.filter((x) => /^(markets|economy|companies|crypto|global|wallstreet|world)$/i.test(x.trim()));
       if (crudas.length) fail(vp.name, "finanzas", `etiquetas sin traducir: ${[...new Set(crudas)].join(", ")}`);
       if (!(await page.locator(".layer-filters", { hasText: /Wall Street y la Fed|Wall Street & the Fed/ }).count())) fail(vp.name, "finanzas", "falta el filtro Wall Street y la Fed");
-      // El Pulso enganchado queda debajo de la barra de precios, no detrás.
-      if (await page.locator(".bl-mpulse-head").isVisible().catch(() => false)) {
-        await page.mouse.move(vp.viewport.width / 3, vp.viewport.height * 0.6);
-        await page.mouse.wheel(0, 900);
-        await page.waitForTimeout(600);
-        const covered = await page.evaluate(() => {
-          const bar = document.querySelector(".bl-price-bar")?.getBoundingClientRect();
-          const head = document.querySelector(".bl-mpulse-head")?.getBoundingClientRect();
-          return !!(bar && head && head.top < bar.bottom && head.bottom > bar.top);
-        });
-        if (covered) fail(vp.name, "finanzas", "al scrollear, la barra de precios tapa \"Pulso del mercado\"");
-      }
+      // Una nota de Finanzas abre la misma hoja que las de Noticias (antes se iba al medio).
+      await page.locator(".bl-lnota").first().click();
+      if (!(await page.locator(".bl-news-modal").isVisible().catch(() => false))) fail(vp.name, "finanzas", "la nota no abre su hoja");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
       await page.locator(".bl-layer-back").click();
       await page.waitForTimeout(400);
     }

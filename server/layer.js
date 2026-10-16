@@ -488,8 +488,16 @@ function predLabelEs(label) {
     .replace(/^(\w+) (\d{4}) meeting$/i, (_, m, y) => `Reunión de ${monthEs(m)} ${y}`)
     .replace(/^(\w+) (\d{1,2}),? (\d{4})$/i, (_, m, d, y) => `${d} ${monthEs(m)} ${y}`)
     .replace(/^(\w+) (\d{1,2})$/i, (_, m, d) => (monthIdx(m) >= 0 ? `${d} ${monthEs(m)}` : _))
-    .replace(/(\d)\.(\d+)%/g, "$1,$2 %")
-    .replace(/(\d),(\d{3})/g, "$1.$2");
+    .replace(/^(decrease|cut)$/i, "Baja").replace(/^(increase|hike)$/i, "Suba")
+    .replace(/^(?:below|under|less than) /i, "Menos de ").replace(/^(?:above|over|more than) /i, "Más de ")
+    // Números a la argentina: punto de miles, coma decimal ("1.9 to 2.1%" → "1,9 a 2,1 %").
+    .replace(/(\d),(\d{3})/g, "$1\u0001$2").replace(/(\d)\.(\d+)/g, "$1,$2").replace(/\u0001/g, ".")
+    .replace(/(\d%?)\s+to\s+(?=[\d$])/gi, "$1 a ")
+    .replace(/(\d)%/g, "$1 %")
+    // Montos en dólares: "$2.0–$2.25T" → "US$ 2–2,25 billones" (T = billón, B = mil millones).
+    .replace(/\$([\d,]+)\s*[–-]\s*\$([\d,]+)\s*([TB])\b/g, (_, a, b, u) => `US$ ${a.replace(/,0+$/, "")}–${b.replace(/,0+$/, "")} ${u === "T" ? "billones" : "mil millones"}`)
+    .replace(/\$([\d,]+)\s*([TB])\b/g, (_, a, u) => `US$ ${a.replace(/,0+$/, "")} ${u === "T" ? "billones" : "mil millones"}`)
+    .replace(/^([↑↓])\s*/, "$1 ");
   // "AXEL KICILLOF" → "Axel Kicillof" (siglas cortas como "xAI" o "BCE" no se tocan)
   if (/^[A-ZÁÉÍÓÚÑ ]{8,}$/.test(t)) t = t.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
   return t;

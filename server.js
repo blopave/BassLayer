@@ -311,7 +311,7 @@ function tidyEvents(events) {
 // "festivales" como Burgerpalusa): de ahí entra solo lo que clasifica como
 // club. Se filtra al armar la agenda (y al cargar un snapshot viejo) para que
 // home, onda, agenda y SEO cuenten lo mismo.
-const TITLE_TR_V = 7;   // sube cuando cambia cómo se traducen los titulares: el snapshot viejo se rearma
+const TITLE_TR_V = 8;   // sube cuando cambia cómo se traducen los titulares: el snapshot viejo se rearma
 // Buenos Aliens: meses como los escribe ("SAB 11 ABR").
 const BA_MONTHS = "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC";
 const BA_WEEKDAYS = { DOM: 0, LUN: 1, MAR: 2, MIE: 3, JUE: 4, VIE: 5, SAB: 6 };
@@ -471,8 +471,8 @@ function findEventBySlug(slug) {
   return null;
 }
 function findNewsBySlug(slug) {
-  // Buscar en ambos pools: crypto (news) y música (bassNews)
-  const pools = [cached("news") || [], cached("bassNews") || []];
+  // Los tres pools que abren el modal de nota: cripto, finanzas y música.
+  const pools = [cached("news") || [], cached("financeNews") || [], cached("bassNews") || []];
   for (const pool of pools) {
     for (const n of pool) {
       if (newsSlug(n) === slug) return n;

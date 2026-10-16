@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "../utils/api";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
-import { formatMarketCap } from "../utils/format";
+import { formatMarketCap, formatPct } from "../utils/format";
 
 export function PriceModal({ price, onClose }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const trapRef = useFocusTrap(!!price, onClose);
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -110,9 +110,9 @@ export function PriceModal({ price, onClose }) {
         </div>
 
         <div className="bl-price-modal-price">
-          <span className="bl-price-modal-val">{formatPrice(price.usd)}</span>
+          <span className="bl-price-modal-val">{formatPrice(price.usd, locale)}</span>
           <span className={`bl-price-modal-chg ${price.change >= 0 ? "bl-price-up" : "bl-price-down"}`}>
-            {price.change >= 0 ? "+" : ""}{price.change}%
+            {formatPct(price.change, locale)}
           </span>
         </div>
 

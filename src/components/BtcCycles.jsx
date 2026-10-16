@@ -5,6 +5,8 @@ import { lazyNamed } from "../utils/lazy";
 const IndicatorModal = lazyNamed(() => import("./IndicatorModal"), "IndicatorModal");
 import { useLocale } from "../hooks/useLocale";
 import { monthAbbrLocale } from "../i18n/strings";
+import { fmtNum, formatPct } from "../utils/format";
+import { SectionHead } from "./SectionHead";
 
 // Las fechas de ciclo vienen en el dato como "28 nov 2012" (mes en español).
 // En español las dejamos tal cual; en inglés reescribimos el mes ("28 Nov 2012").
@@ -20,8 +22,8 @@ function fmtCycleDate(s, locale) {
 // cliente que se desactualice).
 const pickLocalized = (obj, base, locale) => (locale === "en" && obj?.[base + "En"]) || obj?.[base];
 
-// Prueba de concepto — Dashboard de ciclos de halving de BTC en estética
-// terminal (lado Layer). Los datos vienen de /btc-cycles.json (curado); los
+// Dashboard de ciclos de halving de BTC (lado Layer; sin el disfraz de
+// terminal desde oct 2026: el idioma de la Agenda, como el resto de Layer). Los datos vienen de /btc-cycles.json (curado); los
 // conteos de días se computan en vivo con la fecha actual, así el panel se
 // mueve solo aunque la fuente sea estática. En la versión final el JSON lo
 // sirve server.js (/api/btc-cycles) reusando el fetch de CoinGecko ya presente.
@@ -141,7 +143,6 @@ function Cell({ label, value, sub, tone, onClick, hint }) {
       title={hint}
     >
       <div className="bl-term-cell-label">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span>
         <span className="bl-term-cell-label-text">{label}</span>
       </div>
       <div className="bl-term-cell-value">
@@ -205,7 +206,7 @@ export function BtcCycles() {
   }, []);
 
   if (error && !data) {
-    return <div className="bl-terminal bl-cyc-terminal"><div className="bl-terminal-reading">&gt; {t("cycles.error")}</div></div>;
+    return <div className="bl-feed"><div className="bl-error">{t("cycles.error")}</div></div>;
   }
   if (!data) return null;
 
@@ -252,33 +253,12 @@ export function BtcCycles() {
 
   return (
     <>
-    <div className="bl-cyc-head">
-      <h3 className="bl-cyc-title">{t("cycles.title")}</h3>
-      <div className="bl-cyc-subtitle">{t("cycles.subtitle")}</div>
-    </div>
-    <div className="bl-terminal bl-cyc-terminal" role="region" aria-label={t("cycles.title")}>
-      <div className="bl-terminal-header" aria-hidden="true">
-        <span className="bl-terminal-prompt-user">bl@layer</span>
-        <span className="bl-terminal-prompt-sep">:</span>
-        <span className="bl-terminal-prompt-path">~/cycles</span>
-        <span className="bl-terminal-prompt-sep">$</span>
-        <span className="bl-terminal-prompt-cmd">halving --status</span>
-        <span className="bl-terminal-prompt-cursor" />
-        <span className="bl-terminal-status">
-          <span className="bl-terminal-status-dot" />
-          <span className="bl-terminal-status-text">snapshot {syncTime}</span>
-          <span className="bl-terminal-status-code">[200]</span>
-        </span>
-      </div>
-
-      <div className="bl-terminal-reading" aria-live="polite">
-        &gt; {t("cycles.reading", { phase: <b key="ph">{phaseLabel.toLowerCase()}</b>, days: daysSincePeak, conf: current.confluence, label: confluenceLabel, window: windowLabel })}
-      </div>
-
+    <SectionHead n={daysSincePeak} word={t("cycles.headWord")} ctx={phaseLabel.toLowerCase()} />
+    <div className="bl-cyc" role="region" aria-label={t("cycles.title")}>
       <div className="bl-terminal-grid bl-cyc-grid-stats">
         <Cell label={t("cycles.cell.phase")} value={<><span className="bl-cyc-arrow" aria-hidden="true">▼</span> {phaseLabel}</>} sub={t("cycles.dayFromPeak", { n: daysSincePeak })} tone="down"
           onClick={() => openInd("PHASE", phaseLabel, phaseIdx)} hint={t("indicator.tapInfo")} />
-        <Cell label={t("cycles.cell.price")} value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${current.priceVs200wPct >= 0 ? "+" : ""}${current.priceVs200wPct}%)`}
+        <Cell label={t("cycles.cell.price")} value={`~$${(current.price / 1000).toFixed(0)}k`} sub={`200W ~$${(current.support200w / 1000).toFixed(0)}k (${formatPct(current.priceVs200wPct, locale)})`}
           onClick={() => openInd("PRICE", `~$${(current.price / 1000).toFixed(0)}k`, current.priceVs200wPct)} hint={t("indicator.tapInfo")} />
         <Cell label={t("cycles.cell.confluence")} value={`${current.confluence}/100`} sub={confluenceLabel} tone="build"
           onClick={() => openInd("CONFLUENCE", `${current.confluence}/100`, current.confluence)} hint={t("indicator.tapInfo")} />
@@ -286,23 +266,17 @@ export function BtcCycles() {
           onClick={() => openInd("PROJBOTTOM", windowLabel, null)} hint={t("indicator.tapInfo")} />
       </div>
 
-      <div className="bl-cyc-section-title">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.cycles")}
-      </div>
+      <h3 className="bl-day-header"><span className="bl-day-label">{t("cycles.section.cycles")}</span><span className="bl-day-line" aria-hidden="true" /></h3>
       <PhaseTimeline cycles={cyclesLive} />
 
-      <div className="bl-cyc-section-title">
-        <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.confluence")}
-      </div>
+      <h3 className="bl-day-header"><span className="bl-day-label">{t("cycles.section.confluence")}</span><span className="bl-day-line" aria-hidden="true" /></h3>
       <IndicatorStrip indicators={indicators} onOpen={(ind) => openInd(ind.key, ind.value, numVal(ind.value))} t={t} locale={locale} />
 
       {/* Red Bitcoin en vivo (mempool.space): fees + ajuste de dificultad con
           progress bar — el patrón visual de mempool, hermano de los halvings. */}
       {network && (network.fees || network.difficulty) && (
         <>
-          <div className="bl-cyc-section-title">
-            <span className="bl-term-prompt" aria-hidden="true">&gt;</span> {t("cycles.section.network")}
-          </div>
+          <h3 className="bl-day-header"><span className="bl-day-label">{t("cycles.section.network")}</span><span className="bl-day-line" aria-hidden="true" /></h3>
           <div className="bl-cyc-network">
             {network.fees && (
               <div className="bl-cyc-net-item">
@@ -319,7 +293,7 @@ export function BtcCycles() {
                   <span className="bl-cyc-net-bar-fill" style={{ width: `${Math.min(100, network.difficulty.progress)}%` }} />
                 </span>
                 <span className="bl-cyc-net-v">
-                  {network.difficulty.progress}% · <b className={network.difficulty.change >= 0 ? "up" : "down"}>{network.difficulty.change >= 0 ? "+" : ""}{network.difficulty.change}%</b>
+                  {fmtNum(network.difficulty.progress, locale, 0)}% · <b className={network.difficulty.change >= 0 ? "up" : "down"}>{formatPct(network.difficulty.change, locale, 2)}</b>
                   {network.difficulty.retargetDate ? ` · ~${Math.max(0, Math.round((network.difficulty.retargetDate - Date.now()) / 86400000))}d` : ""}
                 </span>
               </div>
@@ -333,6 +307,7 @@ export function BtcCycles() {
         <span className="bl-cyc-posture-txt"><b>{t("cycles.posture")}</b> {posture} <span className="bl-cyc-inval">{t("cycles.invalidation", { price: (current.invalidationPrice / 1000).toFixed(0) })}</span></span>
       </div>
     </div>
+    <p className="bl-lpie">{t("cycles.pie", { date: syncTime })}</p>
     {selected && (
       <Suspense fallback={null}>
         <IndicatorModal indicator={selected} onClose={() => setSelected(null)} />

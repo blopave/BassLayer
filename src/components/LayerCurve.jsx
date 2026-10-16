@@ -255,7 +255,7 @@ export function LayerCurve({ news = [], onEnter }) {
     // FUT_SHARE del ancho, en su propia escala, marcada por los años
     // del eje — como la lupa ×4 del precio (sin franja de
     // fondo: dejaba una costura de dos tonos en hoy). Riel de títulos arriba.
-    const Hh = size.h, L = 64, R = 60, TOP = 170, BOT = 46, RAIL = 26;
+    const Hh = size.h, L = 76, R = 60, TOP = 170, BOT = 46, RAIL = 26;   // L: que entre "$100.000" entero
     const span = W - L - R, xNow = L + span * (1 - FUT_SHARE);
     const X = (tt) => (tt <= TODAY ? L + ((tt - 2012) / (TODAY - 2012)) * (xNow - L) : xNow + ((tt - TODAY) / (END - TODAY)) * (W - R - xNow));
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);

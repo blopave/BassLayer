@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { fmtNum } from "./format";
 const ARTIST_RULES_V = 3;
 
 // Un mismo dato pedido por varios componentes a la vez (p. ej. mercados: la
@@ -78,10 +79,8 @@ export const api = {
   }).then((r) => (r.ok ? r.json() : r.json().catch(() => ({ error: `Error ${r.status}` })).then(e => Promise.reject(e.error || `Error ${r.status}`)))),
 };
 
-export function formatPrice(p) {
+export function formatPrice(p, locale = "es") {
   if (p == null || isNaN(p)) return "$—";
-  if (p >= 1000) return "$" + p.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  if (p >= 1) return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return "$" + p.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  return "$" + fmtNum(p, locale, p >= 1000 ? 0 : p >= 1 ? 2 : 4);
 }
 

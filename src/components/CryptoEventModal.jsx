@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
-import { MONTHS_ABBR, formatShortDateLocale, sourceLabel } from "../i18n/strings";
+import { formatShortDateLocale, sourceLabel } from "../i18n/strings";
 
 function parseDate(dateStr) {
   if (!dateStr) return null;
@@ -62,68 +62,29 @@ export function CryptoEventModal({ item, onClose }) {
 
   if (!item) return null;
 
-  const d = parseDate(item.date);
-  const day = d ? String(d.getDate()) : "";
-  const month = d ? (MONTHS_ABBR[locale] || MONTHS_ABBR.es)[d.getMonth()] : "";
+  const lugar = item.location && item.location !== "Online"
+    ? <a className="bl-maps-link" href={mapsUrl(item)} target="_blank" rel="noopener noreferrer">{item.location} <span className="bl-maps-arrow">&#x2197;</span></a>
+    : item.location;
+  const extra = [item.free && t("cevent.free"), item.guests > 0 && t("cevent.interested", { n: item.guests }), sourceLabel(item.source, t)].filter(Boolean);
 
+  // Como la nota (oct 2026): hoja con una línea de cuándo arriba, el nombre,
+  // quién y dónde, la descripción y las acciones. Sin la caja de fecha vieja.
   return createPortal(
-    <div className="bl-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={item.title} ref={trapRef}>
-      <div className="bl-modal">
+    <div className="bl-modal-overlay bl-modal-overlay--sheet open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} role="dialog" aria-modal="true" aria-label={item.title} ref={trapRef}>
+      <div className="bl-modal bl-news-modal bl-cevent-modal">
         <button className="bl-modal-close" onClick={onClose} aria-label={t("common.close")}>&times;</button>
-
-        <div className="bl-modal-header">
-          <div className="bl-modal-date">
-            <div className="bl-modal-date-d">{day}</div>
-            <div className="bl-modal-date-m">{month}</div>
+        <div className="bl-news-modal-body">
+          <div className="bl-news-modal-meta">
+            {[formatShortDateLocale(item.date, locale, { longDay: true }), item.time && `${item.time} ${t("event.hoursShort")}`].filter(Boolean).join(" · ")}
           </div>
-          <div className="bl-modal-title-area">
-            <h2 className="bl-modal-name">{item.title}</h2>
-            {sourceLabel(item.source, t) && <span className="bl-modal-genre">{sourceLabel(item.source, t)}</span>}
+          <h2 className="bl-news-modal-title">{item.title}</h2>
+          <div className="bl-cevent-who">
+            {item.organizer}{lugar && <> · {lugar}</>}
           </div>
-        </div>
+          {item.description && <p className="bl-news-modal-desc">{item.description}</p>}
+          {extra.length > 0 && <div className="bl-cevent-extra">{extra.join(" · ")}</div>}
 
-        <div className="bl-modal-body">
-          {item.description && (
-            <div className="bl-modal-section">
-              <div className="bl-modal-label">{t("cevent.description")}</div>
-              <div className="bl-modal-desc">{item.description}</div>
-            </div>
-          )}
-
-          <div className="bl-modal-info-grid">
-            <div className="bl-modal-info-item">
-              <div className="bl-modal-label">{t("cevent.date")}</div>
-              <div className="bl-modal-info-value">{formatShortDateLocale(item.date, locale, { longDay: true })}</div>
-            </div>
-            {item.time && (
-              <div className="bl-modal-info-item">
-                <div className="bl-modal-label">{t("cevent.time")}</div>
-                <div className="bl-modal-info-value">{item.time} {t("event.hoursShort")}</div>
-              </div>
-            )}
-            <div className="bl-modal-info-item">
-              <div className="bl-modal-label">{t("cevent.organizer")}</div>
-              <div className="bl-modal-info-value">{item.organizer}</div>
-            </div>
-            {item.location && (
-              <div className="bl-modal-info-item">
-                <div className="bl-modal-label">{t("cevent.place")}</div>
-                <div className="bl-modal-info-value">
-                  {item.location === "Online" ? "Online" : (
-                    <a className="bl-maps-link" href={mapsUrl(item)} target="_blank" rel="noopener noreferrer">
-                      {item.location} <span className="bl-maps-arrow">&#x2197;</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {item.free && <div className="bl-cirl-modal-free">{t("cevent.free")}</div>}
-          {item.guests > 0 && <div className="bl-cirl-modal-guests">{t("cevent.interested", { n: item.guests })}</div>}
-        </div>
-
-        <div className="bl-modal-actions">
+          <div className="bl-news-modal-actions">
           {item.url && (
             <a className="bl-modal-btn bl-modal-btn-primary" href={item.url} target="_blank" rel="noopener noreferrer">
               {t("cevent.viewEvent")} &#x2192;
@@ -138,9 +99,11 @@ export function CryptoEventModal({ item, onClose }) {
             </svg>
             {t("common.calendar")}
           </button>
+          </div>
         </div>
       </div>
     </div>,
-    document.body
+    // Dentro de .bl-root (no en body): así toma la paleta de Layer, como la nota.
+    document.querySelector(".bl-root") || document.body
   );
 }

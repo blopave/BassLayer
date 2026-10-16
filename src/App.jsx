@@ -310,9 +310,10 @@ export default function App() {
   // Detectar deep link al montar + responder a back/forward
   // Las notas de Bass viven en /api/bass-news (no en las de Layer): un link a
   // /noticias/<slug> se busca en las dos (oct 2026: el de Bass no abría nada).
-  const buscarNotaBass = useCallback((slug) => shared("bassNews", api.bassNews)
-    .then((list) => (Array.isArray(list) ? list.find((n) => newsSlug(n) === slug) : null))
-    .catch(() => null), []);
+  // Una nota que no está en las cripto: de Bass o de Finanzas.
+  const buscarNota = useCallback((slug) => Promise.all(
+    [shared("bassNews", api.bassNews), shared("financeNews", api.financeNews)].map((p) => p.catch(() => []))
+  ).then((ls) => ls.flatMap((l) => (Array.isArray(l) ? l : [])).find((n) => newsSlug(n) === slug) || null), []);
   useEffect(() => {
     // Primero se resuelve el link de entrada; el "atrás" se registra SIEMPRE
     // después (oct 2026: entrando por /agenda o /layer el return temprano lo
@@ -370,7 +371,7 @@ export default function App() {
         pendingNewsSlugRef.current = slug;
         setView("sections");
         if (!newsLoadedRef.current) { newsLoadedRef.current = true; loadNews(); }
-        buscarNotaBass(slug).then((nota) => {
+        buscarNota(slug).then((nota) => {
           if (nota && pendingNewsSlugRef.current === slug) { pendingNewsSlugRef.current = null; setSelectedNews(nota); }
         });
       } else if (festMatch) {
@@ -422,7 +423,7 @@ export default function App() {
         setNews((curr) => {
           const item = curr.find((x) => newsSlug(x) === slug);
           if (item) setSelectedNews(item);
-          else buscarNotaBass(slug).then((nota) => nota && setSelectedNews(nota));
+          else buscarNota(slug).then((nota) => nota && setSelectedNews(nota));
           return curr;
         });
         setSelectedEvent(null);
@@ -449,7 +450,7 @@ export default function App() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [loadEvents, loadNews, buscarNotaBass]);
+  }, [loadEvents, loadNews, buscarNota]);
 
   // Resolver pending event slug cuando llegan los eventos
   useEffect(() => {

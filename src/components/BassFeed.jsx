@@ -18,7 +18,8 @@ import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate,
 import { useSavedEvents } from "../hooks/useSavedEvents";
 import { eventSlug } from "../utils/slug";
 import { seccionDeRuta, rutaDeSeccion, esRutaDeBass, navegar } from "../utils/rutas";
-import { noOrphanSep, minsDeNota, haceCuanto } from "../utils/format";
+import { noOrphanSep, haceCuanto } from "../utils/format";
+import { notasPorDia } from "../utils/notas";
 
 // Señalador de guardado — vive en cada card y en el modal. Para el feed con
 // muchas filas conviene un componente chico: solo re-renderiza él al togglear.
@@ -938,24 +939,11 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   const all = Array.isArray(news) ? news : [];
   const tags = ["All", ...NEWS_TAGS.filter((x) => all.some((n) => n.tag === x))];
   const counts = { all: all.length, ...Object.fromEntries(tags.slice(1).map((x) => [x, all.filter((n) => n.tag === x).length])) };
-  const labels = Object.fromEntries(NEWS_TAGS.map((x) => [x, t(`newsTag.${x}`)]));
+  const labels = Object.fromEntries(["All", ...NEWS_TAGS].map((x) => [x, t(`newsTag.${x}`)]));
   const list = tag === "All" ? all : all.filter((n) => n.tag === tag);
   const listRef = useScrollReveal(loading, tag);
-  // Por día, en hora de BA (la del lector, como en la Agenda).
-  const dias = useMemo(() => {
-    const out = [], hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    for (const n of list) {
-      const d = new Date(Date.now() - minsDeNota(n.time) * 60000);
-      const k = Math.round((hoy - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (!out.length || out[out.length - 1].key !== key) {
-        const label = k <= 0 ? t("day.today") : k === 1 ? t("day.yesterday") : (DAYS_LONG[locale] || DAYS_LONG.es)[d.getDay()];
-        out.push({ key, label, fecha: `${d.getDate()} ${(MONTHS_ABBR[locale] || MONTHS_ABBR.es)[d.getMonth()]}`, items: [] });
-      }
-      out[out.length - 1].items.push(n);
-    }
-    return out;
-  }, [list, locale, t]);
+  // Por día, en hora del lector (como en la Agenda).
+  const dias = useMemo(() => notasPorDia(list, t, locale), [list, locale, t]);
 
   if (loading) return <NewsSkeleton />;
   if (error) {

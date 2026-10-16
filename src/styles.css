@@ -1204,12 +1204,6 @@
    acá solo color y layout. */
 .bl-hero-title { color:var(--bl-accent-bass); margin:0; }
 .bl-hero-title::before { content:"— "; color:var(--bl-text-ter); }
-/* Festivales y eventos cripto: Buenos Aires arriba, el mundo abajo (sept 2026). */
-.bl-cirl-k { display:flex; align-items:center; gap:12px; margin:8px 0 12px; color:var(--bl-text-sec); }
-.bl-cirl-k::after { content:""; flex:1; height:1px; background:var(--bl-border-sub); }
-.bl-cirl-k { font:500 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; }
-.bl-cirl-k.is-here { color:var(--bl-accent-layer); }
-.bl-cirl-group + .bl-cirl-group { margin-top:16px; }
 /* ── De gira (sept 2026): segundo bloque de Eventos, misma familia que el finde ── */
 .bl-tour .bl-hero-head { align-items:baseline; }
 .bl-tour-sub { font-size:var(--fs-13); color:var(--bl-text-sec); }
@@ -1293,8 +1287,8 @@
    balance: títulos multilínea sin viudas; pretty: párrafos sin huérfanas;
    content-visibility: el browser saltea el render de filas fuera de pantalla
    en el feed largo — la única ganancia de scroll medible del pack. */
-.bl-ev-name, .bl-modal-name, .bl-layer-news-title { text-wrap: balance; }
-.bl-empty, .bl-layer-empty-line, .bl-about-section-text { text-wrap: pretty; }
+.bl-ev-name, .bl-modal-name { text-wrap: balance; }
+.bl-empty, .bl-about-section-text { text-wrap: pretty; }
 .bl-ev-item.bl-ev-row { content-visibility: auto; contain-intrinsic-size: auto 92px; }
 .bl-root[data-section="bass"] .bl-ev-lead:not(.bl-ev-item-festival) { content-visibility: auto; contain-intrinsic-size: auto 212px; }
 
@@ -1529,55 +1523,6 @@
 }
 .bl-day-line { flex:1; height:1px; background:linear-gradient(to right, var(--bl-border), transparent); }
 
-/* ═══════════════════════════════════════════
-   Layer · Terminal (celdas y lectura que usa Ciclos BTC)
-   Bloomberg-porteño feel: panel mono, ticks, scan
-   ═══════════════════════════════════════════ */
-.bl-terminal {
-  margin:8px 32px 16px;
-  background:linear-gradient(180deg, var(--bl-surface) 0%, var(--bl-surface-alt) 100%);
-  border:1px solid var(--bl-border);
-  border-radius:var(--r-8);
-  position:relative;
-  overflow:hidden;
-}
-/* Subtle scan-line texture overlay — barely visible, anchors "screen" feel */
-.bl-terminal::before {
-  content:"";
-  position:absolute; inset:0;
-  background-image:repeating-linear-gradient(180deg, rgba(108,184,200,0.022) 0px, rgba(108,184,200,0.022) 1px, transparent 1px, transparent 3px);
-  pointer-events:none;
-  z-index:0;
-}
-.bl-terminal-header {
-  display:flex; align-items:center; gap:8px;
-  padding:8px 16px;
-  border-bottom:1px solid var(--bl-border-sub);
-  background:rgba(108,184,200,0.025);
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-04);
-  color:var(--bl-text-ter);
-  position:relative;
-  z-index:1;
-  user-select:none;
-}
-/* Línea de "lectura del día" — bajo el status bar del terminal, misma tipografía
-   la mono. Sin protagonismo: color secundario, borde inferior sutil, misma
-   altura de línea que el header. */
-.bl-terminal-reading {
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-04);
-  color:var(--bl-text-sec);
-  padding:8px 16px;
-  border-bottom:1px solid var(--bl-border-sub);
-  background:rgba(108,184,200,0.015);
-  user-select:none;
-  position:relative;
-  z-index:1;
-}
-
 /* Skeleton de noticias con la silueta real de las cards (126 px desktop /
    122 mobile + gap) y alto de viewport: el reemplazo skeleton→lista no mueve
    nada y el footer arranca debajo del pliegue. */
@@ -1588,69 +1533,7 @@
   .bl-skeleton-newsfeed .bl-skeleton-news { min-height:122px; }
 }
 
-/* ── Empty state de Layer — misma voz terminal, con salida ── */
-.bl-layer-empty {
-  margin:20px 32px;
-  padding:20px 20px 20px;
-  border:1px solid var(--bl-border-sub);
-  border-radius:var(--r-8);
-  background:var(--bl-subtle-bg);
-  font-family:var(--font-mono);
-  font-size:var(--fs-11); letter-spacing:var(--tr-04);
-  display:flex; flex-direction:column; gap:12px; align-items:flex-start;
-}
-.bl-layer-empty-line { color:var(--bl-text-sec); line-height:1.7; }
-.bl-layer-empty-btn {
-  color:var(--bl-accent-layer);
-  background:transparent;
-  border:1px solid rgba(108,184,200,0.35);
-  margin-top:4px;
-  cursor:pointer;
-  transition:background .25s var(--ease-out-expo), border-color .25s;
-}
-.bl-layer-empty-btn:hover {
-  background:rgba(108,184,200,0.08);
-  border-color:var(--bl-accent-layer);
-}
-
-.bl-terminal-prompt-user { color:var(--bl-accent-layer); font-weight:600; }
-.bl-terminal-prompt-sep  { color:var(--bl-text-ter); }
-.bl-terminal-prompt-path { color:var(--bl-text-sec); }
-.bl-terminal-prompt-cmd  { color:var(--bl-text-sec); margin-left:2px; }
-.bl-terminal-prompt-cursor {
-  display:inline-block;
-  width:7px; height:11px;
-  background:var(--bl-accent-layer);
-  margin-left:4px;
-  vertical-align:baseline;
-  animation:bl-blink 1s step-end infinite;
-  box-shadow:0 0 6px rgba(108,184,200,0.4);
-}
-.bl-terminal-status {
-  margin-left:auto;
-  display:flex; align-items:center; gap:8px;
-  font-size:var(--fs-11);
-  color:var(--bl-text-ter);
-  letter-spacing:var(--tr-04);
-}
-.bl-terminal-status-dot {
-  width:6px; height:6px; border-radius:50%;
-  background:var(--bl-up);
-  box-shadow:0 0 6px var(--bl-up);
-  animation:bl-term-pulse 2s ease-in-out infinite;
-  flex-shrink:0;
-}
-.bl-terminal-status-text { text-transform:lowercase; }
-.bl-terminal-status-code {
-  color:var(--bl-up);
-  font-weight:600;
-  letter-spacing:var(--tr-04);
-}
-@keyframes bl-term-pulse {
-  0%, 100% { opacity:1; }
-  50%      { opacity:0.4; }
-}
-
+/* Celdas de cifras de Ciclos BTC. */
 .bl-terminal-grid {
   display:grid;
   grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
@@ -1693,7 +1576,6 @@
   color:var(--bl-text-ter);
   margin-bottom:12px;
 }
-.bl-term-prompt { color:var(--bl-accent-layer); font-weight:700; }
 .bl-term-cell-label-text { font-weight:500; }
 
 .bl-term-cell-value {
@@ -1709,24 +1591,12 @@
 .bl-term-cell-value-num { font-variant-numeric:tabular-nums; }
 
 @media (max-width:768px) {
-  .bl-terminal { margin:8px 16px 12px; }
-  .bl-terminal-header { padding:8px 12px; font-size:var(--fs-11); }
-  .bl-terminal-prompt-cursor { width:6px; height:10px; }
   /* En mobile el comando y la ruta se sienten apretados — los escondemos */
-  .bl-terminal-header .bl-terminal-prompt-sep,
-  .bl-terminal-header .bl-terminal-prompt-path,
-  .bl-terminal-header .bl-terminal-prompt-cmd { display:none; }
-  .bl-terminal-status { font-size:var(--fs-11); gap:4px; }
-  .bl-terminal-status-code { display:none; }
   .bl-terminal-grid { grid-template-columns:repeat(2, 1fr); }
   .bl-term-cell { padding:12px 12px 12px; min-height:72px; }
   .bl-term-cell-label { font-size:var(--fs-11); letter-spacing:var(--tr-1); margin-bottom:8px; }
   .bl-term-cell-value { font-size:var(--fs-18); gap:8px; }
   
-}
-@media (prefers-reduced-motion: reduce) {
-  .bl-terminal-prompt-cursor,
-  .bl-terminal-status-dot { animation:none; }
 }
 
 /* ── Skeleton Loaders ───────────────────── */
@@ -2444,72 +2314,7 @@
   border:2.5px solid var(--bl-accent-layer); box-shadow:0 0 0 5px color-mix(in srgb, var(--bl-accent-layer) 13%, transparent);
 }
 .bl-layer-tab:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; border-radius:var(--r-4); }
-.bl-layer-tab-cnt { font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text-ter); align-self:flex-start; margin-top:1px; }
-.bl-layer-tab.active .bl-layer-tab-cnt { color:var(--bl-text-sec); }
-
-.bl-layer-h { margin:24px 32px 4px; font-size:var(--fs-22); font-weight:700; letter-spacing:var(--tr-n015); color:var(--bl-text); }
-@media (max-width:768px) {
-  .bl-layer-h { margin:20px 16px 2px; font-size:var(--fs-22); }
-}
-.bl-layer-grid { display:grid; grid-template-columns:minmax(0, 1fr) 380px; align-items:start; padding-bottom:24px; }
-.bl-layer-main { min-width:0; }
-/* Los tags scrollean en horizontal: sin fundido, la última pastilla cortada
-   contra el aside parecía meterse debajo del panel Mercados. */
-.bl-layer-main .bl-filters { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
-/* Se engancha debajo de la barra de precios (sticky, 57 px) y no detrás:
-   con top:12px la barra tapaba "Pulso del mercado" al scrollear. */
-.bl-layer-aside { position:sticky; top:69px; display:flex; flex-direction:column; gap:12px; margin:16px 32px 0 0; }
-/* Pantallas bajas: enganchado no entra entero (se escondía Tendencia), así
-   que scrollea con la página. */
-@media (max-height:760px) { .bl-layer-aside { position:static; } }
-
-/* ── Pulso del mercado (sept 2026, dirección B) ──
-   Terminal + dólar + tendencia en un solo módulo: etiqueta legible, número
-   mono. Desktop: panel en la columna derecha. Mobile: tira que se despliega. */
-.bl-mpulse { border:1px solid var(--bl-border-sub); border-radius:var(--r-12); background:var(--bl-surface); padding:20px 20px 16px; }
-.bl-mpulse.is-loading { min-height:520px; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.bl-mpulse-sum { display:none; }
-.bl-mpulse .up { color:var(--bl-up); } .bl-mpulse .down { color:var(--bl-down); }
-.bl-mpulse-grid { display:grid; grid-template-columns:1fr 1fr; margin-top:16px; border-top:1px solid var(--bl-border-sub); }
-.bl-mpulse-c { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:12px 0; border:0; border-bottom:1px solid var(--bl-border-sub); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
-.bl-mpulse-c:nth-child(odd) { padding-right:16px; border-right:1px solid var(--bl-border-sub); }
-.bl-mpulse-c:nth-child(even) { padding-left:16px; }
-.bl-mpulse-c .k { font-size:var(--fs-11); color:var(--bl-text-sec); transition:color .2s; }
-.bl-mpulse-c:hover .k { color:var(--bl-accent-layer); }
-.bl-mpulse-c:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
-.bl-mpulse-c .v { font:600 var(--fs-18) var(--font-mono); letter-spacing:var(--tr-n03); color:var(--bl-text); font-variant-numeric:tabular-nums; }
-.bl-mpulse-c .v small { margin-left:8px; font-size:var(--fs-11); font-weight:500; letter-spacing:0; }
-.bl-mpulse-c .bar { display:block; width:100%; height:3px; margin-top:4px; border-radius:var(--r-2); background:var(--bl-border); overflow:hidden; }
-.bl-mpulse-c .bar span { display:block; height:100%; }
-.bl-mpulse-sec { margin:16px 0 4px; font:500 var(--fs-10) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-text-ter); }
-.bl-mpulse-rows div { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--bl-border-sub); font-size:var(--fs-13); color:var(--bl-text-sec); }
-.bl-mpulse-rows b { font:600 var(--fs-13) var(--font-mono); color:var(--bl-text); font-variant-numeric:tabular-nums; }
-.bl-mpulse-rows b.acc { color:var(--bl-accent-layer); }
-.bl-mpulse-more { display:flex; justify-content:space-between; width:100%; padding:8px 0 2px; border:0; background:none; cursor:pointer; font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-accent-layer); }
-.bl-mpulse-usdt { width:100%; margin-top:8px; border-collapse:collapse; font:500 var(--fs-11) var(--font-mono); font-variant-numeric:tabular-nums; }
-.bl-mpulse-usdt th { padding:8px 0; font-weight:500; font-size:var(--fs-11); letter-spacing:var(--tr-1); text-align:right; color:var(--bl-text-ter); }
-.bl-mpulse-usdt td { padding:4px 0; text-align:right; color:var(--bl-text-sec); border-top:1px solid var(--bl-border-sub); }
-.bl-mpulse-usdt th:first-child, .bl-mpulse-usdt td:first-child { text-align:left; color:var(--bl-text); }
-.bl-mpulse-trend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-.bl-mpulse-trend span { padding:4px 8px; border-radius:var(--r-8); background:var(--bl-subtle); font:600 var(--fs-11) var(--font-mono); color:var(--bl-text); }
-.bl-mpulse-trend em { margin-left:4px; font-style:normal; font-weight:500; }
-@media (max-width:768px) {
-  /* Mobile: el pulso va antes del contenido, como una línea que se abre. */
-  .bl-layer-aside { position:static; order:-1; margin:16px 16px 4px; }
-  .bl-mpulse { padding:0; border-radius:var(--r-12); }
-  .bl-mpulse.is-loading { min-height:48px; }
-  .bl-mpulse-sum { display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; border:0; background:none; color:inherit; font:inherit; cursor:pointer; text-align:left; }
-  .bl-mpulse-sum:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; border-radius:var(--r-12); }
-  .bl-mpulse-rd { font-weight:650; font-size:var(--fs-14); color:var(--bl-text); }
-  .bl-mpulse-q { display:flex; gap:12px; flex:1; justify-content:flex-end; font:500 var(--fs-11) var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; }
-  .bl-mpulse-q b { color:var(--bl-text); font-weight:600; }
-  .bl-mpulse-chev { color:var(--bl-text-ter); transition:transform .25s var(--ease-out-expo); flex-shrink:0; }
-  .bl-mpulse.is-open .bl-mpulse-chev { transform:rotate(180deg); }
-  .bl-mpulse-body { display:none; padding:0 16px 16px; }
-  .bl-mpulse.is-open .bl-mpulse-body { display:block; }
-  .bl-mpulse-grid { margin-top:0; }
-  
-}
+.bl-layer-main { min-width:0; padding-bottom:24px; }
 
 .bl-layer-content {
   animation:bl-wp-fadein .25s var(--ease-out-expo);
@@ -2521,9 +2326,7 @@
      recortado fuera de la vista. En mobile las acomodamos en grid 2×2. */
   .bl-layer-tabs { margin:2px 16px 0; gap:20px; }
   .bl-layer-tab { font-size:var(--fs-16); padding:12px 0 12px; }
-  .bl-layer-grid { grid-template-columns:1fr; }
   /* Terminal comprimido: cuatro cifras en una fila; lectura y trending quedan en desktop. */
-  .bl-terminal-reading { display:none; }
   .bl-terminal-grid { grid-template-columns:repeat(4, 1fr); }
   /* Ciclos BTC: sus cifras llevan texto (fase, "faltan ~28 d"), no solo un
      número — en 4 columnas de 80px partían palabra por palabra. */
@@ -2533,73 +2336,6 @@
   .bl-term-cell-value { font-size:var(--fs-14); gap:4px; }
   
 }
-
-/* ═══════════════════════════════════════════
-   Crypto IRL — Events & Courses
-   ═══════════════════════════════════════════ */
-
-.bl-cirl {
-  margin:16px 32px 8px;
-  background:var(--bl-surface);
-  border:1px solid var(--bl-border);
-  border-radius:var(--r-8);
-  overflow:hidden;
-}
-
-.bl-cirl-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:20px 24px 0;
-}
-.bl-cirl-title {
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:var(--fs-14);
-  letter-spacing:var(--tr-n015);
-  color:var(--bl-text);
-}
-.bl-cirl-subtitle {
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-16);
-  text-transform:uppercase;
-  color:var(--bl-text-ter);
-  margin-top:2px;
-}
-.bl-cirl-add-btn {
-  background:var(--bl-subtle);
-  border:1px solid var(--bl-border);
-  color:var(--bl-text-sec);
-  cursor:pointer;
-  transition:all .2s;
-  flex-shrink:0;
-}
-.bl-cirl-add-btn:hover { background:var(--bl-subtle-hover); color:var(--bl-text); border-color:var(--bl-450); }
-.bl-cirl-add-btn.active { background:var(--bl-text); color:var(--bl-bg); border-color:var(--bl-text); }
-
-/* Tabs */
-.bl-cirl-tabs {
-  display:flex;
-  gap:4px;
-  padding:16px 24px 0;
-}
-.bl-cirl-tab {
-  flex:1;
-  padding:8px 12px;
-  border-radius:var(--r-8);
-  background:var(--bl-subtle-bg);
-  border:1px solid var(--bl-border-sub);
-  color:var(--bl-text-sec);
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-04);
-  text-align:center;
-  cursor:pointer;
-  transition:all .2s;
-}
-.bl-cirl-tab:hover { background:var(--bl-subtle); border-color:var(--bl-450); }
-.bl-cirl-tab.active { background:var(--bl-text); color:var(--bl-bg); border-color:var(--bl-text); }
 
 /* Submit form */
 .bl-cirl-form {
@@ -2676,153 +2412,6 @@
 .bl-cirl-submit:disabled { opacity:0.5; cursor:default; }
 
 /* Listings — card pattern alineado con bl-layer-news-item */
-.bl-cirl-list {
-  display:flex; flex-direction:column;
-  gap:16px;
-  padding:12px 24px 20px;
-}
-.bl-cirl-empty {
-  font-family:var(--font-body);
-  font-size:var(--fs-13);
-  color:var(--bl-text-ter);
-  text-align:center;
-  padding:20px 0;
-}
-
-.bl-cirl-item {
-  display:flex;
-  gap:16px;
-  padding:20px;
-  align-items:center;
-  background:var(--bl-surface);
-  border:1px solid var(--bl-border-sub);
-  border-radius:var(--r-12);
-  cursor:pointer;
-  transition:transform .2s var(--ease-out-expo), border-color .2s, background .2s;
-  outline:none;
-}
-.bl-cirl-item:hover {
-  border-color:var(--bl-accent-layer);
-  background:var(--bl-surface-alt);
-  transform:translateY(-1px);
-}
-.bl-cirl-item:focus-visible {
-  border-color:var(--bl-accent-layer);
-  box-shadow:0 0 0 3px rgba(108,184,200,0.18);
-}
-
-.bl-cirl-item-left {
-  flex-shrink:0;
-  width:64px;
-  text-align:center;
-}
-.bl-cirl-item-date {
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:var(--fs-14);
-  letter-spacing:var(--tr-n015);
-  color:var(--bl-text);
-  line-height:1.3;
-}
-.bl-cirl-item-time {
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  color:var(--bl-text-ter);
-  margin-top:4px;
-}
-
-.bl-cirl-item-body {
-  flex:1;
-  min-width:0;
-  display:flex; flex-direction:column; gap:8px;
-}
-.bl-cirl-item-name {
-  font-family:var(--font-layer);
-  font-weight:500;
-  font-size:var(--fs-16);
-  letter-spacing:0;
-  color:var(--bl-100);
-  line-height:1.35;
-  margin:0;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.bl-cirl-item:hover .bl-cirl-item-name { color:var(--bl-white); }
-.bl-cirl-item-name a {
-  color:inherit;
-  text-decoration:none;
-}
-.bl-cirl-item-name a:hover { text-decoration:underline; }
-.bl-cirl-item-org {
-  font-family:var(--font-body);
-  font-size:var(--fs-13);
-  color:var(--bl-text-sec);
-}
-.bl-cirl-item-loc {
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-04);
-  color:var(--bl-text-ter);
-}
-
-.bl-cirl-badge-free {
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-1);
-  text-transform:uppercase;
-  color:#3A8852;
-  padding:4px 12px;
-  border:1px solid rgba(45,107,63,0.32);
-  border-radius:var(--r-4);
-  background:rgba(45,107,63,0.1);
-}
-.bl-cirl-badge-source {
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-1);
-  text-transform:uppercase;
-  font-weight:600;
-  color:var(--bl-accent-layer);
-  padding:2px 8px;
-  border:1px solid rgba(108,184,200,0.22);
-  border-radius:var(--r-4);
-  background:rgba(108,184,200,0.08);
-}
-.bl-cirl-item-right {
-  flex-shrink:0;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:8px;
-}
-.bl-cirl-loading {
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  color:var(--bl-text-ter);
-  text-align:center;
-  padding:24px 0;
-  letter-spacing:var(--tr-04);
-}
-.bl-cirl-modal-free {
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-1);
-  text-transform:uppercase;
-  color:var(--bl-up);
-  padding:8px 12px;
-  border:1px solid var(--bl-up);
-  border-radius:var(--r-8);
-  display:inline-block;
-  margin-top:8px;
-}
-.bl-cirl-modal-guests {
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  color:var(--bl-text-sec);
-  margin-top:8px;
-}
 .bl-modal-desc {
   font-family:var(--font-body);
   font-size:var(--fs-13);
@@ -2832,19 +2421,8 @@
 }
 
 @media (max-width:768px) {
-  .bl-cirl { margin:12px 16px 8px; }
-  .bl-cirl-header { padding:16px 16px 0; }
-  .bl-cirl-tabs { padding:12px 16px 0; }
   .bl-cirl-form { padding:12px 16px; }
   .bl-cirl-form-grid { grid-template-columns:1fr; }
-  .bl-cirl-list { padding:8px 16px 16px; gap:12px; }
-  .bl-cirl-item { padding:16px; gap:16px; }
-  .bl-cirl-item-left { width:52px; }
-  .bl-cirl-item-date { font-size:var(--fs-13); }
-  .bl-cirl-item-name { font-size:var(--fs-14); }
-  .bl-cirl-item-org { font-size:var(--fs-12); }
-  .bl-cirl-badge-free,
-  .bl-cirl-badge-source { font-size:var(--fs-11); }
 }
 
 /* ═══════════════════════════════════════════
@@ -2884,7 +2462,7 @@
 }
 .bl-timeline-toggle-sub {
   font-family:var(--font-mono);
-  font-size:var(--fs-10);
+  font-size:var(--fs-11);
   letter-spacing:var(--tr-16);
   text-transform:uppercase;
   color:var(--bl-text-ter);
@@ -2919,7 +2497,7 @@
 }
 .bl-timeline-subtitle {
   font-family:var(--font-mono);
-  font-size:var(--fs-10);
+  font-size:var(--fs-11);
   letter-spacing:var(--tr-16);
   text-transform:uppercase;
   color:var(--bl-text-ter);
@@ -3036,7 +2614,7 @@
 }
 .bl-timeline-event-type {
   font-family:var(--font-mono);
-  font-size:var(--fs-10);
+  font-size:var(--fs-11);
   letter-spacing:var(--tr-16);
   text-transform:uppercase;
   padding:2px 8px;
@@ -3089,7 +2667,7 @@
   display:flex; align-items:center; gap:12px; margin-bottom:12px;
 }
 .bl-tle-date {
-  font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16);
+  font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16);
   color:var(--bl-text-sec); text-transform:uppercase;
 }
 .bl-tle-title {
@@ -3135,7 +2713,6 @@
   .bl-modal-close { width:44px; height:44px; }
   .bl-wp-close { width:44px; height:44px; }
   .bl-timeline-close { width:44px; height:44px; }
-  .bl-cirl-tab { min-height:44px; }
   .bl-timeline-year-btn { min-height:44px; display:inline-flex; align-items:center; }
 }
 
@@ -3415,75 +2992,6 @@ select.bl-venue-input { cursor:pointer; }
 /* ═══════════════════════════════════════════
    Prediction markets — Polymarket
    ═══════════════════════════════════════════ */
-
-.bl-predict-feed { padding:4px 0 28px; }
-.bl-predict-sub { margin:16px 32px 0; font-size:var(--fs-13); color:var(--bl-text-sec); }
-.bl-predict-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
-  gap:12px;
-  margin:12px 32px 0;
-}
-.bl-predict-card {
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-  padding:16px 20px 12px;
-  background:var(--bl-subtle-bg);
-  border:1px solid var(--bl-border-sub);
-  border-radius:var(--r-8);
-  transition:border-color .25s var(--ease-out-expo);
-}
-.bl-predict-card:hover { border-color:var(--bl-border); }
-.bl-predict-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-.bl-predict-question {
-  margin:0;
-  font:600 var(--fs-14)/1.35 var(--font-sans);
-  letter-spacing:var(--tr-n015);
-  color:var(--bl-text);
-  text-wrap:balance;
-}
-.bl-predict-deadline {
-  flex-shrink:0;
-  padding-top:4px;
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-1);
-  color:var(--bl-text-ter);
-  white-space:nowrap;
-}
-.bl-predict-outcomes { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
-.bl-predict-row {
-  display:grid;
-  grid-template-columns:minmax(0, 11em) 1fr 3.2em;
-  align-items:center;
-  gap:12px;
-  font-size:var(--fs-13);
-}
-.bl-predict-label { color:var(--bl-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.bl-predict-bar { height:3px; background:var(--bl-subtle); border-radius:var(--r-2); overflow:hidden; }
-.bl-predict-fill { display:block; height:100%; background:var(--bl-accent-layer); border-radius:var(--r-2); }
-.bl-predict-pct {
-  text-align:right;
-  font-family:var(--font-mono);
-  font-size:var(--fs-12);
-  font-variant-numeric:tabular-nums;
-  color:var(--bl-text);
-}
-.bl-predict-row:first-child .bl-predict-pct { color:var(--bl-accent-layer); }
-.bl-predict-foot {
-  margin-top:auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding-top:12px;
-  border-top:1px solid var(--bl-border-sub);
-  font-family:var(--font-mono);
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-1);
-  text-transform:uppercase;
-}
 .bl-predict-tr {
   appearance:none; background:none; border:0; padding:4px 0; margin:0;
   font:inherit; letter-spacing:inherit; text-transform:inherit;
@@ -3491,17 +2999,6 @@ select.bl-venue-input { cursor:pointer; }
 }
 .bl-predict-tr u { text-decoration:none; color:var(--bl-text-sec); }
 .bl-predict-tr:hover, .bl-predict-tr:focus-visible, .bl-predict-tr:hover u { color:var(--bl-text); }
-.bl-predict-link { padding:4px 0; color:var(--bl-text-ter); text-decoration:none; white-space:nowrap; }
-.bl-predict-link:hover, .bl-predict-link:focus-visible { color:var(--bl-accent-layer); }
-
-@media (max-width:768px) {
-  .bl-predict-sub { margin:12px 16px 0; }
-  .bl-predict-grid { grid-template-columns:1fr; margin:12px 16px 0; gap:12px; }
-  .bl-predict-card { padding:16px 16px 12px; }
-  .bl-predict-question { font-size:var(--fs-14); }
-  .bl-predict-row { grid-template-columns:minmax(0, 9.5em) 1fr 3em; gap:12px; }
-  .bl-predict-vol { display:none; }
-}
 
 /* ═══════════════════════════════════════════
    Bass section toggle (Eventos / Noticias)
@@ -3561,166 +3058,10 @@ select.bl-venue-input { cursor:pointer; }
   .bl-bass-section-btn { padding:2px 0 12px; }
   .bl-bass-section-label { font-size:var(--fs-22); }
 }
-
-/* ═══════════════════════════════════════════
-   Layer news cards — mismas dimensiones que Bass,
-   accent Layer (cyan/teal) y tipografía mono
-   ═══════════════════════════════════════════ */
-.bl-layer-news-list {
-  display:flex; flex-direction:column;
-  gap:16px;
-  padding:8px 32px 24px;
-}
-.bl-layer-news-item {
-  display:flex; gap:16px;
-  padding:20px;
-  background:var(--bl-surface);
-  border:1px solid var(--bl-border-sub);
-  border-radius:var(--r-12);
-  cursor:pointer;
-  transition:transform .2s var(--ease-out-expo), border-color .2s, background .2s;
-  outline:none;
-  align-items:center;
-}
-.bl-layer-news-item:hover {
-  border-color:var(--bl-accent-layer);
-  background:var(--bl-surface-alt);
-  transform:translateY(-1px);
-}
-.bl-layer-news-item:focus-visible {
-  border-color:var(--bl-accent-layer);
-  box-shadow:0 0 0 3px rgba(108,184,200,0.18);
-}
-.bl-layer-news-body {
-  flex:1; min-width:0;
-  display:flex; flex-direction:column; gap:8px;
-  align-items:flex-start;
-}
-.bl-layer-news-title {
-  font-family:var(--font-layer);
-  font-size:var(--fs-16); line-height:1.35;
-  font-weight:500;
-  color:var(--bl-100);
-  margin:0;
-  letter-spacing:0;
-  display:-webkit-box;
-  -webkit-line-clamp:3;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.bl-layer-news-item:hover .bl-layer-news-title { color:var(--bl-white); }
-.bl-layer-news-tag-pill {
-  display:inline-block;
-  padding:2px 8px;
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-10);
-  letter-spacing:var(--tr-1);
-  text-transform:uppercase;
-  font-weight:600;
-  color:var(--bl-accent-layer);
-  background:rgba(108,184,200,0.08);
-  border:1px solid rgba(108,184,200,0.22);
-  border-radius:var(--r-4);
-}
 /* Meta de noticias financieras: fuente · idioma · antigüedad */
-.bl-finance-news-meta {
-  display:flex; align-items:center; flex-wrap:wrap; gap:8px;
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-11); letter-spacing:var(--tr-04);
-  color:var(--bl-500);
-}
-.bl-finance-news-source { color:var(--bl-300); font-weight:600; }
-.bl-finance-news-lang {
-  padding:1px 4px;
-  font-size:var(--fs-11); letter-spacing:var(--tr-1); font-weight:600;
-  color:var(--bl-accent-layer);
-  border:1px solid rgba(108,184,200,0.22);
-  border-radius:var(--r-4);
-}
-.bl-finance-news-time::before { content:"· "; color:var(--bl-600); }
 .bl-finance-tr { display:block; align-self:flex-start; margin:-4px 0 0; font-family:var(--font-mono), monospace; font-size:var(--fs-10); letter-spacing:var(--tr-1); text-transform:uppercase; }
-.bl-layer-news-item .bl-thumb {
-  flex-basis:84px;
-  width:84px; height:84px;
-  border-radius:var(--r-12);
-}
-.bl-layer-news-item:hover .bl-thumb-img { transform:scale(1.05); }
-
-@media (max-width:768px) {
-  .bl-layer-news-list { padding:8px 16px 20px; gap:12px; }
-  .bl-layer-news-item { padding:16px; gap:16px; }
-  .bl-layer-news-title { font-size:var(--fs-14); -webkit-line-clamp:3; }
-  .bl-layer-news-tag-pill { font-size:var(--fs-11); }
-  .bl-layer-news-item .bl-thumb { flex-basis:60px; width:60px; height:60px; border-radius:var(--r-8); }
-}
-
-/* ═══════════════════════════════════════════
-   Mercado — tarjetas de cotización (ETFs · acciones)
-   ═══════════════════════════════════════════ */
-.bl-mkt-head { padding:16px 32px 4px; }   /* mismo margen de 32px que el resto de Layer */
-.bl-mkt-title {
-  font-family:var(--font-layer);
-  font-size:var(--fs-18); font-weight:600; letter-spacing:0;
-  color:var(--bl-100); margin:0;
-}
-.bl-mkt-group { padding:8px 0 4px; }
-.bl-mkt-group-sub { margin:0 32px 12px; font-size:var(--fs-13); color:var(--bl-text-sec); }
-@media (max-width:768px){ .bl-mkt-group-sub { margin:0 16px 12px; } }
 /* Grupos con nombre propio (sept 2026): título legible + qué los junta. */
-.bl-mkt-group-label { margin:20px 32px 2px; font:620 var(--fs-16) var(--font-sans); letter-spacing:var(--tr-n015); color:var(--bl-text); }
-.bl-mkt-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
-  gap:12px;
-  padding:8px 32px 8px;
-}
-.bl-mkt-card {
-  display:flex; flex-direction:column; gap:8px;
-  padding:16px;
-  border:1px solid var(--bl-line, rgba(255,255,255,0.08));
-  border-radius:var(--r-12);
-  background:rgba(255,255,255,0.015);
-  transition:border-color .2s ease, background .2s ease;
-}
-.bl-mkt-card:hover { border-color:rgba(108,184,200,0.3); background:rgba(108,184,200,0.03); }
-.bl-mkt-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.bl-mkt-symbol {
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-13); font-weight:700; letter-spacing:var(--tr-04);
-  color:var(--bl-100);
-}
-.bl-mkt-chg {
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-12); font-weight:600; letter-spacing:var(--tr-04);
-}
-.bl-mkt-chg.up { color:#4ea88c; }
-.bl-mkt-chg.down { color:#c96a6a; }
-.bl-mkt-name {
-  font-family:var(--font-layer);
-  font-size:var(--fs-12); color:var(--bl-400);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.bl-mkt-price {
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-18); font-weight:600; letter-spacing:0;
-  color:var(--bl-white, #fff);
-}
-.bl-mkt-card-skel { height:92px; opacity:.5; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
 @keyframes bl-skel-pulse { 0%,100%{opacity:.35} 50%{opacity:.6} }
-.bl-mkt-foot {
-  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  padding:12px 20px 20px;
-  font-family:var(--font-mono), monospace;
-  font-size:var(--fs-11); letter-spacing:var(--tr-04);
-  color:var(--bl-600);
-}
-.bl-mkt-disclaimer::before { content:"· "; }
-@media (max-width:768px) {
-  .bl-mkt-grid { grid-template-columns:repeat(auto-fill, minmax(132px, 1fr)); gap:8px; padding:8px 16px 8px; }
-  .bl-mkt-head { padding:12px 16px 4px; }
-  .bl-mkt-group-label { margin:16px 16px 2px; }
-  .bl-mkt-price { font-size:var(--fs-16); }
-}
 
 /* ═══════════════════════════════════════════
    BlThumb — sistema unificado de miniaturas Bass
@@ -3898,20 +3239,6 @@ select.bl-venue-input { cursor:pointer; }
 .bl-ev-row .bl-artist-photo .bl-poster-rule { width:8px; left:6px; top:5px; }
 
 /* Layer: thumb vacío con accent cyan en vez de Bass amber */
-.bl-layer-news-item .bl-thumb-empty {
-  background:
-    radial-gradient(circle at center, rgba(108,184,200,0.13) 0%, transparent 62%),
-    linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%);
-}
-.bl-layer-news-item .bl-thumb-rings-center {
-  stroke:var(--bl-accent-layer);
-  fill:rgba(108,184,200,0.18);
-}
-.bl-layer-news-item:hover .bl-thumb-empty .bl-thumb-rings {
-  opacity:0.42;
-  stroke:var(--bl-accent-layer);
-  transition:opacity .35s ease-out, stroke .35s ease-out;
-}
 @media (max-width:768px) {
   .bl-thumb { flex-basis:48px; width:48px; height:48px; border-radius:var(--r-8); }
   .bl-thumb-empty { padding:4px; }
@@ -4214,16 +3541,12 @@ select.bl-venue-input { cursor:pointer; }
 
   /* Mensajes de error / vacío del feed — el usuario los lee para saber qué hacer. */
   .bl-error, .bl-empty { font-size:var(--fs-11); }
-  .bl-layer-empty { margin:16px 16px; padding:16px 16px 16px; }
 }
 
 /* ═══════════════════════════════════════════
    Layer · BTC Cycles (BtcCycles) — POC
    Timeline de fases + confluencia on-chain, mismo lenguaje terminal
    ═══════════════════════════════════════════ */
-.bl-cyc-head { padding:16px 32px 2px; }
-.bl-cyc-title { font-family:var(--font-display); font-weight:700; font-size:var(--fs-18); letter-spacing:var(--tr-n015); color:var(--bl-text); margin:0; }
-.bl-cyc-subtitle { font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-text-ter); margin-top:4px; }
 
 .bl-cyc-grid-stats { border-top:1px solid var(--bl-border-sub); }
 .bl-cyc-cell-sub {
@@ -4231,12 +3554,6 @@ select.bl-venue-input { cursor:pointer; }
   color:var(--bl-text-ter); margin-top:8px;
 }
 .bl-cyc-arrow { color:#c56b6b; }
-
-.bl-cyc-section-title {
-  font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-1); text-transform:uppercase;
-  color:var(--bl-text-sec); padding:12px 16px 2px;
-  position:relative; z-index:1; display:flex; align-items:center; gap:8px;
-}
 
 /* Timeline — divs absolutos sobre eje común, sin librería de charts */
 .bl-cyc-chart {
@@ -4521,15 +3838,6 @@ select.bl-venue-input { cursor:pointer; }
    filtros y lista cronológica sincronizada. */
 .blh { padding:8px 32px 40px; }
 .blh-skel { height:440px; margin:20px 32px; border-radius:var(--r-12); background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
-.blh-head h2 { margin:16px 0 4px; font-size:var(--fs-28); font-weight:700; letter-spacing:var(--tr-n03); color:var(--bl-text); }
-.blh-head p { margin:0; font-size:var(--fs-14); color:var(--bl-text-sec); max-width:640px; line-height:1.5; }
-.blh-cats { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 12px; }
-.blh-cats button { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--bl-border); border-radius:var(--r-20); background:none; color:var(--bl-text-sec); font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-04); cursor:pointer; transition:border-color .2s, color .2s; }
-.blh-cats button span { color:var(--bl-text-ter); }
-.blh-cats button i { width:8px; height:8px; border-radius:50%; background:var(--c); }
-.blh-cats button:hover { color:var(--bl-text); }
-.blh-cats button.is-on { border-color:var(--c, var(--bl-accent-layer)); color:var(--bl-text); background:color-mix(in srgb, var(--c, var(--bl-accent-layer)) 10%, transparent); }
-.blh-cats button:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 .blh-chart { position:relative; margin:4px 0 8px; }
 .blh-chart svg { display:block; width:100%; overflow:visible; }
 .blh-band.up { fill:var(--bl-up); opacity:.05; } .blh-band.down { fill:var(--bl-down); opacity:.05; }
@@ -4568,9 +3876,6 @@ select.bl-venue-input { cursor:pointer; }
 .blh-list button:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; }
 @media (max-width:768px) {
   .blh { padding:4px 16px 32px; }
-  .blh-head h2 { font-size:var(--fs-22); } .blh-head p { font-size:var(--fs-13); }
-  .blh-cats { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:16px -16px 8px; padding:0 16px; }
-  .blh-cats button { flex-shrink:0; }
   .blh-card { position:static; width:auto; margin:4px 0 0; box-shadow:none; }
   .blh-list { columns:1; }
   .blh-list button { grid-template-columns:64px minmax(0,1fr); padding:12px 4px; }
@@ -4886,13 +4191,12 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
    abierto), tres alturas (36 · 44 · 52) y una forma: píldora; los de ícono,
    círculos del alto de su fila. Cada botón conserva solo lo suyo (color,
    fondo, borde); forma, alto, relleno y letra salen de acá. */
-.bl-em-cta, .bl-modal-btn, .bl-venue-btn, .bl-ctrl-filters-btn, .bl-layer-empty-btn, .bl-cirl-add-btn, .bl-finde-btn {
+.bl-em-cta, .bl-modal-btn, .bl-venue-btn, .bl-ctrl-filters-btn, .bl-finde-btn {
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   min-height:var(--btn-h); padding:0 20px; border-radius:var(--btn-r);
   font-family:var(--font-mono); font-size:var(--fs-11); font-weight:600; letter-spacing:var(--tr-16); text-transform:uppercase; line-height:1;
 }
 .bl-em-cta { height:var(--btn-h-lg); }
-.bl-layer-empty-btn, .bl-cirl-add-btn { min-height:var(--btn-h-sm); padding:0 16px; }
 .bl-em-ic { width:var(--btn-h-lg); height:var(--btn-h-lg); padding:0; border-radius:50%; }
 
 /* Puente "Una sola línea" (oct 2026): la capa de la transición entre mundos. */
@@ -5121,31 +4425,132 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-agenda-intermedio:empty { display:none; }
 
 /* ── Layer (auditoría L1–L3, oct 2026) ── */
-/* L3: un filete separa cripto de los mercados tradicionales en las pestañas. */
-.bl-layer-tab-sep { flex:none; width:1px; height:16px; align-self:center; background:var(--bl-border); }
-/* L2: el pulso una sola vez, como tira desplegable arriba del contenido, también en escritorio. */
-.bl-layer-grid { grid-template-columns:minmax(0, 1fr); }
-.bl-layer-aside { position:static; order:-1; margin:16px 32px 4px; }
-.bl-mpulse { padding:0; }
-.bl-mpulse.is-loading { min-height:48px; }
-.bl-mpulse-sum { display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; border:0; background:none; color:inherit; font:inherit; cursor:pointer; text-align:left; }
-.bl-mpulse-sum:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:-2px; border-radius:var(--r-12); }
-.bl-mpulse-rd { font-weight:650; font-size:var(--fs-14); color:var(--bl-text); }
-.bl-mpulse-q { display:flex; gap:12px; flex:1; justify-content:flex-end; font:500 var(--fs-11) var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; }
-.bl-mpulse-q b { color:var(--bl-text); font-weight:600; }
-.bl-mpulse-chev { color:var(--bl-text-ter); transition:transform .25s var(--ease-out-expo); flex-shrink:0; }
-.bl-mpulse.is-open .bl-mpulse-chev { transform:rotate(180deg); }
-.bl-mpulse-body { display:none; padding:0 16px 16px; }
-.bl-mpulse.is-open .bl-mpulse-body { display:block; }
-.bl-mpulse-grid { margin-top:0; }
-/* Desplegado en escritorio: tres columnas — indicadores · dólar · tendencia —, alineadas arriba. */
-@media (min-width:769px) {
-  .bl-mpulse.is-open .bl-mpulse-body { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr); gap:0 40px; align-items:start; }
-  .bl-mpulse-col > .bl-mpulse-sec:first-child { margin-top:0; }
-}
-@media (max-width:768px) { .bl-layer-aside { margin:16px 16px 4px; } }
 /* L1: el abanico de proyecciones un paso más tenue que la curva real: el "hoy" manda. */
 .blc-fan .blc-walk { opacity:.6; }
-/* Ciclos BTC: ningún texto de datos por debajo de 11 px (la regla del home). */
-.bl-layer-content :is(.bl-term-prompt, .bl-term-cell-label-text, .bl-cyc-section-title, .bl-cyc-subtitle) { font-size:var(--fs-11); }
-.bl-mpulse-sec { font-size:var(--fs-11); }
+
+/* ── Layer · interiores "B · Filas" (oct 2026) ──
+   El idioma de la Agenda (filtros de texto con conteo, apertura con el número,
+   rótulos por día con filete, pie útil) en el registro digital de Layer:
+   mono y celeste donde Bass es cobre. */
+.bl-filters.layer-filters { position:static; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; gap:clamp(16px, 3vw, 28px); padding:16px 32px 8px; align-items:baseline; flex-wrap:wrap; mask-image:none; -webkit-mask-image:none; }
+.bl-filters.layer-filters .bl-filter-chip { font:500 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); padding:4px 0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.bl-filters.layer-filters .bl-filter-chip:hover { color:var(--bl-text-sec); border:0; background:transparent; }
+.bl-filters.layer-filters .bl-filter-chip.active { font-weight:600; color:var(--bl-accent-layer); border:0; background:transparent; box-shadow:none; }
+.bl-filters.layer-filters .bl-filter-count { font:400 var(--fs-11) var(--font-mono); letter-spacing:0; color:var(--bl-text-ter); margin-left:4px; }
+.bl-filters.layer-filters .bl-filter-chip.active .bl-filter-count { color:var(--bl-accent-layer); opacity:.7; }
+.bl-root[data-section="layer"] .bl-feed-head-n { font-family:var(--font-layer); }
+.bl-root[data-section="layer"] .bl-day-label { font:600 var(--fs-12) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-accent-layer); }
+.bl-root[data-section="layer"] .bl-day-line { background:linear-gradient(to right, color-mix(in srgb, var(--bl-accent-layer) 30%, transparent), transparent); }
+.bl-root[data-section="layer"] .bl-empty-action { color:var(--bl-accent-layer); margin-left:12px; }
+
+.bl-lnotas { padding:0 32px; }
+.bl-lnotas-dia + .bl-lnotas-dia { margin-top:8px; }
+.bl-lnota { display:grid; grid-template-columns:128px minmax(0,1fr) 132px; gap:16px 20px; align-items:start; padding:16px 0; border-top:1px solid var(--bl-border-sub); cursor:pointer; }
+.bl-day-header + .bl-lnota { border-top:0; padding-top:4px; }
+.bl-lnota:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:4px; border-radius:var(--r-4); }
+.bl-lnota-when { display:flex; flex-direction:column; gap:2px; padding-top:4px; font:600 var(--fs-11)/1.5 var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-accent-layer); }
+.bl-lnota-src { color:var(--bl-text-sec); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-lnota-t { font:600 var(--fs-18)/1.3 var(--font-layer); letter-spacing:var(--tr-n015); color:var(--bl-text); text-wrap:pretty; transition:color var(--duration-fast); }
+.bl-lnota:hover .bl-lnota-t { color:var(--bl-accent-layer); }
+.bl-lnota-tag { margin-top:8px; font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-lnota .bl-thumb { width:132px; height:auto; aspect-ratio:4/3; flex:none; border-radius:var(--r-8); box-shadow:none; }
+.bl-lnota:hover .bl-thumb-img { transform:scale(1.04); }
+.bl-poster[data-family="layer"] { --poster-tint:#6CB8C8; --poster-ink:#A6D6E0; }
+.bl-root.day-mode .bl-poster[data-family="layer"] { --poster-ink:#2F6C79; }
+.bl-lnota .bl-thumb-poster { background:radial-gradient(circle at 30% 20%, rgba(108,184,200,0.10) 0%, transparent 70%), linear-gradient(180deg, var(--bl-subtle-bg) 0%, var(--bl-surface) 100%); }
+.bl-lpie { margin:24px 32px 32px; padding-top:16px; border-top:1px solid var(--bl-border-sub); font:500 var(--fs-11)/1.7 var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); text-align:center; text-wrap:balance; }
+@media (max-width:768px) {
+  /* Como Bass: una tira que scrollea, no dos filas con hueco; el borde se funde. */
+  .bl-filters.layer-filters { flex-wrap:nowrap; overflow-x:auto; gap:20px; padding:8px 16px 4px; -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 32px), transparent); }
+  /* Las pestañas que siguen se funden en el borde; a la izquierda solo cuando ya se corrió. */
+  .bl-layer-bar .bl-layer-tabs { --izq:0px; -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--izq), #000 calc(100% - 40px), transparent); mask-image:linear-gradient(90deg, transparent, #000 var(--izq), #000 calc(100% - 40px), transparent); }
+  .bl-layer-bar .bl-layer-tabs[data-corrida] { --izq:32px; }
+  .bl-cot-group .bl-day-date { white-space:normal; flex-shrink:1; min-width:0; }
+  .bl-lnotas { padding:0 16px; }
+  .bl-lnota { grid-template-columns:minmax(0,1fr) 88px; gap:8px 12px; padding:12px 0; }
+  .bl-lnota-when { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; gap:8px; padding:0; }
+  .bl-lnota-t { font-size:var(--fs-16); }
+  .bl-lnota .bl-thumb { width:88px; }
+  .bl-lpie { margin:20px 16px 24px; }
+}
+/* Cotizaciones en filas: dos columnas de grupos en escritorio, una en mobile. */
+.bl-cots { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 48px; align-items:start; padding:0 32px; }
+.bl-cot-group .bl-day-date { text-transform:none; letter-spacing:0; font-family:var(--font-sans); font-size:var(--fs-13); }
+.bl-cot { display:grid; grid-template-columns:64px minmax(0,1fr) auto 76px; gap:16px; align-items:baseline; padding:12px 0; border-top:1px solid var(--bl-border-sub); }
+.bl-day-header + .bl-cot { border-top:0; }
+.bl-cot-sym { font:600 var(--fs-13) var(--font-mono); letter-spacing:var(--tr-04); color:var(--bl-text); }
+.bl-cot-name { font-size:var(--fs-14); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-cot-price { font:500 var(--fs-14) var(--font-mono); color:var(--bl-text); text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.bl-cot-chg { font:600 var(--fs-13) var(--font-mono); text-align:right; font-variant-numeric:tabular-nums; }
+.bl-cot-chg.up { color:var(--bl-up); } .bl-cot-chg.down { color:var(--bl-down); }
+.bl-cot-skel { height:44px; opacity:.5; background:var(--bl-subtle-bg); border-radius:var(--r-4); margin-top:8px; border:0; animation:bl-skel-pulse 1.4s ease-in-out infinite; }
+@media (max-width:768px) {
+  .bl-cots { grid-template-columns:minmax(0,1fr); padding:0 16px; }
+  .bl-cot { grid-template-columns:52px minmax(0,1fr) auto 64px; gap:8px; }
+  .bl-cot-name { font-size:var(--fs-13); }
+}
+/* Predicciones en filas: la pregunta, los resultados con su barra fina abajo
+   y una línea de cuándo vence, cuánto se movió hoy y el enlace. */
+.bl-pms { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 48px; align-items:start; padding:0 32px; }
+.bl-pm { padding:16px 0; border-top:1px solid var(--bl-border-sub); }
+.bl-day-header + .bl-pm { border-top:0; padding-top:4px; }
+.bl-pm-t { margin:0; font:600 var(--fs-16)/1.35 var(--font-layer); letter-spacing:var(--tr-n015); color:var(--bl-text); text-wrap:pretty; }
+.bl-pm-out { list-style:none; margin:12px 0 0; padding:0; display:grid; grid-template-columns:minmax(0,1fr) 48px; gap:4px 12px; }
+.bl-pm-out li { display:contents; }
+.bl-pm-l { position:relative; padding:4px 0 8px; font-size:var(--fs-14); color:var(--bl-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bl-pm-l i { position:absolute; left:0; bottom:0; height:2px; border-radius:var(--r-2); background:var(--bl-accent-layer); opacity:.75; }
+.bl-pm-p { align-self:center; font:600 var(--fs-13) var(--font-mono); text-align:right; font-variant-numeric:tabular-nums; color:var(--bl-text-sec); }
+.bl-pm-out li:first-child .bl-pm-p { color:var(--bl-accent-layer); }
+.bl-pm-meta { margin-top:12px; font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-pm-meta a { color:var(--bl-text-sec); text-decoration:none; }
+.bl-pm-meta a:hover, .bl-pm-meta a:focus-visible { color:var(--bl-accent-layer); }
+@media (max-width:768px) {
+  .bl-pms { grid-template-columns:minmax(0,1fr); padding:0 16px; }
+  .bl-pm-t { font-size:var(--fs-16); }
+}
+/* Ciclos BTC sin caja de terminal: cifras arriba, rótulos con filete, el
+   gráfico y la confluencia a todo el ancho de la columna. */
+.bl-cyc { margin:0 32px; }
+.bl-cyc .bl-cyc-grid-stats { border-top:0; border-bottom:1px solid var(--bl-border-sub); }
+.bl-cyc .bl-term-cell { padding:16px 20px 16px 0; border-bottom:0; }
+.bl-cyc .bl-term-cell + .bl-term-cell { padding-left:20px; }
+.bl-cyc .bl-term-cell::before { display:none; }
+.bl-cyc .bl-term-cell-label { font-size:var(--fs-11); letter-spacing:var(--tr-1); }
+.bl-cyc .bl-day-header { padding-top:32px; }
+.bl-cyc .bl-cyc-chart { padding:8px 0; }
+.bl-cyc .bl-cyc-ind { padding:12px 16px 12px 0; border-right:0; }
+.bl-cyc .bl-cyc-ind + .bl-cyc-ind { padding-left:16px; border-left:1px solid var(--bl-border-sub); }
+.bl-cyc .bl-cyc-posture { padding:16px 0 0; margin-top:24px; }
+/* Cada ciclo en dos pisos: la fecha arriba y los precios del pico y del fondo
+   sobre la barra, sin pisarse (en mobile "$12" chocaba con "$1.163"). */
+.bl-cyc .bl-cyc-row { height:72px; }
+.bl-cyc .bl-cyc-track { top:38px; }
+@media (max-width:768px) {
+  .bl-cyc { margin:0 16px; }
+  .bl-cyc .bl-term-cell { padding:12px 12px 12px 0; }
+  .bl-cyc .bl-term-cell:nth-child(odd) { padding-left:0; }
+  .bl-cyc .bl-term-cell:nth-child(even) { padding-left:12px; }
+  .bl-cyc .bl-term-cell:nth-child(odd) { border-right:1px solid var(--bl-border-sub); }
+  .bl-cyc .bl-term-cell:nth-child(-n+2) { border-bottom:1px solid var(--bl-border-sub); }
+  .bl-cyc .bl-cyc-ind:nth-child(odd) { padding-left:0; border-left:0; }
+  .bl-cyc .bl-cyc-ind:nth-child(even) { padding-left:16px; border-left:1px solid var(--bl-border-sub); }
+}
+/* Eventos cripto en filas (sin foto): cuándo · qué, quién y dónde · gratis/fuente. */
+.bl-cirl-fila { grid-template-columns:128px minmax(0,1fr); }
+.bl-cirl-where { margin-top:8px; font-size:var(--fs-14); color:var(--bl-text-sec); }
+.bl-cirl-sumar { font-size:var(--fs-11); padding:0; }
+.bl-cirl-form-wrap { margin:0 32px 32px; }
+.bl-cirl-form-wrap .bl-cirl-form { margin:0; }
+@media (max-width:768px) {
+  .bl-cirl-fila { grid-template-columns:minmax(0,1fr); }
+  .bl-cirl-form-wrap { margin:0 16px 24px; }
+}
+/* Modal del evento cripto: la hoja de la nota, sin imagen. */
+.bl-cevent-modal .bl-news-modal-body { padding-top:32px; }
+.bl-cevent-who { margin-top:8px; font-size:var(--fs-14); color:var(--bl-text-sec); }
+.bl-cevent-extra { margin-top:16px; font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); text-transform:uppercase; color:var(--bl-text-ter); }
+.bl-cevent-modal .bl-news-modal-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; }
+/* Hitos: el filtro hace de leyenda del gráfico (un punto del color de cada tipo). */
+.bl-filter-dot { display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:50%; background:var(--c); vertical-align:1px; }
+.bl-filters.layer-filters .bl-filter-chip:not(.active) .bl-filter-dot { opacity:.8; }
+.blh { padding-top:16px; }

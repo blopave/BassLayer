@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { tickerItemA11y } from "../utils/constants";
 import { formatPrice } from "../utils/api";
+import { formatPct } from "../utils/format";
 import { useLocale } from "../hooks/useLocale";
 
 function Sparkline({ data, up }) {
@@ -26,7 +27,7 @@ function Sparkline({ data, up }) {
 }
 
 export const PriceTicker = memo(function PriceTicker({ prices, onSelect, loading }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   // Misma lógica que el LineupTicker: reservar la barra con un item invisible mientras llegan los precios.
   if (!prices?.length) {
     return loading ? (
@@ -41,9 +42,9 @@ export const PriceTicker = memo(function PriceTicker({ prices, onSelect, loading
     <div className="bl-price-item bl-price-clickable" key={`${p.id}-${suffix}`} onClick={() => onSelect?.(p)} {...tickerItemA11y(suffix === "b")} onKeyDown={(e) => e.key === "Enter" && onSelect?.(p)}>
       <span className="bl-price-sym">{p.sym}</span>
       <Sparkline data={p.sparkline} up={p.change >= 0} />
-      <span className="bl-price-val">{formatPrice(p.usd)}</span>
+      <span className="bl-price-val">{formatPrice(p.usd, locale)}</span>
       <span className={`bl-price-chg ${p.change >= 0 ? "bl-price-up" : "bl-price-down"}`}>
-        {p.change >= 0 ? "+" : ""}{p.change}%
+        {formatPct(p.change, locale)}
       </span>
     </div>
   );

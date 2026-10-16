@@ -1,40 +1,27 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { useScrollReveal } from "../hooks/useScrollReveal";
-import { api, formatPrice } from "../utils/api";
+import { api } from "../utils/api";
+import { fmtNum, formatPct } from "../utils/format";
+import { SectionHead } from "./SectionHead";
 
-function fmtPct(p) {
-  if (p == null || isNaN(p)) return "—";
-  const s = p >= 0 ? "+" : "";
-  return `${s}${p.toFixed(2)}%`;
-}
-function fmtTime(ts) {
-  if (!ts) return "";
-  try { return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
-  catch { return ""; }
-}
-
-function MarketCard({ item, idx }) {
+// Cotizaciones en filas (oct 2026, "B · Filas"): símbolo, nombre, precio y
+// variación, sin cajas; los grupos (y su orden) los define el server, cada uno
+// con su rótulo y qué los junta. kind: "etf" o "stock".
+function MarketRow({ item, locale }) {
   const up = (item.changePct ?? 0) >= 0;
   return (
-    <div
-      className="bl-mkt-card bl-reveal"
-      style={{ transitionDelay: `${Math.min(idx * 0.03, 0.24)}s` }}
-    >
-      <div className="bl-mkt-card-top">
-        <span className="bl-mkt-symbol">{item.symbol}</span>
-        <span className={`bl-mkt-chg ${up ? "up" : "down"}`}>{fmtPct(item.changePct)}</span>
-      </div>
-      <div className="bl-mkt-name" title={item.name}>{item.name}</div>
-      <div className="bl-mkt-price">{formatPrice(item.price)}</div>
+    <div className="bl-cot">
+      <span className="bl-cot-sym">{item.symbol}</span>
+      <span className="bl-cot-name" title={item.name}>{item.name}</span>
+      <span className="bl-cot-price">{locale === "en" ? "$" : "US$ "}{fmtNum(item.price, locale)}</span>
+      <span className={`bl-cot-chg ${up ? "up" : "down"}`}>{formatPct(item.changePct, locale, 2)}</span>
     </div>
   );
 }
 
-// kind: "etf" o "stock". Los grupos (y su orden) los define el server; cada
-// uno lleva título y una línea que dice qué los junta (sept 2026).
 export function MarketList({ kind, titleKey }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -50,40 +37,38 @@ export function MarketList({ kind, titleKey }) {
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const groups = (data?.groups || []).filter((g) => g.kind === kind);
+  const n = groups.reduce((s, g) => s + g.items.length, 0);
   const listRef = useScrollReveal(loading, kind);
+  const hora = data?.asof ? new Date(data.asof).toLocaleTimeString(locale === "en" ? "en-US" : "es-AR", { hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
     <div className="bl-layer-content">
-      <div className="bl-mkt-head">
-        <h2 className="bl-mkt-title">{t(titleKey)}</h2>
-      </div>
-
+      <h2 className="bl-sr-only">{t(titleKey)}</h2>
       {loading ? (
-        <div className="bl-mkt-grid" aria-hidden="true">
-          {Array.from({ length: kind === "stock" ? 12 : 6 }).map((_, i) => (
-            <div key={i} className="bl-mkt-card bl-mkt-card-skel" />
-          ))}
+        <div className="bl-cots" aria-hidden="true">
+          {Array.from({ length: kind === "stock" ? 10 : 6 }).map((_, i) => <div key={i} className="bl-cot bl-cot-skel" />)}
         </div>
       ) : error ? (
         <div className="bl-feed"><div className="bl-error" onClick={load} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && load()}>{t("markets.error")}</div></div>
       ) : groups.length === 0 ? (
         <div className="bl-empty">{t("markets.empty")}</div>
       ) : (
-        <div ref={listRef}>
-          {groups.map((g) => (
-            <div key={g.key} className="bl-mkt-group">
-              <h3 className="bl-mkt-group-label">{t(`markets.group.${g.key}`)}</h3>
-              <p className="bl-mkt-group-sub">{t(`markets.group.${g.key}.sub`)}</p>
-              <div className="bl-mkt-grid">
-                {g.items.map((item, idx) => <MarketCard key={item.symbol} item={item} idx={idx} />)}
-              </div>
-            </div>
-          ))}
-          <div className="bl-mkt-foot">
-            {data?.asof && <span>{t("markets.asof", { time: fmtTime(data.asof) })}</span>}
-            <span className="bl-mkt-disclaimer">{t("markets.disclaimer")}</span>
+        <>
+          <SectionHead n={n} word={t("markets.word")} />
+          <div className="bl-cots" ref={listRef}>
+            {groups.map((g) => (
+              <section key={g.key} className="bl-cot-group bl-reveal">
+                <h3 className="bl-day-header">
+                  <span className="bl-day-label">{t(`markets.group.${g.key}`)}</span>
+                  <span className="bl-day-date">{t(`markets.group.${g.key}.sub`)}</span>
+                  <span className="bl-day-line" aria-hidden="true" />
+                </h3>
+                {g.items.map((item) => <MarketRow key={item.symbol} item={item} locale={locale} />)}
+              </section>
+            ))}
           </div>
-        </div>
+          <p className="bl-lpie">CNBC · {t("markets.delayed")}{hora && <> · {t("markets.asof", { time: hora })}</>}</p>
+        </>
       )}
     </div>
   );

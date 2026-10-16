@@ -3,6 +3,8 @@ import { api, shared } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
 import { NEWS_CAT } from "../utils/btcHistory";
 import { T, fmtUsd, monthLabel } from "../utils/layer";
+import { FilterBar } from "./FilterBar";
+import { SectionHead } from "./SectionHead";
 
 // Sección Hitos (antes "Historia"): la curva de Bitcoin (2012 → hoy) con los momentos que la
 // movieron. Hechos verificados en data/btc-cycles.json (newsEvents), bandas de
@@ -72,20 +74,18 @@ export function BtcHistory() {
   const counts = events.reduce((a, e) => ((a[e.cat] = (a[e.cat] || 0) + 1), a), {});
 
   return (
+    <>
+    <FilterBar
+      items={["all", ...Object.keys(NEWS_CAT).filter((k) => counts[k])]}
+      active={cat}
+      onChange={setCat}
+      className="layer-filters"
+      labels={Object.fromEntries([["all", t("common.all")], ...Object.keys(NEWS_CAT).map((k) => [k, NEWS_CAT[k][locale === "en" ? "en" : "es"]])])}
+      counts={{ all: events.length, ...counts }}
+      dots={Object.fromEntries(Object.keys(NEWS_CAT).map((k) => [k, NEWS_CAT[k].color]))}
+    />
+    <SectionHead n={shown.length} word={t("history.word")} ctx={t("history.span")} />
     <section className="blh" aria-label={t("section.history")}>
-      <header className="blh-head">
-        <h2>{t("history.title")}</h2>
-        <p>{t("history.sub", { n: events.length })}</p>
-      </header>
-      <div className="blh-cats" role="group" aria-label={t("history.filter")}>
-        <button type="button" className={cat === "all" ? "is-on" : ""} onClick={() => setCat("all")}>{t("common.all")} <span>{events.length}</span></button>
-        {Object.keys(NEWS_CAT).filter((k) => counts[k]).map((k) => (
-          <button key={k} type="button" className={cat === k ? "is-on" : ""} onClick={() => setCat(k)} style={{ "--c": NEWS_CAT[k].color }}>
-            <i aria-hidden="true" />{NEWS_CAT[k][locale === "en" ? "en" : "es"]} <span>{counts[k]}</span>
-          </button>
-        ))}
-      </div>
-
       <div className="blh-chart" ref={boxRef}>
         {geo && (
           <svg viewBox={`0 0 ${w} ${geo.Hh}`} role="img" aria-label={t("history.chartAria")} style={{ height: geo.Hh }}>
@@ -156,5 +156,6 @@ export function BtcHistory() {
         ))}
       </ol>
     </section>
+    </>
   );
 }
