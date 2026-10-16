@@ -402,7 +402,7 @@ export const STRINGS = {
     "about.desc": "Dos mundos en un solo lugar: la escena de {electronic} de Buenos Aires y el mundo {crypto} y de los mercados.",
     "about.descElectronic": "música electrónica",
     "about.descCrypto": "cripto",
-    "about.bassText": "La agenda de la noche porteña día por día —clubes, fiestas, ciclos fijos y festivales—, las noticias de la escena y el finde en tu calendario.",
+    "about.bassText": "La agenda de la noche porteña día por día: clubes, fiestas, ciclos fijos y festivales. Las noticias de la escena y el finde en tu calendario.",
     "about.layerText": "Precios en vivo, noticias cripto y de finanzas, ETFs y acciones, los ciclos de Bitcoin, predicciones, eventos y los hitos cripto de Argentina.",
   },
   en: {
@@ -800,7 +800,7 @@ export const STRINGS = {
     "about.desc": "Two worlds in one place: Buenos Aires' {electronic} scene and the world of {crypto} and markets.",
     "about.descElectronic": "electronic music",
     "about.descCrypto": "crypto",
-    "about.bassText": "Buenos Aires' night, day by day — clubs, parties, weekly nights and festivals —, scene news and the weekend in your calendar.",
+    "about.bassText": "Buenos Aires' night, day by day: clubs, parties, weekly nights and festivals. Scene news and the weekend in your calendar.",
     "about.layerText": "Live prices, crypto and finance news, ETFs and stocks, Bitcoin cycles, predictions, events and Argentina's crypto milestones.",
   },
 };
