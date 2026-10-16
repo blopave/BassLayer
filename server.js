@@ -187,7 +187,7 @@ const API_PUBLIC_TTL = {
   "/api/btc-cycles": "btcCycles", "/api/dolar": "dolar",
   "/api/btc-network": "btcNetwork", "/api/crypto-events": "cryptoEvents",
   "/api/festivals": 60 * 60_000, "/api/artist": 24 * 60 * 60_000,
-  "/api/crypto-irl": 10 * 60_000, "/api/announcements": 4 * 60_000,
+  "/api/crypto-irl": 10 * 60_000,
   "/api/ciclos": 30 * 60_000,
 };
 app.use("/api", (req, res, next) => {

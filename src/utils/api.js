@@ -38,15 +38,6 @@ export const venueApi = {
   deleteEvent:   (id) => authFetch(`/api/venue/events/${id}`, { method: "DELETE" }),
 };
 
-export const projectApi = {
-  getProfile:        () => authFetch("/api/project/me"),
-  updateProfile:     (data) => authFetch("/api/project/me", { method: "PUT", body: JSON.stringify(data) }),
-  getAnnouncements:  () => authFetch("/api/project/announcements"),
-  createAnnouncement:(data) => authFetch("/api/project/announcements", { method: "POST", body: JSON.stringify(data) }),
-  updateAnnouncement:(id, data) => authFetch(`/api/project/announcements/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  deleteAnnouncement:(id) => authFetch(`/api/project/announcements/${id}`, { method: "DELETE" }),
-};
-
 export const adminApi = {
   getEvents:        (status = "pending") => authFetch(`/api/admin/events?status=${status}`),
   approve:          (id) => authFetch(`/api/admin/events/${id}/approve`, { method: "PUT" }),
@@ -54,10 +45,6 @@ export const adminApi = {
   feature:          (id) => authFetch(`/api/admin/events/${id}/feature`, { method: "PUT" }),
   getVenues:        () => authFetch("/api/admin/venues"),
   verifyVenue:      (id) => authFetch(`/api/admin/venues/${id}/verify`, { method: "PUT" }),
-  getAnnouncements: (status = "pending") => authFetch(`/api/admin/announcements?status=${status}`),
-  approveAnn:       (id) => authFetch(`/api/admin/announcements/${id}/approve`, { method: "PUT" }),
-  rejectAnn:        (id, note) => authFetch(`/api/admin/announcements/${id}/reject`, { method: "PUT", body: JSON.stringify({ note }) }),
-  pinAnn:           (id) => authFetch(`/api/admin/announcements/${id}/pin`, { method: "PUT" }),
   getBtcCycles:     () => authFetch("/api/admin/btc-cycles"),
   getMetricas:      () => authFetch("/api/admin/metricas"),
   updateBtcCycles:  (data) => authFetch("/api/admin/btc-cycles", { method: "PUT", body: JSON.stringify({ data }) }),
@@ -84,7 +71,6 @@ export const api = {
   // browser; al cambiar qué se considera match (sept 2026: verificación por
   // género, previews) se sube para no servir fichas viejas durante medio día.
   artist:    (name, locale = "es", family = "") => fetch(`/api/artist?name=${encodeURIComponent(name)}&locale=${encodeURIComponent(locale)}${family ? `&family=${encodeURIComponent(family)}` : ""}&v=${ARTIST_RULES_V}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-  announcements: () => fetch("/api/announcements").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   submitCryptoIrl: (data) => fetch("/api/crypto-irl", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

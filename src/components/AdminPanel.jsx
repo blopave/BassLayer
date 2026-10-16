@@ -2,14 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { adminApi } from "../utils/api";
 
 export function AdminPanel({ onBack }) {
-  const [tab, setTab] = useState("pending"); // pending | approved | rejected | venues | ann_pending | ann_approved | ann_rejected
+  const [tab, setTab] = useState("pending"); // pending | approved | rejected | venues | metricas | cycles
   const [events, setEvents] = useState([]);
   const [venues, setVenues] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectId, setRejectId] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [rejectType, setRejectType] = useState("event"); // "event" | "announcement"
   const [cyclesData, setCyclesData] = useState(null);
   const [cyclesSaving, setCyclesSaving] = useState(false);
   const [cyclesMsg, setCyclesMsg] = useState("");
@@ -33,15 +31,6 @@ export function AdminPanel({ onBack }) {
     setLoading(false);
   }, []);
 
-  const loadAnnouncements = useCallback(async (status) => {
-    setLoading(true);
-    try {
-      const data = await adminApi.getAnnouncements(status);
-      setAnnouncements(data);
-    } catch { setAnnouncements([]); }
-    setLoading(false);
-  }, []);
-
   const loadCycles = useCallback(async () => {
     setLoading(true);
     setCyclesMsg("");
@@ -62,9 +51,8 @@ export function AdminPanel({ onBack }) {
     if (tab === "metricas") loadMetricas();
     else if (tab === "venues") loadVenues();
     else if (tab === "cycles") loadCycles();
-    else if (tab.startsWith("ann_")) loadAnnouncements(tab.replace("ann_", ""));
     else loadEvents(tab);
-  }, [tab, loadEvents, loadVenues, loadAnnouncements, loadCycles, loadMetricas]);
+  }, [tab, loadEvents, loadVenues, loadCycles, loadMetricas]);
 
   function setCur(field, value) {
     setCyclesData((d) => ({ ...d, current: { ...d.current, [field]: value } }));
@@ -92,15 +80,9 @@ export function AdminPanel({ onBack }) {
   async function handleReject() {
     if (!rejectId) return;
     try {
-      if (rejectType === "announcement") {
-        await adminApi.rejectAnn(rejectId, rejectNote);
-        setRejectId(null); setRejectNote("");
-        loadAnnouncements(tab.replace("ann_", ""));
-      } else {
-        await adminApi.reject(rejectId, rejectNote);
-        setRejectId(null); setRejectNote("");
-        loadEvents(tab);
-      }
+      await adminApi.reject(rejectId, rejectNote);
+      setRejectId(null); setRejectNote("");
+      loadEvents(tab);
     } catch {
       setRejectId(null); setRejectNote("");
     }
@@ -115,18 +97,6 @@ export function AdminPanel({ onBack }) {
     try { await adminApi.verifyVenue(id); } catch { /* ignore */ }
     loadVenues();
   }
-
-  async function handleApproveAnn(id) {
-    try { await adminApi.approveAnn(id); } catch { /* ignore */ }
-    loadAnnouncements(tab.replace("ann_", ""));
-  }
-
-  async function handlePinAnn(id) {
-    try { await adminApi.pinAnn(id); } catch { /* ignore */ }
-    loadAnnouncements(tab.replace("ann_", ""));
-  }
-
-  const isAnnTab = tab.startsWith("ann_");
 
   return (
     <div className="bl-venue-dashboard">
@@ -144,19 +114,6 @@ export function AdminPanel({ onBack }) {
             onClick={() => setTab(t)}
           >
             {t === "pending" ? "Pendientes" : t === "approved" ? "Aprobados" : t === "rejected" ? "Rechazados" : "Venues"}
-          </button>
-        ))}
-      </div>
-
-      <div className="bl-admin-section-label">Anuncios (Exchanges)</div>
-      <div className="bl-admin-tabs">
-        {["ann_pending", "ann_approved", "ann_rejected"].map(t => (
-          <button
-            key={t}
-            className={`bl-admin-tab${tab === t ? " active" : ""}`}
-            onClick={() => setTab(t)}
-          >
-            {t === "ann_pending" ? "Pendientes" : t === "ann_approved" ? "Aprobados" : "Rechazados"}
           </button>
         ))}
       </div>
@@ -201,37 +158,6 @@ export function AdminPanel({ onBack }) {
             </div>
           ))}
           {venues.length === 0 && <div className="bl-venue-empty">No hay venues registrados.</div>}
-        </div>
-      ) : isAnnTab ? (
-        <div className="bl-venue-event-list">
-          {announcements.map(a => (
-            <div className="bl-venue-event-card" key={a.id}>
-              <div className="bl-venue-event-info">
-                <div className="bl-venue-event-name">
-                  {a.title}
-                  {a.pinned && <span className="bl-venue-featured-star">&#9733;</span>}
-                </div>
-                <div className="bl-venue-event-meta">
-                  {a.category} &middot; {new Date(a.created_at).toLocaleDateString("es-AR")}
-                  {a.profiles && <> &middot; por {a.profiles.display_name}</>}
-                </div>
-                {a.body && <div className="bl-venue-event-meta" style={{ opacity: 0.7 }}>{a.body.slice(0, 100)}{a.body.length > 100 ? "..." : ""}</div>}
-                {a.rejection_note && <div className="bl-venue-rejection">Motivo: {a.rejection_note}</div>}
-              </div>
-              <div className="bl-venue-event-actions">
-                {tab === "ann_pending" && (
-                  <>
-                    <button className="bl-venue-btn-sm bl-venue-btn-approve" onClick={() => handleApproveAnn(a.id)}>Aprobar</button>
-                    <button className="bl-venue-btn-sm bl-venue-btn-danger" onClick={() => { setRejectId(a.id); setRejectType("announcement"); }}>Rechazar</button>
-                  </>
-                )}
-                <button className="bl-venue-btn-sm" onClick={() => handlePinAnn(a.id)}>
-                  {a.pinned ? "Quitar pin" : "Destacar"}
-                </button>
-              </div>
-            </div>
-          ))}
-          {announcements.length === 0 && <div className="bl-venue-empty">No hay anuncios en esta categoría.</div>}
         </div>
       ) : tab === "cycles" ? (
         <div className="bl-cycles-editor">
@@ -303,7 +229,7 @@ export function AdminPanel({ onBack }) {
                 {tab === "pending" && (
                   <>
                     <button className="bl-venue-btn-sm bl-venue-btn-approve" onClick={() => handleApprove(ev.id)}>Aprobar</button>
-                    <button className="bl-venue-btn-sm bl-venue-btn-danger" onClick={() => { setRejectId(ev.id); setRejectType("event"); }}>Rechazar</button>
+                    <button className="bl-venue-btn-sm bl-venue-btn-danger" onClick={() => setRejectId(ev.id)}>Rechazar</button>
                   </>
                 )}
                 <button className="bl-venue-btn-sm" onClick={() => handleFeature(ev.id)}>
@@ -320,7 +246,7 @@ export function AdminPanel({ onBack }) {
       {rejectId && (
         <div className="bl-modal-overlay open" onClick={() => { setRejectId(null); setRejectNote(""); }}>
           <div className="bl-venue-auth-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
-            <div className="bl-venue-auth-title">Rechazar {rejectType === "announcement" ? "anuncio" : "evento"}</div>
+            <div className="bl-venue-auth-title">Rechazar evento</div>
             <textarea
               className="bl-venue-input bl-venue-textarea"
               value={rejectNote}

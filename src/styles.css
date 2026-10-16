@@ -3252,13 +3252,6 @@ select.bl-venue-input { cursor:pointer; }
   transition:opacity var(--duration-med);
 }
 .bl-venue-toggle-mode:hover { opacity:0.7; }
-.bl-venue-toggle-layer { color:var(--bl-accent-layer); }
-.bl-venue-btn-layer { background:var(--bl-accent-layer); color:var(--bl-900); }
-.bl-project-type {
-  font-family:var(--font-mono); font-size:var(--fs-10); letter-spacing:var(--tr-16); text-transform:uppercase;
-  color:var(--bl-accent-layer); border:1px solid var(--bl-accent-layer); border-radius:var(--r-4);
-  padding:2px 8px; margin-left:8px; vertical-align:middle;
-}
 
 .bl-venue-error {
   font-family:var(--font-body); font-size:var(--fs-12); color:#E55; background:rgba(200,50,50,0.1);

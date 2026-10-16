@@ -1,4 +1,4 @@
-// Venues, proyectos y anuncios: perfiles, eventos cargados por venues y moderación del admin.
+// Venues: perfiles, eventos cargados por venues y su moderación desde el admin.
 // Separado de server.js en oct 2026: lo que necesita del server llega en `d`.
 
 export function montarVenues(app, d) {
@@ -10,7 +10,7 @@ export function montarVenues(app, d) {
 
 // ── Venue Profile ──
 
-app.get(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
+app.get("/api/venue/me", requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -21,7 +21,7 @@ app.get(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
   res.json(data);
 });
 
-app.put(["/api/venue/me", "/api/project/me"], requireAuth, async (req, res) => {
+app.put("/api/venue/me", requireAuth, async (req, res) => {
   const allowed = [
     "display_name", "slug", "description", "venue_type", "address",
     "barrio", "city", "capacity", "logo_url", "cover_url",
@@ -281,173 +281,4 @@ app.put("/api/admin/venues/:id/verify", requireAuth, requireAdmin, async (req, r
   res.json(data);
 });
 
-// ═══════════════════════════════════════════════════════
-//  Announcements — crypto project news in Layer feed
-// ═══════════════════════════════════════════════════════
-
-// ── Public: approved announcements ──
-
-app.get("/api/announcements", async (req, res) => {
-  const { data, error } = await supabase
-    .from("announcements")
-    .select("*, profiles(display_name, slug, logo_url, verified, crypto_type)")
-    .eq("status", "approved")
-    .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
-});
-
-// ── Authenticated: own announcements ──
-
-app.get("/api/project/announcements", requireAuth, async (req, res) => {
-  const { data, error } = await supabase
-    .from("announcements")
-    .select("*")
-    .eq("profile_id", req.user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
-});
-
-app.post("/api/project/announcements", requireAuth, async (req, res) => {
-  const { title, body, category, url, image_url, status } = req.body;
-
-  if (!title || !category) {
-    return res.status(400).json({ error: "title y category son requeridos" });
-  }
-
-  const announcementStatus = status === "draft" ? "draft" : "pending";
-
-  const { data, error } = await supabase
-    .from("announcements")
-    .insert({
-      profile_id: req.user.id,
-      title: String(title).slice(0, 120),
-      body: body ? String(body).slice(0, 1000) : null,
-      category,
-      url: url || null,
-      image_url: image_url || null,
-      status: announcementStatus,
-    })
-    .select()
-    .single();
-
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json(data);
-});
-
-app.put("/api/project/announcements/:id", requireAuth, async (req, res) => {
-  const { data: existing } = await supabase
-    .from("announcements")
-    .select("profile_id, status")
-    .eq("id", req.params.id)
-    .single();
-
-  if (!existing || existing.profile_id !== req.user.id) {
-    return res.status(404).json({ error: "Anuncio no encontrado" });
-  }
-  if (!["draft", "rejected"].includes(existing.status)) {
-    return res.status(400).json({ error: "Solo se pueden editar borradores o rechazados" });
-  }
-
-  const allowed = ["title", "body", "category", "url", "image_url", "status"];
-  const updates = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
-  }
-  if (updates.status === "approved") delete updates.status;
-
-  const { data, error } = await supabase
-    .from("announcements")
-    .update(updates)
-    .eq("id", req.params.id)
-    .eq("profile_id", req.user.id)
-    .select()
-    .single();
-
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
-
-app.delete("/api/project/announcements/:id", requireAuth, async (req, res) => {
-  const { error } = await supabase
-    .from("announcements")
-    .delete()
-    .eq("id", req.params.id)
-    .eq("profile_id", req.user.id);
-
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ ok: true });
-});
-
-// ── Admin moderation for announcements ──
-
-app.get("/api/admin/announcements", requireAuth, requireAdmin, async (req, res) => {
-  const status = req.query.status || "pending";
-  const { data, error } = await supabase
-    .from("announcements")
-    .select("*, profiles(display_name, slug, logo_url, verified, crypto_type)")
-    .eq("status", status)
-    .order("created_at", { ascending: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
-});
-
-app.put("/api/admin/announcements/:id/approve", requireAuth, requireAdmin, async (req, res) => {
-  const { data, error } = await supabase
-    .from("announcements")
-    .update({ status: "approved", rejection_note: null })
-    .eq("id", req.params.id)
-    .select()
-    .single();
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  await supabase.from("admin_log").insert({
-    admin_id: req.user.id, action: "approve", target_type: "announcement", target_id: req.params.id,
-  });
-
-  res.json(data);
-});
-
-app.put("/api/admin/announcements/:id/reject", requireAuth, requireAdmin, async (req, res) => {
-  const note = req.body.note || "";
-  const { data, error } = await supabase
-    .from("announcements")
-    .update({ status: "rejected", rejection_note: note })
-    .eq("id", req.params.id)
-    .select()
-    .single();
-
-  if (error) return res.status(400).json({ error: error.message });
-
-  await supabase.from("admin_log").insert({
-    admin_id: req.user.id, action: "reject", target_type: "announcement", target_id: req.params.id, note,
-  });
-
-  res.json(data);
-});
-
-app.put("/api/admin/announcements/:id/pin", requireAuth, requireAdmin, async (req, res) => {
-  const { data: current } = await supabase
-    .from("announcements")
-    .select("pinned")
-    .eq("id", req.params.id)
-    .single();
-
-  const { data, error } = await supabase
-    .from("announcements")
-    .update({ pinned: !current?.pinned })
-    .eq("id", req.params.id)
-    .select()
-    .single();
-
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
-});
 }

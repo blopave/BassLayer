@@ -33,8 +33,6 @@ const EventModal = lazyNamed(() => import("./components/EventModal"), "EventModa
 const VenueAuth = lazyNamed(() => import("./components/VenueAuth"), "VenueAuth");
 const VenueDashboard = lazyNamed(() => import("./components/VenueDashboard"), "VenueDashboard");
 const AdminPanel = lazyNamed(() => import("./components/AdminPanel"), "AdminPanel");
-const ProjectAuth = lazyNamed(() => import("./components/ProjectAuth"), "ProjectAuth");
-const ProjectDashboard = lazyNamed(() => import("./components/ProjectDashboard"), "ProjectDashboard");
 
 // Atributos del panel fuera de pantalla: sin foco ni presencia en el árbol accesible.
 const HIDDEN_PROPS = { inert: "", "aria-hidden": "true" };
@@ -146,7 +144,6 @@ export default function App() {
   const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile y secciones)
   const [venueUser, setVenueUser] = useState(null);
   const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
-  const [projectView, setProjectView] = useState(null); // null | "auth" | "dashboard"
   const [authReady, setAuthReady] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
@@ -158,7 +155,7 @@ export default function App() {
   // JS inicial) y lo usa una fracción mínima de visitas: se importa bajo demanda
   // cuando hay una sesión guardada, se entra por /admin o se abre un panel.
   const [authWanted, setAuthWanted] = useState(() => !!storage.get("bl-token") || window.location.pathname === "/admin");
-  useEffect(() => { if (venueView || projectView) setAuthWanted(true); }, [venueView, projectView]);
+  useEffect(() => { if (venueView) setAuthWanted(true); }, [venueView]);
   useEffect(() => {
     if (!authWanted) { setAuthReady(true); return; }
     let subscription = null;
@@ -891,7 +888,6 @@ export default function App() {
       // Don't trigger shortcuts when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       const key = e.key.toLowerCase();
-      if (key === "escape" && projectView) { setProjectView(null); return; }
       if (key === "escape" && venueView) { setVenueView(null); return; }
       if (key === "escape" && showMenu) { setShowMenu(false); return; }
       if (key === "escape" && utilOpen) { setUtilOpen(false); return; }
@@ -906,7 +902,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, utilOpen, venueView, projectView]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, utilOpen, venueView]);
 
   // Close menu / collapsed util-bar on outside click
   useEffect(() => {
@@ -1221,30 +1217,6 @@ export default function App() {
             )}
             {venueView === "admin" && (
               <AdminPanel onBack={() => setVenueView(null)} />
-            )}
-            </Suspense>
-          </div>
-        </div>
-      )}
-
-      {/* PROJECT OVERLAY */}
-      {projectView && (
-        <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setProjectView(null); }}>
-          <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
-            <button className="bl-modal-close" onClick={() => setProjectView(null)} aria-label="Cerrar">&times;</button>
-            <Suspense fallback={null}>
-            {projectView === "auth" && (
-              <ProjectAuth
-                onAuth={(user) => { setVenueUser(user); setProjectView("dashboard"); }}
-                onBack={() => setProjectView(null)}
-              />
-            )}
-            {projectView === "dashboard" && (
-              <ProjectDashboard
-                user={venueUser}
-                onLogout={() => { setVenueUser(null); setProjectView(null); }}
-                onBack={() => setProjectView(null)}
-              />
             )}
             </Suspense>
           </div>
