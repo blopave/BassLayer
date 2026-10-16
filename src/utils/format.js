@@ -34,3 +34,10 @@ export function cleanVenue(v) {
 
 // Variación con signo y coma decimal: +2,3% / −7,4% (la semana, su línea en la Agenda).
 export const formatPct = (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1).replace(".", ",")}%`;
+
+// Edad de una nota a partir del "time" del feed ("12m", "3h", "2d").
+export const minsDeNota = (time) => { const n = parseInt(time, 10) || 0; return /m$/.test(time) ? n : /h$/.test(time) ? n * 60 : /d$/.test(time) ? n * 1440 : 0; };
+export function haceCuanto(time, t) {
+  const m = minsDeNota(time);
+  return m < 60 ? t("news.agoMin", { n: Math.max(1, m) }) : m < 1440 ? t("news.agoH", { n: Math.round(m / 60) }) : t("news.agoD", { n: Math.round(m / 1440) });
+}

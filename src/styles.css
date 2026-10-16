@@ -478,7 +478,10 @@
 }
 
 /* ── World-specific Empty/Error States ── */
-.bl-root[data-section="bass"] .bl-empty { font-family:var(--font-body); font-style:italic; }
+.bl-root[data-section="bass"] .bl-empty { font-family:var(--font-body); font-size:var(--fs-15); color:var(--bl-text-sec); padding:32px 0; display:flex; flex-direction:column; align-items:center; gap:14px; }
+/* Salida del estado vacío: texto, como los filtros (oct 2026). */
+.bl-empty-action { background:none; border:0; padding:4px 0; cursor:pointer; font:600 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
+.bl-empty-action:hover, .bl-empty-action:focus-visible { color:var(--bl-text); outline:none; }
 .bl-root[data-section="layer"] .bl-empty { font-family:var(--font-mono); font-style:normal; letter-spacing:var(--tr-04); }
 .bl-root[data-section="layer"] .bl-error { letter-spacing:var(--tr-1); }
 .bl-root[data-section="layer"] .bl-error::before { content:'> '; color:var(--bl-accent-layer); }
@@ -1241,7 +1244,8 @@
    cortaba títulos, line-ups y caras. Mismo recurso que la ficha del evento. */
 .bl-thumb-contain { position:relative; overflow:hidden; }
 .bl-thumb-contain .bl-thumb-blur { position:absolute; inset:-20px; background-size:cover; background-position:center; filter:blur(22px) brightness(.55) saturate(1.1); }
-.bl-thumb-contain .bl-thumb-img { position:relative; z-index:1; object-fit:contain; }
+/* La imagen entera, centrada sobre su copia desenfocada (oct 2026: quedaba pegada arriba con un bloque liso abajo). */
+.bl-thumb-contain .bl-thumb-img { position:absolute; inset:0; z-index:1; width:100%; height:100%; object-fit:contain; object-position:center; }
 
 /* ── Ritmo del feed: cartel / fila ──
    El primero de cada día (y los featured) abre como cartel a escala grande;
@@ -4007,63 +4011,19 @@ select.bl-venue-input { cursor:pointer; }
   .bl-news-modal-desc { font-size:var(--fs-14); }
 }
 
-/* ═══════════════════════════════════════════
-   Bass — end of set marker
-   ═══════════════════════════════════════════ */
-
+/* El pie de la Agenda (oct 2026): un filete y el link para suscribirse; sin
+   colofón ("end of set" y "EOF" eran decoración, Pablo los sacó). */
 .bl-end-of-set {
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:16px;
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-16);
-  text-transform:lowercase;
-  color:var(--bl-text-ter);
-  text-align:center;
-  padding:32px 0 24px;
-  opacity:0.55;
+  display:flex; justify-content:center;
+  margin-top:40px; padding:24px 0 8px;
+  border-top:1px solid var(--bl-border-sub);
 }
 .bl-end-of-set-cal {
-  letter-spacing:var(--tr-16);
-  text-transform:lowercase;
-  color:var(--bl-text-ter);
-  text-decoration:none;
+  font-family:var(--font-mono); font-size:var(--fs-11); letter-spacing:var(--tr-16); text-transform:uppercase;
+  color:var(--bl-text-sec); text-decoration:none;
   transition:color .3s var(--ease-out-expo);
 }
-.bl-end-of-set:has(.bl-end-of-set-cal:hover) { opacity:1; }
-.bl-end-of-set-cal:hover, .bl-end-of-set-cal:focus-visible {
-  color:var(--bl-accent-bass);
-  outline:none;
-}
-
-/* ═══════════════════════════════════════════
-   Layer — EOF marker with blinking cursor
-   ═══════════════════════════════════════════ */
-
-.bl-end-of-feed {
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:12px;
-  padding:36px 0 28px;
-  font-family:var(--font-mono);
-  font-size:var(--fs-11);
-  letter-spacing:var(--tr-16);
-  color:var(--bl-text-ter);
-  opacity:0.7;
-  user-select:none;
-  transition:opacity .3s var(--ease-out-expo);
-}
-.bl-end-cursor {
-  display:inline-block;
-  width:9px; height:2px;
-  background:var(--bl-accent-layer);
-  vertical-align:baseline;
-  animation:bl-blink 1s step-end infinite;
-  box-shadow:0 0 6px rgba(108,184,200,0.35);
-}
+.bl-end-of-set-cal:hover, .bl-end-of-set-cal:focus-visible { color:var(--bl-accent-bass); outline:none; }
 
 /* ═══════════════════════════════════════════
    Bass — Festivales: grid + cards + modal
@@ -5147,7 +5107,9 @@ span.bl-em-cartel-more { color:var(--bl-text-sec); cursor:default; }
 .bl-em-afiche-lineup span { font-family:var(--font-sans); font-weight:800; font-size:var(--fs-34); letter-spacing:var(--tr-n03); line-height:1.02; color:var(--bl-text); overflow-wrap:anywhere; }
 .bl-em-afiche-lineup span + span { font-size:var(--fs-22); color:var(--bl-text-sec); }
 .bl-em-afiche-venue { position:relative; font-family:var(--font-mono); font-size:var(--fs-12); letter-spacing:var(--tr-16); text-transform:uppercase; color:var(--bl-accent-bass); }
-@media (max-width:768px) { .bl-em-afiche { padding:56px 16px 16px; } .bl-em-afiche-lineup span { font-size:var(--fs-28); } }
+/* Mobile: el afiche es una franja baja; los nombres ya están en el título y
+   en el line-up (oct 2026: quedaban pisados sobre la onda, tres veces). */
+@media (max-width:768px) { .bl-em-afiche { padding:16px; } .bl-em-afiche-lineup { display:none; } .bl-em-afiche-onda { top:8%; height:76%; } }
 /* Agenda con el contenido primero (auditoría B4): filtros en una fila; De gira y El finde dentro de la lista. */
 .bl-agenda-filtros { display:flex; align-items:center; gap:16px; }
 .bl-agenda-filtros > .bl-filters { flex:none; margin:0; border:0; }

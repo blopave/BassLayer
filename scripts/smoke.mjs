@@ -163,7 +163,8 @@ async function run(vp) {
     if (dobleArroba.length) fail(vp.name, "ticker", `venue con @ en el ticker: ${dobleArroba[0]}`);
     // Un solo número (oct 2026): la Agenda de la onda cuenta lo mismo que la home.
     const porVenir = Number(((await page.locator(".btk-cue", { hasText: /Agenda|Listings/ }).first().locator(".btk-sub").textContent().catch(() => "")).match(/(\d+)\D*$/) || [])[1]);
-    if (amba > 0 && porVenir !== amba) fail(vp.name, "índice", `la onda dice ${porVenir} por venir y en Buenos Aires hay ${amba}`);
+    // Los ciclos fijos suman encima de los eventos (como en la Agenda; la igualdad exacta la mide el paso "conteos").
+    if (amba > 0 && (porVenir < amba || porVenir > amba + 25)) fail(vp.name, "índice", `la onda dice ${porVenir} por venir y en Buenos Aires hay ${amba} eventos`);
     const cueNames = await page.locator(".bl-btrack .btk-cue .btk-name").allTextContents();
     if (!cueNames.some((x) => /Agenda|Listings/.test(x)) || cueNames.length < 2 || cueNames.length > 3) fail(vp.name, "índice", `cues del índice: ${cueNames.join(" · ") || "ninguno"} (esperaba Noticias · Agenda · Festivales)`);
     if (await page.locator(".bl-bass-sections").count()) fail(vp.name, "índice", "la portada de Bass muestra pestañas: el track es el único índice");
@@ -1174,6 +1175,29 @@ async function runApp() {
     await pg.waitForFunction(() => /[1-9]\d* por venir/.test(document.body.innerText), null, { timeout: 20_000 }).catch(() => {});
     const porVenir = await pg.evaluate(() => (document.body.innerText.match(/(\d+) por venir/) || [])[1]);
     if (!porVenir || porVenir === "0") F("links directos", `después de un link a un festival la portada dice "${porVenir ?? "?"} por venir"`);
+    await c.close();
+
+    // La portada y la Agenda cuentan lo mismo (oct 2026: 158 contra 165, por los ciclos fijos).
+    [c, pg] = await ctx({ viewport: { width: 1440, height: 900 } });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');localStorage.setItem('bl-app-no','1');");
+    await pg.goto(BASE + "/agenda", { waitUntil: "domcontentloaded" });
+    await pg.locator(".bl-feed-head-n").first().waitFor({ timeout: 20_000 }).catch(() => {});
+    await pg.waitForTimeout(1500);
+    const enAgenda = (await pg.locator(".bl-feed-head-n").first().textContent().catch(() => ""))?.trim();
+    await pg.goBack();
+    await pg.waitForFunction(() => /\d+ por venir/.test(document.body.textContent), null, { timeout: 15_000 }).catch(() => {});
+    const enPortada = await pg.evaluate(() => (document.body.textContent.match(/(\d+) por venir/) || [])[1]);
+    if (enAgenda && enPortada && enAgenda !== enPortada) F("conteos", `la portada dice ${enPortada} por venir y la Agenda abre con ${enAgenda}`);
+    // Búsqueda sin resultados: la apertura dice 0 y hay una salida que la borra.
+    await pg.goto(BASE + "/agenda", { waitUntil: "domcontentloaded" });
+    const buscador = pg.locator('input[aria-label="Artista, club o fiesta"]').first();
+    await buscador.fill("zzqxw-no-existe", { timeout: 20_000 }).catch(() => {});
+    await pg.waitForTimeout(800);
+    const cero = (await pg.locator(".bl-feed-head-n").first().textContent().catch(() => ""))?.trim();
+    if (cero !== "0") F("búsqueda", `sin resultados la apertura no dice 0 (dice "${cero}")`);
+    await pg.locator(".bl-empty-action").first().click({ timeout: 3000 }).catch(() => F("búsqueda", "sin resultados no hay forma de borrar la búsqueda"));
+    await pg.waitForTimeout(600);
+    if ((await pg.locator(".bl-ev-wall .bl-ev-item").count()) === 0) F("búsqueda", "borrar la búsqueda no vuelve a mostrar la agenda");
     await c.close();
 
     // Sin red adentro de la app: una línea lo dice (oct 2026, Pablo: "no me muestra el aviso"); al volver, se va.

@@ -150,6 +150,7 @@ export const STRINGS = {
     "tour.routeAria": "Ruta de la gira",
     "fest.inBA": "En Buenos Aires",
     "day.yesterday": "Ayer",
+    "feed.clearSearch": "Borrar búsqueda",
     "meta.tabBass": "Música electrónica en Buenos Aires | BassLayer",
     "meta.tabLayer": "Cripto y mercados en español | BassLayer",
     "aria.panelBass": "Bass: agenda electrónica",
@@ -246,8 +247,7 @@ export const STRINGS = {
     "weekend.eventSingle": "evento",
     "weekend.eventPlural": "eventos",
 
-    "feed.empty.search": "Nada matchea con",
-    "feed.empty.searchHint": "Probá otro nombre.",
+    "feed.empty.search": "Ningún evento con",
     "feed.empty.weekend": "Nada cocinándose este finde. Quitá el filtro y mirá la semana entera.",
     "feed.empty.filter": "No hay nada en este estilo esta noche. Probá otro o volvé el viernes.",
     "feed.empty.todayNone": "Nada hoy — próximamente sin fecha confirmada.",
@@ -257,8 +257,6 @@ export const STRINGS = {
     "feed.empty.viewAll": "Ver todo el feed",
     "feed.empty.bassNews": "Sin notas frescas. Los medios locales se toman su tiempo.",
     "feed.bassNewsLoadError": "No pude cargar las noticias. Tocá para reintentar.",
-    "feed.endOfSet": "—— end of set ——",
-    "feed.endOfFeed": "--- EOF ---",
     "feed.empty.festivals": "Sin festivales en esta región. Probá con otra o saquemos el filtro.",
     "cirl.subtitle": "Eventos, meetups y cursos cripto",
     "cirl.add": "+ Agregar",
@@ -316,8 +314,6 @@ export const STRINGS = {
     "feed.festivalsLoadError": "No pude cargar los festivales. Tocá para reintentar.",
 
     "news.summary": "Resumen",
-    "news.noSummary": "Esta fuente no publica resumen. Tocá el enlace para leer la nota completa.",
-    "news.source": "Fuente",
     "news.readFull": "Leer la nota completa",
 
     "artist.autoTranslated": "Traducción automática",
@@ -385,6 +381,8 @@ export const STRINGS = {
     "home.layerAria": "Layer — cripto, finanzas y noticias",
 
     "util.back": "Volver al inicio",
+    "util.home": "inicio",
+    "util.about": "acerca de",
     "util.aboutBL": "Acerca de BassLayer",
     "util.menuOpen": "Abrir menú",
     "util.menuClose": "Cerrar menú",
@@ -550,6 +548,7 @@ export const STRINGS = {
     "tour.routeAria": "Tour route",
     "fest.inBA": "In Buenos Aires",
     "day.yesterday": "Yesterday",
+    "feed.clearSearch": "Clear search",
     "meta.tabBass": "Electronic music in Buenos Aires | BassLayer",
     "meta.tabLayer": "Crypto and markets | BassLayer",
     "aria.panelBass": "Bass: electronic agenda",
@@ -646,8 +645,7 @@ export const STRINGS = {
     "weekend.eventSingle": "event",
     "weekend.eventPlural": "events",
 
-    "feed.empty.search": "Nothing matches",
-    "feed.empty.searchHint": "Try another name.",
+    "feed.empty.search": "No events matching",
     "feed.empty.weekend": "Nothing cooking this weekend. Drop the filter and see the full week.",
     "feed.empty.filter": "No events in this genre tonight. Try another style or come back Friday.",
     "feed.empty.todayNone": "Nothing today — upcoming, date TBA.",
@@ -657,8 +655,6 @@ export const STRINGS = {
     "feed.empty.viewAll": "View full feed",
     "feed.empty.bassNews": "No fresh notes. Local outlets publish at their own pace.",
     "feed.bassNewsLoadError": "Couldn't load the news. Tap to retry.",
-    "feed.endOfSet": "—— end of set ——",
-    "feed.endOfFeed": "--- EOF ---",
     "feed.empty.festivals": "No festivals in this region. Try another or drop the filter.",
     "cirl.subtitle": "Crypto events, meetups & courses",
     "cirl.add": "+ Add",
@@ -716,8 +712,6 @@ export const STRINGS = {
     "feed.festivalsLoadError": "Couldn't load festivals. Tap to retry.",
 
     "news.summary": "Summary",
-    "news.noSummary": "This source doesn't publish a summary. Tap the link to read the full article.",
-    "news.source": "Source",
     "news.readFull": "Read full article",
 
     "artist.autoTranslated": "Machine-translated",
@@ -785,6 +779,8 @@ export const STRINGS = {
     "home.layerAria": "Layer — crypto, finance & news",
 
     "util.back": "Back to home",
+    "util.home": "home",
+    "util.about": "about",
     "util.aboutBL": "About BassLayer",
     "util.menuOpen": "Open menu",
     "util.menuClose": "Close menu",

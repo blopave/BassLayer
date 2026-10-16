@@ -18,7 +18,7 @@ import { DAYS_LONG, MONTHS_ABBR, monthAbbrLocale, monthLongLocale, getEventDate,
 import { useSavedEvents } from "../hooks/useSavedEvents";
 import { eventSlug } from "../utils/slug";
 import { seccionDeRuta, rutaDeSeccion, esRutaDeBass, navegar } from "../utils/rutas";
-import { noOrphanSep } from "../utils/format";
+import { noOrphanSep, minsDeNota, haceCuanto } from "../utils/format";
 
 // Señalador de guardado — vive en cada card y en el modal. Para el feed con
 // muchas filas conviene un componente chico: solo re-renderiza él al togglear.
@@ -175,11 +175,11 @@ function DayRail({ months, active, onPick, t }) {
   );
 }
 
+// El pie de la Agenda (oct 2026): sin colofón, solo lo útil — suscribirse.
 function EndOfSet() {
   const { t } = useLocale();
   return (
     <div className="bl-end-of-set">
-      <div aria-hidden="true">{t("feed.endOfSet")}</div>
       {/* webcal: suscripción viva (iOS/macOS la abren en Calendario; Google
           Calendar la acepta como "agregar por URL"). Nadie más lo ofrece
           en la escena BA. */}
@@ -437,6 +437,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
     return out;
   }, [ciclos, search, savedOnly, cityFilter, when]);
   const nCiclos = filasCiclo.reduce((n, x) => n + x.filas.length, 0);
+  // Para la portada: los de las 3 semanas y los de hoy (el primer día de la lista, si es hoy).
+  const nCiclosPortada = when ? 0 : nCiclos;
+  const ciclosHoy = filasCiclo[0] && filasCiclo[0].d.toDateString() === todayInBA().toDateString() ? filasCiclo[0].filas.length : 0;
   const ciclosEnLista = filter !== "festival" ? filasCiclo : SIN_CICLOS;
   const nVisibles = filtered.length + (ciclosEnLista.length ? nCiclos : 0);
   const conteos = useMemo(() => (nCiclos ? { ...familyCounts, all: (familyCounts.all || 0) + nCiclos, club: (familyCounts.club || 0) + nCiclos } : familyCounts), [familyCounts, nCiclos]);
@@ -559,7 +562,12 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       return <>{t("feed.empty.saved")}</>;
     }
     if (search) {
-      return <>{t("feed.empty.search")} &ldquo;{search}&rdquo;. {t("feed.empty.searchHint")}</>;
+      return (
+        <>
+          {t("feed.empty.search")} &ldquo;{search}&rdquo;.
+          <button type="button" className="bl-empty-action" onClick={() => onSearch?.("")}>{t("feed.clearSearch")}</button>
+        </>
+      );
     }
     if (hoyOnly) {
       // Con el chip "Hoy" activo pero sin eventos: mostramos la próxima fecha
@@ -731,7 +739,7 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
       ) : section === "track" ? (
         /* Portada: la onda con las secciones hechas de onda (BassTrack). Mientras
            cargan los eventos se dibuja igual y reserva su alto (CLS). */
-        <BassTrack events={regionEvents} todayKey={BA_YMD_FORMAT.format(nightNow())} onCue={setSection} />
+        <BassTrack events={regionEvents} todayKey={BA_YMD_FORMAT.format(nightNow())} onCue={setSection} ciclos={nCiclosPortada} ciclosHoy={ciclosHoy} />
       ) : (
         <>
 
@@ -801,7 +809,9 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 
       {/* Header editorial del listado. Con savedOnly activo se muestra aunque
           haya 0 resultados: el toggle tiene que seguir visible para salir. */}
-      {!loading && !error && (nVisibles > 0 || savedOnly) && (
+      {/* La apertura va siempre, también en 0 (oct 2026: sin ella, una búsqueda
+          sin resultados era una línea suelta). */}
+      {!loading && !error && (
         <div className="bl-feed-head">
           <span className="bl-feed-head-n">{nVisibles}</span>
           <span className="bl-feed-head-ctx">{t("feed.eventsWord")}{cityFilter !== "Todas" ? ` · ${cityFilter}` : ""}</span>
@@ -921,11 +931,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
 // carta — el medio sobre la foto donde la Agenda pone la hora; abajo, el
 // titular y "tema · cuándo". En mobile la primera de cada día va a lo ancho.
 const NEWS_TAGS = ["Scene", "Music", "Clubs", "Tour", "Mix", "Festival", "Local"];
-const minsDeNota = (time) => { const n = parseInt(time, 10) || 0; return /m$/.test(time) ? n : /h$/.test(time) ? n * 60 : /d$/.test(time) ? n * 1440 : 0; };
-function haceCuanto(time, t) {
-  const m = minsDeNota(time);
-  return m < 60 ? t("news.agoMin", { n: Math.max(1, m) }) : m < 1440 ? t("news.agoH", { n: Math.round(m / 60) }) : t("news.agoD", { n: Math.round(m / 1440) });
-}
 
 function BassNewsList({ news, loading, error, onRetry, onSelect }) {
   const { t, locale } = useLocale();
@@ -988,7 +993,6 @@ function BassNewsList({ news, loading, error, onRetry, onSelect }) {
             <BassNewsItem key={`${item.source_slug || item.source}-${item.url || item.title}`} item={item} idx={idx++} lead={i === 0} onSelect={onSelect} labels={labels} />
           )),
         ])}
-        <EndOfSet />
       </div>
     </>
   );
@@ -1082,7 +1086,6 @@ function FestivalsList({ festivals, loading, error, onRetry, onSelect }) {
             )),
           ];
         })}
-        <EndOfSet />
       </div>
     </>
   );

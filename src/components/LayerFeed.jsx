@@ -162,10 +162,6 @@ export function LayerFeed({ news, loading, error, onRetry, filter, onFilter, onS
                     onSelect={onSelectNews}
                   />
                 ))}
-                <div className="bl-end-of-feed">
-                  <span aria-hidden="true">{t("feed.endOfFeed")}</span>
-                  <span className="bl-end-cursor" aria-hidden="true" />
-                </div>
               </div>}
         </div>
       )}

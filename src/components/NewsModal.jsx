@@ -3,6 +3,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import { useLocale } from "../hooks/useLocale";
 import { TranslateToggle, useTranslatedTitle } from "./TranslatedTitle";
 import { imgUrl } from "../utils/img";
+import { haceCuanto } from "../utils/format";
 
 // Limpia el resumen para que no repita el título (común en RSS) y descarta
 // si lo único que queda es el mismo título o un fragmento muy corto.
@@ -40,6 +41,11 @@ export function NewsModal({ item, onClose }) {
   if (!item) return null;
 
   const hasImage = item.image && !imageFailed;
+  const tema = item.tag ? (t(`newsTag.${item.tag}`) !== `newsTag.${item.tag}` ? t(`newsTag.${item.tag}`) : item.tag) : "";
+  // El resumen viene en el idioma del medio: si no es el de la página, no se
+  // muestra a medias (el titular sí está traducido). El link lleva a la nota.
+  const enOtroIdioma = item.lang && item.lang !== locale;
+  const resumen = enOtroIdioma ? "" : cleanSummary(item.description, item.title);
 
   return (
     <div
@@ -57,7 +63,7 @@ export function NewsModal({ item, onClose }) {
           {hasImage ? (
             <img
               className="bl-news-modal-image"
-              src={imageDirect ? item.image : imgUrl(item.image, 320)}
+              src={imageDirect ? item.image : imgUrl(item.image, 480)}
               alt={item.title}
               loading="lazy"
               onError={() => { if (imageDirect) setImageFailed(true); else setImageDirect(true); }}
@@ -74,20 +80,21 @@ export function NewsModal({ item, onClose }) {
         </div>
 
         <div className="bl-news-modal-body">
+          {/* Una sola línea (oct 2026): el medio, el tema y cuándo — antes el medio
+              salía tres veces y el tema y la región en inglés ("MUSIC", "INTL"). */}
           <div className="bl-news-modal-meta">
-            <span className="bl-news-modal-source">{item.source}</span>
-            {item.region && <span className={`bl-bass-news-region bl-bass-news-region-${item.region.toLowerCase()}`}>{item.region}</span>}
-            {item.tag && <span className="bl-news-modal-tag">{item.tag}</span>}
-            {item.time && <span className="bl-news-modal-time">{item.time}</span>}
+            {[item.source, tema, item.time && haceCuanto(item.time, t)].filter(Boolean).join(" · ")}
           </div>
 
           <h2 className="bl-news-modal-title" lang={tr.lang}>{tr.title}</h2>
           <TranslateToggle tr={tr} className="bl-finance-tr" />
 
-          <div className="bl-news-modal-section">
-            <div className="bl-news-modal-label">{t("news.summary")}</div>
-            <p className="bl-news-modal-desc">{cleanSummary(item.description, item.title) || t("news.noSummary")}</p>
-          </div>
+          {resumen && (
+            <div className="bl-news-modal-section">
+              <div className="bl-news-modal-label">{t("news.summary")}</div>
+              <p className="bl-news-modal-desc" lang={item.lang || undefined}>{resumen}</p>
+            </div>
+          )}
 
           <div className="bl-news-modal-actions">
             {item.url && (
@@ -102,9 +109,6 @@ export function NewsModal({ item, onClose }) {
             )}
           </div>
 
-          <div className="bl-news-modal-foot">
-            {t("news.source")}: <span className="bl-news-modal-foot-source">{item.source}</span>
-          </div>
         </div>
       </div>
     </div>

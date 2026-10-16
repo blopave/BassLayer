@@ -1125,11 +1125,11 @@ export default function App() {
         {view === "sections" && (
           <button className="bl-util-toggle bl-util-home" onClick={navigateHome} aria-label={t("util.back")}>
             <span className="bl-util-arrow" aria-hidden="true">&larr;</span>
-            <span>home</span>
+            <span>{t("util.home")}</span>
           </button>
         )}
         <button className="bl-util-toggle bl-util-about" onClick={() => setShowAbout(true)} aria-label={t("util.aboutBL")}>
-          about
+          {t("util.about")}
         </button>
         {app.modo && (
           <button className="bl-util-toggle bl-util-app" onClick={() => { metrica("menu_app"); if (app.modo === "aviso") app.instalar(); else setAppPedida(true); }} aria-label={t("app.menuAria")}>

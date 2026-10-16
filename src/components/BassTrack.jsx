@@ -74,7 +74,7 @@ const textWidth = (s, font) => { measurer = measurer || document.createElement("
 // `todayKey`: el día en Buenos Aires (YYYY-MM-DD). Un string, no un Date: la
 // memo se estabiliza por valor y pasada la medianoche se actualiza sola.
 // `onCue(section)` recibe la sección de BassFeed ("noticias" | "eventos" | "festivales").
-export function BassTrack({ events, todayKey, onCue }) {
+export function BassTrack({ events, todayKey, onCue, ciclos = 0, ciclosHoy = 0 }) {
   const { t, locale } = useLocale();
   const M = MONTHS_ABBR[locale] || MONTHS_ABBR.es;
   const today = useMemo(() => { const [y, m, d] = todayKey.split("-").map(Number); return new Date(y, m - 1, d); }, [todayKey]);
@@ -130,7 +130,9 @@ export function BassTrack({ events, todayKey, onCue }) {
     }
 
     const agendaBins = Array(AGENDA_DAYS).fill(0);
-    let upcoming = 0, todayN = 0;
+    // Los ciclos fijos ("todos los martes") cuentan como en la Agenda: sin
+    // ellos la portada decía 158 y la Agenda abría con 165 (oct 2026).
+    let upcoming = ciclos, todayN = ciclosHoy;
     for (const ev of events) {
       const d = getEventDate(ev);
       if (!d) continue;
@@ -155,7 +157,7 @@ export function BassTrack({ events, todayKey, onCue }) {
       { k: "eventos", env: envelope(agendaBins), name: t("track.agenda"), sub: t("track.agendaSub", { today: todayN, n: upcoming }), span: t("track.spanAgenda") },
       { k: "festivales", env: envelope(festBins), name: t("section.festivals"), sub: festSub, span: t("track.spanFests") },
     ];
-  }, [events, news, fests, today, todayKey, t, M, locale]);
+  }, [events, news, fests, today, todayKey, t, M, locale, ciclos, ciclosHoy]);
 
   const mobile = w > 0 && w <= 768;
   // Geometría: la onda (horizontal en desktop, vertical en mobile), el nombre
