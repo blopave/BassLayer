@@ -366,9 +366,11 @@ export function LayerCurve({ news = [], onEnter }) {
     // Con poco alto para apagarse, la luz es más tenue: si no, se leen escalones.
     return { cx, cy, rx, ry, k: Math.min(1, ry / 220), tf: tfm(cx, cy, ry / rx), my, mrx, mtf: tfm(cx, my, mry / mrx) };
   })() : null;
+  // Filas de la ficha: las que entran en el hueco (descripción ~3 líneas + "Entrar" ≈ 170 px; ~37 px por fila).
+  const rowsMax = !dock ? 3 : dock.fit === "mini" ? 0 : Math.max(0, Math.min(3, Math.floor((dock.h - 170) / 37)));
   const preview = selNodeP && (
     <div
-      className={`blc-pv${dock ? " is-dock" : ""}${dock?.fit ? ` is-compact is-${dock.fit}` : ""}`}
+      className={`blc-pv${dock ? " is-dock" : ""}${dock?.fit ? ` is-${dock.fit}` : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
       style={dock
@@ -384,9 +386,10 @@ export function LayerCurve({ news = [], onEnter }) {
         <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
       </div>
       <div className="pv-b">
-        <div className="big">{content[selNodeP.key].v ?? "—"}</div>
+        {/* Adentro de la curva el dato ya está en la bandera: la ficha suma lo que hay adentro. */}
+        {!dock && <div className="big">{content[selNodeP.key].v ?? "—"}</div>}
         <div className="rows">
-          {content[selNodeP.key].rows.map(([a, b], j) => (
+          {content[selNodeP.key].rows.slice(0, rowsMax).map(([a, b], j) => (
             <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
           ))}
         </div>

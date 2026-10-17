@@ -867,7 +867,9 @@ async function run(vp) {
         const boxed = await page.locator(".blc-pv.is-dock .pv-in").evaluate((el) => { const s = getComputedStyle(el); return parseFloat(s.borderTopWidth) > 0 || s.backgroundColor !== "rgba(0, 0, 0, 0)"; }).catch(() => true);
         if (boxed) fail(vp.name, "layer", "desktop: la ficha volvió a ser una caja (borde o fondo propio)");
         // El nombre ya se enciende en su bandera (oct 2026): la ficha no lo repite.
-        if (await page.locator(".blc-pv.is-dock h3").count()) fail(vp.name, "layer", "desktop: la ficha repite el nombre de la sección");
+        if (await page.locator(".blc-pv.is-dock :is(h3, .big)").count()) fail(vp.name, "layer", "desktop: la ficha repite el nombre o el dato de la bandera");
+        // La descripción entra entera: nada de cortes a mitad de palabra.
+        if (await page.locator(".blc-pv.is-dock .desc:visible").evaluate((el) => el.scrollHeight > el.clientHeight + 1).catch(() => false)) fail(vp.name, "layer", "desktop: la descripción de la ficha queda cortada");
         if (!(await page.locator(".blc-inner").count())) fail(vp.name, "layer", "desktop: no se ilumina el interior de la curva que aloja la ficha");
         // La luz bajo la ficha se funde (oct 2026): una columna de píxeles desde
         // la ficha hasta el eje no puede tener saltos — ni bandas ni líneas de grilla.

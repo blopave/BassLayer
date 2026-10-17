@@ -3756,27 +3756,23 @@ select.bl-venue-input { cursor:pointer; }
    Dos columnas: qué es | el dato vivo; abajo, "Entrar". */
 .blc-pv.is-dock { animation:blc-dock .28s var(--ease-out-expo); }
 @keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
+/* Ficha adentro de la curva (oct 2026): sin nombre ni dato (los lleva la
+   bandera encendida). Una columna: qué es, lo que hay adentro y "Entrar". */
 .blc-pv.is-dock .pv-in {
-  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:32px; row-gap:20px; align-items:start;
+  display:grid; grid-template-columns:minmax(0,1fr); row-gap:16px; align-items:start;
   padding:0; overflow:hidden; border:0; border-radius:0; background:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
 }
-.blc-pv.is-dock .pv-c { grid-column:1 / -1; display:flex; align-items:center; justify-content:flex-end; gap:20px; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--bl-accent-layer) 22%, transparent); }
-.blc-pv.is-dock .desc { margin:0; font-size:var(--fs-16); line-height:1.45; color:var(--bl-text); display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
-.blc-pv.is-dock .big { font-size:var(--fs-22); line-height:1.25; }
-.blc-pv.is-dock .rows { margin-top:12px; }
-.blc-pv.is-dock .r.t span:first-child { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.blc-pv.is-dock .pv-c { display:flex; align-items:center; justify-content:flex-end; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--bl-accent-layer) 22%, transparent); }
+.blc-pv.is-dock .desc { margin:0; max-width:62ch; font-size:var(--fs-16); line-height:1.45; color:var(--bl-text); }
+.blc-pv.is-dock .rows { margin:0; border-top:0; }
+.blc-pv.is-dock .rows:empty { display:none; }
+.blc-pv.is-dock .r { border-bottom:0; border-top:1px solid var(--bl-border-sub); }
+.blc-pv.is-dock .r.t span:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .blc-pv.is-dock .go { flex:none; width:auto; margin:0; white-space:nowrap; letter-spacing:var(--tr-1); }
-.blc-pv.is-dock .big .up, .blc-pv.is-dock .big .down, .blc-pv.is-dock .r .up, .blc-pv.is-dock .r .down { color:inherit; } /* un color */
-/* Compacta: el dato al lado del nombre y "Entrar" debajo, sin filas. */
-.blc-pv.is-compact .pv-in { row-gap:12px; }
-.blc-pv.is-compact .desc { -webkit-line-clamp:2; }
-.blc-pv.is-compact .rows { display:none; }
-.blc-pv.is-compact .pv-c { padding-top:12px; }
-/* Mínima: una sola fila — nombre a la izquierda, "Entrar" a la derecha. */
-.blc-pv.is-mini .pv-in { grid-template-columns:minmax(0,1fr) auto; align-items:end; }
-.blc-pv.is-mini .desc, .blc-pv.is-mini .pv-b { display:none; }
-.blc-pv.is-mini .pv-a { display:none; }
-.blc-pv.is-mini .pv-c { grid-column:auto; padding-top:0; border-top:0; }
+.blc-pv.is-dock .r .up, .blc-pv.is-dock .r .down { color:inherit; } /* un color */
+/* Mínima: solo "Entrar". */
+.blc-pv.is-mini .pv-a, .blc-pv.is-mini .pv-b { display:none; }
+.blc-pv.is-mini .pv-c { padding-top:0; border-top:0; }
 .blc-inner { pointer-events:none; animation:blc-pv-in .28s ease-out; }
 /* Impulsos (mobile): un destello recorre la rama y enciende el título. */
 .blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 120; stroke-dashoffset:9;
