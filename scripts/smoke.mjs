@@ -868,6 +868,15 @@ async function run(vp) {
         if (boxed) fail(vp.name, "layer", "desktop: la ficha volvió a ser una caja (borde o fondo propio)");
         // El nombre ya se enciende en su bandera (oct 2026): la ficha no lo repite.
         if (await page.locator(".blc-pv.is-dock :is(h3, .big)").count()) fail(vp.name, "layer", "desktop: la ficha repite el nombre o el dato de la bandera");
+        // Lupa real (oct 2026): la ficha abre con el tramo ampliado con escala
+        // uniforme — la misma forma, más grande (proporción ±6 %, ≥1,3×). No en la mínima.
+        await page.waitForTimeout(600);
+        const z = await page.evaluate(() => {
+          const a = document.querySelector(".blc-node.is-on .blc-seg")?.getBoundingClientRect(), b = document.querySelector(".blc-zoom-line")?.getBoundingClientRect();
+          return a && b ? { ratio: (b.width / b.height) / (a.width / a.height), k: b.width / a.width } : null;
+        });
+        const mini = await page.locator(".blc-pv.is-mini").count();   // la mínima es solo "Entrar"
+        if (!mini && (!z || Math.abs(z.ratio - 1) > 0.06 || z.k < 1.3)) fail(vp.name, "layer", `desktop: la ficha no abre con el tramo ampliado (${JSON.stringify(z)})`);
         // La descripción entra entera: nada de cortes a mitad de palabra.
         if (await page.locator(".blc-pv.is-dock .desc:visible").evaluate((el) => el.scrollHeight > el.clientHeight + 1).catch(() => false)) fail(vp.name, "layer", "desktop: la descripción de la ficha queda cortada");
         if (!(await page.locator(".blc-inner").count())) fail(vp.name, "layer", "desktop: no se ilumina el interior de la curva que aloja la ficha");

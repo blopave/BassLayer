@@ -81,6 +81,10 @@ const GRID_HIDE = Array.from({ length: 11 }, (_, i) => { const t = Math.max(0, (
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
 const BEAT = 1200;
+// Lupa real (oct 2026): ventana del tramo (años a cada lado del punto, la
+// misma de lens) y alto de su copia ampliada, que encabeza la ficha.
+const LUPA = 0.76, LUPA_H = 80;
+const pathOf = (pts) => "M" + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L");
 // Luz del tramo encendido: plena en el punto, se apaga con smoothstep hacia las puntas.
 const SEG_FADE = Array.from({ length: 9 }, (_, i) => { const t = Math.abs(i / 8 - 0.5) * 2, k = Math.min(1, (1 - t) / 0.6); return [i / 8, +(k * k * (3 - 2 * k)).toFixed(3)]; });
 // Mobile: lo que tarda el toque en viajar por la rama antes de entrar.
@@ -283,9 +287,11 @@ export function LayerCurve({ news = [], onEnter }) {
       // el primer control ya se inclina hacia su título, así las ramas del
       // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
       const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
-      // El tramo de la curva que la rama amplía (la misma ventana que lens).
-      const sp = H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => [X(T(h.t)), Y(h.p)]);
-      const seg = { d: "M" + sp.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L"), x0: sp[0][0], x1: sp[sp.length - 1][0] };
+      // Lupa: el tramo de la curva (±LUPA años) y su copia ampliada bajo el
+      // nombre; la rama une el punto con su imagen en la copia, centro a centro.
+      const lw = H.filter((h) => Math.abs(T(h.t) - tt) <= LUPA);
+      const sp = lw.map((h) => [X(T(h.t)), Y(h.p)]);
+      const seg = { d: pathOf(sp), x0: sp[0][0], x1: sp[sp.length - 1][0], pts: sp };
       return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, seg, rule: `M${ex},${ey}V${ly - 3}` };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
@@ -366,15 +372,28 @@ export function LayerCurve({ news = [], onEnter }) {
     // Con poco alto para apagarse, la luz es más tenue: si no, se leen escalones.
     return { cx, cy, rx, ry, k: Math.min(1, ry / 220), tf: tfm(cx, cy, ry / rx), my, mrx, mtf: tfm(cx, my, mry / mrx) };
   })() : null;
-  // Filas de la ficha: las que entran en el hueco (descripción ~3 líneas + "Entrar" ≈ 170 px; ~37 px por fila).
-  const rowsMax = !dock ? 3 : dock.fit === "mini" ? 0 : Math.max(0, Math.min(3, Math.floor((dock.h - 170) / 37)));
+  // Lupa: el tramo, ampliado con escala UNIFORME (misma forma, más grande),
+  // encabeza la ficha (no en la mínima). Al abrirse viaja desde su lugar en
+  // la curva creciendo hasta ahí: la conexión es el movimiento, sin más líneas.
+  const zoom = selNodeP && dock && !geo.V && dock.fit !== "mini" ? (() => {
+    const P = selNodeP.seg.pts, xs = P.map((p) => p[0]), ys = P.map((p) => p[1]);
+    const mx = Math.min(...xs), my = Math.min(...ys), sw = Math.max(1, Math.max(...xs) - mx), sh = Math.max(1, Math.max(...ys) - my);
+    const k = Math.min(dock.w / sw, LUPA_H / sh), x0 = dock.x, y0 = dock.y;
+    return {
+      d: pathOf(P.map(([x, y]) => [x0 + (x - mx) * k, y0 + (y - my) * k])), x0, x1: x0 + sw * k, top: Math.round(sh * k) + 22,
+      // Desde dónde viaja: la copia achicada (1/k) sobre su tramo en la curva.
+      from: { "--zx": `${(mx - x0).toFixed(1)}px`, "--zy": `${(my - y0).toFixed(1)}px`, "--zs": (1 / k).toFixed(4), transformOrigin: `${x0}px ${y0}px` },
+    };
+  })() : null;
+  // Filas de la ficha: las que entran en el hueco (copia + descripción ~3 líneas + "Entrar"; ~37 px por fila).
+  const rowsMax = !dock ? 3 : dock.fit === "mini" ? 0 : Math.max(0, Math.min(3, Math.floor((dock.h - 170 - (zoom?.top || 0)) / 37)));
   const preview = selNodeP && (
     <div
       className={`blc-pv${dock ? " is-dock" : ""}${dock?.fit ? ` is-${dock.fit}` : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
       style={dock
-        ? { left: dock.x, top: dock.y, width: dock.w, maxHeight: dock.h }
+        ? { left: dock.x, top: dock.y, width: dock.w, maxHeight: dock.h, paddingTop: zoom?.top }
         : { left: selNodeP.cx + 360 > geo.W ? selNodeP.cx - 360 : selNodeP.cx + 30, top: Math.max(10, Math.min(selNodeP.cy - 60, geo.Hh - 360)) }}
       onMouseEnter={() => clearTimeout(hideT.current)}
       onMouseLeave={hideSoon}
@@ -524,6 +543,14 @@ export function LayerCurve({ news = [], onEnter }) {
               <g className="blc-inner" key="inner">
                 <defs><clipPath id="blc-inc"><path d={`${geo.path}L${geo.xt},${geo.Hh - geo.BOT}L${geo.pts[0][0]},${geo.Hh - geo.BOT}Z`} /></clipPath></defs>
                 <rect clipPath="url(#blc-inc)" opacity={glow.k} x={glow.cx - glow.rx} y={glow.cy - glow.ry} width={glow.rx * 2} height={glow.ry * 2} fill="url(#blc-ing)" />
+              </g>
+            )}
+            {zoom && (
+              <g className="blc-zoom" key={`zoom-${sel}`} aria-hidden="true">
+                <linearGradient id="blc-zlg" gradientUnits="userSpaceOnUse" x1={zoom.x0} y1="0" x2={zoom.x1} y2="0">
+                  {SEG_FADE.map(([o, v]) => <stop key={o} offset={o} stopColor="#e9fbff" stopOpacity={v} />)}
+                </linearGradient>
+                <path className="blc-zoom-line" d={zoom.d} stroke="url(#blc-zlg)" style={zoom.from} />
               </g>
             )}
             <Now x={geo.xt} y={geo.yt} r={[8, 17, 7.5, 2.6]} />

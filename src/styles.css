@@ -3796,8 +3796,14 @@ select.bl-venue-input { cursor:pointer; }
 /* Un solo trazo de luz: la rama se enciende con la misma luz que el tramo y la regla. */
 .has-sel .blc-node.is-on .blc-branch { stroke:#e9fbff; filter:drop-shadow(0 0 6px var(--bl-accent-layer)); }
 .has-sel .blc-node.is-on .blc-branch:not(.blc-rule) { stroke-dasharray:100; animation:blc-grow .45s cubic-bezier(.3,0,.2,1) both; }
+/* Lupa real: la copia ampliada del tramo encabeza la ficha, con la misma luz
+   y el mismo fundido; al abrirse viaja desde su tramo en la curva creciendo. */
+.blc-zoom { pointer-events:none; }
+.blc-zoom-line { fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 6px var(--bl-accent-layer));
+  transform-box:view-box; animation:blc-zoom .5s cubic-bezier(.5,0,.15,1) both; }
+@keyframes blc-zoom { from { opacity:.6; transform:translate(var(--zx), var(--zy)) scale(var(--zs)); } }
 @keyframes blc-grow { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
-@media (prefers-reduced-motion: reduce) { .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; } }
+@media (prefers-reduced-motion: reduce) { .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; } .blc-zoom-line { animation:none; } }
 .blc-pv h3 { margin:8px 0 2px; font-size:var(--fs-28); letter-spacing:var(--tr-n03); color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 16px; font-size:var(--fs-13); line-height:1.5; color:var(--bl-text-sec); }
 .blc-pv .big { font:600 var(--fs-28) var(--font-mono); letter-spacing:var(--tr-n03); color:var(--bl-text); }
