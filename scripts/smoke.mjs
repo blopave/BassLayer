@@ -866,6 +866,8 @@ async function run(vp) {
         if (!dockBox || !dotBox || dockBox.y < dotBox.y + dotBox.height) fail(vp.name, "layer", "desktop: la ficha de la sección no se abre adentro de la curva");
         const boxed = await page.locator(".blc-pv.is-dock .pv-in").evaluate((el) => { const s = getComputedStyle(el); return parseFloat(s.borderTopWidth) > 0 || s.backgroundColor !== "rgba(0, 0, 0, 0)"; }).catch(() => true);
         if (boxed) fail(vp.name, "layer", "desktop: la ficha volvió a ser una caja (borde o fondo propio)");
+        // El nombre ya se enciende en su bandera (oct 2026): la ficha no lo repite.
+        if (await page.locator(".blc-pv.is-dock h3").count()) fail(vp.name, "layer", "desktop: la ficha repite el nombre de la sección");
         if (!(await page.locator(".blc-inner").count())) fail(vp.name, "layer", "desktop: no se ilumina el interior de la curva que aloja la ficha");
         // La luz bajo la ficha se funde (oct 2026): una columna de píxeles desde
         // la ficha hasta el eje no puede tener saltos — ni bandas ni líneas de grilla.

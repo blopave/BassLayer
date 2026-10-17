@@ -376,7 +376,8 @@ export function LayerCurve({ news = [], onEnter }) {
     >
       <div className="pv-in" key={selNodeP.key}>
       <div className="pv-a">
-        <h3>{name(selNodeP.key)}</h3>
+        {/* Adentro de la curva el nombre ya está encendido en su bandera: la ficha no lo repite. */}
+        {!dock && <h3>{name(selNodeP.key)}</h3>}
         <p className="desc">{t(`curve.${selNodeP.key}.desc`)}</p>
       </div>
       <div className="pv-b">
