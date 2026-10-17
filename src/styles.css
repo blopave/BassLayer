@@ -3779,9 +3779,9 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv.is-mini .pv-c { grid-column:auto; padding-top:0; border-top:0; }
 .blc-inner { pointer-events:none; animation:blc-pv-in .28s ease-out; }
 /* Impulsos (mobile): un destello recorre la rama y enciende el título. */
-.blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
+.blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 120; stroke-dashoffset:9;
   filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
-@keyframes blc-pulse { to { stroke-dashoffset:-100; } }
+@keyframes blc-pulse { to { stroke-dashoffset:-110; } } /* termina afuera: en -100 quedaba un trazo de largo 0 y la punta redonda pintaba una rayita junto al nombre */
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
 .blc-node.is-lit .blc-rule { stroke:#fff; opacity:1; }
 /* Lupa (oct 2026): con una sección elegida todo se retira y queda el camino
@@ -3794,10 +3794,12 @@ select.bl-venue-input { cursor:pointer; }
 .has-sel .blc-node.is-on .blc-rule { stroke:#fff; }
 .has-sel .blc-node.is-on .blc-pulse { animation-duration:.34s; } /* mobile: el toque (TAP_MS) */
 /* En la curva se enciende el tramo que la rama amplía, y la rama crece desde ahí. */
-.blc-seg { fill:none; stroke:#e9fbff; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; opacity:0; pointer-events:none;
+.blc-seg { fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; opacity:0; pointer-events:none;
   filter:drop-shadow(0 0 6px var(--bl-accent-layer)); transition:opacity .2s; }
 .has-sel .blc-node.is-on .blc-seg { opacity:.95; }
-.has-sel .blc-node.is-on .blc-branch { stroke-dasharray:100; animation:blc-grow .45s cubic-bezier(.3,0,.2,1) both; }
+/* Un solo trazo de luz: la rama se enciende con la misma luz que el tramo y la regla. */
+.has-sel .blc-node.is-on .blc-branch { stroke:#e9fbff; filter:drop-shadow(0 0 6px var(--bl-accent-layer)); }
+.has-sel .blc-node.is-on .blc-branch:not(.blc-rule) { stroke-dasharray:100; animation:blc-grow .45s cubic-bezier(.3,0,.2,1) both; }
 @keyframes blc-grow { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
 @media (prefers-reduced-motion: reduce) { .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; } }
 .blc-pv h3 { margin:8px 0 2px; font-size:var(--fs-28); letter-spacing:var(--tr-n03); color:var(--bl-text); }

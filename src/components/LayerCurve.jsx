@@ -81,6 +81,8 @@ const GRID_HIDE = Array.from({ length: 11 }, (_, i) => { const t = Math.max(0, (
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
 const BEAT = 1200;
+// Luz del tramo encendido: plena en el punto, se apaga con smoothstep hacia las puntas.
+const SEG_FADE = Array.from({ length: 9 }, (_, i) => { const t = Math.abs(i / 8 - 0.5) * 2, k = Math.min(1, (1 - t) / 0.6); return [i / 8, +(k * k * (3 - 2 * k)).toFixed(3)]; });
 // Mobile: lo que tarda el toque en viajar por la rama antes de entrar.
 const TAP_MS = 340;
 
@@ -282,7 +284,8 @@ export function LayerCurve({ news = [], onEnter }) {
       // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
       const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
       // El tramo de la curva que la rama amplía (la misma ventana que lens).
-      const seg = "M" + H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => `${X(T(h.t)).toFixed(1)},${Y(h.p).toFixed(1)}`).join("L");
+      const sp = H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => [X(T(h.t)), Y(h.p)]);
+      const seg = { d: "M" + sp.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L"), x0: sp[0][0], x1: sp[sp.length - 1][0] };
       return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, seg, rule: `M${ex},${ey}V${ly - 3}` };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
@@ -538,7 +541,11 @@ export function LayerCurve({ news = [], onEnter }) {
                   onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
-                  <path className="blc-seg" d={n.seg} />
+                  {/* El tramo se enciende desde el punto y se funde en las dos puntas: sin cortes. */}
+                  <linearGradient id={`blc-sg${i}`} gradientUnits="userSpaceOnUse" x1={n.seg.x0} y1="0" x2={n.seg.x1} y2="0">
+                    {SEG_FADE.map(([o, v]) => <stop key={o} offset={o} stopColor="#e9fbff" stopOpacity={v} />)}
+                  </linearGradient>
+                  <path className="blc-seg" d={n.seg.d} stroke={`url(#blc-sg${i})`} />
                   <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
