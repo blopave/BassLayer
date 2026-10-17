@@ -15,6 +15,10 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, useLaye
 // mobile, una columna con las 8 secciones y el abanico en una sola pantalla;
 // en desktop, un riel de títulos arriba. Todo en un color (Pablo: el rojo/
 // verde por sección rompía la estética de Layer).
+// "Lupa" (oct 2026, Pablo eligió C): al elegir una sección todo se retira —
+// curva, área, abanico y las otras ramas— y queda encendido el camino tramo →
+// rama → nombre → ficha: en la curva se prende el pedazo que la rama amplía y
+// la rama crece desde ahí. Sin plomada: la conexión la cuenta la luz.
 
 // Orden de las secciones = orden de USO (Pablo, oct 2026): lo primero al
 // entrar es ponerse al día. Ya no se atan a momentos históricos: se reparten
@@ -77,6 +81,8 @@ const GRID_HIDE = Array.from({ length: 11 }, (_, i) => { const t = Math.max(0, (
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
 const BEAT = 1200;
+// Mobile: lo que tarda el toque en viajar por la rama antes de entrar.
+const TAP_MS = 340;
 
 // Una rama (mobile y desktop): brillo, trazo, el impulso cuando lo hay (su
 // número reinicia la animación) y el remate junto al nombre.
@@ -84,7 +90,7 @@ function Branch({ d, pulse, rule }) {
   return (
     <>
       <path className="blc-branch-glow" d={d} />
-      <path className="blc-branch" d={d} />
+      <path className="blc-branch" d={d} pathLength="100" />
       {pulse ? <path key={pulse} className="blc-pulse" d={d} pathLength="100" /> : null}
       <path className="blc-branch blc-rule" d={rule} />
     </>
@@ -275,7 +281,9 @@ export function LayerCurve({ news = [], onEnter }) {
       // el primer control ya se inclina hacia su título, así las ramas del
       // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
       const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
-      return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, rule: `M${ex},${ey}V${ly - 3}` };
+      // El tramo de la curva que la rama amplía (la misma ventana que lens).
+      const seg = "M" + H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => `${X(T(h.t)).toFixed(1)},${Y(h.p).toFixed(1)}`).join("L");
+      return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, seg, rule: `M${ex},${ey}V${ly - 3}` };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
     // Ficha de la sección (oct 2026, Pablo): vive ADENTRO de la curva, en el
@@ -333,6 +341,12 @@ export function LayerCurve({ news = [], onEnter }) {
   }), []);
 
   const name = (k) => t(SECTION_LABEL[k]);
+  // Mobile: el toque se ve viajar de la curva al nombre y recién ahí entra.
+  const enterV = (i) => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return onEnter(NODES[i].key);
+    setSel(i); setPulse((p) => ({ i, n: (p?.n || 0) + 1000 }));
+    setTimeout(() => onEnter(NODES[i].key), TAP_MS);
+  };
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
 
   // Vista previa (hover de desktop): qué hay en la sección y su dato vivo.
@@ -414,7 +428,7 @@ export function LayerCurve({ news = [], onEnter }) {
             tabIndex={0}
             role="button"
             aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
-            onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
+            onClick={(e) => { e.stopPropagation(); enterV(i); }}
             onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
           >
             <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
@@ -435,7 +449,7 @@ export function LayerCurve({ news = [], onEnter }) {
           título queda para lectores de pantalla y buscadores. */}
       <h1 className="bl-sr-only">{t("curve.title")}</h1>
       <div
-        className={`blc-stage${geo ? " is-ready" : ""}`}
+        className={`blc-stage${geo ? " is-ready" : ""}${sel != null ? " has-sel" : ""}`}
         style={geo?.V ? { height: geo.Hh } : undefined}
         ref={stageRef}
         onMouseEnter={() => { busy.current = true; }}
@@ -505,10 +519,6 @@ export function LayerCurve({ news = [], onEnter }) {
                 <rect clipPath="url(#blc-inc)" opacity={glow.k} x={glow.cx - glow.rx} y={glow.cy - glow.ry} width={glow.rx * 2} height={glow.ry * 2} fill="url(#blc-ing)" />
               </g>
             )}
-            {/* La ficha cuelga de su punto: una plomada al interior de la curva. */}
-            {selNodeP && dock && (
-              <path className="blc-plumb" d={`M${selNodeP.cx},${selNodeP.cy + 10}L${Math.min(Math.max(selNodeP.cx, dock.x + 18), dock.x + dock.w - 18)},${dock.y}`} />
-            )}
             <Now x={geo.xt} y={geo.yt} r={[8, 17, 7.5, 2.6]} />
             {geo.nodes.map((n, i) => {
               const c = content[n.key];
@@ -527,6 +537,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
+                  <path className="blc-seg" d={n.seg} />
                   <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />

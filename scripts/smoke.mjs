@@ -877,6 +877,14 @@ async function run(vp) {
           // Un degradé suave en 8 bits da escalones de 1–3 niveles; una línea o un borde, 6+.
           if (jump > 4) fail(vp.name, "diseño", `la luz bajo la ficha no se funde (salto de ${jump.toFixed(1)} niveles)`);
         }
+        // Lupa (oct 2026): con una sección elegida se enciende en la curva el
+        // tramo que su rama amplía y todo lo demás (curva, otras ramas) se retira.
+        const lupa = await page.evaluate(() => {
+          const on = document.querySelector(".blc-node.is-on"), off = document.querySelector(".blc-node:not(.is-on)");
+          const op = (el) => (el ? +(getComputedStyle(el).filter.match(/opacity\(([\d.]+)\)/)?.[1] ?? 1) : 1);
+          return { seg: on?.querySelector(".blc-seg") ? +getComputedStyle(on.querySelector(".blc-seg")).opacity : 0, curve: op(document.querySelector(".blc-curve")), other: op(off) };
+        }).catch((e) => ({ error: String(e) }));
+        if (lupa.error || lupa.seg < 0.5 || lupa.curve > 0.6 || lupa.other > 0.6) fail(vp.name, "layer", `desktop: la lupa no enfoca la sección (${JSON.stringify(lupa)})`);
         const go = await page.locator(".blc-pv.is-dock .go").boundingBox().catch(() => null);
         if (!go || go.y + go.height > vp.viewport.height) fail(vp.name, "layer", "desktop: el botón Entrar de la ficha queda fuera de pantalla");
         await page.mouse.move(5, 5);
@@ -888,6 +896,8 @@ async function run(vp) {
         if (!lit) fail(vp.name, "layer", "mobile: la curva no enciende ningún título");
       }
       await pill(/Ciclos|Cycles/).click();   // entra directo (desktop y mobile)
+      // Mobile: el toque se ve viajar por la rama antes de entrar (la lupa se enciende).
+      if (vp.viewport.width <= 768 && !(await page.locator(".blc-stage.has-sel .blc-node.is-on").count())) fail(vp.name, "layer", "mobile: tocar una sección entra en seco, sin encender su rama");
       await page.waitForTimeout(700);
       const active = await page.locator(".bl-layer-tab.active").textContent().catch(() => "");
       if (!/ciclos|cycles/i.test(active || "")) fail(vp.name, "layer", `entrar a Ciclos abre "${active}"`);

@@ -3779,13 +3779,28 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv.is-mini h3 { margin-bottom:0; font-size:var(--fs-22); }
 .blc-pv.is-mini .pv-c { grid-column:auto; padding-top:0; border-top:0; }
 .blc-inner { pointer-events:none; animation:blc-pv-in .28s ease-out; }
-.blc-plumb { fill:none; stroke:var(--bl-accent-layer); stroke-width:1; stroke-dasharray:2 4; opacity:.55; pointer-events:none; }
 /* Impulsos (mobile): un destello recorre la rama y enciende el título. */
 .blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
   filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
 @keyframes blc-pulse { to { stroke-dashoffset:-100; } }
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
 .blc-node.is-lit .blc-rule { stroke:#fff; opacity:1; }
+/* Lupa (oct 2026): con una sección elegida todo se retira y queda el camino
+   tramo → rama → nombre → ficha. filter y no opacity: la entrada anima opacity. */
+.blc-node, .blc-curve, .blc-area, .blc-fan, .blc-now, .blc-grid { transition:filter .3s ease-out; }
+.has-sel .blc-node:not(.is-on) { filter:opacity(.26); }
+.has-sel :is(.blc-curve, .blc-area, .blc-fan, .blc-now) { filter:opacity(.3); }
+.has-sel .blc-grid { filter:opacity(.5); }
+.has-sel .blc-node.is-on .blc-branch-glow { opacity:.16; }
+.has-sel .blc-node.is-on .blc-rule { stroke:#fff; }
+.has-sel .blc-node.is-on .blc-pulse { animation-duration:.34s; } /* mobile: el toque (TAP_MS) */
+/* En la curva se enciende el tramo que la rama amplía, y la rama crece desde ahí. */
+.blc-seg { fill:none; stroke:#e9fbff; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; opacity:0; pointer-events:none;
+  filter:drop-shadow(0 0 6px var(--bl-accent-layer)); transition:opacity .2s; }
+.has-sel .blc-node.is-on .blc-seg { opacity:.95; }
+.has-sel .blc-node.is-on .blc-branch { stroke-dasharray:100; animation:blc-grow .45s cubic-bezier(.3,0,.2,1) both; }
+@keyframes blc-grow { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
+@media (prefers-reduced-motion: reduce) { .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; } }
 .blc-pv h3 { margin:8px 0 2px; font-size:var(--fs-28); letter-spacing:var(--tr-n03); color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 16px; font-size:var(--fs-13); line-height:1.5; color:var(--bl-text-sec); }
 .blc-pv .big { font:600 var(--fs-28) var(--font-mono); letter-spacing:var(--tr-n03); color:var(--bl-text); }
