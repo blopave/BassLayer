@@ -224,8 +224,9 @@ export function LayerCurve({ news = [], onEnter }) {
       // abanico del futuro es la copa (arriba, halving → hoy) y el pasado baja
       // hasta 2012. Los nombres se alternan a los dos lados, en columnas contra
       // el tronco; cada uno alumbra hacia su punto con un haz horizontal (recto,
-      // como el tick del subte: no puede cruzar el tronco). Abajo, la historia anterior a 2012 sigue el tronco hasta el
-      // pie y se funde: la curva viene de algún lado, no flota.
+      // como el tick del subte: no puede cruzar el tronco). Abajo, la historia
+      // anterior a 2012 sigue el tronco hasta el pie y se funde: la curva
+      // viene de algún lado, no flota.
       // En pantallas bajas (≤ 700 px) las ramas se juntan hasta 38 px y el abanico
       // conserva 80: entra sin desplazar desde ~640 px de alto (antes, un mínimo
       // fijo de 460 hacía sobrar 20–90 px).
@@ -305,7 +306,7 @@ export function LayerCurve({ news = [], onEnter }) {
     // Hueco bajo (pantallas de ~650 px): la ficha mínima, solo "Entrar".
     if (dock) { dock.x += (pts[dock.b][0] - pts[dock.a][0] - 36 - dock.w) / 2; dock.mini = dock.h < MINI_H; }
     return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(pts), xt: X(TODAY), yt: Y(last), nodes, dock };
-  }, [H, size, fit, mobile, cyc, d.prices, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [H, size, fit, mobile, cyc, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada
   // en hoy. Sin rótulos de hitos sobre la curva (Pablo, 30-sep): viven en Hitos.
