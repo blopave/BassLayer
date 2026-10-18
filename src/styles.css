@@ -3697,7 +3697,7 @@ select.bl-venue-input { cursor:pointer; }
    momentos reales, índice sincronizado (franja desktop / lista mobile),
    recorrido con precio y hecho de cada mes, vista previa con dato vivo.
    ══════════════════════════════════════════════════════════════ */
-.blc { position:relative; display:flex; flex-direction:column; height:calc(100dvh - 178px); min-height:480px; }
+.blc { --blc-light:#e9fbff; position:relative; display:flex; flex-direction:column; height:calc(100dvh - 178px); min-height:480px; }
 .blc-stage { position:relative; flex:1; min-height:0; touch-action:pan-y; }
 .blc-stage svg { position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; }
 .blc-skel { position:absolute; inset:120px 64px 48px; border-radius:var(--r-12); background:var(--bl-subtle); animation:bl-skel-pulse 1.4s ease-in-out infinite; }
@@ -3705,17 +3705,18 @@ select.bl-venue-input { cursor:pointer; }
 .blc-grid text { fill:var(--bl-text-ter); font:500 var(--fs-11) var(--font-mono); letter-spacing:var(--tr-1); }
 .blc-curve { fill:none; stroke:url(#blc-cg); stroke-width:1.8; stroke-linejoin:round; animation:blc-draw 2s cubic-bezier(.6,0,.2,1) forwards; }
 @keyframes blc-draw { to { stroke-dashoffset:0; } }
-.blc-area { fill:url(#blc-ag); opacity:0; animation:blc-fade 1.2s 1.6s forwards; }
-@keyframes blc-fade { to { opacity:1; } }
+/* Entradas con backwards (no forwards): al terminar no retienen opacity y la lupa puede atenuar. */
+.blc-area { fill:url(#blc-ag); animation:blc-fade 1.2s 1.6s backwards; }
+@keyframes blc-fade { from { opacity:0; } }
 /* ¿Para dónde va? (sept 2026): caminos simulados desde hoy, en fundido. */
-.blc-fan { opacity:0; animation:blc-fade .8s 2.1s forwards; pointer-events:none; }
+.blc-fan { animation:blc-fade .8s 2.1s backwards; pointer-events:none; }
 .blc-walk { fill:none; stroke-width:1; stroke-linecap:round; stroke-linejoin:round; }
 .blc-walk.is-new { animation:blc-walk 1.2s ease-out forwards; }
 @keyframes blc-walk { from { stroke-dashoffset:var(--l); } to { stroke-dashoffset:0; } }
 /* "Hoy" late: un anillo que se abre y se apaga sobre el punto del presente. */
 .blc-live { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.5; opacity:0; transform-box:fill-box; transform-origin:center; animation:blc-live 2.4s ease-out 2.6s infinite; pointer-events:none; }
 @keyframes blc-live { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
-.blc-node { cursor:pointer; opacity:0; animation:blc-pop .5s cubic-bezier(.2,1.4,.4,1) forwards; outline:none; }
+.blc-node { cursor:pointer; animation:blc-pop .5s cubic-bezier(.2,1.4,.4,1) backwards; outline:none; }
 @keyframes blc-pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 /* Halo quieto: con las ramas, 8 puntos latiendo era ruido; late solo hoy (.blc-live). */
 .blc-halo { fill:var(--bl-accent-layer); opacity:.12; }
@@ -3736,7 +3737,7 @@ select.bl-venue-input { cursor:pointer; }
 .blc-rv * { color:inherit !important; } /* un color: el dato no se tiñe de rojo/verde */
 .blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); transition:fill .15s; } /* el hover responde ya; el impulso se apaga lento */
 .blc-node:hover .blc-dot, .blc-node.is-on .blc-dot { fill:var(--bl-accent-layer); }
-.blc-now { pointer-events:none; opacity:0; animation:blc-fade .5s 2.1s forwards; }
+.blc-now { pointer-events:none; animation:blc-fade .5s 2.1s backwards; }
 .blc-now .blc-dot { stroke:var(--bl-text); } .blc-now .blc-core { fill:var(--bl-text); }
 .blc-node:focus-visible .blc-rn { text-decoration:underline; }
 /* Ficha de sección: la caja (posición y entrada) y la tarjeta (.pv-in).
@@ -3752,8 +3753,7 @@ select.bl-venue-input { cursor:pointer; }
 }
 @keyframes blc-pv-in { from { opacity:0; } }
 /* Adentro de la curva (oct 2026, Pablo): sin caja — ni borde, ni fondo, ni
-   blur. El fondo es el interior de la curva iluminado (.blc-inner en el SVG).
-   Dos columnas: qué es | el dato vivo; abajo, "Entrar". */
+   blur. El fondo es el interior de la curva iluminado (.blc-inner en el SVG). */
 .blc-pv.is-dock { animation:blc-dock .28s var(--ease-out-expo); }
 @keyframes blc-dock { from { opacity:0; transform:translateY(10px); } }
 /* Ficha adentro de la curva (oct 2026): sin nombre ni dato (los lleva la
@@ -3765,7 +3765,6 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv.is-dock .pv-c { display:flex; align-items:center; justify-content:flex-end; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--bl-accent-layer) 22%, transparent); }
 .blc-pv.is-dock .desc { margin:0; max-width:62ch; font-size:var(--fs-16); line-height:1.45; color:var(--bl-text); }
 .blc-pv.is-dock .rows { margin:0; border-top:0; }
-.blc-pv.is-dock .rows:empty { display:none; }
 .blc-pv.is-dock .r { border-bottom:0; border-top:1px solid var(--bl-border-sub); }
 .blc-pv.is-dock .r.t span:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .blc-pv.is-dock .go { flex:none; width:auto; margin:0; white-space:nowrap; letter-spacing:var(--tr-1); }
@@ -3775,32 +3774,29 @@ select.bl-venue-input { cursor:pointer; }
 .blc-pv.is-mini .pv-c { padding-top:0; border-top:0; }
 .blc-inner { pointer-events:none; animation:blc-pv-in .28s ease-out; }
 /* Impulsos (mobile): un destello recorre la rama y enciende el título. */
-.blc-pulse { fill:none; stroke:#e9fbff; stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 120; stroke-dashoffset:9;
+.blc-pulse { fill:none; stroke:var(--blc-light); stroke-width:2.6; stroke-linecap:round; stroke-dasharray:9 100; stroke-dashoffset:9;
   filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
-@keyframes blc-pulse { to { stroke-dashoffset:-110; } } /* termina afuera: en -100 quedaba un trazo de largo 0 y la punta redonda pintaba una rayita junto al nombre */
+@keyframes blc-pulse { 85% { opacity:1; } to { stroke-dashoffset:-100; opacity:0; } } /* se apaga al llegar: el último cuadro (forwards) no deja una rayita junto al nombre */
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
 .blc-node.is-lit .blc-rule { stroke:#fff; opacity:1; }
 /* Lupa (oct 2026): con una sección elegida todo se retira y queda el camino
-   tramo → rama → nombre → ficha. filter y no opacity: la entrada anima opacity. */
-.blc-node, .blc-curve, .blc-area, .blc-fan, .blc-now, .blc-grid { transition:filter .3s ease-out; }
-.has-sel .blc-node:not(.is-on) { filter:opacity(.26); }
-.has-sel :is(.blc-curve, .blc-area) { filter:opacity(.3); }
+   tramo → rama → nombre → ficha. */
+.blc-node, .blc-curve, .blc-area, .blc-fan, .blc-now, .blc-grid { transition:opacity .3s ease-out; }
+.has-sel .blc-node:not(.is-on) { opacity:.26; }
+.has-sel :is(.blc-curve, .blc-area) { opacity:.3; }
 /* El futuro también es contexto: el abanico y hoy se retiran menos. */
-.has-sel .blc-fan { filter:opacity(.6); }
-.has-sel .blc-now { filter:opacity(.8); }
-.has-sel .blc-grid { filter:opacity(.5); }
+.has-sel .blc-fan { opacity:.6; }
+.has-sel .blc-now { opacity:.8; }
+.has-sel .blc-grid { opacity:.5; }
 .has-sel .blc-node.is-on .blc-branch-glow { opacity:.16; }
-.has-sel .blc-node.is-on .blc-rule { stroke:#fff; }
-.has-sel .blc-node.is-on .blc-pulse { animation-duration:.34s; } /* mobile: el toque (TAP_MS) */
+.has-sel .blc-node.is-on .blc-pulse { animation-duration:var(--tap); } /* mobile: el toque (TAP_MS) */
 /* En la curva se enciende el tramo que la rama amplía, y la rama crece desde ahí. */
 .blc-seg { fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; opacity:0; pointer-events:none;
   filter:drop-shadow(0 0 6px var(--bl-accent-layer)); transition:opacity .2s; }
 .has-sel .blc-node.is-on .blc-seg { opacity:.95; }
 /* Un solo trazo de luz: la rama se enciende con la misma luz que el tramo y la regla. */
-.has-sel .blc-node.is-on .blc-branch { stroke:#e9fbff; filter:drop-shadow(0 0 6px var(--bl-accent-layer)); }
-.has-sel .blc-node.is-on .blc-branch:not(.blc-rule) { stroke-dasharray:100; animation:blc-grow .45s cubic-bezier(.3,0,.2,1) both; }
-@keyframes blc-grow { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
-@media (prefers-reduced-motion: reduce) { .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; } }
+.has-sel .blc-node.is-on .blc-branch { stroke:var(--blc-light); filter:drop-shadow(0 0 6px var(--bl-accent-layer)); }
+.has-sel .blc-node.is-on .blc-branch:not(.blc-rule) { --l:100; stroke-dasharray:100; animation:blc-walk .45s cubic-bezier(.3,0,.2,1) both; }
 .blc-pv h3 { margin:8px 0 2px; font-size:var(--fs-28); letter-spacing:var(--tr-n03); color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 16px; font-size:var(--fs-13); line-height:1.5; color:var(--bl-text-sec); }
 .blc-pv .big { font:600 var(--fs-28) var(--font-mono); letter-spacing:var(--tr-n03); color:var(--bl-text); }
@@ -3825,7 +3821,8 @@ select.bl-venue-input { cursor:pointer; }
 .bl-layer-back svg { transition:transform var(--duration-fast); }
 .bl-layer-back:focus-visible { outline:2px solid var(--bl-accent-layer); outline-offset:2px; }
 @media (prefers-reduced-motion:reduce) {
-  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-now, .blc-fan { animation:none; opacity:1; } .blc-live, .blc-walk.is-new { animation:none; }
+  .blc-curve { animation:none; stroke-dashoffset:0 !important; } .blc-area, .blc-node, .blc-now, .blc-fan { animation:none; } .blc-live, .blc-walk.is-new { animation:none; }
+  .has-sel .blc-node.is-on .blc-branch { animation:none; stroke-dasharray:none; }
 }
 @media (max-width:768px) {
   /* Mobile = curva vertical ("Ramas", 30-sep): el abanico arriba, la curva

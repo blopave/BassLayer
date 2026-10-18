@@ -40,10 +40,11 @@ const V_CEIL = 2_500_000;
 // Rama = lupa: log-precio alrededor de `tt` (±9 meses de la serie mensual;
 // hoy, la serie horaria de 7 días si está) como desvío de la recta entre sus
 // extremos, normalizado a ±1 — así arranca en el punto y termina en el nombre.
+const LENS_WIN = 0.76;
 function lens(H, tt, today, spark) {
   const a = tt >= today - 0.02 && spark?.length > 12
     ? spark.filter((_, i) => i % 2 === 0).map((p) => Math.log10(p))
-    : H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => Math.log10(h.p));
+    : H.filter((h) => Math.abs(T(h.t) - tt) <= LENS_WIN).map((h) => Math.log10(h.p));
   if (a.length < 3) return [0, 0];
   const n = a.length - 1, r = a.map((v, i) => v - (a[0] + ((a[n] - a[0]) * i) / n));
   const m = Math.max(1e-9, ...r.map(Math.abs));
@@ -76,13 +77,17 @@ const FUT_SHARE = 0.24;
 const INNER_GLOW = Array.from({ length: 11 }, (_, i) => [i / 10, +(0.17 * (1 - (i / 10) ** 2) ** 2).toFixed(4)]);
 // Máscara de la grilla bajo la ficha: oculta hasta el 55 % del radio y
 // vuelve con smoothstep hasta el borde.
-const GRID_HIDE = Array.from({ length: 11 }, (_, i) => { const t = Math.max(0, (i / 10 - 0.55) / 0.45); return [i / 10, +(1 - t * t * (3 - 2 * t)).toFixed(4)]; });
+const smooth = (t) => t * t * (3 - 2 * t);
+const GRID_HIDE = Array.from({ length: 11 }, (_, i) => [i / 10, +(1 - smooth(Math.max(0, (i / 10 - 0.55) / 0.45))).toFixed(4)]);
 // Lo que tarda un impulso en recorrer una rama (mobile); igual que en el CSS.
 const PULSE_MS = 700;
 // Pulso base del movimiento de la portada (impulsos, abanico, latido de hoy).
 const BEAT = 1200;
 // Luz del tramo encendido: plena en el punto, se apaga con smoothstep hacia las puntas.
-const SEG_FADE = Array.from({ length: 9 }, (_, i) => { const t = Math.abs(i / 8 - 0.5) * 2, k = Math.min(1, (1 - t) / 0.6); return [i / 8, +(k * k * (3 - 2 * k)).toFixed(3)]; });
+const SEG_FADE = Array.from({ length: 9 }, (_, i) => [i / 8, +smooth(Math.min(1, (1 - Math.abs(i / 8 - 0.5) * 2) / 0.6)).toFixed(3)]);
+// Ficha: por debajo de este alto de hueco queda solo "Entrar"; por encima
+// suma una fila viva cada ROW_H px (descripción ~3 líneas + "Entrar" ≈ MINI_H).
+const MINI_H = 170, ROW_H = 37;
 // Mobile: lo que tarda el toque en viajar por la rama antes de entrar.
 const TAP_MS = 340;
 
@@ -123,6 +128,9 @@ export function LayerCurve({ news = [], onEnter }) {
   // de 1,2 s (el abanico redibuja cada 0,6 s y hoy late cada 2,4 s). Quieto
   // con reduced-motion y en pausa cuando no se ve.
   const [pulse, setPulse] = useState(null);   // { i, n }
+  const pulseN = useRef(0);                   // número de impulso (reinicia la animación)
+  const tapT = useRef(null);
+  useEffect(() => () => clearTimeout(tapT.current), []);
   const [lit, setLit] = useState(null);
   const shownAt = useRef(0);
   const hideT = useRef(null);
@@ -171,14 +179,14 @@ export function LayerCurve({ news = [], onEnter }) {
   useEffect(() => {
     if (!size.w || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
     const [every, spread] = mobile ? [BEAT, BEAT] : [BEAT * 3, BEAT];
-    let visible = true, n = 0, last = -1, t1, t2, t3;
+    let visible = true, last = -1, t1, t2, t3;
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
     if (stageRef.current) io.observe(stageRef.current);
     const fire = () => {
       if (visible && !document.hidden && (mobile || !busy.current)) { // en táctil no hay "explorando"
         let i; do i = Math.floor(Math.random() * NODES.length); while (i === last);
         last = i;
-        setPulse({ i, n: ++n });
+        setPulse({ i, n: ++pulseN.current });
         t2 = setTimeout(() => setLit(i), PULSE_MS);            // llega: se enciende
         t3 = setTimeout(() => setLit((v) => (v === i ? null : v)), PULSE_MS + 1100);
       }
@@ -284,8 +292,7 @@ export function LayerCurve({ news = [], onEnter }) {
       // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
       const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
       // El tramo de la curva que la rama amplía (la misma ventana que lens).
-      const sp = H.filter((h) => Math.abs(T(h.t) - tt) <= 0.76).map((h) => [X(T(h.t)), Y(h.p)]);
-      const seg = { d: "M" + sp.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join("L"), x0: sp[0][0], x1: sp[sp.length - 1][0] };
+      const seg = draw(H.filter((h) => Math.abs(T(h.t) - tt) <= LENS_WIN).map((h) => [X(T(h.t)), Y(h.p)])).path;
       return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, seg, rule: `M${ex},${ey}V${ly - 3}` };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
@@ -302,9 +309,8 @@ export function LayerCurve({ news = [], onEnter }) {
         if (w >= 340 && h >= 76 && (!dock || w * Math.min(h, 340) > dock.w * Math.min(dock.h, 340))) dock = { a, b, x: pts[a][0] + 18, y: top + 26, w: Math.min(w, 560), h };
       }
     }
-    // Hueco bajo: compacta (laptops de 800 px: qué es, el dato y "Entrar") o
-    // mínima (pantallas de ~650 px: nombre y "Entrar").
-    if (dock) { dock.x += (pts[dock.b][0] - pts[dock.a][0] - 36 - dock.w) / 2; dock.fit = dock.h < 170 ? "mini" : dock.h < 300 ? "compact" : ""; }
+    // Hueco bajo (pantallas de ~650 px): la ficha mínima, solo "Entrar".
+    if (dock) { dock.x += (pts[dock.b][0] - pts[dock.a][0] - 36 - dock.w) / 2; dock.mini = dock.h < MINI_H; }
     return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(pts), xt: X(TODAY), yt: Y(last), nodes, dock };
   }, [H, size, fit, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -347,8 +353,9 @@ export function LayerCurve({ news = [], onEnter }) {
   // Mobile: el toque se ve viajar de la curva al nombre y recién ahí entra.
   const enterV = (i) => {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return onEnter(NODES[i].key);
-    setSel(i); setPulse((p) => ({ i, n: (p?.n || 0) + 1000 }));
-    setTimeout(() => onEnter(NODES[i].key), TAP_MS);
+    setSel(i); setPulse({ i, n: ++pulseN.current });
+    clearTimeout(tapT.current);
+    tapT.current = setTimeout(() => onEnter(NODES[i].key), TAP_MS);
   };
   const show = (i) => { clearTimeout(hideT.current); shownAt.current = Date.now(); setSel(i); };
 
@@ -366,11 +373,11 @@ export function LayerCurve({ news = [], onEnter }) {
     // Con poco alto para apagarse, la luz es más tenue: si no, se leen escalones.
     return { cx, cy, rx, ry, k: Math.min(1, ry / 220), tf: tfm(cx, cy, ry / rx), my, mrx, mtf: tfm(cx, my, mry / mrx) };
   })() : null;
-  // Filas de la ficha: las que entran en el hueco (descripción ~3 líneas + "Entrar" ≈ 170 px; ~37 px por fila).
-  const rowsMax = !dock ? 3 : dock.fit === "mini" ? 0 : Math.max(0, Math.min(3, Math.floor((dock.h - 170) / 37)));
+  // Filas de la ficha: las que entran en el hueco.
+  const rows = selNodeP ? content[selNodeP.key].rows.slice(0, dock ? Math.max(0, Math.floor((dock.h - MINI_H) / ROW_H)) : undefined) : [];
   const preview = selNodeP && (
     <div
-      className={`blc-pv${dock ? " is-dock" : ""}${dock?.fit ? ` is-${dock.fit}` : ""}`}
+      className={`blc-pv${dock ? " is-dock" : ""}${dock?.mini ? " is-mini" : ""}`}
       role="dialog"
       aria-label={name(selNodeP.key)}
       style={dock
@@ -388,11 +395,13 @@ export function LayerCurve({ news = [], onEnter }) {
       <div className="pv-b">
         {/* Adentro de la curva el dato ya está en la bandera: la ficha suma lo que hay adentro. */}
         {!dock && <div className="big">{content[selNodeP.key].v ?? "—"}</div>}
-        <div className="rows">
-          {content[selNodeP.key].rows.slice(0, rowsMax).map(([a, b], j) => (
-            <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
-          ))}
-        </div>
+        {rows.length > 0 && (
+          <div className="rows">
+            {rows.map(([a, b], j) => (
+              <div key={j} className={`r${content[selNodeP.key].titles ? " t" : ""}`}><span>{a}</span><span>{b}</span></div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="pv-c">
         <button type="button" className="go" onClick={() => onEnter(selNodeP.key)}>{t("curve.enter")} {name(selNodeP.key)} →</button>
@@ -436,7 +445,7 @@ export function LayerCurve({ news = [], onEnter }) {
             role="button"
             aria-label={`${label}. ${t(`curve.${n.key}.desc`)}`}
             onClick={(e) => { e.stopPropagation(); enterV(i); }}
-            onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
+            onKeyDown={(e) => e.key === "Enter" && enterV(i)}
           >
             <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
             <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
@@ -457,7 +466,7 @@ export function LayerCurve({ news = [], onEnter }) {
       <h1 className="bl-sr-only">{t("curve.title")}</h1>
       <div
         className={`blc-stage${geo ? " is-ready" : ""}${sel != null ? " has-sel" : ""}`}
-        style={geo?.V ? { height: geo.Hh } : undefined}
+        style={{ "--tap": `${TAP_MS}ms`, ...(geo?.V ? { height: geo.Hh } : null) }}
         ref={stageRef}
         onMouseEnter={() => { busy.current = true; }}
         onMouseLeave={() => { busy.current = sel != null; }}
@@ -468,6 +477,8 @@ export function LayerCurve({ news = [], onEnter }) {
             <defs>
               <linearGradient id="blc-cg" x1="0" x2="1"><stop offset="0" stopColor="#2f5a63" /><stop offset=".6" stopColor="#6CB8C8" /><stop offset="1" stopColor="#bfe8f0" /></linearGradient>
               <linearGradient id="blc-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6CB8C8" stopOpacity=".16" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" /></linearGradient>
+              {/* El tramo encendido: pleno en el punto, fundido hacia las dos puntas. */}
+              <linearGradient id="blc-sg">{SEG_FADE.map(([o, v]) => <stop key={o} offset={o} style={{ stopColor: "var(--blc-light)" }} stopOpacity={v} />)}</linearGradient>
               <clipPath id="blc-cp"><rect x="0" y="0" width={geo.W} height={geo.Hh - geo.BOT} /></clipPath>
               {/* El área entra suave en 2012 y se disuelve en el último tercio antes
                   de hoy con curva suave: con 160 px lineales quedaba una franja. */}
@@ -544,11 +555,7 @@ export function LayerCurve({ news = [], onEnter }) {
                   onClick={(e) => { e.stopPropagation(); onEnter(n.key); }}
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
-                  {/* El tramo se enciende desde el punto y se funde en las dos puntas: sin cortes. */}
-                  <linearGradient id={`blc-sg${i}`} gradientUnits="userSpaceOnUse" x1={n.seg.x0} y1="0" x2={n.seg.x1} y2="0">
-                    {SEG_FADE.map(([o, v]) => <stop key={o} offset={o} stopColor="#e9fbff" stopOpacity={v} />)}
-                  </linearGradient>
-                  <path className="blc-seg" d={n.seg.d} stroke={`url(#blc-sg${i})`} />
+                  <path className="blc-seg" d={n.seg} stroke="url(#blc-sg)" />
                   <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />

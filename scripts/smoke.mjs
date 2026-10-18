@@ -885,7 +885,7 @@ async function run(vp) {
         // tramo que su rama amplía y todo lo demás (curva, otras ramas) se retira.
         const lupa = await page.evaluate(() => {
           const on = document.querySelector(".blc-node.is-on"), off = document.querySelector(".blc-node:not(.is-on)");
-          const op = (el) => (el ? +(getComputedStyle(el).filter.match(/opacity\(([\d.]+)\)/)?.[1] ?? 1) : 1);
+          const op = (el) => (el ? +getComputedStyle(el).opacity : 1);
           return { seg: on?.querySelector(".blc-seg") ? +getComputedStyle(on.querySelector(".blc-seg")).opacity : 0, curve: op(document.querySelector(".blc-curve")), other: op(off), fan: op(document.querySelector(".blc-fan")),
             // Un solo trazo de luz: la rama encendida usa la luz del tramo, y el tramo se funde (gradiente, no color plano).
             branch: on ? getComputedStyle(on.querySelector(".blc-branch")).stroke : "", segPaint: on?.querySelector(".blc-seg")?.getAttribute("stroke") || "" };
