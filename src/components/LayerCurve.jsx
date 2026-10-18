@@ -7,18 +7,19 @@ import { SECTION_LABEL, T, Pct, Phase, fmtDay, fmtUsd, layerStats, list, useLaye
 // Portada de Layer: la curva histórica de Bitcoin (2012 → hoy) como mapa de
 // navegación. Cada sección vive en un punto de la curva, en orden de uso (la
 // curva es el único índice, sept 2026). Un solo hover: el de las secciones.
-// "Ramas" (30-sep, tras la auditoría y referentes: Tufte, Minard, Beck): cada
-// sección sale de su punto con una RAMA que es una lupa de la curva — el
-// precio real de BTC alrededor de ese punto (±9 meses) — con el mismo trazo que la curva principal, y termina
-// en su nombre. Como las ramas llevan cada nombre a su lugar, el eje de
-// tiempo es REAL (sin tramos comprimidos) y los nombres quedan parejos: en
-// mobile, una columna con las 8 secciones y el abanico en una sola pantalla;
-// en desktop, un riel de títulos arriba. Todo en un color (Pablo: el rojo/
-// verde por sección rompía la estética de Layer).
+// "Haz" (oct 2026; Pablo la eligió entre las 10 direcciones del informe
+// docs/reports/Conexión títulos y curva Layer.md): cada nombre alumbra hacia su
+// punto con una línea RECTA de luz que se apaga antes de tocar la curva. Recta
+// y en una sola dirección, como piden la cartografía, el subte y los estudios
+// de rótulos (Barth et al.): no compite con la curva ni la cruza (la curva es
+// función del tiempo: una vertical desde su punto no vuelve a tocarla). Al
+// señalar, el haz completa el tramo y toca el punto. En desktop los nombres
+// van en una fila alta; en mobile, a los dos lados del tronco. Todo en un
+// color (Pablo: el rojo/verde por sección rompía la estética de Layer).
 // "Lupa" (oct 2026, Pablo eligió C): al elegir una sección todo se retira —
 // curva, área, abanico y las otras ramas— y queda encendido el camino tramo →
-// rama → nombre → ficha: en la curva se prende el pedazo que la rama amplía y
-// la rama crece desde ahí. Sin plomada: la conexión la cuenta la luz.
+// haz → nombre → ficha: en la curva se prende el tramo de esa sección y el
+// haz crece desde ahí. Sin plomada: la conexión la cuenta la luz.
 
 // Orden de las secciones = orden de USO (Pablo, oct 2026): lo primero al
 // entrar es ponerse al día. Ya no se atan a momentos históricos: se reparten
@@ -37,30 +38,12 @@ const VT = 14, VFAN = 214, VROW = 60, VB = 44;
 // la curva y el abanico se abre a los dos lados desde su punto real.
 const V_CEIL = 2_500_000;
 
-// Rama = lupa: log-precio alrededor de `tt` (±9 meses de la serie mensual;
-// hoy, la serie horaria de 7 días si está) como desvío de la recta entre sus
-// extremos, normalizado a ±1 — así arranca en el punto y termina en el nombre.
-const LENS_WIN = 0.76;
-function lens(H, tt, today, spark) {
-  const a = tt >= today - 0.02 && spark?.length > 12
-    ? spark.filter((_, i) => i % 2 === 0).map((p) => Math.log10(p))
-    : H.filter((h) => Math.abs(T(h.t) - tt) <= LENS_WIN).map((h) => Math.log10(h.p));
-  if (a.length < 3) return [0, 0];
-  const n = a.length - 1, r = a.map((v, i) => v - (a[0] + ((a[n] - a[0]) * i) / n));
-  const m = Math.max(1e-9, ...r.map(Math.abs));
-  return r.map((v) => v / m);
-}
-// La rama: una curva de Bézier de la sección a su nombre con la lupa encima
-// (desvío sobre la normal, que se apaga en las puntas).
-function branchPath([x0, y0], c1, c2, [x1, y1], offs, amp) {
-  const B = (t) => { const u = 1 - t; return [u * u * u * x0 + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * x1, u * u * u * y0 + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * y1]; };
-  const n = offs.length - 1;
-  return offs.map((o, i) => {
-    const t = i / n, [px, py] = B(t), [qx, qy] = B(Math.min(1, t + 0.01)), [rx, ry] = B(Math.max(0, t - 0.01));
-    const L = Math.hypot(qx - rx, qy - ry) || 1, e = o * amp * Math.sin(Math.PI * t) ** 0.6;
-    return `${i ? "L" : "M"}${(px - ((qy - ry) / L) * e).toFixed(1)},${(py + ((qx - rx) / L) * e).toFixed(1)}`;
-  }).join("");
-}
+
+// Tramo de la curva que se enciende con la sección (años a cada lado del punto).
+const TRAMO_WIN = 0.76;
+// Haz: de pleno junto al nombre a nada en este largo (px), o antes si el punto
+// queda más cerca: así todos se leen parejos, sean largos o cortos.
+const HAZ_FADE = 150;
 
 // Lupa del futuro: de hoy en adelante la escala del precio se amplía ×4
 // (sin rótulo desde oct 2026, Pablo: ruido) para que los caminos posibles se abran de verdad; a
@@ -91,18 +74,22 @@ const MINI_H = 170, ROW_H = 37;
 // Mobile: lo que tarda el toque en viajar por la rama antes de entrar.
 const TAP_MS = 340;
 
-// Una rama (mobile y desktop): brillo, trazo, el impulso cuando lo hay (su
-// número reinicia la animación) y el remate junto al nombre.
-function Branch({ d, pulse, rule }) {
+// El haz (mobile y desktop): su luz (pleno junto al nombre, nada antes de la
+// curva), brillo, trazo y el impulso cuando lo hay (su número reinicia la animación).
+function Branch({ id, d, haz, pulse }) {
   return (
     <>
+      <linearGradient id={id} gradientUnits="userSpaceOnUse" {...haz}>
+        <stop offset="0" stopColor="#6CB8C8" stopOpacity=".42" /><stop offset="1" stopColor="#6CB8C8" stopOpacity="0" />
+      </linearGradient>
       <path className="blc-branch-glow" d={d} />
-      <path className="blc-branch" d={d} pathLength="100" />
+      <path className="blc-branch" d={d} pathLength="100" style={{ "--hz": `url(#${id})` }} />
       {pulse ? <path key={pulse} className="blc-pulse" d={d} pathLength="100" /> : null}
-      <path className="blc-branch blc-rule" d={rule} />
     </>
   );
 }
+
+
 
 // Hoy: no es una sección; late solo y de ahí nace el abanico. Radios: latido, halo, punto, centro.
 function Now({ x, y, r: [live, halo, dot, core] }) {
@@ -232,15 +219,12 @@ export function LayerCurve({ news = [], onEnter }) {
       len: pts.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0),
     });
 
-    const spark = list(d.prices).find((x) => x.sym === "BTC")?.sparkline;
-    const lensOf = (tt) => lens(H, tt, TODAY, spark);
-
     if (mobile) {
       // Botánico (oct 2026, Pablo: "G+"): la curva es un tronco al centro, el
       // abanico del futuro es la copa (arriba, halving → hoy) y el pasado baja
       // hasta 2012. Los nombres se alternan a los dos lados, en columnas contra
-      // el tronco, y cada rama SUBE hacia su nombre, como en una lámina de
-      // botánica. Abajo, la historia anterior a 2012 sigue el tronco hasta el
+      // el tronco; cada uno alumbra hacia su punto con un haz horizontal (recto,
+      // como el tick del subte: no puede cruzar el tronco). Abajo, la historia anterior a 2012 sigue el tronco hasta el
       // pie y se funde: la curva viene de algún lado, no flota.
       // En pantallas bajas (≤ 700 px) las ramas se juntan hasta 38 px y el abanico
       // conserva 80: entra sin desplazar desde ~640 px de alto (antes, un mínimo
@@ -254,11 +238,12 @@ export function LayerCurve({ news = [], onEnter }) {
       const Yt = (tt) => (tt >= TODAY ? yToday - ((tt - TODAY) / (nextHalving - TODAY)) * (yToday - VT) : yToday + ((TODAY - tt) / (TODAY - T0)) * (yBot - yToday));
       const lc = Math.log10(V_CEIL) - 2, x0 = Math.round(W / 2 - 34), x1 = Math.round(W / 2 + 46);
       const Xp = (p) => x0 + ((Math.log10(Math.max(p, 100)) - 2) / lc) * (x1 - x0);
-      const step = Yt(times[1]) - Yt(times[0]), rise = step * 0.42;
+      const step = Yt(times[1]) - Yt(times[0]);
       const nodes = NODES.map((n, i) => {
-        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), left = i % 2 === 1, ex = left ? x0 - 22 : x1 + 22, ly = cy - rise;
-        const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.25, cy - rise * 0.15], [ex - (ex - cx) * 0.25, ly], [ex, ly], lensOf(times[i]), 3);
-        return { ...n, tt: times[i], cx, cy, lx: left ? ex - 10 : ex + 10, anchor: left ? "end" : "start", ly, branch, rule: `M${ex},${ly - 11}V${ly + 9}` };
+        const cx = Xp(priceAt(times[i])), cy = Yt(times[i]), left = i % 2 === 1, ex = left ? x0 - 22 : x1 + 22, s = left ? -1 : 1;
+        const fade = Math.min(Math.abs(ex - cx) - 14, HAZ_FADE);
+        return { ...n, tt: times[i], cx, cy, lx: ex + s * 8, anchor: left ? "end" : "start", ly: cy,
+          branch: `M${(cx + s * 7).toFixed(1)},${cy.toFixed(1)}H${ex}`, haz: { x1: ex, y1: cy, x2: ex - s * fade, y2: cy } };
       });
       // El tronco arranca en el pie y sube por toda la serie (desde 2012-01) hasta hoy.
       const trunk = H.map((h) => [Xp(h.p), Yt(T(h.t))]);
@@ -277,23 +262,31 @@ export function LayerCurve({ news = [], onEnter }) {
     const Y = (p) => TOP + (1 - Math.log10(Math.max(p, 1)) / Math.log10(250000)) * (Hh - TOP - BOT);
     // El riel termina en hoy: el cielo del futuro queda libre para el abanico.
     // En pantallas angostas entra lo justo sobre el futuro (títulos a ≥96 px).
-    const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 100 ? 14 : gapx < 125 ? 16 : 18; // de la escala (--fs-*)
+    const gapx = Math.max(96, (xNow - L - 100) / (NODES.length - 1)), fs = gapx < 110 ? 13 : 14; // dos niveles: nombre 13–14, dato 11
     const times = spread(SPREAD_GAP);
-    // Banderas (oct 2026, Pablo: D + 4): todas las ramas miden lo mismo; cada
-    // nombre queda a igual distancia de su punto y sube con la curva, usando
-    // el cielo libre. El más alto toca el riel. La rama termina en una regla
-    // que sube por el costado del nombre y su dato, como una cartela.
-    const cys = times.map((tt) => Y(priceAt(tt))), lo = Math.min(...cys);
+    // Haz: los nombres en una fila alta, cada uno en bandera junto a su haz.
+    // Si no entra antes del haz siguiente, pasa a la izquierda (si ese cielo
+    // está libre) o baja una línea. Anchos medidos con la fuente de la página.
+    const cv = document.createElement("canvas").getContext("2d");
+    cv.font = `620 ${fs}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-sans") || "sans-serif"}`;
+    const GAP = 7;
     const nodes = NODES.map((n, i) => {
-      const tt = times[i], cx = X(tt), cy = cys[i], kx = L + 10 + i * gapx, ly = cy - lo + RAIL;
-      const ex = kx - 10, ey = ly + 44;
-      // Controles: sube casi vertical desde el punto y entra vertical al riel;
-      // el primer control ya se inclina hacia su título, así las ramas del
-      // racimo 2020–21 se abren en abanico en vez de cruzarse al salir.
-      const branch = branchPath([cx, cy], [cx + (ex - cx) * 0.18, cy - (cy - ey) * 0.5], [ex, ey + (cy - ey) * 0.38], [ex, ey], lensOf(tt), 12 * Math.min(1, gapx / 150));
-      // El tramo de la curva que la rama amplía (la misma ventana que lens).
-      const seg = draw(H.filter((h) => Math.abs(T(h.t) - tt) <= LENS_WIN).map((h) => [X(T(h.t)), Y(h.p)])).path;
-      return { ...n, tt, cx, cy, kx, ly, ex, ey, fs, branch, seg, rule: `M${ex},${ey}V${ly - 3}` };
+      const tt = times[i], cx = X(tt), cy = Y(priceAt(tt)), w = Math.max(70, cv.measureText(t(SECTION_LABEL[n.key])).width);
+      return { ...n, tt, cx, cy, w, fs, seg: draw(H.filter((h) => Math.abs(T(h.t) - tt) <= TRAMO_WIN).map((h) => [X(T(h.t)), Y(h.p)])).path };
+    });
+    nodes.forEach((n, i) => {
+      const next = nodes[i + 1], prev = nodes[i - 1];
+      const prevR = prev ? (prev.anchor === "end" ? prev.kx : prev.kx + prev.w) + 12 : -Infinity;
+      let flip = false;
+      n.ly = RAIL;
+      if (next && n.cx + GAP + n.w > next.cx - 10) {
+        if (n.cx - GAP - n.w > prevR && prev?.ly !== RAIL + 44) flip = true; else n.ly = RAIL + 44;
+      }
+      const top = n.ly + 12 - fs * 0.72;
+      n.anchor = flip ? "end" : "start"; n.kx = flip ? n.cx - GAP : n.cx + GAP;
+      n.bx = flip ? n.kx - n.w - 4 : n.kx - 4;
+      n.branch = `M${n.cx.toFixed(1)},${(n.cy - 6).toFixed(1)}V${top.toFixed(1)}`;
+      n.haz = { x1: 0, y1: top, x2: 0, y2: top + Math.min(n.cy - 6 - top - 16, HAZ_FADE) };
     });
     const pxDec = (Hh - TOP - BOT) / Math.log10(250000);
     // Ficha de la sección (oct 2026, Pablo): vive ADENTRO de la curva, en el
@@ -312,7 +305,7 @@ export function LayerCurve({ news = [], onEnter }) {
     // Hueco bajo (pantallas de ~650 px): la ficha mínima, solo "Entrar".
     if (dock) { dock.x += (pts[dock.b][0] - pts[dock.a][0] - 36 - dock.w) / 2; dock.mini = dock.h < MINI_H; }
     return { W, Hh, L, R, TOP, BOT, RAIL, gapx, X, Y, TODAY, pxDec, last, nextHalving, ...draw(pts), xt: X(TODAY), yt: Y(last), nodes, dock };
-  }, [H, size, fit, mobile, cyc, d.prices]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [H, size, fit, mobile, cyc, d.prices, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caminos del futuro: (tiempo, precio) → pantalla, con la lupa ×4 centrada
   // en hoy. Sin rótulos de hitos sobre la curva (Pablo, 30-sep): viven en Hitos.
@@ -448,7 +441,7 @@ export function LayerCurve({ news = [], onEnter }) {
             onKeyDown={(e) => e.key === "Enter" && enterV(i)}
           >
             <rect className="blc-hit" x="0" y={n.ly - geo.row / 2} width={geo.W} height={geo.row} />
-            <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
+            <Branch id={`blc-hz${i}`} d={n.branch} haz={n.haz} pulse={pulse?.i === i && pulse.n} />
             <circle className="blc-halo" cx={n.cx} cy={n.cy} r="9" />
             <circle className="blc-dot" cx={n.cx} cy={n.cy} r="4.5" />
             <circle className="blc-core" cx={n.cx} cy={n.cy} r="1.7" />
@@ -504,7 +497,7 @@ export function LayerCurve({ news = [], onEnter }) {
                 <mask id="blc-gm" maskUnits="userSpaceOnUse" x="0" y="0" width={geo.W} height={geo.Hh}>
                   <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="#fff" />
                   {glow && <rect x="0" y="0" width={geo.W} height={geo.Hh} fill="url(#blc-gmg)" />}
-                  {geo.nodes.map((n) => <rect key={n.key} x={n.ex - 8} y={n.ly - 10} width={geo.gapx - 4} height="62" rx="8" fill="#000" />)}
+                  {geo.nodes.map((n) => <rect key={n.key} x={n.bx - 4} y={n.ly - 10} width={n.w + 16} height="62" rx="8" fill="#000" />)}
                 </mask>
               </defs>
               <g mask="url(#blc-gm)">
@@ -556,14 +549,14 @@ export function LayerCurve({ news = [], onEnter }) {
                   onKeyDown={(e) => e.key === "Enter" && onEnter(n.key)}
                 >
                   <path className="blc-seg" d={n.seg} stroke="url(#blc-sg)" />
-                  <Branch d={n.branch} pulse={pulse?.i === i && pulse.n} rule={n.rule} />
+                  <Branch id={`blc-hz${i}`} d={n.branch} haz={n.haz} pulse={pulse?.i === i && pulse.n} />
                   <circle className="blc-halo" cx={n.cx} cy={n.cy} r="17" />
                   <circle className="blc-dot" cx={n.cx} cy={n.cy} r="7.5" />
                   <circle className="blc-core" cx={n.cx} cy={n.cy} r="2.6" />
-                  {/* Riel: nombre + dato vivo, en un color (el dato en gris). */}
-                  <rect className="blc-rail-hit" x={n.kx - 4} y={n.ly - 6} width={geo.gapx - 8} height="58" />
-                  <text className="blc-rn" x={n.kx} y={n.ly + 12} style={{ fontSize: n.fs }}>{label}</text>
-                  <foreignObject x={n.kx} y={n.ly + 18} width={geo.gapx - 10} height="18"><div className="blc-rv">{c.v ?? " "}</div></foreignObject>
+                  {/* Nombre + dato vivo, en bandera junto a su haz (el dato en gris). */}
+                  <rect className="blc-rail-hit" x={n.bx} y={n.ly - 6} width={n.w + 8} height="58" />
+                  <text className="blc-rn" x={n.kx} y={n.ly + 12} textAnchor={n.anchor} style={{ fontSize: n.fs }}>{label}</text>
+                  <foreignObject x={n.anchor === "end" ? n.kx - 140 : n.kx} y={n.ly + 18} width="140" height="18"><div className={`blc-rv${n.anchor === "end" ? " is-end" : ""}`}>{c.v ?? " "}</div></foreignObject>
                   <circle cx={n.cx} cy={n.cy} r="20" fill="transparent" />
                 </g>
               );

@@ -3719,21 +3719,21 @@ select.bl-venue-input { cursor:pointer; }
 .blc-node { cursor:pointer; animation:blc-pop .5s cubic-bezier(.2,1.4,.4,1) backwards; outline:none; }
 @keyframes blc-pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 /* Halo quieto: con las ramas, 8 puntos latiendo era ruido; late solo hoy (.blc-live). */
-.blc-halo { fill:var(--bl-accent-layer); opacity:.12; }
+.blc-halo { fill:var(--bl-accent-layer); opacity:.07; } /* suave: en reposo manda la luz de los haces */
 .blc-dot { fill:var(--bl-bg); stroke:var(--bl-accent-layer); stroke-width:2.5; }
 .blc-core { fill:var(--bl-accent-layer); }
-/* Ramas (30-sep): cada sección sale de su punto con una lupa de la curva,
-   mismo trazo que la curva principal y en un solo color. */
-.blc-branch { fill:none; stroke:var(--bl-accent-layer); stroke-width:1.35; stroke-linejoin:round; stroke-linecap:round; opacity:.78; transition:opacity .2s, stroke-width .2s; }
-.blc-branch-glow { fill:none; stroke:var(--bl-accent-layer); stroke-width:6; stroke-linejoin:round; opacity:.06; }
-/* La regla (oct 2026): la rama sube por el costado del nombre y lo sostiene. */
-.blc-rule { stroke:#bfe8f0; }
-/* Las ramas cruzan filas ajenas: no capturan toques (cada fila es de su sección). */
+/* Haz (oct 2026): una línea recta de luz del nombre hacia su punto que se
+   apaga antes de la curva (--hz = su degradado); al elegirla, se completa. */
+.blc-branch { fill:none; stroke:var(--hz, var(--bl-accent-layer)); stroke-width:1; transition:stroke-width .2s; }
+.blc-branch-glow { fill:none; stroke:var(--bl-accent-layer); stroke-width:6; opacity:0; }
+/* Los haces cruzan filas ajenas: no capturan toques (cada fila es de su sección). */
 .blc-branch, .blc-branch-glow { pointer-events:none; }
-.blc-node:hover .blc-branch, .blc-node.is-on .blc-branch, .blc-node:focus-visible .blc-branch { opacity:1; stroke-width:1.8; }
+.blc-node:hover .blc-branch, .blc-node.is-on .blc-branch, .blc-node:focus-visible .blc-branch { stroke-width:1.6; }
 .blc-rail-hit { fill:transparent; }
 .blc-rn { fill:var(--bl-text); font:620 var(--fs-16) var(--font-sans); letter-spacing:var(--tr-n015); transition:fill .9s ease-out, filter .9s ease-out; }
 .blc-rv { font:500 var(--fs-11) var(--font-mono); color:var(--bl-text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:18px; }
+.blc-rv.is-end { text-align:right; }
+.blc-node foreignObject { pointer-events:none; } /* su caja (140 px) no le roba el hover al vecino: la zona activa es .blc-rail-hit */
 .blc-rv * { color:inherit !important; } /* un color: el dato no se tiñe de rojo/verde */
 .blc-node:hover .blc-rn, .blc-node.is-on .blc-rn { fill:var(--bl-accent-layer); transition:fill .15s; } /* el hover responde ya; el impulso se apaga lento */
 .blc-node:hover .blc-dot, .blc-node.is-on .blc-dot { fill:var(--bl-accent-layer); }
@@ -3778,7 +3778,6 @@ select.bl-venue-input { cursor:pointer; }
   filter:drop-shadow(0 0 5px var(--bl-accent-layer)); pointer-events:none; animation:blc-pulse .7s cubic-bezier(.45,0,.7,1) forwards; }
 @keyframes blc-pulse { 85% { opacity:1; } to { stroke-dashoffset:-100; opacity:0; } } /* se apaga al llegar: el último cuadro (forwards) no deja una rayita junto al nombre */
 .blc-node.is-lit .blc-ttl, .blc-node.is-lit .blc-rn { fill:var(--bl-accent-layer); filter:drop-shadow(0 0 7px color-mix(in srgb, var(--bl-accent-layer) 70%, transparent)); transition:fill .12s, filter .12s; }
-.blc-node.is-lit .blc-rule { stroke:#fff; opacity:1; }
 /* Lupa (oct 2026): con una sección elegida todo se retira y queda el camino
    tramo → rama → nombre → ficha. */
 .blc-node, .blc-curve, .blc-area, .blc-fan, .blc-now, .blc-grid { transition:opacity .3s ease-out; }
@@ -3796,7 +3795,7 @@ select.bl-venue-input { cursor:pointer; }
 .has-sel .blc-node.is-on .blc-seg { opacity:.95; }
 /* Un solo trazo de luz: la rama se enciende con la misma luz que el tramo y la regla. */
 .has-sel .blc-node.is-on .blc-branch { stroke:var(--blc-light); filter:drop-shadow(0 0 6px var(--bl-accent-layer)); }
-.has-sel .blc-node.is-on .blc-branch:not(.blc-rule) { --l:100; stroke-dasharray:100; animation:blc-walk .45s cubic-bezier(.3,0,.2,1) both; }
+.has-sel .blc-node.is-on .blc-branch { --l:100; stroke-dasharray:100; animation:blc-walk .45s cubic-bezier(.3,0,.2,1) both; }
 .blc-pv h3 { margin:8px 0 2px; font-size:var(--fs-28); letter-spacing:var(--tr-n03); color:var(--bl-text); }
 .blc-pv .desc { margin:0 0 16px; font-size:var(--fs-13); line-height:1.5; color:var(--bl-text-sec); }
 .blc-pv .big { font:600 var(--fs-28) var(--font-mono); letter-spacing:var(--tr-n03); color:var(--bl-text); }

@@ -777,39 +777,27 @@ async function run(vp) {
       const clash = pills.some((a, i) => pills.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
       if (clash) fail(vp.name, "layer", "hay títulos del riel pisados entre sí");
       if (pills.some((r) => r.x < 0 || r.x + r.w > vp.viewport.width + 1)) fail(vp.name, "layer", "un título del riel se sale de la pantalla");
-      if (vp.viewport.width > 768 && (await page.locator(".blc-branch:not(.blc-rule)").count()) !== 8) fail(vp.name, "layer", "desktop: faltan ramas entre la curva y el riel");
-      // Banderas (oct 2026, Pablo: D + 4): en desktop cada nombre queda a la
-      // misma distancia de su punto (ramas de igual largo, no un riel parejo)
-      // y toda rama termina en una regla que sube por el costado del nombre.
-      const flags = await page.locator(".blc-node").evaluateAll((gs) => gs.map((g) => {
-        const d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-rn, .blc-ttl").getBoundingClientRect(), r = g.querySelector(".blc-rule")?.getBoundingClientRect();
-        const side = r && (r.right <= t.left + 1 ? t.left - r.right : r.left >= t.right - 1 ? r.left - t.right : 99);   // la regla va del lado del tronco
-        return { drop: (d.top + d.bottom) / 2 - t.top, rule: !!r && side < 18 && r.top <= t.bottom && r.bottom >= t.top };
-      }));
-      if (flags.some((f) => !f.rule)) fail(vp.name, "layer", "hay ramas que no terminan en la regla de su nombre");
-      if (vp.viewport.width > 768) {
-        const drops = flags.map((f) => f.drop);
-        if (Math.max(...drops) - Math.min(...drops) > 4) fail(vp.name, "layer", `desktop: los nombres no están a igual distancia de su punto (${Math.round(Math.min(...drops))}–${Math.round(Math.max(...drops))} px)`);
-      }
+      if (vp.viewport.width > 768 && (await page.locator(".blc-branch").count()) !== 8) fail(vp.name, "layer", "desktop: faltan haces entre la curva y los nombres");
+      // Haz (oct 2026, Pablo): cada sección se une a su nombre con UNA línea
+      // recta (vertical en desktop, horizontal en mobile) que nace en su punto,
+      // llega al borde de su nombre y es luz en degradado, no un trazo plano.
+      const beams = await page.locator(".blc-node").evaluateAll((gs) => gs.filter((g) => {
+        const b = g.querySelector(".blc-branch"), d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-rn, .blc-ttl").getBoundingClientRect();
+        if (!b || !/^M[\d.,-]+[HV][\d.-]+$/.test(b.getAttribute("d"))) return true;
+        const m = b.getScreenCTM(), a = b.getPointAtLength(0), z = b.getPointAtLength(b.getTotalLength());
+        const A = new DOMPoint(a.x, a.y).matrixTransform(m), Z = new DOMPoint(z.x, z.y).matrixTransform(m);
+        const fromDot = Math.hypot(A.x - (d.left + d.right) / 2, A.y - (d.top + d.bottom) / 2) < 10;
+        const toTitle = Z.x >= t.left - 14 && Z.x <= t.right + 14 && Z.y >= t.top - 14 && Z.y <= t.bottom + 14;
+        return !fromDot || !toTitle || !getComputedStyle(b).stroke.startsWith("url(");
+      }).length);
+      if (beams) fail(vp.name, "layer", `${beams} secciones sin haz recto de su punto a su nombre`);
       if (vp.viewport.width <= 768) {
         const hits = await page.locator(".blc-hit").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
         const extra = await page.locator(".blc-node .blc-vl, .blc-node .blc-pill").count();
         if (hits.length !== 8 || hits.some((h) => h < 44)) fail(vp.name, "layer", `mobile: ${hits.length} franjas tocables (esperaba 8 de ≥44px)`);
         if (extra) fail(vp.name, "layer", "mobile: las secciones de la curva muestran algo más que su título");
-        // Botánico (oct 2026): cada sección sale de su punto con una rama que
-        // SUBE hasta su nombre, los nombres se alternan a los dos lados del
-        // tronco, y las 8 entran en la primera pantalla.
-        const loose = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.filter((g) => {
-          const b = g.querySelector(".blc-branch"), d = g.querySelector(".blc-dot").getBoundingClientRect(), t = g.querySelector(".blc-ttl").getBoundingClientRect();
-          if (!b) return true;
-          const m = b.getScreenCTM(), a = b.getPointAtLength(0), z = b.getPointAtLength(b.getTotalLength());
-          const A = new DOMPoint(a.x, a.y).matrixTransform(m), Z = new DOMPoint(z.x, z.y).matrixTransform(m);
-          const fromDot = Math.hypot(A.x - (d.left + d.right) / 2, A.y - (d.top + d.bottom) / 2) < 6;
-          const gap = Z.x <= t.left ? t.left - Z.x : Z.x - t.right;
-          const toTitle = gap >= 0 && gap < 26 && Math.abs(Z.y - (t.top + t.bottom) / 2) < 14 && Z.y < A.y;
-          return !fromDot || !toTitle || t.left < 0 || t.right > innerWidth;
-        }).length);
-        if (loose) fail(vp.name, "layer", `mobile: ${loose} secciones sin rama de su punto a su nombre`);
+        // Botánico (oct 2026): los nombres se alternan a los dos lados del tronco
+        // y las 8 entran en la primera pantalla.
         const sides = await page.locator(".blc-v .blc-node").evaluateAll((gs) => gs.map((g) => g.querySelector(".blc-ttl").getBoundingClientRect().left < g.querySelector(".blc-dot").getBoundingClientRect().left));
         if (!sides.some(Boolean) || sides.every(Boolean) || sides.some((l, i) => i && l === sides[i - 1])) fail(vp.name, "layer", "mobile: los nombres no se alternan a los dos lados del tronco");
         // G+: el tronco no flota — bajo 2012 sigue hasta el pie de la curva.
