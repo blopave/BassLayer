@@ -3784,7 +3784,10 @@ select.bl-venue-input { cursor:pointer; }
    tramo → rama → nombre → ficha. filter y no opacity: la entrada anima opacity. */
 .blc-node, .blc-curve, .blc-area, .blc-fan, .blc-now, .blc-grid { transition:filter .3s ease-out; }
 .has-sel .blc-node:not(.is-on) { filter:opacity(.26); }
-.has-sel :is(.blc-curve, .blc-area, .blc-fan, .blc-now) { filter:opacity(.3); }
+.has-sel :is(.blc-curve, .blc-area) { filter:opacity(.3); }
+/* El futuro también es contexto: el abanico y hoy se retiran menos. */
+.has-sel .blc-fan { filter:opacity(.6); }
+.has-sel .blc-now { filter:opacity(.8); }
 .has-sel .blc-grid { filter:opacity(.5); }
 .has-sel .blc-node.is-on .blc-branch-glow { opacity:.16; }
 .has-sel .blc-node.is-on .blc-rule { stroke:#fff; }

@@ -895,11 +895,11 @@ async function run(vp) {
         const lupa = await page.evaluate(() => {
           const on = document.querySelector(".blc-node.is-on"), off = document.querySelector(".blc-node:not(.is-on)");
           const op = (el) => (el ? +(getComputedStyle(el).filter.match(/opacity\(([\d.]+)\)/)?.[1] ?? 1) : 1);
-          return { seg: on?.querySelector(".blc-seg") ? +getComputedStyle(on.querySelector(".blc-seg")).opacity : 0, curve: op(document.querySelector(".blc-curve")), other: op(off),
+          return { seg: on?.querySelector(".blc-seg") ? +getComputedStyle(on.querySelector(".blc-seg")).opacity : 0, curve: op(document.querySelector(".blc-curve")), other: op(off), fan: op(document.querySelector(".blc-fan")),
             // Un solo trazo de luz: la rama encendida usa la luz del tramo, y el tramo se funde (gradiente, no color plano).
             branch: on ? getComputedStyle(on.querySelector(".blc-branch")).stroke : "", segPaint: on?.querySelector(".blc-seg")?.getAttribute("stroke") || "" };
         }).catch((e) => ({ error: String(e) }));
-        if (lupa.error || lupa.seg < 0.5 || lupa.curve > 0.6 || lupa.other > 0.6 || lupa.branch !== "rgb(233, 251, 255)" || !lupa.segPaint.startsWith("url(")) fail(vp.name, "layer", `desktop: la lupa no enfoca la sección (${JSON.stringify(lupa)})`);
+        if (lupa.error || lupa.seg < 0.5 || lupa.curve > 0.6 || lupa.other > 0.6 || lupa.fan < 0.5 || lupa.branch !== "rgb(233, 251, 255)" || !lupa.segPaint.startsWith("url(")) fail(vp.name, "layer", `desktop: la lupa no enfoca la sección (${JSON.stringify(lupa)})`);
         const go = await page.locator(".blc-pv.is-dock .go").boundingBox().catch(() => null);
         if (!go || go.y + go.height > vp.viewport.height) fail(vp.name, "layer", "desktop: el botón Entrar de la ficha queda fuera de pantalla");
         await page.mouse.move(5, 5);
