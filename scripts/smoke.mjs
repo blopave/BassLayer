@@ -1098,6 +1098,18 @@ async function runApp() {
       if (await linea.count()) F("invitación", "después de la ✕ la invitación vuelve a aparecer");
     }
     await c.close();
+    // Pantallas bajas (oct 2026): la portada de Layer entra sin desplazar
+    // también en celulares y laptops de 600 px de alto.
+    for (const [w, h, mob] of [[390, 600, true], [1000, 600, false]]) {
+      [c, pg] = await ctx({ viewport: { width: w, height: h }, ...(mob ? { isMobile: true, hasTouch: true } : {}) });
+      await pg.addInitScript("localStorage.setItem('bl-onboarded','1'); localStorage.setItem('bl-app-no','1');");
+      await pg.goto(BASE + "/?view=layer", { waitUntil: "domcontentloaded" });
+      await pg.locator(".blc-stage.is-ready").first().waitFor({ timeout: 20_000 }).catch(() => {});
+      await pg.waitForTimeout(800);
+      const over = await pg.evaluate(() => { const p = document.querySelector(".blc")?.closest(".bl-swipe-panel"); return p ? p.scrollHeight - p.clientHeight : -1; });
+      if (over > 2 || over < 0) F("layer", `${w}×${h}: la portada de Layer ${over < 0 ? "no carga" : `desplaza ${over} px`}`);
+      await c.close();
+    }
     // Primera visita: no se invita.
     [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await pg.clock.install();
