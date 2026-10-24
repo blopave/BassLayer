@@ -26,13 +26,9 @@ import { SinConexion } from "./components/SinConexion";
 import { useInstalar, esApp } from "./hooks/useInstalar";
 import { metrica } from "./utils/app";
 import { seccionDeRuta, esRutaDeBass, navegar } from "./utils/rutas";
-// Los paneles de gestión (venue/proyecto/admin) los usa una fracción mínima de
-// las visitas, y el modal de evento solo aparece al abrir uno: van en chunks
-// aparte para sacarlos del bundle crítico del home.
+// El modal de evento solo aparece al abrir uno: va en un chunk aparte para
+// sacarlo del bundle crítico del home.
 const EventModal = lazyNamed(() => import("./components/EventModal"), "EventModal");
-const VenueAuth = lazyNamed(() => import("./components/VenueAuth"), "VenueAuth");
-const VenueDashboard = lazyNamed(() => import("./components/VenueDashboard"), "VenueDashboard");
-const AdminPanel = lazyNamed(() => import("./components/AdminPanel"), "AdminPanel");
 
 // Atributos del panel fuera de pantalla: sin foco ni presencia en el árbol accesible.
 const HIDDEN_PROPS = { inert: "", "aria-hidden": "true" };
@@ -142,56 +138,11 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [utilOpen, setUtilOpen] = useState(false); // util-bar colapsada (mobile y secciones)
-  const [venueUser, setVenueUser] = useState(null);
-  const [venueView, setVenueView] = useState(null); // null | "auth" | "dashboard" | "admin"
-  const [authReady, setAuthReady] = useState(false);
   const newsLoadedRef = useRef(false);
   const eventsLoadedRef = useRef(false);
 
   // La cortina de index.html tapa el prerender SEO hasta este primer commit.
   useEffect(() => { dismissCurtain(); }, []);
-
-  // Restore auth session on load. El cliente Supabase pesa 52 kB gz (36 % del
-  // JS inicial) y lo usa una fracción mínima de visitas: se importa bajo demanda
-  // cuando hay una sesión guardada, se entra por /admin o se abre un panel.
-  const [authWanted, setAuthWanted] = useState(() => !!storage.get("bl-token") || window.location.pathname === "/admin");
-  useEffect(() => { if (venueView) setAuthWanted(true); }, [venueView]);
-  useEffect(() => {
-    if (!authWanted) { setAuthReady(true); return; }
-    let subscription = null;
-    let cancelled = false;
-    import("./utils/supabase").then(({ supabase }) => {
-      if (cancelled) return;
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (cancelled) return;
-        if (session) {
-          setVenueUser(session.user);
-          storage.set("bl-token", session.access_token);
-        }
-        setAuthReady(true);
-      });
-      subscription = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) {
-          setVenueUser(session.user);
-          storage.set("bl-token", session.access_token);
-        } else {
-          setVenueUser(null);
-          storage.remove("bl-token");
-        }
-      }).data.subscription;
-    });
-    return () => { cancelled = true; subscription?.unsubscribe(); };
-  }, [authWanted]);
-
-  // Acceso al panel: /admin abre el login (o el dashboard si ya hay sesión).
-  // El botón "Panel admin" del dashboard (gateado por rol) lleva al AdminPanel.
-  useEffect(() => {
-    if (!authReady) return;
-    if (window.location.pathname === "/admin") {
-      setVenueView(venueUser ? "dashboard" : "auth");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authReady]);
 
   // Feed loaders — defined early since PTR, navigateToSections, and auto-refresh depend on them
   const loadNews = useCallback(async () => {
@@ -889,7 +840,6 @@ export default function App() {
       // Don't trigger shortcuts when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       const key = e.key.toLowerCase();
-      if (key === "escape" && venueView) { setVenueView(null); return; }
       if (key === "escape" && showMenu) { setShowMenu(false); return; }
       if (key === "escape" && utilOpen) { setUtilOpen(false); return; }
       if (view === "sections") {
@@ -903,7 +853,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, utilOpen, venueView]);
+  }, [view, activePanel, swipeTo, navigateHome, toggleMode, showMenu, utilOpen]);
 
   // Close menu / collapsed util-bar on outside click
   useEffect(() => {
@@ -1192,34 +1142,6 @@ export default function App() {
             <div className="bl-about-footer">
               <span className="bl-about-built">{t("home.city")} — {new Date().getFullYear()}</span>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* VENUE OVERLAY */}
-      {venueView && (
-        <div className="bl-venue-overlay" onClick={(e) => { if (e.target === e.currentTarget) setVenueView(null); }}>
-          <div className="bl-venue-overlay-content" onClick={(e) => e.stopPropagation()}>
-            <button className="bl-modal-close" onClick={() => setVenueView(null)} aria-label="Cerrar">&times;</button>
-            <Suspense fallback={null}>
-            {venueView === "auth" && (
-              <VenueAuth
-                onAuth={(user) => { setVenueUser(user); setVenueView("dashboard"); }}
-                onBack={() => setVenueView(null)}
-              />
-            )}
-            {venueView === "dashboard" && (
-              <VenueDashboard
-                user={venueUser}
-                onLogout={() => { setVenueUser(null); setVenueView(null); }}
-                onBack={() => setVenueView(null)}
-                onAdmin={() => setVenueView("admin")}
-              />
-            )}
-            {venueView === "admin" && (
-              <AdminPanel onBack={() => setVenueView(null)} />
-            )}
-            </Suspense>
           </div>
         </div>
       )}

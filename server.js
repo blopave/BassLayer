@@ -31,8 +31,6 @@ import { montarCriptoEventos } from "./server/cripto-eventos.js";
 import { montarLayer } from "./server/layer.js";
 import { montarMetricas } from "./server/metricas.js";
 import { montarFeeds } from "./server/feeds.js";
-import { montarVenues } from "./server/venues.js";
-import { crearAuth } from "./server/auth.js";
 import { cleanLineup, NOT_A_SHOW_TITLE, notPast, esDeLaEscena, FUENTES_CON_EVIDENCIA } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
 import { slugify, eventSlug, newsSlug, festivalSlug, GENRE_LIST, genreSlug, genreFromSlug } from "./lib/slug.js";
@@ -54,8 +52,7 @@ const supabase = SUPABASE_URL && SUPABASE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
-if (!supabase) console.warn("⚠ SUPABASE_URL or SUPABASE_SERVICE_KEY missing — venue/project features disabled");
-const { requireAuth, requireAdmin } = crearAuth(supabase);
+if (!supabase) console.warn("⚠ SUPABASE_URL or SUPABASE_SERVICE_KEY missing — métricas y ciclos curados sin Supabase");
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,7 +102,7 @@ const RATE_LIMIT_MAP_MAX = 10_000; // Max tracked IPs to prevent memory exhausti
 // Supabase keep-alive: free-tier projects auto-pause after ~7 días sin queries.
 async function pingSupabase() {
   try {
-    await supabase.from("venue_events").select("id").limit(1);
+    await supabase.from("btc_cycles").select("id").limit(1);
     console.log("[keepalive] supabase ping ok");
   } catch (e) {
     console.warn("[keepalive] supabase ping failed:", e?.message || e);
@@ -171,8 +168,8 @@ app.use("/img", makeRateLimit(600)); // una agenda carga ~90 miniaturas
 // borde (Cloudflare) reutilizan un dato que el server considera fresco por
 // minutos u horas. max-age = mitad del TTL con que la ruta cachea en memoria
 // (clave de `cache`, o ms para las rutas con cache propio); SWR cubre el hueco.
-// Solo GET con 2xx. Lo que no figura acá ni pone su propio header (rutas
-// autenticadas, perfiles) sale "private, no-store": la cache rule de Cloudflare
+// Solo GET con 2xx. Lo que no figura acá ni pone su propio header (health,
+// errores) sale "private, no-store": la cache rule de Cloudflare
 // para /api respeta el header del origen, así que nada privado queda en el borde.
 const API_PUBLIC_TTL = {
   "/api/prices": "prices", "/api/news": "news", "/api/finance-news": "financeNews",
@@ -1036,45 +1033,6 @@ async function buildEvents() {
     allEvents.push(...arFests);
   }
 
-  // Fetch approved venue-submitted events from Supabase
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const { data: venueEvents } = await supabase
-      .from("venue_events")
-      .select("*, profiles(display_name, slug, logo_url, verified)")
-      .eq("status", "approved")
-      .gte("date", today);
-
-    if (venueEvents && venueEvents.length > 0) {
-      console.log(`[events] Venue-submitted: ${venueEvents.length} events`);
-      for (const ve of venueEvents) {
-        const d = new Date(ve.date);
-        allEvents.push({
-          day: String(d.getUTCDate()).padStart(2, "0"),
-          month: MONTHS_ES[d.getUTCMonth()],
-          name: ve.name,
-          venue: ve.profiles?.display_name || "TBA",
-          address: "",
-          city: "CABA",
-          region: "AR",
-          artists: ve.artists || [],
-          time: ve.time_start?.slice(0, 5) || "",
-          genre: ve.genre || "Electronic",
-          url: ve.ticket_url || "",
-          image: ve.flyer_url || null,
-          source: "venue",
-          venue_slug: ve.profiles?.slug,
-          venue_verified: ve.profiles?.verified || false,
-          featured: ve.featured || false,
-          ticket_price: ve.ticket_price || null,
-          description: ve.description || null,
-        });
-      }
-    }
-  } catch (e) {
-    console.error("[events] Venue events fetch error:", e.message);
-  }
-
   // If nothing worked, use curated fallback
   if (allEvents.length === 0) {
     console.log("[events] All sources failed, using curated fallback");
@@ -1355,9 +1313,9 @@ app.get("/api/prices/:id/chart", async (req, res) => {
 
 const { enrichArtistImages, ARTIST_IMAGE_BUDGET_MS } = montarArtistas(app, { GENRE_LIST, SNAPSHOT_DIR, fetchSafe, safeText, translateText });
 
-montarLayer(app, { MONTHS_ES, rootDir: __dirname, cache, cached, eachLimit, fetchSafe, requireAdmin, requireAuth, safeText, setCache, supabase, swr, translateTitle });
+montarLayer(app, { MONTHS_ES, rootDir: __dirname, cache, cached, eachLimit, fetchSafe, safeText, setCache, supabase, swr, translateTitle });
 
-const { guardarMetricas } = montarMetricas(app, { requireAdmin, requireAuth, supabase });
+const { guardarMetricas } = montarMetricas(app, { supabase });
 
 // ─────────────────────────────────────────────
 //  Health
@@ -1382,8 +1340,6 @@ app.get("/api/health", (req, res) => {
 });
 
 const { loadCuratedEvents, loadCryptoIrl } = montarCriptoEventos(app, { rootDir: __dirname, cached, fetchSafe, safeText, setCache });
-
-montarVenues(app, { cache, requireAdmin, requireAuth, supabase });
 
 const { icsDateParts, musicEventSchema } = montarFeeds(app, { GENRE_LIST, MONTH_MAP, PROD_ORIGIN, cached, eventSlug, festivalSlug, festivalStatus, findEventBySlug, findFestivalBySlug, findNewsBySlug, genreSlug, loadFestivals, loadGuias, semanaData });
 

@@ -14,43 +14,6 @@ export function shared(key, fn, ttl = 60_000) {
   sharedCache.set(key, { p, ts: Date.now() });
   return p;
 }
-function authHeaders() {
-  const token = storage.get("bl-token");
-  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
-}
-
-function authFetch(url, opts = {}) {
-  return fetch(url, { ...opts, headers: { ...authHeaders(), ...opts.headers } })
-    .then(r => {
-      // 204 / cuerpo vacío (p.ej. DELETE): no hacer r.json() directo o rompe con
-      // "Unexpected end of JSON input" aunque la operación haya sido exitosa.
-      if (r.ok) return r.text().then(t => (t ? JSON.parse(t) : null));
-      return r.json().catch(() => ({ error: `Error ${r.status}` })).then(e => Promise.reject(e.error || `Error ${r.status}`));
-    });
-}
-
-export const venueApi = {
-  getProfile:    () => authFetch("/api/venue/me"),
-  updateProfile: (data) => authFetch("/api/venue/me", { method: "PUT", body: JSON.stringify(data) }),
-  getPublic:     (slug) => fetch(`/api/venue/${slug}`).then(r => r.ok ? r.json() : Promise.reject("Not found")),
-  getEvents:     () => authFetch("/api/venue/events"),
-  createEvent:   (data) => authFetch("/api/venue/events", { method: "POST", body: JSON.stringify(data) }),
-  updateEvent:   (id, data) => authFetch(`/api/venue/events/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  deleteEvent:   (id) => authFetch(`/api/venue/events/${id}`, { method: "DELETE" }),
-};
-
-export const adminApi = {
-  getEvents:        (status = "pending") => authFetch(`/api/admin/events?status=${status}`),
-  approve:          (id) => authFetch(`/api/admin/events/${id}/approve`, { method: "PUT" }),
-  reject:           (id, note) => authFetch(`/api/admin/events/${id}/reject`, { method: "PUT", body: JSON.stringify({ note }) }),
-  feature:          (id) => authFetch(`/api/admin/events/${id}/feature`, { method: "PUT" }),
-  getVenues:        () => authFetch("/api/admin/venues"),
-  verifyVenue:      (id) => authFetch(`/api/admin/venues/${id}/verify`, { method: "PUT" }),
-  getBtcCycles:     () => authFetch("/api/admin/btc-cycles"),
-  getMetricas:      () => authFetch("/api/admin/metricas"),
-  updateBtcCycles:  (data) => authFetch("/api/admin/btc-cycles", { method: "PUT", body: JSON.stringify({ data }) }),
-};
-
 export const api = {
   prices:    () => fetch("/api/prices").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
   news:      () => fetch("/api/news").then((r) => (r.ok ? r.json() : Promise.reject(r.status))),

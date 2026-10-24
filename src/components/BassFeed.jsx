@@ -904,8 +904,6 @@ export function BassFeed({ events, loading, error, onRetry, filter, onFilter, on
                       {stamp && (
                         <span className="bl-ev-genre-badge" title={stamp}>{stamp}</span>
                       )}
-                      {ev.source === "venue" && <span className="bl-ev-venue-badge">venue</span>}
-                      {ev.venue_verified && <span className="bl-ev-venue-verified">&#10003;</span>}
                     </div>
                   </div>
                   {/* Fila: la hora sale del meta-row y ancla la derecha en mono,

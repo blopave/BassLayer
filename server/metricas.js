@@ -3,7 +3,7 @@
 // devuelve guardarMetricas para vaciar lo pendiente al apagar.
 
 export function montarMetricas(app, d) {
-  const { requireAdmin, requireAuth, supabase } = d;
+  const { supabase } = d;
 
 // ─────────────────────────────────────────────
 //  Métricas de la app instalable (oct 2026): contadores diarios sin datos
@@ -37,13 +37,5 @@ async function guardarMetricas() {
 }
 setInterval(() => guardarMetricas().catch(() => {}), 60_000).unref();
 
-// Para el panel admin: los últimos 30 días.
-app.get("/api/admin/metricas", requireAuth, requireAdmin, async (req, res) => {
-  if (!supabase) return res.status(503).json({ error: "Supabase not configured" });
-  const desde = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-  const { data, error } = await supabase.from("metricas_app").select("dia, evento, plataforma, modo, n").gte("dia", desde).order("dia", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
-});
   return { guardarMetricas };
 }

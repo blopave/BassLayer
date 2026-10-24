@@ -284,7 +284,7 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
 // del origen. Lo público tiene que salir "public"; lo privado, "no-store" —
 // si no, una respuesta con datos de alguien quedaría servida a todos.
 {
-  const casos = [["/api/events", /public/], ["/api/ciclos", /public/], ["/api/admin/events", /no-store/], ["/api/venue/events", /no-store/]];
+  const casos = [["/api/events", /public/], ["/api/ciclos", /public/], ["/api/health", /no-store/]];
   const mal = [];
   for (const [path, re] of casos) {
     const res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) }).catch(() => null);

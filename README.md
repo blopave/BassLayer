@@ -30,8 +30,8 @@ public/         Íconos, manifest, service worker, página sin conexión
 ```
 
 Sin cuentas ni claves de terceros para las fuentes: todo lo que se lee es público.
-Supabase (opcional, `SUPABASE_URL` / `SUPABASE_SERVICE_KEY`) guarda el panel de
-venues, el estado curado de ciclos y las métricas anónimas de la app.
+Supabase (opcional, `SUPABASE_URL` / `SUPABASE_SERVICE_KEY`) guarda el estado
+curado de ciclos y las métricas anónimas de la app. No hay cuentas de usuario.
 
 ## Antes de publicar
 

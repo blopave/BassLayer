@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { PAPRIKA_ID } from "./monedas.js";
 
 export function montarLayer(app, d) {
-  const { MONTHS_ES, rootDir, cache, cached, eachLimit, fetchSafe, requireAdmin, requireAuth, safeText, setCache, supabase, swr, translateTitle } = d;
+  const { MONTHS_ES, rootDir, cache, cached, eachLimit, fetchSafe, safeText, setCache, supabase, swr, translateTitle } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/dolar — USDT/ARS por exchange (CriptoYa) + dólares AR (DolarAPI)
@@ -240,7 +240,7 @@ function readBtcCyclesFile() {
   return null;
 }
 
-// Estado curado del dashboard: Supabase (editable desde el AdminPanel) con el
+// Estado curado del dashboard: Supabase (se edita en la tabla btc_cycles) con el
 // JSON del repo como seed y fallback. En el primer arranque siembra la tabla
 // desde el archivo; después manda lo que haya en Supabase. Fase B.
 async function loadBtcCyclesCurated() {
@@ -272,11 +272,6 @@ async function loadBtcCyclesCurated() {
   const file = readBtcCyclesFile();
   if (file) { btcCuratedCache = file; btcCuratedTs = now; }
   return btcCuratedCache;
-}
-
-function invalidateBtcCyclesCache() {
-  btcCuratedCache = null; btcCuratedTs = 0;
-  cache.btcCycles = { ...cache.btcCycles, data: null, ts: 0 };
 }
 
 app.get("/api/btc-cycles", async (req, res) => {
@@ -410,32 +405,6 @@ app.get("/api/btc-cycles", async (req, res) => {
   }
 });
 
-
-// Admin: leer/editar el estado curado de los ciclos (sin redeploy). Fase B.
-app.get("/api/admin/btc-cycles", requireAuth, requireAdmin, async (req, res) => {
-  const curated = await loadBtcCyclesCurated();
-  if (!curated) return res.status(500).json({ error: "No hay datos de ciclos" });
-  res.json(curated);
-});
-
-app.put("/api/admin/btc-cycles", requireAuth, requireAdmin, async (req, res) => {
-  const data = req.body?.data ?? req.body;
-  if (!data || typeof data !== "object" || Array.isArray(data) || !data.current || !Array.isArray(data.cycles)) {
-    return res.status(400).json({ error: "Payload inválido: se esperaba un objeto con current y cycles" });
-  }
-  const { data: saved, error } = await supabase
-    .from("btc_cycles")
-    .upsert({ id: 1, data, updated_at: new Date().toISOString(), updated_by: req.user.id })
-    .select("data")
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-
-  invalidateBtcCyclesCache();
-  await supabase.from("admin_log").insert({
-    admin_id: req.user.id, action: "update", target_type: "btc_cycles", target_id: "1",
-  });
-  res.json(saved.data);
-});
 
 // ─────────────────────────────────────────────
 //  GET /api/prediction-markets — Polymarket Gamma
