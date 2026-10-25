@@ -745,19 +745,6 @@
 /* ── Screen Reader Only ─────────────────── */
 .bl-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
-/* ── Custom Cursor — see Design Enhancements section ── */
-/* Hide native cursor only on non-touch devices with fine pointer (mouse).
-   El min-width es espejo del display:none de .bl-cursor (≤768px): si el punto
-   custom no se dibuja, el nativo tiene que quedarse — si no, una ventana
-   angosta con mouse se queda sin ningún cursor visible. */
-@media (pointer: fine) and (min-width: 769px) {
-  .bl-root, .bl-root *, .bl-root a, .bl-root button,
-  .bl-root [role="button"], .bl-root input, .bl-root select,
-  .bl-root [tabindex] { cursor:none; }
-  /* Restore cursor for keyboard navigation */
-  .bl-root *:focus-visible { cursor:auto; }
-}
-
 /* ── Base ───────────────────────────────── */
 .bl-root { background:var(--bl-bg); color:var(--bl-text); width:100vw; height:100vh; overflow:hidden; font-family:var(--font-body); -webkit-tap-highlight-color:transparent; }
 .bl-grain { position:fixed; inset:0; pointer-events:none; z-index:9500; opacity:0.028;
@@ -2684,28 +2671,6 @@
   .bl-tle-footer { padding:0 20px 24px; }
 }
 
-/* ── 2. Custom Cursor (desktop) ──────────── */
-.bl-cursor {
-  position:fixed; top:-6px; left:-6px; z-index:99999; pointer-events:none;
-  width:10px; height:10px; border-radius:50%;
-  border:1.5px solid var(--bl-350);
-  background:none;
-  transition:width .4s var(--ease-out-expo), height .4s var(--ease-out-expo),
-             top .4s var(--ease-out-expo), left .4s var(--ease-out-expo),
-             opacity .3s, background .2s, border-color .6s;
-  mix-blend-mode:difference;
-  will-change:transform;
-}
-.bl-root[data-section="bass"] .bl-cursor { border-color:rgba(196,144,112,0.5); }
-.bl-root[data-section="layer"] .bl-cursor { border-color:rgba(108,184,200,0.5); }
-.bl-cursor.hovering {
-  width:32px; height:32px; top:-16px; left:-16px;
-  background:rgba(255,255,255,0.05);
-}
-.bl-root[data-section="bass"] .bl-cursor.hovering { background:rgba(196,144,112,0.06); border-color:rgba(196,144,112,0.6); }
-.bl-root[data-section="layer"] .bl-cursor.hovering { background:rgba(108,184,200,0.06); border-color:rgba(108,184,200,0.6); }
-@media (max-width:768px) { .bl-cursor { display:none; } }
-@media (pointer:coarse) { .bl-cursor { display:none; } }
 
 /* En dispositivos táctiles agrandamos los controles chicos al mínimo de 44px
    (guía de tap target). En desktop (pointer:fine) quedan compactos como estaban. */

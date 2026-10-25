@@ -731,6 +731,9 @@ async function run(vp) {
     // El cursor de "Layer█" es un bloque a la altura de las letras, no un guión suelto (oct 2026).
     const cur = await page.evaluate(() => { const c = document.querySelector(".bl-header-half-layer.is-active .bl-tab-cursor"), n = c?.closest(".bl-header-world-name"); return c && n ? c.getBoundingClientRect().height / parseFloat(getComputedStyle(n).fontSize) : null; });
     if (cur == null || cur < 0.5) fail(vp.name, "header", `el cursor de Layer se lee como un guión (alto ${cur?.toFixed(2)} letra)`);
+    // El puntero es el nativo del sistema: nada de punto propio ni cursor:none (oct 2026).
+    const puntero = await page.evaluate(() => ({ propio: !!document.querySelector(".bl-cursor"), oculto: [document.body, ...document.querySelectorAll(".bl-root, .bl-root a, .bl-root button")].some((e) => getComputedStyle(e).cursor === "none") }));
+    if (puntero.propio || puntero.oculto) fail(vp.name, "puntero", `volvió el cursor propio (${JSON.stringify(puntero)})`);
     await page.screenshot({ path: `${SHOTS}/smoke-${vp.name}-layer.png` });
     await expectNone("layer", lowContrast);
     if (vp.viewport.height >= 800) {

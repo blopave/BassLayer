@@ -493,10 +493,7 @@ export default function App() {
   const [heroExiting, setHeroExiting] = useState(false);
   useEffect(() => { if (loaded) { const t = setTimeout(() => setHeroEntered(true), 200); return () => clearTimeout(t); } }, [loaded]);
 
-  // Custom cursor + parallax mouse tracking
-  const cursorRef = useRef(null);
-  const cursorPos = useRef({ x: -100, y: -100 });
-  const cursorTarget = useRef({ x: -100, y: -100 });
+  // Parallax del home siguiendo al mouse (el puntero es el nativo del sistema)
   const mouseNorm = useRef({ x: 0, y: 0 }); // -1 to 1 normalized
   const parallaxRefs = useRef({ tl: null, tr: null, bl: null, br: null });
 
@@ -505,33 +502,15 @@ export default function App() {
 
   useEffect(() => {
     if (isMobile) return;
-    const isInteractive = (el) => {
-      if (!el) return false;
-      const tag = el.tagName;
-      if (tag === "A" || tag === "BUTTON" || tag === "INPUT" || tag === "SELECT") return true;
-      if (el.getAttribute("role") === "button" || el.getAttribute("tabindex") !== null) return true;
-      return el.closest("a, button, [role='button'], [tabindex]") !== null;
-    };
     const onMove = (e) => {
-      cursorTarget.current = { x: e.clientX, y: e.clientY };
       mouseNorm.current = { x: (e.clientX / innerWidth - 0.5) * 2, y: (e.clientY / innerHeight - 0.5) * 2 };
-      if (cursorRef.current) {
-        cursorRef.current.classList.toggle("hovering", isInteractive(e.target));
-      }
     };
     window.addEventListener("mousemove", onMove);
     const smooth = { x: 0, y: 0 };
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf;
     function animate() {
-      // Cursor
-      const p = cursorPos.current, t = cursorTarget.current;
-      p.x += (t.x - p.x) * 0.15;
-      p.y += (t.y - p.y) * 0.15;
-      if (cursorRef.current) cursorRef.current.style.transform = `translate(${p.x}px, ${p.y}px)`;
-
-      // Parallax — only compute on home view. Reduced motion lo saltea: es
-      // movimiento decorativo; el cursor de arriba es funcional y se queda.
+      // Parallax — solo en el home. Reduced motion lo saltea: es movimiento decorativo.
       if (viewRef.current === "home" && !reduceMotion) {
         smooth.x += (mouseNorm.current.x - smooth.x) * 0.05;
         smooth.y += (mouseNorm.current.y - smooth.y) * 0.05;
@@ -937,7 +916,6 @@ export default function App() {
 
   return (
     <div className={`bl-root${view === "home" ? " view-home" : ""}${dayMode ? " day-mode" : ""}`} data-section={activePanel === 0 ? "bass" : "layer"}>
-      {!isMobile && <div className="bl-cursor" ref={cursorRef} />}
       <div className="bl-grain" aria-hidden="true" />
       {!loaded && <Preloader done={finishPreload} />}
 
