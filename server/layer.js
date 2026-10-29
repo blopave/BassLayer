@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { PAPRIKA_ID } from "./monedas.js";
 
 export function montarLayer(app, d) {
-  const { MONTHS_ES, rootDir, cache, cached, eachLimit, fetchSafe, safeText, setCache, supabase, swr, translateTitle } = d;
+  const { MONTHS_ES, rootDir, cache, cached, eachLimit, fetchSafe, safeText, setCache, swr, translateTitle } = d;
 
 // ─────────────────────────────────────────────
 //  GET /api/dolar — USDT/ARS por exchange (CriptoYa) + dólares AR (DolarAPI)
@@ -240,35 +240,11 @@ function readBtcCyclesFile() {
   return null;
 }
 
-// Estado curado del dashboard: Supabase (se edita en la tabla btc_cycles) con el
-// JSON del repo como seed y fallback. En el primer arranque siembra la tabla
-// desde el archivo; después manda lo que haya en Supabase. Fase B.
+// Estado curado del dashboard: data/btc-cycles.json (se edita en el repo).
 async function loadBtcCyclesCurated() {
   const now = Date.now();
   if (btcCuratedCache && (now - btcCuratedTs) < BTC_CURATED_TTL) return btcCuratedCache;
 
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.from("btc_cycles").select("data").eq("id", 1).maybeSingle();
-      if (!error && data?.data) {
-        btcCuratedCache = data.data; btcCuratedTs = now;
-        return btcCuratedCache;
-      }
-      if (!error && !data) {
-        // Vacío → sembrar desde el archivo del repo
-        const seed = readBtcCyclesFile();
-        if (seed) {
-          await supabase.from("btc_cycles").upsert({ id: 1, data: seed, updated_at: new Date().toISOString() });
-          btcCuratedCache = seed; btcCuratedTs = now;
-          return btcCuratedCache;
-        }
-      }
-    } catch (e) {
-      console.error("[btc-cycles] supabase load error:", e.message);
-    }
-  }
-
-  // Fallback: archivo del repo
   const file = readBtcCyclesFile();
   if (file) { btcCuratedCache = file; btcCuratedTs = now; }
   return btcCuratedCache;

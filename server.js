@@ -16,7 +16,6 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import crypto from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { montarPrerender } from "./server/prerender.js";
 import { montarAgendaFuentes } from "./server/agenda-fuentes.js";
@@ -29,7 +28,6 @@ import { crearTraductor, eachLimit } from "./server/traducir.js";
 import { COIN_IDS } from "./server/monedas.js";
 import { montarCriptoEventos } from "./server/cripto-eventos.js";
 import { montarLayer } from "./server/layer.js";
-import { montarMetricas } from "./server/metricas.js";
 import { montarFeeds } from "./server/feeds.js";
 import { cleanLineup, NOT_A_SHOW_TITLE, notPast, esDeLaEscena, FUENTES_CON_EVIDENCIA } from "./lib/content-rules.js";
 import { detectCity, isAmbaCity, namesOtherCity } from "./lib/places.js";
@@ -44,15 +42,6 @@ const PKG_VERSION = (() => {
   try { return JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version; }
   catch { return "unknown"; }
 })();
-
-// ── Supabase ──
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const supabase = SUPABASE_URL && SUPABASE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_KEY)
-  : null;
-
-if (!supabase) console.warn("⚠ SUPABASE_URL or SUPABASE_SERVICE_KEY missing — métricas y ciclos curados sin Supabase");
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -79,7 +68,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https:"],
       // Previews de 30 s del line-up: /api/preview redirige al CDN de Deezer.
       mediaSrc: ["'self'", "https://*.dzcdn.net"],
-      connectSrc: ["'self'", "https://jbszspnwegykpnlagypf.supabase.co", "https://cloudflareinsights.com"],
+      connectSrc: ["'self'", "https://cloudflareinsights.com"],
     },
   },
 }));
@@ -98,19 +87,6 @@ const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_API_MAX = 300; // la SPA sola hace ~9 req por carga + /api/prices cada 30 s
 const RATE_LIMIT_OG_MAX = 60;   // satori+resvg: CPU-intensivo, slugs enumerables
 const RATE_LIMIT_MAP_MAX = 10_000; // Max tracked IPs to prevent memory exhaustion
-
-// Supabase keep-alive: free-tier projects auto-pause after ~7 días sin queries.
-async function pingSupabase() {
-  try {
-    await supabase.from("btc_cycles").select("id").limit(1);
-    console.log("[keepalive] supabase ping ok");
-  } catch (e) {
-    console.warn("[keepalive] supabase ping failed:", e?.message || e);
-  }
-}
-const supabaseKeepAlive = supabase
-  ? (pingSupabase(), setInterval(pingSupabase, 48 * 60 * 60 * 1000))
-  : null;
 
 // Prod va usuario → Cloudflare → edge de Railway → app: con trust proxy 1,
 // req.ip es el nodo de Cloudflare y toda una ciudad compartiría el cupo.
@@ -195,7 +171,7 @@ app.use("/api", (req, res, next) => {
 });
 
 // Express 4 no captura rechazos de handlers async: sin esto, un throw dentro de
-// una ruta Supabase deja la request colgada hasta el timeout del proxy.
+// una ruta async deja la request colgada hasta el timeout del proxy.
 for (const method of ["get", "post", "put", "delete"]) {
   const orig = app[method].bind(app);
   app[method] = (path, ...handlers) => {
@@ -1313,9 +1289,7 @@ app.get("/api/prices/:id/chart", async (req, res) => {
 
 const { enrichArtistImages, ARTIST_IMAGE_BUDGET_MS } = montarArtistas(app, { GENRE_LIST, SNAPSHOT_DIR, fetchSafe, safeText, translateText });
 
-montarLayer(app, { MONTHS_ES, rootDir: __dirname, cache, cached, eachLimit, fetchSafe, safeText, setCache, supabase, swr, translateTitle });
-
-const { guardarMetricas } = montarMetricas(app, { supabase });
+montarLayer(app, { MONTHS_ES, rootDir: __dirname, cache, cached, eachLimit, fetchSafe, safeText, setCache, swr, translateTitle });
 
 // ─────────────────────────────────────────────
 //  Health
@@ -1334,7 +1308,6 @@ app.get("/api/health", (req, res) => {
     uptime: Math.floor(process.uptime()),
     events: ev ? { total: ev.total, sources: ev.sources, builtAgo: Math.round((Date.now() - ev.ts) / 1000), buildMs: ev.ms } : (cache.events.data ? { total: cache.events.data.length, fromSnapshot: true } : null),
     cacheAge: ages,
-    supabase: !!supabase,
   };
   res.status(degraded ? 503 : 200).json(data);
 });
@@ -1392,10 +1365,7 @@ const server = app.listen(PORT, () => console.log(`BassLayer API v${PKG_VERSION}
 // Graceful shutdown
 function shutdown(signal) {
   console.log(`\n[${signal}] Shutting down gracefully...`);
-  if (supabaseKeepAlive) clearInterval(supabaseKeepAlive);
-  // Los contadores del último minuto no se pierden con el deploy.
-  const fin = () => guardarMetricas().catch(() => {}).finally(() => { console.log("Server closed."); process.exit(0); });
-  server.close(fin);
+  server.close(() => { console.log("Server closed."); process.exit(0); });
   setTimeout(() => process.exit(1), 5000);
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));

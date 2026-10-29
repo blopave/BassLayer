@@ -17,7 +17,7 @@ function fmtCycleDate(s, locale) {
 }
 
 // Texto curado bilingüe del dato: en inglés preferimos el campo `<base>En`
-// (confluenceLabelEn, postureEn, noteEn — ya presentes en el JSON y en Supabase);
+// (confluenceLabelEn, postureEn, noteEn — ya presentes en el JSON);
 // si falta, caemos al campo base en español (degradación elegante, sin diccionario
 // cliente que se desactualice).
 const pickLocalized = (obj, base, locale) => (locale === "en" && obj?.[base + "En"]) || obj?.[base];

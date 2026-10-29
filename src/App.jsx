@@ -24,7 +24,6 @@ import { WorldLine } from "./components/WorldLine";
 import { InstalarApp } from "./components/InstalarApp";
 import { SinConexion } from "./components/SinConexion";
 import { useInstalar, esApp } from "./hooks/useInstalar";
-import { metrica } from "./utils/app";
 import { seccionDeRuta, esRutaDeBass, navegar } from "./utils/rutas";
 // El modal de evento solo aparece al abrir uno: va en un chunk aparte para
 // sacarlo del bundle crítico del home.
@@ -1061,7 +1060,7 @@ export default function App() {
           {t("util.about")}
         </button>
         {app.modo && (
-          <button className="bl-util-toggle bl-util-app" onClick={() => { metrica("menu_app"); if (app.modo === "aviso") app.instalar(); else setAppPedida(true); }} aria-label={t("app.menuAria")}>
+          <button className="bl-util-toggle bl-util-app" onClick={() => { if (app.modo === "aviso") app.instalar(); else setAppPedida(true); }} aria-label={t("app.menuAria")}>
             {t("app.menu")}
           </button>
         )}
