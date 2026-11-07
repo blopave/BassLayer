@@ -621,7 +621,7 @@ async function fetchMarketsCNBC() {
       symbol,
       name: name || q.name,   // preferimos la curaduría local (más corta/limpia)
       price,
-      changePct: numLoose(q.change_pct),
+      changePct: q.change_pct === "UNCH" ? 0 : numLoose(q.change_pct),   // "UNCH" = sin cambios en el día
       currency: q.currencyCode || "USD",
       kind,
     });

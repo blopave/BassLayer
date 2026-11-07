@@ -416,7 +416,10 @@ await Promise.all(ENDPOINTS.map(checkEndpoint));
       if (!r.ok) return console.log(`  aviso festivales: ${x.id} → ${r.status} (no se pudo comprobar el link)`);
       html = (await r.text()).slice(0, 300000);
     } catch { return console.log(`  aviso festivales: ${x.id} → no responde (no se pudo comprobar el link)`); }
-    const titulo = norm((html.match(/<title[^>]*>([^<]*)/i) || [])[1] + " " + (html.match(/og:site_name["'][^>]*content=["']([^"']+)/i) || [])[1]);
+    // El nombre puede estar en el <title> o solo en og:site_name / og:title ("Home" + og:title
+    // "Kappa FuturFestival"), con los atributos del meta en cualquier orden.
+    const og = [...html.matchAll(/<meta[^>]+>/gi)].map((m) => m[0]).filter((m) => /og:(?:site_name|title)["']/i.test(m)).map((m) => (m.match(/content=["']([^"']+)/i) || [])[1]);
+    const titulo = norm([(html.match(/<title[^>]*>([^<]*)/i) || [])[1], ...og].filter(Boolean).join(" "));
     const claves = norm(x.name).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !GENERICAS.has(w));
     // Un dominio revendido puede llevar el nombre en el título ("DGTL.COM | domain names…").
     const ajeno = /casino|apuestas|domain names?|this domain|domain (?:is )?for sale|buy (?:this|the) domain|parked/i.test(titulo);

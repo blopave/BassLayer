@@ -1118,6 +1118,22 @@ async function runApp() {
     await pg.clock.fastForward(16_000); await pg.waitForTimeout(500);
     if (await pg.locator(".bl-app-line").count()) F("invitación", "aparece en la primera visita");
     await c.close();
+    // "app" del menú después de cerrar el cuadro nativo sin aceptar (nov 2026): el navegador
+    // no lo vuelve a abrir con el mismo evento, así que el segundo toque explica el camino.
+    [c, pg] = await ctx({ viewport: { width: 1440, height: 900 } });
+    await pg.addInitScript("localStorage.setItem('bl-onboarded','1');" + falso);
+    await pg.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+    await pg.waitForTimeout(1500); await pg.evaluate(() => window.__bip());
+    const menuApp = pg.locator(".bl-util-app");
+    if (!(await menuApp.isVisible().catch(() => false))) F("menú app", "con el navegador ofreciendo instalar, no está «app» en el menú");
+    else {
+      await menuApp.click(); await pg.waitForTimeout(300);
+      if (await menuApp.isVisible().catch(() => false)) await menuApp.click();
+      await pg.waitForTimeout(300);
+      const txt = await pg.locator(".bl-app-line .bl-app-txt").textContent().catch(() => "");
+      if (!/Instalar|Install/.test(txt || "")) F("menú app", `después de cerrar el cuadro nativo, tocar «app» no explica cómo instalar (${txt || "no pasa nada"})`);
+    }
+    await c.close();
     // Adentro de la app instalada: ni invitación, ni entrada en el menú, ni bienvenida repetida.
     [c, pg] = await ctx({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await pg.addInitScript("const mm = matchMedia.bind(window); window.matchMedia = (q) => /display-mode:\\s*standalone/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q);" + falso);

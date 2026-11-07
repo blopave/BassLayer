@@ -1,8 +1,8 @@
 // La invitación a instalar la app: UNA línea abajo, una sola vez.
 // Aparece en la segunda visita (o más), después de un rato adentro de un mundo;
-// la ✕ la cierra para siempre. Nunca adentro de la app instalada. Si el navegador
-// no ofrece instalar (y no es un iPhone), no aparece nada. Desde el menú ⋯ se
-// puede abrir a mano en cualquier momento (`pedida`).
+// la ✕ la cierra para siempre. Nunca adentro de la app instalada. Sola aparece
+// cuando el navegador ofrece instalar o en iPhone; desde el menú ⋯ se puede abrir
+// en cualquier momento (`pedida`) y, si no hay cuadro nativo, explica el camino.
 import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { useOnline } from "../hooks/useOnline";
@@ -23,22 +23,24 @@ export function InstalarApp({ app, view, pedida, onCerrar }) {
     return () => clearTimeout(id);
   }, [view, madura]);
 
-  const sola = app.modo && !app.descartada && app.visitas >= 2 && madura && view === "sections";
+  const sola = (app.modo === "aviso" || app.ios) && !app.descartada && app.visitas >= 2 && madura && view === "sections";
   const visible = !!app.modo && (sola || pedida) && online;
   if (!visible) return null;
 
   const cerrar = () => { if (!pedida) app.descartar(); setComo(false); onCerrar?.(); };
   const instalar = async () => {
-    if (app.modo === "ios") { setComo(true); return; }
-    await app.instalar();
+    if (app.modo === "pasos") { setComo(true); return; }
+    const r = await app.instalar();
+    if (r === "error") { setComo(true); return; }  // sin cuadro nativo: se explica el camino
+    if (r === "dismissed" && !pedida) app.descartar();
     onCerrar?.();
   };
-  const ios = app.modo === "ios" && (como || pedida);
+  const pasos = app.modo === "pasos" && (como || pedida);
 
   return (
     <div className="bl-pill-line bl-app-line" role="status">
-      <span className="bl-app-txt">{ios ? t("app.ios") : t("app.line")}</span>
-      {!ios && <button className="bl-app-go" onClick={instalar}>{app.modo === "ios" ? t("app.how") : t("app.install")}</button>}
+      <span className="bl-app-txt">{pasos ? t(app.pasos) : t("app.line")}</span>
+      {!pasos && <button className="bl-app-go" onClick={instalar}>{app.modo === "pasos" ? t("app.how") : t("app.install")}</button>}
       <button className="bl-app-x" onClick={cerrar} aria-label={t("common.close")}>×</button>
     </div>
   );

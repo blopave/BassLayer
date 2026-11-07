@@ -390,6 +390,10 @@ export const STRINGS = {
     "app.install": "Instalar",
     "app.how": "Cómo",
     "app.ios": "Tocá Compartir (en el menú ⋯) y después «Agregar a inicio»",
+    "app.iosOtro": "Abrí Compartir en el menú del navegador y elegí «Agregar a inicio»",
+    "app.android": "En el menú ⋮ del navegador, elegí «Instalar app» o «Agregar a pantalla de inicio»",
+    "app.escritorio": "Hacé clic en el ícono de instalar en la barra de direcciones, o en el menú ⋮ elegí «Instalar»",
+    "app.mac": "En el menú Archivo de Safari, elegí «Agregar al Dock»",
     "app.menu": "app",
     "app.menuAria": "Instalar la app de BassLayer",
 
@@ -782,6 +786,10 @@ export const STRINGS = {
     "app.install": "Install",
     "app.how": "How",
     "app.ios": "Tap Share (in the ⋯ menu), then “Add to Home Screen”",
+    "app.iosOtro": "Open Share in the browser menu and choose “Add to Home Screen”",
+    "app.android": "In the browser’s ⋮ menu, choose “Install app” or “Add to Home screen”",
+    "app.escritorio": "Click the install icon in the address bar, or choose “Install” in the ⋮ menu",
+    "app.mac": "In Safari’s File menu, choose “Add to Dock”",
     "app.menu": "app",
     "app.menuAria": "Install the BassLayer app",
 

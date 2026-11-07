@@ -274,6 +274,8 @@ function tidyEvents(events) {
     // Superficie de Bass: CABA + GBA (AMBA). Acá y no solo en la build: el
     // snapshot en disco también tiene que salir con la marca (sept 2026).
     if (isAmba(ev)) ev.area = "amba"; else delete ev.area;
+    // Título vacío tras la limpieza (nov 2026: RA publicó "[LIVE]" a secas): se nombra por el line-up o la sala.
+    if (!String(ev.name || "").trim()) ev.name = ev.artists.slice(0, 3).join(" · ") || ev.venue || "";
   }
   return events;
 }
